@@ -10,30 +10,8 @@ import { Observability } from '../../util/observability/observability';
 import { TransactionPaginator, TransactionsService } from '../transactions';
 
 /**
- * Implementation of the TransactionsService interface
- *
- * This class provides the concrete implementation of the TransactionsService interface,
- * delegating HTTP communication to the provided API client while focusing on business logic.
- * It handles validation, error handling, observability, and pagination.
- *
- * Transactions are the core financial records in the Midaz system, representing
- * monetary movements between accounts. Each transaction consists of multiple operations
- * that must balance (total debits = total credits).
- *
+ * @inheritdoc
  * @implements {TransactionsService}
- *
- * @example
- * ```typescript
- * // Creating an instance (typically done through dependency injection)
- * const apiClient = new HttpTransactionApiClient(httpClient, urlBuilder);
- * const transactionsService = new TransactionsServiceImpl(apiClient);
- *
- * // Using the service to list transactions
- * const transactions = await transactionsService.listTransactions(
- *   "org_123",
- *   "ldg_456"
- * );
- * ```
  */
 export class TransactionsServiceImpl implements TransactionsService {
   /**
@@ -64,17 +42,7 @@ export class TransactionsServiceImpl implements TransactionsService {
   }
 
   /**
-   * Lists transactions with optional filters
-   *
-   * Retrieves a paginated list of transactions within the specified organization and ledger.
-   * The results can be filtered, sorted, and paginated using the options parameter.
-   *
-   * This method includes automatic error handling and observability.
-   *
-   * @param orgId - Organization ID that owns the transactions
-   * @param ledgerId - Ledger ID that contains the transactions
-   * @param opts - List options for pagination, sorting, and filtering
-   * @returns Promise resolving to a paginated list of transactions
+   * @inheritdoc
    */
   public async listTransactions(
     orgId: string,
@@ -159,16 +127,7 @@ export class TransactionsServiceImpl implements TransactionsService {
   }
 
   /**
-   * Iterates through all transactions
-   *
-   * Returns an async generator that yields pages of transactions, automatically
-   * handling pagination. This is useful for processing large numbers of transactions
-   * using modern JavaScript async iteration.
-   *
-   * @param orgId - Organization ID that owns the transactions
-   * @param ledgerId - Ledger ID that contains the transactions
-   * @param opts - List options for sorting and filtering
-   * @returns Async generator yielding pages of transactions
+   * @inheritdoc
    */
   public async *iterateTransactions(
     orgId: string,
@@ -211,16 +170,7 @@ export class TransactionsServiceImpl implements TransactionsService {
   }
 
   /**
-   * Gets all transactions (convenience method that handles pagination)
-   *
-   * Retrieves all transactions matching the specified criteria, automatically
-   * handling pagination. This is a convenience method that loads all matching
-   * transactions into memory at once.
-   *
-   * @param orgId - Organization ID that owns the transactions
-   * @param ledgerId - Ledger ID that contains the transactions
-   * @param opts - List options for sorting and filtering
-   * @returns Promise resolving to all transactions
+   * @inheritdoc
    */
   public async getAllTransactions(
     orgId: string,
@@ -258,15 +208,7 @@ export class TransactionsServiceImpl implements TransactionsService {
   }
 
   /**
-   * Gets a transaction by ID
-   *
-   * Retrieves a single transaction by its unique identifier within the specified
-   * organization and ledger.
-   *
-   * @param orgId - Organization ID that owns the transaction
-   * @param ledgerId - Ledger ID that contains the transaction
-   * @param id - Transaction ID to retrieve
-   * @returns Promise resolving to the transaction
+   * @inheritdoc
    */
   public async getTransaction(orgId: string, ledgerId: string, id: string): Promise<Transaction> {
     // Create a span for tracing this operation
@@ -298,16 +240,7 @@ export class TransactionsServiceImpl implements TransactionsService {
   }
 
   /**
-   * Creates a new transaction
-   *
-   * Creates a new transaction within the specified organization and ledger using
-   * the provided transaction details. The transaction will be validated and
-   * assigned a unique identifier.
-   *
-   * @param orgId - Organization ID that will own the transaction
-   * @param ledgerId - Ledger ID that will contain the transaction
-   * @param input - Transaction creation input with required properties
-   * @returns Promise resolving to the created transaction
+   * @inheritdoc
    */
   public async createTransaction(
     orgId: string,
@@ -361,13 +294,7 @@ export class TransactionsServiceImpl implements TransactionsService {
 }
 
 /**
- * Implementation of the TransactionPaginator interface
- *
- * This class provides the concrete implementation of the TransactionPaginator interface,
- * handling the pagination of transactions when retrieving them from the Midaz API.
- * It maintains state about the current page, cursor, and whether there are more
- * transactions to retrieve.
- *
+ * @inheritdoc
  * @implements {TransactionPaginator}
  */
 export class TransactionPaginatorImpl implements TransactionPaginator {

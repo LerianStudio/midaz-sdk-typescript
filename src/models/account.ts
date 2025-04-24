@@ -35,80 +35,37 @@ export type AccountType =
  * - Expense accounts: Track costs and expenditures (e.g., salaries, rent)
  */
 export interface Account {
-  /**
-   * Unique identifier for the account
-   * System-generated UUID that uniquely identifies this account across the entire platform
-   */
+  /** Unique system-generated identifier */
   id: string;
 
-  /**
-   * Account name
-   * Human-readable name that describes the purpose or content of the account
-   * (e.g., "Operating Cash", "Corporate Bonds", "Customer Deposits")
-   */
+  /** Human-readable name describing the account purpose (e.g., "Operating Cash") */
   name: string;
 
-  /**
-   * Parent account ID
-   * Optional reference to a parent account if this account is part of a hierarchical structure
-   * Useful for creating account trees and roll-up reporting
-   */
+  /** Optional parent account ID for hierarchical structures and roll-up reporting */
   parentAccountId?: string;
 
-  /**
-   * Entity ID - optional external identifier for the account owner
-   * Can be used to link the account to an external system or entity
-   * (e.g., customer ID, employee ID, vendor ID)
-   */
+  /** Optional external identifier to link account to external systems */
   entityId?: string;
 
-  /**
-   * Asset code - identifies the type of asset held in this account
-   * References an asset defined in the system by its unique code
-   * (e.g., "USD", "EUR", "BTC", "AAPL")
-   */
+  /** Asset code identifying the asset type held in this account (e.g., "USD", "BTC") */
   assetCode: string;
 
-  /**
-   * Organization ID - ID of the organization that owns this account
-   * All accounts must belong to an organization, which provides the
-   * top-level ownership and access control
-   */
+  /** Organization ID that owns this account, providing top-level access control */
   organizationId: string;
 
-  /**
-   * Ledger ID - ID of the ledger that contains this account
-   * Accounts are always created within a specific ledger, which defines
-   * the accounting boundaries and rules
-   */
+  /** Ledger ID containing this account, defining accounting boundaries and rules */
   ledgerId: string;
 
-  /**
-   * Portfolio ID - optional ID of the portfolio this account belongs to
-   * Portfolios allow grouping accounts for investment management, reporting,
-   * and performance tracking purposes
-   */
+  /** Optional portfolio ID for grouping accounts for investment management and reporting */
   portfolioId?: string;
 
-  /**
-   * Segment ID - optional ID of the segment this account belongs to
-   * Segments allow categorizing accounts for business unit reporting,
-   * cost center analysis, or other organizational divisions
-   */
+  /** Optional segment ID for business unit reporting and cost center analysis */
   segmentId?: string;
 
-  /**
-   * Account status
-   * Indicates whether the account is active, inactive, or in another state
-   * Controls whether transactions can be posted to this account
-   */
+  /** Account status controlling whether transactions can be posted */
   status: Status;
 
-  /**
-   * Account alias - optional human-friendly identifier for the account
-   * Can be used as an alternative, more memorable identifier
-   * (e.g., "primary-cash", "payroll-expense", "tax-reserve")
-   */
+  /** Optional human-friendly identifier (e.g., "primary-cash", "tax-reserve") */
   alias?: string;
 
   /**
@@ -118,32 +75,16 @@ export interface Account {
    */
   type: AccountType;
 
-  /**
-   * Custom metadata
-   * Arbitrary key-value pairs for storing additional information about the account
-   * Can include tags, external references, or application-specific data
-   */
+  /** Arbitrary key-value pairs for additional information and application-specific data */
   metadata?: Record<string, any>;
 
-  /**
-   * Creation timestamp (ISO 8601 format)
-   * When the account was created in the system
-   * Automatically set by the system and cannot be modified
-   */
+  /** Creation timestamp (ISO 8601), automatically set by the system */
   createdAt: string;
 
-  /**
-   * Last update timestamp (ISO 8601 format)
-   * When the account was last modified
-   * Automatically updated by the system whenever the account is changed
-   */
+  /** Last update timestamp (ISO 8601), automatically updated on changes */
   updatedAt: string;
 
-  /**
-   * Deletion timestamp (ISO 8601 format), if applicable
-   * When the account was soft-deleted
-   * Accounts are typically soft-deleted to maintain audit history
-   */
+  /** Optional deletion timestamp (ISO 8601) for soft-deleted accounts */
   deletedAt?: string;
 }
 

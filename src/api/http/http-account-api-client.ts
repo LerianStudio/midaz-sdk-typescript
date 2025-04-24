@@ -17,10 +17,8 @@ import { UrlBuilder } from '../url-builder';
 import { HttpBaseApiClient } from './http-base-api-client';
 
 /**
- * HTTP implementation of the AccountApiClient interface
- *
- * This class handles HTTP communication with account endpoints, including
- * URL construction, request formation, response handling, and error management.
+ * @inheritdoc
+ * @implements {AccountApiClient}
  */
 export class HttpAccountApiClient
   extends HttpBaseApiClient<Account, CreateAccountInput, UpdateAccountInput>
@@ -38,12 +36,7 @@ export class HttpAccountApiClient
   }
 
   /**
-   * Lists accounts with optional filters
-   *
-   * @param orgId - Organization ID that owns the accounts
-   * @param ledgerId - Ledger ID that contains the accounts
-   * @param options - Optional list options for filtering and pagination
-   * @returns Promise resolving to a paginated list of accounts
+   * @inheritdoc
    */
   public async listAccounts(
     orgId: string,
@@ -69,12 +62,7 @@ export class HttpAccountApiClient
   }
 
   /**
-   * Gets an account by ID
-   *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param id - Account ID to retrieve
-   * @returns Promise resolving to the account
+   * @inheritdoc
    */
   public async getAccount(orgId: string, ledgerId: string, id: string): Promise<Account> {
     // Validate required parameters before making the request
@@ -95,12 +83,7 @@ export class HttpAccountApiClient
   }
 
   /**
-   * Creates a new account
-   *
-   * @param orgId - Organization ID that will own the account
-   * @param ledgerId - Ledger ID that will contain the account
-   * @param input - Account creation input with required properties
-   * @returns Promise resolving to the created account
+   * @inheritdoc
    */
   public async createAccount(
     orgId: string,
@@ -136,13 +119,7 @@ export class HttpAccountApiClient
   }
 
   /**
-   * Updates an existing account
-   *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param id - Account ID to update
-   * @param input - Account update input with properties to change
-   * @returns Promise resolving to the updated account
+   * @inheritdoc
    */
   public async updateAccount(
     orgId: string,
@@ -178,12 +155,7 @@ export class HttpAccountApiClient
   }
 
   /**
-   * Deletes an account
-   *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param id - Account ID to delete
-   * @returns Promise resolving when the account is deleted
+   * @inheritdoc
    */
   public async deleteAccount(orgId: string, ledgerId: string, id: string): Promise<void> {
     // Validate required parameters before making the request

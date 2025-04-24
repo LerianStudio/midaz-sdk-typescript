@@ -36,59 +36,37 @@ export interface UpdateOrganizationInput extends BuildableModel {
  * legal entities like companies, institutions, or other business entities.
  */
 export interface Organization {
-  /**
-   * Unique identifier for the organization
-   */
+  /** Unique system-generated identifier */
   id: string;
 
-  /**
-   * Official registered name of the organization
-   */
+  /** Official registered legal name */
   legalName: string;
 
-  /**
-   * Official identification document (e.g., tax ID, registration number)
-   */
+  /** Official identification document (e.g., tax ID, registration number) */
   legalDocument: string;
 
-  /**
-   * Trading or brand name of the organization
-   */
+  /** Trading or brand name (DBA) */
   doingBusinessAs: string;
 
-  /**
-   * Physical address of the organization
-   */
+  /** Optional physical address */
   address?: Address;
 
-  /**
-   * Parent organization ID (if this is a subsidiary)
-   */
+  /** Optional parent organization ID for subsidiaries */
   parentOrganizationId?: string;
 
-  /**
-   * Current status of the organization
-   */
+  /** Current status with code and reason */
   status: Status;
 
-  /**
-   * Additional metadata about the organization
-   */
+  /** Optional custom metadata as key-value pairs */
   metadata?: Record<string, any>;
 
-  /**
-   * Creation timestamp
-   */
+  /** Creation timestamp (ISO 8601), automatically set by the system */
   createdAt: string;
 
-  /**
-   * Last update timestamp
-   */
+  /** Last update timestamp (ISO 8601), automatically updated on changes */
   updatedAt: string;
 
-  /**
-   * Deletion timestamp, if applicable
-   */
+  /** Optional deletion timestamp (ISO 8601) for soft-deleted resources */
   deletedAt?: string;
 }
 

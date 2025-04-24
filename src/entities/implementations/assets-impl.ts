@@ -10,30 +10,8 @@ import { Observability } from '../../util/observability/observability';
 import { AssetsService } from '../assets';
 
 /**
- * Implementation of the AssetsService interface
- *
- * This class provides the concrete implementation of the AssetsService interface,
- * delegating HTTP communication to the provided API client while focusing on business logic.
- * It handles validation, error handling, observability, and pagination.
- *
- * Assets represent the currencies, securities, or other financial instruments that
- * can be held in accounts within the Midaz system. Each asset has a unique code,
- * a name, and optional metadata.
- *
+ * @inheritdoc
  * @implements {AssetsService}
- *
- * @example
- * ```typescript
- * // Creating an instance (typically done through dependency injection)
- * const apiClient = new HttpAssetApiClient(httpClient, urlBuilder);
- * const assetsService = new AssetsServiceImpl(apiClient);
- *
- * // Using the service to list assets
- * const assets = await assetsService.listAssets(
- *   "org_123",
- *   "ldg_456"
- * );
- * ```
  */
 export class AssetsServiceImpl implements AssetsService {
   /**
@@ -64,15 +42,7 @@ export class AssetsServiceImpl implements AssetsService {
   }
 
   /**
-   * Lists assets with optional filters
-   *
-   * Retrieves a paginated list of assets within the specified organization and ledger.
-   * The results can be filtered, sorted, and paginated using the options parameter.
-   *
-   * @param orgId - Organization ID that owns the assets
-   * @param ledgerId - Ledger ID that contains the assets
-   * @param opts - List options for pagination, sorting, and filtering
-   * @returns Promise resolving to a paginated list of assets
+   * @inheritdoc
    */
   public async listAssets(
     orgId: string,
@@ -114,15 +84,7 @@ export class AssetsServiceImpl implements AssetsService {
   }
 
   /**
-   * Gets an asset by ID
-   *
-   * Retrieves a single asset by its unique identifier within the specified
-   * organization and ledger.
-   *
-   * @param orgId - Organization ID that owns the asset
-   * @param ledgerId - Ledger ID that contains the asset
-   * @param id - Asset ID to retrieve
-   * @returns Promise resolving to the asset
+   * @inheritdoc
    */
   public async getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset> {
     // Create a span for tracing this operation
@@ -155,16 +117,7 @@ export class AssetsServiceImpl implements AssetsService {
   }
 
   /**
-   * Creates a new asset
-   *
-   * Creates a new asset within the specified organization and ledger using
-   * the provided asset details. The asset will be initialized with the
-   * specified properties and assigned a unique identifier.
-   *
-   * @param orgId - Organization ID that will own the asset
-   * @param ledgerId - Ledger ID that will contain the asset
-   * @param input - Asset creation input with required properties
-   * @returns Promise resolving to the created asset
+   * @inheritdoc
    */
   public async createAsset(
     orgId: string,
@@ -205,17 +158,7 @@ export class AssetsServiceImpl implements AssetsService {
   }
 
   /**
-   * Updates an existing asset
-   *
-   * Updates the properties of an existing asset within the specified
-   * organization and ledger. Only the properties included in the input
-   * will be modified; others will remain unchanged.
-   *
-   * @param orgId - Organization ID that owns the asset
-   * @param ledgerId - Ledger ID that contains the asset
-   * @param id - Asset ID to update
-   * @param input - Asset update input with properties to change
-   * @returns Promise resolving to the updated asset
+   * @inheritdoc
    */
   public async updateAsset(
     orgId: string,
@@ -261,17 +204,7 @@ export class AssetsServiceImpl implements AssetsService {
   }
 
   /**
-   * Deletes an asset
-   *
-   * Deletes an asset from the specified organization and ledger.
-   * This operation may be restricted if the asset is in use by accounts
-   * or has associated transactions. In many cases, assets are soft-deleted
-   * (marked as deleted but retained in the system) to maintain audit history.
-   *
-   * @param orgId - Organization ID that owns the asset
-   * @param ledgerId - Ledger ID that contains the asset
-   * @param id - Asset ID to delete
-   * @returns Promise that resolves when the asset is deleted
+   * @inheritdoc
    */
   public async deleteAsset(orgId: string, ledgerId: string, id: string): Promise<void> {
     // Create a span for tracing this operation
