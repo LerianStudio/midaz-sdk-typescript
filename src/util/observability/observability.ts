@@ -42,23 +42,25 @@ export interface ObservabilityOptions {
   collectorEndpoint?: string;
 }
 
+// Import ConfigService
+import { ConfigService } from '../config';
+
 /**
  * Default observability options
  * @internal
  */
-const DEFAULT_OBSERVABILITY_OPTIONS: ObservabilityOptions = {
-  enableTracing: process.env.MIDAZ_ENABLE_TRACING
-    ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-    : false,
-  enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-    ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-    : false,
-  enableLogging: process.env.MIDAZ_ENABLE_LOGGING
-    ? process.env.MIDAZ_ENABLE_LOGGING.toLowerCase() === 'true'
-    : false,
-  serviceName: process.env.MIDAZ_SERVICE_NAME || 'midaz-typescript-sdk',
-  collectorEndpoint: process.env.MIDAZ_COLLECTOR_ENDPOINT || undefined,
-};
+function getDefaultObservabilityOptions(): ObservabilityOptions {
+  const configService = ConfigService.getInstance();
+  const observabilityConfig = configService.getObservabilityConfig();
+  
+  return {
+    enableTracing: observabilityConfig.enableTracing,
+    enableMetrics: observabilityConfig.enableMetrics,
+    enableLogging: observabilityConfig.enableLogging,
+    serviceName: observabilityConfig.serviceName,
+    collectorEndpoint: observabilityConfig.collectorEndpoint,
+  };
+}
 
 /**
  * Represents a span in a trace
@@ -183,9 +185,11 @@ export class Observability {
    * @param options - Observability configuration options
    */
   constructor(options?: Partial<ObservabilityOptions>) {
-    // Apply defaults from environment variables first, then override with provided options
+    // Get default options from ConfigService and override with provided options
+    const defaultOptions = getDefaultObservabilityOptions();
+    
     this.options = {
-      ...DEFAULT_OBSERVABILITY_OPTIONS,
+      ...defaultOptions,
       ...options,
     };
 

@@ -201,6 +201,8 @@ export * from './util/observability';
 
 export * from './util/validation';
 
+export * from './util/config';
+
 // ------------------------------
 // Builder Pattern
 // ------------------------------

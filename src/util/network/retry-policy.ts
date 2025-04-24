@@ -40,24 +40,24 @@ export interface RetryOptions {
   retryCondition?: (error: Error) => boolean;
 }
 
+// Import ConfigService
+import { ConfigService } from '../config';
+
 /**
  * Default retry options
  * @internal
  */
-const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: process.env.MIDAZ_RETRY_MAX_RETRIES
-    ? parseInt(process.env.MIDAZ_RETRY_MAX_RETRIES, 10)
-    : 3,
-  initialDelay: process.env.MIDAZ_RETRY_INITIAL_DELAY
-    ? parseInt(process.env.MIDAZ_RETRY_INITIAL_DELAY, 10)
-    : 100,
-  maxDelay: process.env.MIDAZ_RETRY_MAX_DELAY
-    ? parseInt(process.env.MIDAZ_RETRY_MAX_DELAY, 10)
-    : 1000,
-  retryableStatusCodes: process.env.MIDAZ_RETRY_STATUS_CODES
-    ? process.env.MIDAZ_RETRY_STATUS_CODES.split(',').map((code) => parseInt(code.trim(), 10))
-    : [408, 429, 500, 502, 503, 504],
-};
+function getDefaultRetryOptions(): RetryOptions {
+  const configService = ConfigService.getInstance();
+  const retryPolicyConfig = configService.getRetryPolicyConfig();
+  
+  return {
+    maxRetries: retryPolicyConfig.maxRetries,
+    initialDelay: retryPolicyConfig.initialDelay,
+    maxDelay: retryPolicyConfig.maxDelay,
+    retryableStatusCodes: retryPolicyConfig.retryableStatusCodes,
+  };
+}
 
 /**
  * Retry policy for handling transient failures
@@ -127,11 +127,12 @@ export class RetryPolicy {
    * @param options - Configuration options for the retry policy
    */
   constructor(options: RetryOptions = {}) {
-    this.maxRetries = options.maxRetries ?? DEFAULT_RETRY_OPTIONS.maxRetries!;
-    this.initialDelay = options.initialDelay ?? DEFAULT_RETRY_OPTIONS.initialDelay!;
-    this.maxDelay = options.maxDelay ?? DEFAULT_RETRY_OPTIONS.maxDelay!;
-    this.retryableStatusCodes =
-      options.retryableStatusCodes ?? DEFAULT_RETRY_OPTIONS.retryableStatusCodes!;
+    const defaultOptions = getDefaultRetryOptions();
+    // Use explicit type assertions to avoid type errors
+    this.maxRetries = (options.maxRetries !== undefined ? options.maxRetries : defaultOptions.maxRetries) as number;
+    this.initialDelay = (options.initialDelay !== undefined ? options.initialDelay : defaultOptions.initialDelay) as number;
+    this.maxDelay = (options.maxDelay !== undefined ? options.maxDelay : defaultOptions.maxDelay) as number;
+    this.retryableStatusCodes = (options.retryableStatusCodes || defaultOptions.retryableStatusCodes) as number[];
     this.retryCondition = options.retryCondition;
   }
 

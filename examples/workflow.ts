@@ -31,6 +31,7 @@ import {
   MidazClient,
   Organization,
   withErrorRecovery,
+  ConfigService,
 } from '../src';
 
 /**
@@ -56,14 +57,26 @@ async function main() {
   try {
     console.log('=== MIDAZ WORKFLOW EXAMPLE ===');
 
-    // Initialize client with local development settings
+    // Configure with ConfigService for local development settings
+    ConfigService.configure({
+      apiUrls: {
+        onboardingUrl: 'http://localhost:3000/v1',
+        transactionUrl: 'http://localhost:3001/v1',
+      },
+      httpClient: {
+        debug: false,
+      },
+      observability: {
+        enableTracing: false,
+        enableMetrics: false,
+        enableLogging: false,
+        serviceName: 'midaz-workflow-example',
+      },
+    });
+    
+    // Initialize client using the centralized configuration
     const client = new MidazClient({
       apiKey: 'teste', // Auth is off, so no matter what is here
-      baseUrls: {
-        onboarding: 'http://localhost:3000/v1',
-        transaction: 'http://localhost:3001/v1',
-      },
-      debug: false,
     });
 
     // Create organization

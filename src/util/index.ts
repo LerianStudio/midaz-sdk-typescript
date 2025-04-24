@@ -10,6 +10,8 @@ export * from './cache';
 
 export * from './concurrency';
 
+export * from './config';
+
 export * from './data';
 
 export * from './error';

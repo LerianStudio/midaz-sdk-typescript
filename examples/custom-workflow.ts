@@ -36,6 +36,9 @@ import {
   processError,
   logDetailedError,
   withErrorRecovery,
+  
+  // Configuration
+  ConfigService,
 } from '../src';
 
 // Import utility modules directly for demonstration
@@ -89,27 +92,31 @@ async function main() {
   try {
     console.log('=== MIDAZ CUSTOM WORKFLOW EXAMPLE ===');
 
-    // Initialize client with local development settings
-    const client = new MidazClient({
-      apiKey: 'test-key',
-      baseUrls: {
-        onboarding: 'http://localhost:3000/v1',
-        transaction: 'http://localhost:3001/v1',
+    // Configure with ConfigService for local development settings
+    ConfigService.configure({
+      apiUrls: {
+        onboardingUrl: 'http://localhost:3000/v1',
+        transactionUrl: 'http://localhost:3001/v1',
       },
-      debug: false,
-      // Set up custom observability
+      httpClient: {
+        debug: false,
+      },
       observability: {
         serviceName: 'custom-workflow-example',
         enableTracing: true,
         enableMetrics: true,
       },
-      // Set up custom retry policy
-      retries: {
+      retryPolicy: {
         maxRetries: 3,
         initialDelay: 200,
         maxDelay: 2000,
         retryableStatusCodes: [429, 500, 502, 503, 504],
       },
+    });
+    
+    // Initialize client using the centralized configuration
+    const client = new MidazClient({
+      apiKey: 'test-key',
     });
 
     // Set up custom cache for the workflow

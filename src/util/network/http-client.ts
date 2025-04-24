@@ -433,30 +433,32 @@ export class HttpClient {
    * @param config - Configuration options for the client
    */
   constructor(config: HttpClientConfig = {}) {
+    // Import ConfigService
+    // We need to use require here because of circular dependencies
+    const { ConfigService } = require('../config');
+    const configService = ConfigService.getInstance();
+    
+    // Get API URL configuration from ConfigService
+    const apiUrlConfig = configService.getApiUrlConfig();
+    // Get HTTP configuration from ConfigService with explicit type casting to avoid conflicts
+    const httpConfig = configService.getHttpClientConfig() as any;
+    
     // Initialize base URLs
     this.baseUrls = config.baseUrls || {};
 
-    // Use environment variables for base URLs if available
-    if (process.env.MIDAZ_ONBOARDING_URL) {
-      this.baseUrls.onboarding = process.env.MIDAZ_ONBOARDING_URL;
-    }
-    if (process.env.MIDAZ_TRANSACTION_URL) {
-      this.baseUrls.transaction = process.env.MIDAZ_TRANSACTION_URL;
-    }
-
-    // Set default base URLs if not provided
+    // Apply URLs from ConfigService if not provided in config
     if (!this.baseUrls.onboarding) {
-      this.baseUrls.onboarding = 'http://localhost:3000/v1';
+      this.baseUrls.onboarding = apiUrlConfig.onboardingUrl;
     }
     if (!this.baseUrls.transaction) {
-      this.baseUrls.transaction = 'http://localhost:3001/v1';
+      this.baseUrls.transaction = apiUrlConfig.transactionUrl;
     }
 
-    // Initialize timeout
-    this.timeout = config.timeout || 30000; // Default: 30 seconds
+    // Initialize timeout from ConfigService or config
+    this.timeout = config.timeout || httpConfig.timeout;
 
-    // Initialize API key
-    this.apiKey = config.apiKey || process.env.MIDAZ_API_KEY;
+    // Initialize API key from config or ConfigService
+    this.apiKey = config.apiKey || httpConfig.apiKey;
 
     // Initialize retry policy
     this.retryPolicy = config.retryPolicy || new RetryPolicy();
@@ -467,8 +469,8 @@ export class HttpClient {
     // Initialize observability
     this.observability = config.observability;
 
-    // Initialize debug mode
-    this.debug = config.debug || false;
+    // Initialize debug mode from config or ConfigService
+    this.debug = config.debug !== undefined ? config.debug : httpConfig.debug;
 
     // Initialize headers
     this.headers = config.headers || {};
@@ -477,12 +479,12 @@ export class HttpClient {
     this.useIdempotencyKey = config.useIdempotencyKey !== false;
     this.idempotencyKeyHeader = config.idempotencyKeyHeader || 'Idempotency-Key';
 
-    // Initialize connection management settings
-    this.keepAlive = config.keepAlive !== false;
-    this.maxSockets = config.maxSockets || 10;
-    this.keepAliveMsecs = config.keepAliveMsecs || 60000; // Default: 60 seconds
-    this.enableHttp2 = config.enableHttp2 !== false;
-    this.dnsCacheTtl = config.dnsCacheTtl !== undefined ? config.dnsCacheTtl : 300000; // Default: 5 minutes
+    // Initialize connection management settings from config or ConfigService
+    this.keepAlive = config.keepAlive !== undefined ? config.keepAlive : httpConfig.keepAlive;
+    this.maxSockets = config.maxSockets || httpConfig.maxSockets;
+    this.keepAliveMsecs = config.keepAliveMsecs || httpConfig.keepAliveMsecs;
+    this.enableHttp2 = config.enableHttp2 !== undefined ? config.enableHttp2 : httpConfig.enableHttp2;
+    this.dnsCacheTtl = config.dnsCacheTtl !== undefined ? config.dnsCacheTtl : httpConfig.dnsCacheTtl;
     this.tlsOptions = config.tlsOptions;
 
     // Initialize connection pooling with agents
