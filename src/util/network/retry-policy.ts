@@ -1,0 +1,241 @@
+/**
+ * @file Retry policy implementation for the Midaz SDK
+ * @description Provides configurable retry logic with exponential backoff for API requests
+ */
+
+import { MidazError } from '../error';
+
+/**
+ * Retry configuration options for controlling retry behavior
+ */
+export interface RetryOptions {
+  /**
+   * Maximum number of retry attempts
+   * @default 3
+   */
+  maxRetries?: number;
+
+  /**
+   * Initial delay between retries in milliseconds
+   * @default 100
+   */
+  initialDelay?: number;
+
+  /**
+   * Maximum delay between retries in milliseconds
+   * @default 1000
+   */
+  maxDelay?: number;
+
+  /**
+   * HTTP status codes that should trigger a retry
+   * @default [408, 429, 500, 502, 503, 504]
+   */
+  retryableStatusCodes?: number[];
+
+  /**
+   * Custom function to determine if an error should trigger a retry
+   * This function will be called with the error object and should return true if the request should be retried
+   */
+  retryCondition?: (error: Error) => boolean;
+}
+
+/**
+ * Default retry options
+ * @internal
+ */
+const DEFAULT_RETRY_OPTIONS: RetryOptions = {
+  maxRetries: process.env.MIDAZ_RETRY_MAX_RETRIES
+    ? parseInt(process.env.MIDAZ_RETRY_MAX_RETRIES, 10)
+    : 3,
+  initialDelay: process.env.MIDAZ_RETRY_INITIAL_DELAY
+    ? parseInt(process.env.MIDAZ_RETRY_INITIAL_DELAY, 10)
+    : 100,
+  maxDelay: process.env.MIDAZ_RETRY_MAX_DELAY
+    ? parseInt(process.env.MIDAZ_RETRY_MAX_DELAY, 10)
+    : 1000,
+  retryableStatusCodes: process.env.MIDAZ_RETRY_STATUS_CODES
+    ? process.env.MIDAZ_RETRY_STATUS_CODES.split(',').map((code) => parseInt(code.trim(), 10))
+    : [408, 429, 500, 502, 503, 504],
+};
+
+/**
+ * Retry policy for handling transient failures
+ *
+ * This class provides configurable retry logic with exponential backoff
+ * for API requests that fail due to transient issues.
+ *
+ * @example
+ * ```typescript
+ * // Create a retry policy with custom options
+ * const retryPolicy = new RetryPolicy({
+ *   maxRetries: 5,
+ *   initialDelay: 200,
+ *   maxDelay: 2000,
+ *   retryableStatusCodes: [429, 500, 503]
+ * });
+ *
+ * // Use the retry policy to execute a function with retries
+ * try {
+ *   const result = await retryPolicy.execute(async () => {
+ *     const response = await fetch('https://api.example.com/data');
+ *     if (!response.ok) {
+ *       throw new Error(`HTTP error ${response.status}`);
+ *     }
+ *     return response.json();
+ *   });
+ *   console.log('Success:', result);
+ * } catch (error) {
+ *   console.error('Failed after retries:', error);
+ * }
+ * ```
+ */
+export class RetryPolicy {
+  /**
+   * Maximum number of retry attempts
+   * @private
+   */
+  private maxRetries: number;
+
+  /**
+   * Initial delay between retries in milliseconds
+   * @private
+   */
+  private initialDelay: number;
+
+  /**
+   * Maximum delay between retries in milliseconds
+   * @private
+   */
+  private maxDelay: number;
+
+  /**
+   * HTTP status codes that should trigger a retry
+   * @private
+   */
+  private retryableStatusCodes: number[];
+
+  /**
+   * Custom function to determine if an error should trigger a retry
+   * @private
+   */
+  private retryCondition?: (error: Error) => boolean;
+
+  /**
+   * Creates a new retry policy
+   *
+   * @param options - Configuration options for the retry policy
+   */
+  constructor(options: RetryOptions = {}) {
+    this.maxRetries = options.maxRetries ?? DEFAULT_RETRY_OPTIONS.maxRetries!;
+    this.initialDelay = options.initialDelay ?? DEFAULT_RETRY_OPTIONS.initialDelay!;
+    this.maxDelay = options.maxDelay ?? DEFAULT_RETRY_OPTIONS.maxDelay!;
+    this.retryableStatusCodes =
+      options.retryableStatusCodes ?? DEFAULT_RETRY_OPTIONS.retryableStatusCodes!;
+    this.retryCondition = options.retryCondition;
+  }
+
+  /**
+   * Executes a function with retry logic
+   *
+   * @param fn - Function to execute with retry logic
+   * @returns Promise resolving to the function's result
+   * @throws Error if all retry attempts fail
+   */
+  public async execute<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        // Execute the function
+        return await fn();
+      } catch (error) {
+        // Cast error to Error type
+        const err = error as Error;
+        lastError = err;
+
+        // Check if we've reached the maximum number of retries
+        if (attempt >= this.maxRetries) {
+          break;
+        }
+
+        // Check if the error is retryable
+        if (!this.isRetryable(err)) {
+          break;
+        }
+
+        // Calculate delay with exponential backoff
+        const delay = this.calculateDelay(attempt);
+
+        // Wait before retrying
+        await this.sleep(delay);
+      }
+    }
+
+    // If we've reached this point, all retry attempts have failed
+    throw lastError;
+  }
+
+  /**
+   * Checks if an error is retryable
+   *
+   * @param error - Error to check
+   * @returns Whether the error is retryable
+   * @private
+   */
+  private isRetryable(error: unknown): boolean {
+    // Check custom retry condition if provided
+    if (this.retryCondition && error instanceof Error) {
+      return this.retryCondition(error);
+    }
+
+    // Check if the error is a MidazError with a status code
+    if (error instanceof MidazError && error.statusCode) {
+      return this.retryableStatusCodes.includes(error.statusCode);
+    }
+
+    // Check for network errors
+    if (
+      error instanceof Error &&
+      error.message &&
+      typeof error.message === 'string' &&
+      (error.message.includes('network') ||
+        error.message.includes('timeout') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('ECONNRESET'))
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculates the delay for a retry attempt with exponential backoff
+   *
+   * @param attempt - Current attempt number (0-based)
+   * @returns Delay in milliseconds
+   * @private
+   */
+  private calculateDelay(attempt: number): number {
+    // Calculate delay with exponential backoff: initialDelay * 2^attempt
+    const exponentialDelay = this.initialDelay * Math.pow(2, attempt);
+
+    // Add jitter to prevent thundering herd problem
+    const jitter = Math.random() * 100;
+
+    // Ensure delay doesn't exceed maximum
+    return Math.min(exponentialDelay + jitter, this.maxDelay);
+  }
+
+  /**
+   * Sleeps for a specified duration
+   *
+   * @param ms - Duration in milliseconds
+   * @returns Promise that resolves after the specified duration
+   * @private
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}
