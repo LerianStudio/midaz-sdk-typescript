@@ -548,6 +548,6 @@ describe('Organization Model and Helper Functions', () => {
         const result = withAddress(input, complexAddress);
         
         expect(result.address).toEqual(complexAddress);
-        expect(result.address.line2).toBe('Suite 456');
+        expect(result.address!.line2).toBe('Suite 456');
     });
 });

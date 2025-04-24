@@ -90,6 +90,32 @@ export enum ErrorCode {
 }
 
 /**
+ * Transaction error categories
+ * 
+ * Specific error types for financial transactions
+ */
+export enum TransactionErrorCategory {
+  INSUFFICIENT_FUNDS = 'insufficient_funds',
+  DUPLICATE_TRANSACTION = 'duplicate_transaction',
+  ACCOUNT_FROZEN = 'account_frozen',
+  ACCOUNT_INACTIVE = 'account_inactive',
+  ASSET_MISMATCH = 'asset_mismatch',
+  NEGATIVE_BALANCE = 'negative_balance',
+  LIMIT_EXCEEDED = 'limit_exceeded',
+  INVALID_TRANSACTION = 'invalid_transaction',
+  ACCOUNT_NOT_FOUND = 'account_not_found',
+  UNAUTHORIZED_TRANSACTION = 'unauthorized_transaction',
+  TRANSACTION_REJECTED = 'transaction_rejected',
+  TRANSACTION_FAILED = 'transaction_failed',
+  CURRENCY_CONVERSION_ERROR = 'currency_conversion_error',
+  ACCOUNT_INELIGIBLE = 'account_ineligible',
+}
+
+// For backward compatibility
+export type TransactionErrorType = TransactionErrorCategory;
+export const TransactionErrorType = TransactionErrorCategory;
+
+/**
  * Base error class for all Midaz SDK errors
  *
  * This class extends the standard Error class with additional properties
@@ -172,15 +198,6 @@ export class MidazError extends Error {
    * Creates a new MidazError
    *
    * @param params - Error parameters
-   * @param params.category - Error category
-   * @param params.code - Error code
-   * @param params.message - Error message
-   * @param params.operation - Operation that was being performed
-   * @param params.resource - Resource type involved
-   * @param params.resourceId - Resource ID involved
-   * @param params.statusCode - HTTP status code
-   * @param params.requestId - API request ID
-   * @param params.cause - Cause of the error
    */
   constructor(params: {
     category: ErrorCategory;
@@ -215,25 +232,118 @@ export class MidazError extends Error {
 }
 
 /**
- * Detailed error information
- *
- * A standardized structure for error details, used for consistent error handling.
+ * Enhanced error information with all data needed for error handling
  */
-export interface ErrorDetails {
-  /** Error message */
+export interface EnhancedErrorInfo {
+  /** Error type or category */
+  type: string;
+
+  /** Error code if available */
+  code?: string;
+
+  /** Human-readable error message */
   message: string;
-  /** Error category */
-  category?: ErrorCategory;
-  /** Error code */
-  code?: ErrorCode;
-  /** HTTP status code */
+
+  /** HTTP status code if available */
   statusCode?: number;
-  /** Resource type */
+
+  /** Original error object */
+  originalError: unknown;
+
+  /** Additional error details if available */
+  details?: any;
+
+  /** Resource type involved in the error */
   resource?: string;
-  /** Resource ID */
+
+  /** Resource ID involved in the error */
   resourceId?: string;
-  /** Request ID for debugging */
+
+  /** Request ID if available */
   requestId?: string;
+
+  /** Transaction-specific error classification */
+  transactionErrorType?: TransactionErrorCategory;
+  
+  /** Error recovery recommendation */
+  recoveryRecommendation?: string;
+  
+  /** UI-friendly error message */
+  userMessage: string;
+  
+  /** Technical error details for logging */
+  technicalDetails: string;
+  
+  /** Whether the error is retryable */
+  isRetryable: boolean;
+  
+  /** Whether to show this error to the end user */
+  shouldShowUser: boolean;
+}
+
+/**
+ * Error recovery strategy options
+ */
+export interface ErrorRecoveryOptions {
+  /** Maximum number of retry attempts */
+  maxRetries?: number;
+  /** Initial delay in milliseconds before retrying */
+  initialDelay?: number;
+  /** Maximum delay in milliseconds between retries */
+  maxDelay?: number;
+  /** Multiplier to apply to delay after each retry */
+  backoffFactor?: number;
+  /** Optional custom backoff strategy function */
+  backoffStrategy?: (attempt: number, initialDelay: number, options: ErrorRecoveryOptions) => number;
+  /** Custom function to determine if an error is retryable */
+  retryCondition?: (error: unknown) => boolean;
+  /** Optional callback to run before each retry attempt */
+  onRetry?: (error: unknown, attempt: number) => void | Promise<void>;
+  /** Optional callback when retry attempts are exhausted */
+  onExhausted?: (error: unknown, attempts: number) => void | Promise<void>;
+}
+
+/**
+ * Type for operation execution result with status
+ */
+export interface OperationResult<T> {
+  /** Operation result, null if failed */
+  result: T | null;
+  /** Operation status */
+  status: 'success' | 'duplicate' | 'failed' | 'retried';
+  /** Enhanced error information if failed */
+  error?: EnhancedErrorInfo;
+  /** Number of attempts made */
+  attempts?: number;
+}
+
+/**
+ * Error handling options
+ */
+export interface ErrorHandlerOptions {
+  /** Whether to display errors to the user */
+  displayErrors?: boolean;
+  
+  /** Function to display errors to the user */
+  displayFn?: (message: string) => void;
+  
+  /** Whether to log errors */
+  logErrors?: boolean;
+  
+  /** Log level for error logging */
+  logLevel?: 'debug' | 'info' | 'warn' | 'error';
+  
+  /** Whether to rethrow errors after handling */
+  rethrow?: boolean;
+  
+  /** Default return value when not rethrowing errors */
+  defaultReturnValue?: any;
+  
+  /** Custom error message formatter */
+  formatMessage?: (errorInfo: EnhancedErrorInfo) => string;
+  
+  /** Whether to include stack traces in logs */
+  includeStackTrace?: boolean;
 }
 
 /**

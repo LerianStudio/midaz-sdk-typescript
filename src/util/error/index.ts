@@ -1,34 +1,39 @@
 /**
  * @file Error utilities barrel file
- * @description Re-exports all error-related utilities
+ * @description Exports all error-related utilities from consolidated error handling system
  */
 
-// Error types and interfaces
+// Export all error types and interfaces
 export * from './error-types';
 
-// Error factory functions
-export * from './error-factories';
-
-// Error type guards
-export * from './error-guards';
-
-// Error utility functions
+// Export all error utility functions  
 export * from './error-utils';
 
-// Error formatting functions
-export * from './error-formatting';
+// Export all error handler functions
+export * from './error-handler';
 
-// Error mapping functions
-export * from './error-mapping';
+// Import necessary types for the additional functions
+import { ErrorCategory, ErrorCode, MidazError } from './error-types';
+import { 
+  isMidazError, 
+  newValidationError 
+} from './error-utils';
 
-// Error classification utilities
-export * from './error-classification';
+/**
+ * Checks if an error is a cancellation error
+ */
+export const isCancellationError = (error: unknown): boolean => {
+  return isMidazError(error) && error.category === ErrorCategory.CANCELLATION;
+};
 
-// Error messaging utilities
-export * from './error-messaging';
-
-// Error recovery utilities
-export * from './error-recovery';
-
-// Error processing utilities
-export * from './error-processor';
+/**
+ * Creates a cancellation error
+ */
+export const newCancellationError = (message = 'Operation cancelled', params = {}): MidazError => {
+  return new MidazError({
+    message,
+    category: ErrorCategory.CANCELLATION,
+    code: ErrorCode.CANCELLED,
+    ...params
+  });
+};

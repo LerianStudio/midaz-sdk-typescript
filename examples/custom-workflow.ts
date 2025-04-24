@@ -33,7 +33,7 @@ import {
   // Error handling utilities
   createErrorHandler,
   executeTransaction,
-  getEnhancedErrorInfo,
+  processError,
   logDetailedError,
   withErrorRecovery,
 } from '../src';
@@ -588,7 +588,7 @@ async function main() {
   } catch (error) {
     console.error('\n❌ WORKFLOW ERROR:');
     // Use enhanced error handling
-    const errorInfo = getEnhancedErrorInfo(error);
+    const errorInfo = processError(error);
 
     // Log detailed error with context
     logDetailedError(error, {

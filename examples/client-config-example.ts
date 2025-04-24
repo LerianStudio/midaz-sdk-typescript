@@ -7,13 +7,10 @@
 
 import {
   // Client and configuration
-  MidazClient,
   createClientConfigBuilder,
-  createSandboxConfig,
   createLocalConfig,
-
-  // Entity types
-  Organization,
+  createSandboxConfig,
+  MidazClient
 } from '../src';
 
 /**
@@ -59,7 +56,7 @@ async function factoryExample() {
   console.log('\n=== EXAMPLE 2: FACTORY FUNCTIONS ===');
 
   // Create a client with sandbox configuration
-  const sandboxClient = new MidazClient(
+  const _sandboxClient = new MidazClient(
     createSandboxConfig('your-sandbox-key').withObservability({
       enableMetrics: true,
     })

@@ -23,7 +23,7 @@ import {
   executeTransaction,
   extractItems,
   formatAccountBalance,
-  getEnhancedErrorInfo,
+  processError,
   groupAccountsByAsset,
   isExternalAccount,
   Ledger,
@@ -711,7 +711,7 @@ async function listAccounts(
 ): Promise<void> {
   // Set up standard error handler for account listing operations
   const handleAccountsError = createErrorHandler({
-    logError: true,
+    logErrors: true,
     rethrow: false,
     formatMessage: (errorInfo) => `Error listing accounts: ${errorInfo.userMessage}`,
     defaultReturnValue: { items: [] },
@@ -817,7 +817,7 @@ async function listAccounts(
     } catch (error: any) {
       // This catch block should rarely be reached since we're using handleAccountsError
       // But we include it as a fallback
-      const errorInfo = getEnhancedErrorInfo(error);
+      const errorInfo = processError(error);
       console.error(
         `  ❌ Error listing ${ledgerName.toLowerCase()} accounts: ${errorInfo.userMessage}`
       );
@@ -987,7 +987,7 @@ async function displayBalances(
         });
       }
     } catch (error: any) {
-      const errorInfo = getEnhancedErrorInfo(error);
+      const errorInfo = processError(error);
       console.error(
         `  ❌ Error fetching ${ledgerName.toLowerCase()} balances: ${errorInfo.userMessage}`
       );
@@ -1004,7 +1004,7 @@ async function displayBalances(
       '\n  Note: If external accounts are not displayed, they may require special API privileges or differ from standard @external/ASSET format'
     );
   } catch (error: any) {
-    const errorInfo = getEnhancedErrorInfo(error);
+    const errorInfo = processError(error);
     console.error(`  ❌ Error fetching balances: ${errorInfo.userMessage}`);
   }
 }
@@ -1207,7 +1207,7 @@ async function setupAdditionalEntities(
  */
 function handleError(error: any): void {
   // Get comprehensive error information
-  const errorInfo = getEnhancedErrorInfo(error);
+  const errorInfo = processError(error);
 
   // Log detailed error information for debugging
   logDetailedError(error, {

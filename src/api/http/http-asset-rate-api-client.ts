@@ -5,8 +5,13 @@
 
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
 import { validateUpdateAssetRateInput } from '../../models/validators/asset-rate-validator';
-import { newNetworkError, newNotFoundError } from '../../util/error/error-factories';
-import { ErrorCategory, ErrorCode, MidazError } from '../../util/error/error-types';
+import { 
+  newNetworkError, 
+  newNotFoundError, 
+  ErrorCategory, 
+  ErrorCode, 
+  MidazError 
+} from '../../util/error';
 import { HttpClient } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';
 import { ValidationError } from '../../util/validation';

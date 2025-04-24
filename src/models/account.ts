@@ -516,3 +516,31 @@ export class UpdateAccountBuilderImpl
 export function createUpdateAccountBuilder(): UpdateAccountBuilder {
   return new UpdateAccountBuilderImpl({});
 }
+
+// Compatibility factory functions for backward compatibility
+/**
+ * Creates a new account input object
+ * @deprecated Use createAccountBuilder instead
+ */
+export function newCreateAccountInput(
+  name: string,
+  assetCode: string,
+  type: AccountType
+): CreateAccountInput {
+  return createAccountBuilder(name, assetCode, type).build();
+}
+
+/**
+ * Creates a new account input object with alias
+ * @deprecated Use createAccountBuilder instead
+ */
+export function newCreateAccountInputWithAlias(
+  name: string,
+  assetCode: string,
+  type: AccountType,
+  alias: string
+): CreateAccountInput {
+  return createAccountBuilder(name, assetCode, type)
+    .withAlias(alias)
+    .build();
+}
