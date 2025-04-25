@@ -1,6 +1,5 @@
 /**
- * @file Assets service implementation for the Midaz SDK
- * @description Implements the AssetsService interface for managing assets within the Midaz system
+ * Assets service implementation
  */
 
 import { AssetApiClient } from '../../api/interfaces/asset-api-client';
@@ -10,21 +9,16 @@ import { Observability } from '../../util/observability/observability';
 import { AssetsService } from '../assets';
 
 /**
- * @inheritdoc
- * @implements {AssetsService}
+ * Implementation of the AssetsService interface
  */
 export class AssetsServiceImpl implements AssetsService {
-  /**
-   * Observability instance for tracing and metrics
-   * @private
-   */
+  /** Observability instance */
   private readonly observability: Observability;
 
   /**
    * Creates a new AssetsServiceImpl
-   *
-   * @param apiClient - API client for asset-related operations
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
+   * @param apiClient API client for asset operations
+   * @param observability Optional observability provider
    */
   constructor(private readonly apiClient: AssetApiClient, observability?: Observability) {
     // Initialize observability with service name
@@ -41,9 +35,7 @@ export class AssetsServiceImpl implements AssetsService {
       });
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async listAssets(
     orgId: string,
     ledgerId: string,
@@ -83,9 +75,7 @@ export class AssetsServiceImpl implements AssetsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('getAsset');
@@ -116,9 +106,7 @@ export class AssetsServiceImpl implements AssetsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async createAsset(
     orgId: string,
     ledgerId: string,
@@ -157,9 +145,7 @@ export class AssetsServiceImpl implements AssetsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async updateAsset(
     orgId: string,
     ledgerId: string,
@@ -203,9 +189,7 @@ export class AssetsServiceImpl implements AssetsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async deleteAsset(orgId: string, ledgerId: string, id: string): Promise<void> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('deleteAsset');

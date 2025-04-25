@@ -1,10 +1,10 @@
 /**
- * @file Entity factory
- * @description Centralized access point to all entity services
+ * Entity factory - Centralized access point to all entity services
  */
 
 import { ApiFactory } from '../api/api-factory';
 import { MidazConfig } from '../client';
+import { ConfigService } from '../util/config';
 import { HttpClient } from '../util/network/http-client';
 import { Observability } from '../util/observability/observability';
 
@@ -12,6 +12,13 @@ import { AccountsService } from './accounts';
 import { AssetRatesService } from './asset-rates';
 import { AssetsService } from './assets';
 import { BalancesService } from './balances';
+import { LedgersService } from './ledgers';
+import { OperationsService } from './operations';
+import { OrganizationsService } from './organizations';
+import { PortfoliosService } from './portfolios';
+import { SegmentsService } from './segments';
+import { TransactionsService } from './transactions';
+
 import { AccountsServiceImpl } from './implementations/accounts-impl';
 import { AssetRatesServiceImpl } from './implementations/asset-rates-impl';
 import { AssetsServiceImpl } from './implementations/assets-impl';
@@ -22,12 +29,6 @@ import { OrganizationsServiceImpl } from './implementations/organizations-impl';
 import { PortfoliosServiceImpl } from './implementations/portfolios-impl';
 import { SegmentsServiceImpl } from './implementations/segments-impl';
 import { TransactionsServiceImpl } from './implementations/transactions-impl';
-import { LedgersService } from './ledgers';
-import { OperationsService } from './operations';
-import { OrganizationsService } from './organizations';
-import { PortfoliosService } from './portfolios';
-import { SegmentsService } from './segments';
-import { TransactionsService } from './transactions';
 
 /**
  * Entity factory providing access to all entity service interfaces
@@ -40,50 +41,54 @@ import { TransactionsService } from './transactions';
  * ```
  */
 export class Entity {
-  /** Service for managing organizations */
+  /** Organizations service */
   public readonly organizations: OrganizationsService;
 
-  /** Service for managing accounts */
+  /** Accounts service */
   public readonly accounts: AccountsService;
 
-  /** Service for managing ledgers */
+  /** Ledgers service */
   public readonly ledgers: LedgersService;
 
-  /** Service for managing transactions */
+  /** Transactions service */
   public readonly transactions: TransactionsService;
 
-  /** Service for managing assets */
+  /** Assets service */
   public readonly assets: AssetsService;
 
-  /** Service for managing balances */
+  /** Balances service */
   public readonly balances: BalancesService;
 
-  /** Service for managing portfolios */
+  /** Portfolios service */
   public readonly portfolios: PortfoliosService;
 
-  /** Service for managing segments */
+  /** Segments service */
   public readonly segments: SegmentsService;
 
-  /** Service for managing operations */
+  /** Operations service */
   public readonly operations: OperationsService;
 
-  /** Service for managing asset rates */
+  /** Asset rates service */
   public readonly assetRates: AssetRatesService;
 
-  /** API factory for creating API clients @private */
+  /** API factory for creating API clients */
   private readonly apiFactory: ApiFactory;
 
-  /** Observability instance for tracing and metrics @private */
+  /** Observability instance */
   private readonly observability: Observability;
 
-  /** Creates a new Entity instance with all service interfaces */
+  /**
+   * Creates a new Entity instance with all service interfaces
+   * @param httpClient HTTP client instance
+   * @param config Midaz configuration (optional)
+   * @param observability Observability instance (optional)
+   */
   constructor(
     private readonly httpClient: HttpClient,
     config?: MidazConfig,
     observability?: Observability
   ) {
-    // Import ConfigService
-    const { ConfigService } = require('../util/config');
+    // Initialize ConfigService
     const configService = ConfigService.getInstance();
     
     // Initialize observability using ConfigService
@@ -104,8 +109,6 @@ export class Entity {
     // Create API factory
     this.apiFactory = new ApiFactory(httpClient, initialConfig, this.observability);
 
-    // Initialize services with API clients from the factory
-    // Services that have been migrated to the new pattern
     this.transactions = new TransactionsServiceImpl(
       this.apiFactory.createTransactionApiClient(),
       this.observability
@@ -123,7 +126,6 @@ export class Entity {
 
     this.assets = new AssetsServiceImpl(this.apiFactory.createAssetApiClient(), this.observability);
 
-    // Services migrated to the new pattern
     this.balances = new BalancesServiceImpl(
       this.apiFactory.createBalanceApiClient(),
       this.observability
@@ -144,7 +146,6 @@ export class Entity {
       this.observability
     );
 
-    // All services now use the API client pattern
     this.operations = new OperationsServiceImpl(
       this.apiFactory.createOperationApiClient(),
       this.observability
@@ -156,26 +157,26 @@ export class Entity {
     );
   }
 
-  /** Configures all entity services with the provided configuration */
+  /**
+   * Configures all entity services with the provided configuration
+   * @param config Midaz configuration
+   */
   public configure(config: MidazConfig): void {
-    // Since we can't reassign the readonly properties, we need to update the
-    // underlying URL configuration in the httpClient
     this.httpClient.updateConfig({
       baseUrls: config.baseUrls || {},
       apiKey: config.authToken || config.apiKey,
       timeout: config.timeout,
     });
 
-    // The httpClient is used by all API clients, so this will update
-    // the configuration for all service implementations
-
-    // Log the configuration update for debugging purposes
     if (config.debug) {
       console.debug('Entity services configured with updated settings');
     }
   }
 
-  /** Returns the HTTP client used by the entity */
+  /**
+   * Returns the HTTP client used by the entity
+   * @returns HTTP client instance
+   */
   public getHttpClient(): HttpClient {
     return this.httpClient;
   }

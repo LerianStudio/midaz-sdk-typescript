@@ -1,6 +1,5 @@
 /**
- * @file Accounts service implementation
- * @description Implements the AccountsService interface
+ * Accounts service implementation
  */
 
 import { AccountApiClient } from '../../api/interfaces/account-api-client';
@@ -10,14 +9,17 @@ import { Observability } from '../../util/observability/observability';
 import { AccountsService } from '../accounts';
 
 /**
- * @inheritdoc
- * @implements {AccountsService}
+ * Implementation of the AccountsService interface
  */
 export class AccountsServiceImpl implements AccountsService {
-  /** Observability instance for tracing and metrics @private */
+  /** Observability instance */
   private readonly observability: Observability;
 
-  /** Creates a new AccountsServiceImpl */
+  /**
+   * Creates a new AccountsServiceImpl
+   * @param accountApiClient API client for account operations
+   * @param observability Optional observability instance
+   */
   constructor(
     private readonly accountApiClient: AccountApiClient,
     observability?: Observability
@@ -29,9 +31,7 @@ export class AccountsServiceImpl implements AccountsService {
     });
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async listAccounts(
     orgId: string,
     ledgerId: string,
@@ -65,9 +65,7 @@ export class AccountsServiceImpl implements AccountsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async getAccount(orgId: string, ledgerId: string, id: string): Promise<Account> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('getAccount');
@@ -90,9 +88,7 @@ export class AccountsServiceImpl implements AccountsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async createAccount(
     orgId: string,
     ledgerId: string,
@@ -122,9 +118,7 @@ export class AccountsServiceImpl implements AccountsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async updateAccount(
     orgId: string,
     ledgerId: string,
@@ -152,9 +146,7 @@ export class AccountsServiceImpl implements AccountsService {
     }
   }
 
-  /**
-   * @inheritdoc
-   */
+  /** @inheritdoc */
   public async deleteAccount(orgId: string, ledgerId: string, id: string): Promise<void> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('deleteAccount');

@@ -1,41 +1,19 @@
 /**
- * @file Asset rates service implementation for the Midaz SDK
- * @description Implements the AssetRatesService interface for managing asset exchange rates within the Midaz system
+ * Asset rates service implementation
  */
 
 import { AssetRateApiClient } from '../../api/interfaces/asset-rate-api-client';
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
 import { Observability } from '../../util/observability/observability';
-import { ValidationError } from '../../util/validation';
 import { AssetRatesService } from '../asset-rates';
 
 /**
- * Implementation of the AssetRatesService interface.
+ * Implementation of the AssetRatesService interface
  *
- * This class provides the concrete implementation of the AssetRatesService interface,
- * handling asset rate-related business logic and delegating API communication to the
- * AssetRateApiClient. It validates inputs and transforms responses as needed.
- *
- * Asset rates represent the exchange rates between different assets within the Midaz system.
- * Each rate defines the conversion factor from one asset to another, which is essential for
- * multi-currency ledgers and cross-asset transactions.
+ * Handles asset rate-related business logic and delegates API communication
+ * to the AssetRateApiClient.
  *
  * @implements {AssetRatesService}
- *
- * @example
- * ```typescript
- * // Creating an instance (typically done by the MidazClient)
- * const assetRateApiClient = apiFactory.createAssetRateApiClient();
- * const assetRatesService = new AssetRatesServiceImpl(assetRateApiClient);
- *
- * // Using the service to get an exchange rate
- * const rate = await assetRatesService.getAssetRate(
- *   "org_123",
- *   "ldg_456",
- *   "USD",
- *   "EUR"
- * );
- * ```
  */
 export class AssetRatesServiceImpl implements AssetRatesService {
   /**
@@ -45,10 +23,10 @@ export class AssetRatesServiceImpl implements AssetRatesService {
   private readonly observability: Observability;
 
   /**
-   * Creates a new AssetRatesServiceImpl.
+   * Creates a new AssetRatesServiceImpl
    *
-   * @param assetRateApiClient - Asset rate API client for making API requests
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
+   * @param assetRateApiClient Asset rate API client for making API requests
+   * @param observability Optional observability provider
    */
   constructor(
     private readonly assetRateApiClient: AssetRateApiClient,
@@ -69,15 +47,12 @@ export class AssetRatesServiceImpl implements AssetRatesService {
   }
 
   /**
-   * Retrieves the exchange rate between two assets.
+   * Retrieves the exchange rate between two assets
    *
-   * Gets the current exchange rate from a source asset to a destination asset.
-   * If the source and destination assets are the same, a rate of 1.0 is returned.
-   *
-   * @param organizationId - The ID of the organization that owns the ledger
-   * @param ledgerId - The ID of the ledger that contains the assets
-   * @param sourceAssetCode - The code of the source asset (e.g., "USD")
-   * @param destinationAssetCode - The code of the destination asset (e.g., "EUR")
+   * @param organizationId Organization ID
+   * @param ledgerId Ledger ID
+   * @param sourceAssetCode Source asset code (e.g., "USD")
+   * @param destinationAssetCode Destination asset code (e.g., "EUR")
    * @returns Promise resolving to the asset rate
    */
   public async getAssetRate(
@@ -114,15 +89,11 @@ export class AssetRatesServiceImpl implements AssetRatesService {
   }
 
   /**
-   * Creates a new asset rate or updates an existing one.
+   * Creates a new asset rate or updates an existing one
    *
-   * Creates a new exchange rate between the specified assets or updates an
-   * existing rate if one already exists for the same asset pair. This method
-   * allows for setting time-based rates with effective and expiration dates.
-   *
-   * @param organizationId - The ID of the organization that owns the ledger
-   * @param ledgerId - The ID of the ledger that contains the assets
-   * @param input - The asset rate details including source asset, destination asset, and rate
+   * @param organizationId Organization ID
+   * @param ledgerId Ledger ID
+   * @param input Asset rate details
    * @returns Promise resolving to the created or updated asset rate
    */
   public async createOrUpdateAssetRate(

@@ -45,8 +45,25 @@ module.exports = {
           {
             pattern: '@midaz/**',
             group: 'internal'
+          },
+          // Service interfaces should come before implementations
+          {
+            pattern: './!(implementations)/**',
+            group: 'sibling',
+            position: 'before'
+          },
+          {
+            pattern: './*.{ts,js}',
+            group: 'sibling',
+            position: 'before'
+          },
+          {
+            pattern: './implementations/**',
+            group: 'sibling',
+            position: 'after'
           }
         ],
+        pathGroupsExcludedImportTypes: ['builtin', 'external', 'internal', 'parent'],
         'newlines-between': 'always',
         alphabetize: {
           order: 'asc',
