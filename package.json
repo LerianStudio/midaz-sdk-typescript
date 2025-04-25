@@ -23,6 +23,11 @@
     "api",
     "typescript"
   ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE.md"
+  ],
   "author": "Lerian Studio",
   "license": "Apache-2.0",
   "devDependencies": {
