@@ -1,33 +1,23 @@
 /** Common models, shared data structures, enums, and constants */
 
-/** Base marker interface for all API responses */
+/** 
+ * Base marker interface for all API responses 
+ * This is used for type checking and doesn't contain any properties
+ */
 export interface ApiResponse {
-  // Base marker interface
+  readonly __apiResponse?: never;
 }
 
-/** Marker interface for models that can be built using builder pattern */
+/** 
+ * Marker interface for models that can be built using builder pattern 
+ * This is used for type checking and doesn't contain any properties
+ */
 export interface BuildableModel {
-  // Base marker interface
+  readonly __buildable?: never;
 }
 
 /**
  * Options for listing resources with pagination, sorting, and filtering
- *
- * @example
- * ```typescript
- * // First page of accounts sorted by creation date
- * const options: ListOptions = {
- *   limit: 25,
- *   sortBy: "createdAt",
- *   sortDirection: "desc"
- * };
- * 
- * // Next page using a cursor
- * const nextPage: ListOptions = {
- *   limit: 25,
- *   cursor: "eyJpZCI6ImFjY18wMUg5WlFDSzNWUDZXUzJFWjVKUUtENUUxUyJ9"
- * };
- * ```
  */
 export interface ListOptions {
   /** Maximum number of items to return per page */
@@ -48,24 +38,15 @@ export interface ListOptions {
 
 /**
  * Metadata for paginated responses
- *
- * @example
- * ```typescript
- * const metadata: ListMetadata = {
- *   total: 157,
- *   count: 25,
- *   nextCursor: "eyJpZCI6ImFjY18wMUg5WlFDSzNWUDZXUzJFWjVKUUtENUUxUyJ9"
- * };
- * ```
  */
 export interface ListMetadata {
-  /** Total number of items matching the query across all pages */
+  /** Total number of items available */
   total: number;
 
-  /** Cursor for retrieving the next page (undefined if on last page) */
+  /** Cursor for retrieving the next page of results */
   nextCursor?: string;
 
-  /** Cursor for retrieving the previous page (undefined if on first page) */
+  /** Cursor for retrieving the previous page of results */
   prevCursor?: string;
 
   /** Number of items in the current page */
@@ -74,26 +55,10 @@ export interface ListMetadata {
 
 /**
  * Paginated response containing a list of items and pagination metadata
- *
  * @template T - The type of items in the list
- *
- * @example
- * ```typescript
- * const response: ListResponse<Account> = {
- *   items: [
- *     { id: "acc_123", name: "Operating Cash" },
- *     { id: "acc_456", name: "Petty Cash" }
- *   ],
- *   meta: {
- *     total: 157,
- *     count: 2,
- *     nextCursor: "eyJpZCI6ImFjY18wMUg5WlFDSzNWUDZXUzJFWjVKUUtENUUxUyJ9"
- *   }
- * };
- * ```
  */
-export interface ListResponse<T> extends ApiResponse {
-  /** Items for the current page of results */
+export interface ListResponse<T> {
+  /** Array of items in the current page */
   items: T[];
 
   /** Pagination metadata */
@@ -102,132 +67,133 @@ export interface ListResponse<T> extends ApiResponse {
 
 /**
  * Status information for a resource
- *
- * @example
- * ```typescript
- * const activeStatus: Status = {
- *   code: "ACTIVE",
- *   description: "Account is active and can be used",
- *   timestamp: "2023-09-15T14:30:00Z"
- * };
- * ```
  */
 export interface Status {
-  /** Status code identifier (e.g., "ACTIVE", "INACTIVE", "PENDING") */
+  /** Status code string */
   code: string;
 
-  /** Optional human-readable explanation of the current status */
+  /** Optional human-readable description of the status */
   description?: string;
 
-  /** ISO 8601 formatted date-time when the status was last updated */
+  /** Timestamp when the status was set or last updated */
   timestamp: string;
 }
 
 /**
  * Address for a physical location
- *
- * @example
- * ```typescript
- * const address: Address = {
- *   line1: "123 Main Street",
- *   line2: "Suite 456",
- *   city: "San Francisco",
- *   state: "CA",
- *   zipCode: "94105",
- *   country: "US"
- * };
- * ```
  */
 export interface Address {
-  /** First line of the address (street number and name, max 256 chars) */
+  /** First line of the address */
   line1: string;
 
-  /** Second line of the address (apartment, suite, unit, etc., max 256 chars) */
+  /** Optional second line of the address */
   line2?: string;
 
-  /** City name (max 128 chars) */
+  /** City name */
   city: string;
 
-  /** State or province name (max 128 chars) */
+  /** State or province */
   state: string;
 
-  /** Postal code (max 32 chars) */
+  /** Postal or ZIP code */
   zipCode: string;
 
-  /** ISO 3166-1 alpha-2 country code (e.g., "US", "CA") */
+  /** Country code (ISO 3166-1 alpha-2) */
   country: string;
 }
 
 /**
  * Common status codes for resources
- * 
- * @example
- * ```typescript
- * // Check if an account is active
- * if (account.status.code === StatusCode.ACTIVE) {
- *   // Proceed with transaction
- * } else {
- *   console.log(`Account is ${account.status.code}`);
- * }
- * ```
  */
 export enum StatusCode {
-  /** Active resource that can be used normally */
+  /** Resource is active and can be used */
   ACTIVE = 'ACTIVE',
 
-  /** Temporarily inactive resource */
+  /** Resource is inactive and cannot be used */
   INACTIVE = 'INACTIVE',
 
-  /** Resource awaiting activation or approval */
+  /** Resource is pending activation */
   PENDING = 'PENDING',
 
-  /** Resource that has been temporarily disabled */
+  /** Resource is suspended */
   SUSPENDED = 'SUSPENDED',
 
-  /** Resource marked as deleted (soft-delete) */
+  /** Resource is archived */
+  ARCHIVED = 'ARCHIVED',
+
+  /** Resource is deleted */
   DELETED = 'DELETED',
 
-  /** Permanently closed resource */
-  CLOSED = 'CLOSED',
+  /** Resource is locked */
+  LOCKED = 'LOCKED',
+
+  /** Resource is in error state */
+  ERROR = 'ERROR',
 }
 
 /**
- * Transaction status constants
- *
- * @example
- * ```typescript
- * // Check transaction status
- * if (transaction.status === TransactionStatus.PENDING) {
- *   await client.transactions.commit(transaction.id);
- * } else if (transaction.status === TransactionStatus.COMPLETED) {
- *   console.log("Transaction completed successfully");
- * }
- * ```
+ * Common error codes
  */
-export enum TransactionStatus {
-  /** Transaction that is not yet completed */
-  PENDING = 'pending',
+export enum ErrorCode {
+  /** Generic error */
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 
-  /** Successfully completed transaction */
-  COMPLETED = 'completed',
+  /** Authentication failed */
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
 
-  /** Transaction that failed to process */
-  FAILED = 'failed',
+  /** Authorization failed */
+  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
 
-  /** Transaction that was cancelled before being committed */
-  CANCELLED = 'cancelled',
+  /** Resource not found */
+  NOT_FOUND = 'NOT_FOUND',
+
+  /** Input validation failed */
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+
+  /** Rate limit exceeded */
+  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+
+  /** Service unavailable */
+  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
+
+  /** Request timeout */
+  TIMEOUT = 'TIMEOUT',
+
+  /** Conflict with existing resource */
+  CONFLICT = 'CONFLICT',
+}
+
+/**
+ * Common currency codes
+ */
+export enum CurrencyCode {
+  /** United States Dollar */
+  USD = 'USD',
+
+  /** Euro */
+  EUR = 'EUR',
+
+  /** British Pound */
+  GBP = 'GBP',
+
+  /** Japanese Yen */
+  JPY = 'JPY',
+
+  /** Canadian Dollar */
+  CAD = 'CAD',
+
+  /** Australian Dollar */
+  AUD = 'AUD',
+
+  /** Swiss Franc */
+  CHF = 'CHF',
+
+  /** Chinese Yuan */
+  CNY = 'CNY',
 }
 
 /**
  * Sort direction for listing operations
- *
- * @example
- * ```typescript
- * const options: ListOptions = {
- *   sortBy: "name",
- *   sortDirection: SortDirection.ASC
- * };
- * ```
  */
 export enum SortDirection {
   /** Ascending sort order (A→Z, 0→9) */
@@ -239,12 +205,6 @@ export enum SortDirection {
 
 /**
  * Pagination defaults for listing operations
- *
- * @example
- * ```typescript
- * const limit = options.limit || PaginationDefaults.DEFAULT_LIMIT;
- * const safeLimit = Math.min(requestedLimit, PaginationDefaults.MAX_LIMIT);
- * ```
  */
 export const PaginationDefaults = {
   /** Default number of items per page */
@@ -261,4 +221,4 @@ export const PaginationDefaults = {
 
   /** Default sort direction */
   DEFAULT_SORT_DIRECTION: SortDirection.DESC,
-};
+}

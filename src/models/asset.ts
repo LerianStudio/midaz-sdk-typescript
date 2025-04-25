@@ -1,124 +1,76 @@
 /**
- * @file Asset model definitions
- * @description Asset data structures and helper functions
+ * Asset model definitions
  */
 
-import { ListResponse, Status, StatusCode } from './common';
-import { BuildableModel, Builder, ModelBuilder } from './common-helpers';
+import { Status, StatusCode } from './common';
+import { Builder, ModelBuilder } from './common-helpers';
 
 /**
  * Represents an asset in a ledger system
- * 
- * Assets are units of value that can be tracked and transferred.
- * Types include currency, security, commodity, cryptocurrency, 
- * and loyalty points.
- * 
- * @example
- * ```typescript
- * const usdAsset: Asset = {
- *   id: "ast_123",
- *   name: "US Dollar",
- *   type: "CURRENCY",
- *   code: "USD",
- *   status: { code: "ACTIVE", timestamp: "2023-09-15T14:30:00Z" },
- *   ledgerId: "ldg_456",
- *   organizationId: "org_789",
- *   createdAt: "2023-09-15T14:30:00Z",
- *   updatedAt: "2023-09-15T14:30:00Z",
- *   metadata: { symbol: "$", decimalPlaces: 2 }
- * };
- * ```
  */
 export interface Asset {
   /** Unique system-generated identifier */
   id: string;
 
-  /** Human-readable name for the asset (max 256 characters) */
+  /** Human-readable name for the asset */
   name: string;
 
-  /** Asset classification (e.g., "currency", "crypto", "commodities") */
+  /** Asset classification */
   type: string;
 
-  /** Unique identifier code for the asset (e.g., "USD", "BTC", "AAPL") */
+  /** Unique identifier code for the asset */
   code: string;
 
   /** Current status determining whether the asset can be used in transactions */
   status: Status;
 
-  /** Ledger ID containing this asset, defining accounting boundaries */
+  /** Ledger ID containing this asset */
   ledgerId: string;
 
-  /** Organization ID that owns this asset, providing top-level access control */
+  /** Organization ID that owns this asset */
   organizationId: string;
 
-  /** Creation timestamp (ISO 8601), automatically set by the system */
+  /** Timestamp when the asset was created */
   createdAt: string;
 
-  /** Last update timestamp (ISO 8601), automatically updated on changes */
+  /** Timestamp when the asset was last updated */
   updatedAt: string;
 
-  /** Optional deletion timestamp (ISO 8601) for soft-deleted assets */
-  deletedAt?: string;
-
-  /** Optional custom metadata for additional asset information */
+  /** Custom metadata fields for the asset */
   metadata?: Record<string, any>;
 }
 
 /**
  * Input data for creating a new asset
- * 
- * @example
- * ```typescript
- * const createUsdInput: CreateAssetInput = {
- *   name: "US Dollar",
- *   code: "USD",
- *   type: "CURRENCY",
- *   metadata: { symbol: "$", decimalPlaces: 2 }
- * };
- * ```
  */
-export interface CreateAssetInput extends BuildableModel {
-  /** Required human-readable name for the asset (max 256 characters) */
+export interface CreateAssetInput {
+  /** Human-readable name for the asset */
   name: string;
 
-  /** Optional asset classification (defaults to system value if not specified) */
+  /** Asset classification */
   type?: string;
 
-  /** Required unique identifier code for the asset (e.g., "USD", "BTC") */
+  /** Unique identifier code for the asset */
   code: string;
 
-  /**
-   * Status represents the initial status of the asset
-   * Optional field that defaults to ACTIVE if not specified
-   */
+  /** Initial status code for the asset */
   status?: StatusCode;
 
-  /**
-   * Metadata contains additional custom data for the asset
-   * Optional field for storing application-specific data
-   */
+  /** Custom metadata fields for the asset */
   metadata?: Record<string, any>;
 }
 
 /**
  * Input data for updating an existing asset
- * 
- * @example
- * ```typescript
- * const updateInput: UpdateAssetInput = {
- *   name: "United States Dollar",
- *   metadata: { symbol: "$", decimalPlaces: 2 }
- * };
- * ```
  */
-export interface UpdateAssetInput extends BuildableModel {
-  /** Updated human-readable name for the asset (max 256 characters) */
+export interface UpdateAssetInput {
+  /** Updated human-readable name for the asset */
   name?: string;
 
-  /** Updated status code controlling whether the asset can be used */
+  /** Updated status code for the asset */
   status?: StatusCode;
 
-  /** Updated metadata (replaces entire metadata object if specified) */
+  /** Updated custom metadata fields for the asset */
   metadata?: Record<string, any>;
 }
 
@@ -126,10 +78,10 @@ export interface UpdateAssetInput extends BuildableModel {
 export interface AssetBuilder extends Builder<CreateAssetInput, AssetBuilder> {
   /** Set the name for the asset */
   withName(name: string): AssetBuilder;
-
+  
   /** Set the code for the asset */
   withCode(code: string): AssetBuilder;
-
+  
   /** Set the type for the asset */
   withType(type: string): AssetBuilder;
 }
@@ -137,35 +89,22 @@ export interface AssetBuilder extends Builder<CreateAssetInput, AssetBuilder> {
 /** Implementation of the AssetBuilder interface */
 export class AssetBuilderImpl
   extends ModelBuilder<CreateAssetInput, AssetBuilder>
-  implements AssetBuilder
-{
+  implements AssetBuilder {
   constructor(model: CreateAssetInput) {
     super(model);
   }
 
   withName(name: string): AssetBuilder {
-    if (!name) {
-      throw new Error('Asset name is required');
-    }
-
     this.model.name = name;
     return this;
   }
 
   withCode(code: string): AssetBuilder {
-    if (!code) {
-      throw new Error('Asset code is required');
-    }
-
     this.model.code = code;
     return this;
   }
 
   withType(type: string): AssetBuilder {
-    if (!type) {
-      throw new Error('Asset type is required');
-    }
-
     this.model.type = type;
     return this;
   }
@@ -173,66 +112,29 @@ export class AssetBuilderImpl
 
 /**
  * Creates a new asset builder with method chaining
- *
- * @example
- * ```typescript
- * const assetInput = createAssetBuilder("US Dollar", "USD")
- *   .withType("currency")
- *   .withMetadata({ symbol: "$", decimalPlaces: 2 })
- *   .withStatus(StatusCode.ACTIVE)
- *   .build();
- * ```
  */
 export function createAssetBuilder(name: string, code: string): AssetBuilder {
-  // Validate required fields
-  if (!name) {
-    throw new Error('Asset name is required');
-  }
-
-  if (!code) {
-    throw new Error('Asset code is required');
-  }
-
-  const input: CreateAssetInput = {
+  const model: CreateAssetInput = {
     name,
     code,
   };
-
-  return new AssetBuilderImpl(input);
+  return new AssetBuilderImpl(model);
 }
 
 /**
  * Creates a new asset builder with type field pre-filled
- *
- * @example
- * ```typescript
- * const assetInput = createAssetBuilderWithType("Bitcoin", "BTC", "crypto")
- *   .withMetadata({ symbol: "₿", decimalPlaces: 8 })
- *   .withStatus(StatusCode.ACTIVE)
- *   .build();
- * ```
  */
-export function createAssetBuilderWithType(name: string, code: string, type: string): AssetBuilder {
-  // Validate required fields
-  if (!name) {
-    throw new Error('Asset name is required');
-  }
-
-  if (!code) {
-    throw new Error('Asset code is required');
-  }
-
-  if (!type) {
-    throw new Error('Asset type is required');
-  }
-
-  const input: CreateAssetInput = {
+export function createAssetBuilderWithType(
+  name: string,
+  code: string,
+  type: string
+): AssetBuilder {
+  const model: CreateAssetInput = {
     name,
     code,
     type,
   };
-
-  return new AssetBuilderImpl(input);
+  return new AssetBuilderImpl(model);
 }
 
 /** Builder interface for constructing asset update objects */
@@ -244,17 +146,12 @@ export interface UpdateAssetBuilder extends Builder<UpdateAssetInput, UpdateAsse
 /** Implementation of the UpdateAssetBuilder interface */
 export class UpdateAssetBuilderImpl
   extends ModelBuilder<UpdateAssetInput, UpdateAssetBuilder>
-  implements UpdateAssetBuilder
-{
+  implements UpdateAssetBuilder {
   constructor(model: UpdateAssetInput) {
     super(model);
   }
 
   withName(name: string): UpdateAssetBuilder {
-    if (!name) {
-      throw new Error('Asset name is required');
-    }
-
     this.model.name = name;
     return this;
   }
@@ -262,106 +159,62 @@ export class UpdateAssetBuilderImpl
 
 /**
  * Creates a new asset update builder with method chaining
- *
- * @example
- * ```typescript
- * const assetUpdate = createUpdateAssetBuilder()
- *   .withName("United States Dollar")
- *   .withStatus(StatusCode.ACTIVE)
- *   .withMetadata({ symbol: "$", decimalPlaces: 2 })
- *   .build();
- * ```
  */
 export function createUpdateAssetBuilder(): UpdateAssetBuilder {
-  return new UpdateAssetBuilderImpl({});
+  const model: UpdateAssetInput = {};
+  return new UpdateAssetBuilderImpl(model);
 }
 
 /**
  * Creates a new CreateAssetInput with required fields
- *
- * @example
- * ```typescript
- * const assetInput = newCreateAssetInput("US Dollar", "USD");
- * 
- * // Further customize with helper methods
- * const customizedInput = withMetadata(assetInput, {
- *   symbol: "$", decimalPlaces: 2
- * });
- * ```
+ * @deprecated Use createAssetBuilder instead
  */
 export function newCreateAssetInput(name: string, code: string): CreateAssetInput {
-  return {
-    name,
-    code,
-  };
+  return { name, code };
 }
 
 /**
  * Creates a new asset input with name, code and type
- *
- * @example
- * ```typescript
- * const btcInput = newCreateAssetInputWithType(
- *   "Bitcoin",
- *   "BTC",
- *   "CRYPTOCURRENCY"
- * );
- * ```
+ * @deprecated Use createAssetBuilderWithType instead
  */
 export function newCreateAssetInputWithType(
   name: string,
   code: string,
   assetType: string
 ): CreateAssetInput {
-  return {
-    name,
-    code,
-    type: assetType,
-  };
+  return { name, code, type: assetType };
 }
 
 /**
  * Sets the status on a CreateAssetInput
- *
- * @example
- * ```typescript
- * const assetInput = newCreateAssetInput("Test Asset", "TEST");
- * const inactiveAsset = withStatus(assetInput, StatusCode.INACTIVE);
- * ```
  */
-export function withStatus(input: CreateAssetInput, status: StatusCode): CreateAssetInput {
-  input.status = status;
-  return input;
+export function withStatus<T extends { status?: StatusCode }>(
+  input: T,
+  status: StatusCode
+): T {
+  return { ...input, status };
 }
 
 /**
  * Sets metadata on an input object
- *
- * @example
- * ```typescript
- * const assetInput = newCreateAssetInput("Euro", "EUR");
- * const enhancedInput = withMetadata(assetInput, {
- *   symbol: "€", decimalPlaces: 2, isoCode: "EUR"
- * });
- * ```
  */
 export function withMetadata<T extends { metadata?: Record<string, any> }>(
   input: T,
   metadata: Record<string, any>
 ): T {
-  input.metadata = metadata;
-  return input;
+  return { ...input, metadata };
 }
 
-/** Creates an empty UpdateAssetInput for building update requests */
+/**
+ * Creates an empty UpdateAssetInput for building update requests
+ */
 export function newUpdateAssetInput(): UpdateAssetInput {
   return {};
 }
 
-/** Sets name on an UpdateAssetInput */
+/**
+ * Sets name on an UpdateAssetInput
+ */
 export function withName(input: UpdateAssetInput, name: string): UpdateAssetInput {
-  input.name = name;
-  return input;
+  return { ...input, name };
 }
-
-/** @see asset-rate.ts for asset rates functionality */
