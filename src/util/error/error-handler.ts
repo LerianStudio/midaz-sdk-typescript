@@ -1,6 +1,6 @@
 /**
- * @file Error handler for the Midaz SDK
- * @description Provides error handling and recovery functions
+ * @file Error handler
+ * @description Error handling and recovery functions
  */
 
 import type { LogLevel } from '../observability/logger';
@@ -31,9 +31,9 @@ const DEFAULT_RECOVERY_OPTIONS: ErrorRecoveryOptions = {
   retryCondition: isRetryableError,
 };
 
-/**
+/** 
  * Logs detailed error information for debugging
- *
+ * 
  * @param error - Error to log
  * @param context - Additional context information
  * @param logger - Custom logger function (defaults to console.error)
@@ -87,12 +87,7 @@ export function logDetailedError(
   logger('=========================');
 }
 
-/**
- * Creates a standardized error handler with configurable behavior
- * 
- * @param options - Error handler configuration options
- * @returns A function that handles errors according to the specified options
- */
+/** Creates a standardized error handler with configurable behavior */
 export function createErrorHandler(options?: ErrorHandlerOptions) {
   const {
     displayErrors = true,
@@ -146,13 +141,7 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
   };
 }
 
-/**
- * Handles a function that may throw errors with consistent error handling
- * 
- * @param fn - Function to execute
- * @param options - Error handler options
- * @returns Result of the function or default value if it fails
- */
+/** Handles a function that may throw errors with consistent error handling */
 export async function withErrorHandling<T>(
   fn: () => Promise<T>,
   options?: ErrorHandlerOptions
@@ -166,11 +155,8 @@ export async function withErrorHandling<T>(
   }
 }
 
-/**
- * Executes a function with automatic error recovery
- *
- * This function implements a retry mechanism with exponential backoff
- * for operations that may fail due to transient issues.
+/** 
+ * Executes a function with automatic error recovery (retry with exponential backoff)
  *
  * @param operation - Function to execute and potentially retry
  * @param options - Error recovery options
@@ -240,12 +226,8 @@ export async function withErrorRecovery<T>(
   throw lastError;
 }
 
-/**
+/** 
  * Safely executes an operation with advanced error handling and recovery
- * 
- * This function provides a standardized way to handle operations that may fail
- * with domain-specific error handling and automatic retries when appropriate.
- * It returns a detailed result object with status and error information.
  * 
  * @param operation - Function to execute 
  * @param options - Error recovery options
@@ -307,9 +289,8 @@ export async function executeOperation<T>(
   }
 }
 
-/**
+/** 
  * Specialized version of executeOperation for financial transactions
- * with domain-specific error handling for common financial operation errors
  * 
  * @param transactionFn - Transaction function to execute
  * @param options - Error recovery options

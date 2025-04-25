@@ -1,44 +1,23 @@
 /**
- * @file Observability utilities for the Midaz SDK
- * @description Provides tracing, metrics, and logging capabilities for monitoring and debugging
+ * @file Observability utilities
+ * @description Tracing, metrics, and logging for monitoring and debugging
  */
 
-/**
- * Configuration options for observability
- */
+/** Configuration options for observability */
 export interface ObservabilityOptions {
-  /**
-   * Enable distributed tracing
-   * When enabled, operations will be traced with spans and propagated context
-   * @default false
-   */
+  /** Enable distributed tracing with spans and propagated context @default false */
   enableTracing?: boolean;
 
-  /**
-   * Enable metrics collection
-   * When enabled, metrics will be collected and reported
-   * @default false
-   */
+  /** Enable metrics collection and reporting @default false */
   enableMetrics?: boolean;
 
-  /**
-   * Enable structured logging
-   * When enabled, logs will be structured and include trace context
-   * @default false
-   */
+  /** Enable structured logging with trace context @default false */
   enableLogging?: boolean;
 
-  /**
-   * Service name for observability
-   * Used to identify the service in traces, metrics, and logs
-   * @default "midaz-typescript-sdk"
-   */
+  /** Service name to identify in traces, metrics, and logs @default "midaz-typescript-sdk" */
   serviceName?: string;
 
-  /**
-   * OpenTelemetry collector endpoint
-   * URL of the OpenTelemetry collector to send telemetry data to
-   */
+  /** OpenTelemetry collector endpoint URL */
   collectorEndpoint?: string;
 }
 
@@ -62,49 +41,18 @@ function getDefaultObservabilityOptions(): ObservabilityOptions {
   };
 }
 
-/**
- * Represents a span in a trace
- *
- * A span represents a unit of work or operation in a distributed trace.
- * It can have attributes, events, and status to provide context about the operation.
- */
+/** A span representing a unit of work in a distributed trace */
 export interface Span {
-  /**
-   * Sets a span attribute
-   *
-   * Attributes provide additional context about the operation.
-   * They are key-value pairs that can be used for filtering and grouping spans.
-   *
-   * @param key - Attribute key
-   * @param value - Attribute value (string, number, or boolean)
-   */
+  /** Sets a span attribute for filtering and grouping */
   setAttribute(key: string, value: string | number | boolean): void;
 
-  /**
-   * Records an exception
-   *
-   * This adds an exception event to the span, which can be used to track errors.
-   *
-   * @param error - Error to record
-   */
+  /** Records an exception event to track errors */
   recordException(error: unknown): void;
 
-  /**
-   * Sets the span status
-   *
-   * The status indicates whether the operation was successful or not.
-   *
-   * @param status - Status code ("ok" or "error")
-   * @param message - Optional status message
-   */
+  /** Sets the span status (ok or error) */
   setStatus(status: 'ok' | 'error', message?: string): void;
 
-  /**
-   * Ends the span
-   *
-   * This marks the end of the operation and records the duration.
-   * After ending a span, no more attributes or events can be added.
-   */
+  /** Ends the span and records the duration */
   end(): void;
 }
 
@@ -124,27 +72,18 @@ class NoopSpan implements Span {
 
 import { OpenTelemetryProvider } from './observability-otel';
 
-/**
- * Type for metric and log attribute values
- * Restricts attributes to primitives for better type safety
- */
+/** Type for metric and log attribute values (primitives only) */
 export type AttributeValue = string | number | boolean;
 
 /**
- * Provides observability capabilities for the SDK
- *
- * This class manages tracing, metrics, and logging for the SDK.
- * It uses OpenTelemetry as the underlying implementation when enabled.
+ * Provides observability capabilities using OpenTelemetry
  *
  * @example
  * ```typescript
  * // Create an observability provider with custom options
  * const observability = new Observability({
  *   enableTracing: true,
- *   enableMetrics: true,
- *   enableLogging: true,
- *   serviceName: 'my-service',
- *   collectorEndpoint: 'http://localhost:4318'
+ *   serviceName: 'my-service'
  * });
  *
  * // Start a span for an operation
@@ -152,38 +91,26 @@ export type AttributeValue = string | number | boolean;
  * span.setAttribute('accountId', 'acc-123');
  *
  * try {
- *   // Perform the operation
  *   const result = await fetchAccount('acc-123');
  *   span.setStatus('ok');
  *   return result;
  * } catch (error) {
- *   // Record the error
  *   span.recordException(error);
  *   span.setStatus('error', error.message);
  *   throw error;
  * } finally {
- *   // Always end the span
  *   span.end();
  * }
  * ```
  */
 export class Observability {
-  /**
-   * Configured observability options
-   */
+  /** Configured observability options */
   public readonly options: ObservabilityOptions;
 
-  /**
-   * OpenTelemetry provider instance (if enabled)
-   * @protected - changed from private to protected for better testability
-   */
+  /** OpenTelemetry provider instance (if enabled) @protected */
   protected readonly otelProvider?: OpenTelemetryProvider;
 
-  /**
-   * Creates a new observability provider with the specified options
-   *
-   * @param options - Observability configuration options
-   */
+  /** Creates a new observability provider with the specified options */
   constructor(options?: Partial<ObservabilityOptions>) {
     // Get default options from ConfigService and override with provided options
     const defaultOptions = getDefaultObservabilityOptions();
@@ -199,35 +126,23 @@ export class Observability {
     }
   }
 
-  /**
-   * Determines if any observability features are enabled
-   *
-   * @returns True if any observability features are enabled
-   * @protected - changed from private to protected for better testability
-   */
+  /** Determines if any observability features are enabled @protected */
   protected isEnabled(): boolean {
     return (
       !!this.options.enableTracing || !!this.options.enableMetrics || !!this.options.enableLogging
     );
   }
 
-  /**
-   * Creates an OpenTelemetry provider
-   *
-   * @param options - Observability configuration options
-   * @returns An OpenTelemetry provider instance
-   * @protected - changed from private to protected for better testability
-   */
+  /** Creates an OpenTelemetry provider @protected */
   protected createOtelProvider(options: ObservabilityOptions): OpenTelemetryProvider {
     return new OpenTelemetryProvider(options);
   }
 
-  /**
-   * Starts a new span for an operation
-   *
+  /** 
+   * Starts a new span for an operation 
+   * 
    * @param name - Name of the span
    * @param initialAttributes - Initial attributes for the span
-   * @returns A span object that can be used to record attributes, events, and status
    */
   startSpan(name: string, initialAttributes: Record<string, AttributeValue> = {}): Span {
     if (!this.options.enableTracing || !this.otelProvider) {
@@ -237,26 +152,14 @@ export class Observability {
     return this.otelProvider.startSpan(name, initialAttributes);
   }
 
-  /**
-   * Records a metric with the specified name, value, and attributes
-   *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param attributes - Additional attributes for the metric (limited to primitives)
-   */
+  /** Records a metric with the specified name, value, and attributes */
   recordMetric(name: string, value: number, attributes: Record<string, AttributeValue> = {}): void {
     if (this.options.enableMetrics && this.otelProvider) {
       this.otelProvider.recordMetric(name, value, attributes);
     }
   }
 
-  /**
-   * Logs a message with the specified level, message, and attributes
-   *
-   * @param level - Log level
-   * @param message - Log message
-   * @param attributes - Additional attributes for the log (limited to primitives)
-   */
+  /** Logs a message with the specified level, message, and attributes */
   log(
     level: 'debug' | 'info' | 'warn' | 'error',
     message: string,
@@ -273,26 +176,14 @@ export class Observability {
     }
   }
 
-  /**
-   * Shuts down the observability provider
-   *
-   * This should be called when the application is shutting down
-   * to ensure all telemetry data is flushed.
-   *
-   * @returns Promise that resolves when shutdown is complete
-   */
+  /** Shuts down the observability provider and flushes telemetry data */
   async shutdown(): Promise<void> {
     if (this.otelProvider) {
       await this.otelProvider.shutdown();
     }
   }
 
-  /**
-   * Creates a no-op span
-   *
-   * @returns A span that does nothing
-   * @protected - changed from private to protected for better testability
-   */
+  /** Creates a no-op span that does nothing @protected */
   protected createNoopSpan(): Span {
     return new NoopSpan();
   }
@@ -300,22 +191,13 @@ export class Observability {
   // Static instance for global use
   private static instance?: Observability;
 
-  /**
-   * Configures the global observability instance
-   *
-   * @param options - Observability configuration options
-   * @returns The global observability instance
-   */
+  /** Configures the global observability instance */
   static configure(options?: Partial<ObservabilityOptions>): Observability {
     Observability.instance = new Observability(options);
     return Observability.instance;
   }
 
-  /**
-   * Gets the global observability instance
-   *
-   * @returns The global observability instance
-   */
+  /** Gets the global observability instance */
   static getInstance(): Observability {
     if (!Observability.instance) {
       Observability.instance = new Observability();
@@ -323,24 +205,12 @@ export class Observability {
     return Observability.instance;
   }
 
-  /**
-   * Starts a new span using the global instance
-   *
-   * @param name - Name of the span
-   * @param attributes - Initial attributes for the span
-   * @returns A span object
-   */
+  /** Starts a new span using the global instance */
   static startSpan(name: string, attributes: Record<string, AttributeValue> = {}): Span {
     return Observability.getInstance().startSpan(name, attributes);
   }
 
-  /**
-   * Records a metric using the global instance
-   *
-   * @param name - Name of the metric
-   * @param value - Value of the metric
-   * @param attributes - Attributes for the metric
-   */
+  /** Records a metric using the global instance */
   static recordMetric(
     name: string,
     value: number,
@@ -349,13 +219,7 @@ export class Observability {
     Observability.getInstance().recordMetric(name, value, attributes);
   }
 
-  /**
-   * Logs a message using the global instance
-   *
-   * @param level - Log level
-   * @param message - Log message
-   * @param attributes - Additional attributes for the log
-   */
+  /** Logs a message using the global instance */
   static log(
     level: 'debug' | 'info' | 'warn' | 'error',
     message: string,

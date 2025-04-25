@@ -1,6 +1,6 @@
 /**
- * @file Entity factory for the Midaz SDK
- * @description Provides a centralized access point to all entity services in the Midaz system
+ * @file Entity factory
+ * @description Centralized access point to all entity services
  */
 
 import { ApiFactory } from '../api/api-factory';
@@ -30,99 +30,53 @@ import { SegmentsService } from './segments';
 import { TransactionsService } from './transactions';
 
 /**
- * Entity provides a centralized access point to all entity types in the Midaz SDK.
- *
- * It acts as a factory for creating specific entity interfaces for different resource types
- * and operations. Each property exposes a service interface that provides methods for
- * interacting with a specific type of entity in the Midaz system.
- *
- * The Entity class follows the facade pattern, providing a simplified interface to the
- * complex subsystem of API endpoints and entity operations.
+ * Entity factory providing access to all entity service interfaces
  *
  * @example
  * ```typescript
- * // Create a Midaz client
- * const midazClient = new MidazClient({
- *   apiKey: "your-api-key",
- *   environment: "sandbox"
- * });
- *
  * // Access entity services through the client
- * const organizations = await midazClient.entities.organizations.listOrganizations();
- * const accounts = await midazClient.entities.accounts.listAccounts("org_id", "ledger_id");
- * const transactions = await midazClient.entities.transactions.listTransactions("org_id", "ledger_id");
+ * const organizations = await client.entities.organizations.listOrganizations();
+ * const accounts = await client.entities.accounts.listAccounts("org_123", "ldg_456");
  * ```
  */
 export class Entity {
-  /**
-   * Service for managing organizations
-   */
+  /** Service for managing organizations */
   public readonly organizations: OrganizationsService;
 
-  /**
-   * Service for managing accounts
-   */
+  /** Service for managing accounts */
   public readonly accounts: AccountsService;
 
-  /**
-   * Service for managing ledgers
-   */
+  /** Service for managing ledgers */
   public readonly ledgers: LedgersService;
 
-  /**
-   * Service for managing transactions
-   */
+  /** Service for managing transactions */
   public readonly transactions: TransactionsService;
 
-  /**
-   * Service for managing assets
-   */
+  /** Service for managing assets */
   public readonly assets: AssetsService;
 
-  /**
-   * Service for managing balances
-   */
+  /** Service for managing balances */
   public readonly balances: BalancesService;
 
-  /**
-   * Service for managing portfolios
-   */
+  /** Service for managing portfolios */
   public readonly portfolios: PortfoliosService;
 
-  /**
-   * Service for managing segments
-   */
+  /** Service for managing segments */
   public readonly segments: SegmentsService;
 
-  /**
-   * Service for managing operations
-   */
+  /** Service for managing operations */
   public readonly operations: OperationsService;
 
-  /**
-   * Service for managing asset rates
-   */
+  /** Service for managing asset rates */
   public readonly assetRates: AssetRatesService;
 
-  /**
-   * API factory for creating API clients
-   */
+  /** API factory for creating API clients @private */
   private readonly apiFactory: ApiFactory;
 
-  /**
-   * Observability instance for tracing and metrics
-   */
+  /** Observability instance for tracing and metrics @private */
   private readonly observability: Observability;
 
-  /**
-   * Creates a new Entity instance
-   *
-   * Initializes all service interfaces with the HTTP client and configuration.
-   *
-   * @param httpClient - The HTTP client to use for API requests
-   * @param config - Optional configuration (if not provided, it will be passed later via configure())
-   * @param observability - Optional observability provider
-   */
+  /** Creates a new Entity instance with all service interfaces */
   constructor(
     private readonly httpClient: HttpClient,
     config?: MidazConfig,
@@ -202,14 +156,7 @@ export class Entity {
     );
   }
 
-  /**
-   * Configures all entity services with the provided configuration
-   *
-   * This method should be called after creating the Entity instance to ensure
-   * that all services have the correct configuration.
-   *
-   * @param config - The Midaz client configuration
-   */
+  /** Configures all entity services with the provided configuration */
   public configure(config: MidazConfig): void {
     // Since we can't reassign the readonly properties, we need to update the
     // underlying URL configuration in the httpClient
@@ -228,9 +175,7 @@ export class Entity {
     }
   }
 
-  /**
-   * Returns the HTTP client used by the entity
-   */
+  /** Returns the HTTP client used by the entity */
   public getHttpClient(): HttpClient {
     return this.httpClient;
   }

@@ -1,6 +1,6 @@
 /**
- * @file Retry policy implementation for the Midaz SDK
- * @description Provides configurable retry logic with exponential backoff for API requests
+ * @file Retry policy
+ * @description Configurable retry logic with exponential backoff for API requests
  */
 
 import { MidazError } from '../error';
@@ -9,34 +9,19 @@ import { MidazError } from '../error';
  * Retry configuration options for controlling retry behavior
  */
 export interface RetryOptions {
-  /**
-   * Maximum number of retry attempts
-   * @default 3
-   */
+  /** Maximum number of retry attempts @default 3 */
   maxRetries?: number;
 
-  /**
-   * Initial delay between retries in milliseconds
-   * @default 100
-   */
+  /** Initial delay between retries in milliseconds @default 100 */
   initialDelay?: number;
 
-  /**
-   * Maximum delay between retries in milliseconds
-   * @default 1000
-   */
+  /** Maximum delay between retries in milliseconds @default 1000 */
   maxDelay?: number;
 
-  /**
-   * HTTP status codes that should trigger a retry
-   * @default [408, 429, 500, 502, 503, 504]
-   */
+  /** HTTP status codes that should trigger a retry @default [408, 429, 500, 502, 503, 504] */
   retryableStatusCodes?: number[];
 
-  /**
-   * Custom function to determine if an error should trigger a retry
-   * This function will be called with the error object and should return true if the request should be retried
-   */
+  /** Custom function to determine if an error should trigger a retry */
   retryCondition?: (error: Error) => boolean;
 }
 
@@ -62,9 +47,6 @@ function getDefaultRetryOptions(): RetryOptions {
 /**
  * Retry policy for handling transient failures
  *
- * This class provides configurable retry logic with exponential backoff
- * for API requests that fail due to transient issues.
- *
  * @example
  * ```typescript
  * // Create a retry policy with custom options
@@ -76,56 +58,32 @@ function getDefaultRetryOptions(): RetryOptions {
  * });
  *
  * // Use the retry policy to execute a function with retries
- * try {
- *   const result = await retryPolicy.execute(async () => {
- *     const response = await fetch('https://api.example.com/data');
- *     if (!response.ok) {
- *       throw new Error(`HTTP error ${response.status}`);
- *     }
- *     return response.json();
- *   });
- *   console.log('Success:', result);
- * } catch (error) {
- *   console.error('Failed after retries:', error);
- * }
+ * const result = await retryPolicy.execute(async () => {
+ *   const response = await fetch('https://api.example.com/data');
+ *   if (!response.ok) {
+ *     throw new Error(`HTTP error ${response.status}`);
+ *   }
+ *   return response.json();
+ * });
  * ```
  */
 export class RetryPolicy {
-  /**
-   * Maximum number of retry attempts
-   * @private
-   */
+  /** Maximum number of retry attempts @private */
   private maxRetries: number;
 
-  /**
-   * Initial delay between retries in milliseconds
-   * @private
-   */
+  /** Initial delay between retries in milliseconds @private */
   private initialDelay: number;
 
-  /**
-   * Maximum delay between retries in milliseconds
-   * @private
-   */
+  /** Maximum delay between retries in milliseconds @private */
   private maxDelay: number;
 
-  /**
-   * HTTP status codes that should trigger a retry
-   * @private
-   */
+  /** HTTP status codes that should trigger a retry @private */
   private retryableStatusCodes: number[];
 
-  /**
-   * Custom function to determine if an error should trigger a retry
-   * @private
-   */
+  /** Custom function to determine if an error should trigger a retry @private */
   private retryCondition?: (error: Error) => boolean;
 
-  /**
-   * Creates a new retry policy
-   *
-   * @param options - Configuration options for the retry policy
-   */
+  /** Creates a new retry policy with specified or default options */
   constructor(options: RetryOptions = {}) {
     const defaultOptions = getDefaultRetryOptions();
     // Use explicit type assertions to avoid type errors
@@ -138,7 +96,7 @@ export class RetryPolicy {
 
   /**
    * Executes a function with retry logic
-   *
+   * 
    * @param fn - Function to execute with retry logic
    * @returns Promise resolving to the function's result
    * @throws Error if all retry attempts fail
@@ -148,54 +106,32 @@ export class RetryPolicy {
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {
-        // Execute the function
         return await fn();
       } catch (error) {
-        // Cast error to Error type
         const err = error as Error;
         lastError = err;
 
-        // Check if we've reached the maximum number of retries
-        if (attempt >= this.maxRetries) {
+        if (attempt >= this.maxRetries || !this.isRetryable(err)) {
           break;
         }
 
-        // Check if the error is retryable
-        if (!this.isRetryable(err)) {
-          break;
-        }
-
-        // Calculate delay with exponential backoff
-        const delay = this.calculateDelay(attempt);
-
-        // Wait before retrying
-        await this.sleep(delay);
+        await this.sleep(this.calculateDelay(attempt));
       }
     }
 
-    // If we've reached this point, all retry attempts have failed
     throw lastError;
   }
 
-  /**
-   * Checks if an error is retryable
-   *
-   * @param error - Error to check
-   * @returns Whether the error is retryable
-   * @private
-   */
+  /** Checks if an error is retryable @private */
   private isRetryable(error: unknown): boolean {
-    // Check custom retry condition if provided
     if (this.retryCondition && error instanceof Error) {
       return this.retryCondition(error);
     }
 
-    // Check if the error is a MidazError with a status code
     if (error instanceof MidazError && error.statusCode) {
       return this.retryableStatusCodes.includes(error.statusCode);
     }
 
-    // Check for network errors
     if (
       error instanceof Error &&
       error.message &&
@@ -211,31 +147,14 @@ export class RetryPolicy {
     return false;
   }
 
-  /**
-   * Calculates the delay for a retry attempt with exponential backoff
-   *
-   * @param attempt - Current attempt number (0-based)
-   * @returns Delay in milliseconds
-   * @private
-   */
+  /** Calculates delay with exponential backoff and jitter @private */
   private calculateDelay(attempt: number): number {
-    // Calculate delay with exponential backoff: initialDelay * 2^attempt
     const exponentialDelay = this.initialDelay * Math.pow(2, attempt);
-
-    // Add jitter to prevent thundering herd problem
     const jitter = Math.random() * 100;
-
-    // Ensure delay doesn't exceed maximum
     return Math.min(exponentialDelay + jitter, this.maxDelay);
   }
 
-  /**
-   * Sleeps for a specified duration
-   *
-   * @param ms - Duration in milliseconds
-   * @returns Promise that resolves after the specified duration
-   * @private
-   */
+  /** Sleeps for a specified duration in milliseconds @private */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
