@@ -51,7 +51,6 @@
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "axios": "^1.8.4",
     "node-fetch": "^3.3.2"
   },
   "engines": {

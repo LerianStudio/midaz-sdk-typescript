@@ -8,37 +8,26 @@
  * 4. Concurrency utilities for parallel processing
  * 5. Observability for monitoring and tracing
  */
-
 import {
+  // Configuration
+  ConfigService,
   // Core entity types
   MidazClient,
-  StatusCode,
-
+  createAccountBuilder,
+  createAssetBuilderWithType,
   // Transaction builders
   createDepositTransaction,
+  createLedgerBuilder,
+  // Builder factories
+  createOrganizationBuilder,
   createTransferTransaction,
 
   // Data utilities
   extractItems,
   formatAccountBalance,
   groupAccountsByAsset,
-  isExternalAccount,
-
-  // Builder factories
-  createOrganizationBuilder,
-  createLedgerBuilder,
-  createAssetBuilderWithType,
-  createAccountBuilder,
-
-  // Error handling utilities
-  createErrorHandler,
-  executeTransaction,
-  processError,
   logDetailedError,
-  withErrorRecovery,
-  
-  // Configuration
-  ConfigService,
+  processError,
 } from '../src';
 
 // Import utility modules directly for demonstration
@@ -46,12 +35,11 @@ import { Cache } from '../src/util/cache';
 import { workerPool } from '../src/util/concurrency';
 import { Observability } from '../src/util/observability/observability';
 import {
+  combineValidationResults,
   validate,
   validateNotEmpty,
   validateRequired,
-  combineValidationResults,
 } from '../src/util/validation';
-import { RetryPolicy } from '../src/util/network/retry-policy';
 
 // Custom interfaces for our workflow
 interface AssetConfig {
@@ -113,7 +101,7 @@ async function main() {
         retryableStatusCodes: [429, 500, 502, 503, 504],
       },
     });
-    
+
     // Initialize client using the centralized configuration
     const client = new MidazClient({
       apiKey: 'test-key',

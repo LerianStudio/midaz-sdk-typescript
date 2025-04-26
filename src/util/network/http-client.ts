@@ -437,12 +437,12 @@ export class HttpClient {
     // We need to use require here because of circular dependencies
     const { ConfigService } = require('../config');
     const configService = ConfigService.getInstance();
-    
+
     // Get API URL configuration from ConfigService
     const apiUrlConfig = configService.getApiUrlConfig();
     // Get HTTP configuration from ConfigService with explicit type casting to avoid conflicts
     const httpConfig = configService.getHttpClientConfig() as any;
-    
+
     // Initialize base URLs
     this.baseUrls = config.baseUrls || {};
 
@@ -483,8 +483,10 @@ export class HttpClient {
     this.keepAlive = config.keepAlive !== undefined ? config.keepAlive : httpConfig.keepAlive;
     this.maxSockets = config.maxSockets || httpConfig.maxSockets;
     this.keepAliveMsecs = config.keepAliveMsecs || httpConfig.keepAliveMsecs;
-    this.enableHttp2 = config.enableHttp2 !== undefined ? config.enableHttp2 : httpConfig.enableHttp2;
-    this.dnsCacheTtl = config.dnsCacheTtl !== undefined ? config.dnsCacheTtl : httpConfig.dnsCacheTtl;
+    this.enableHttp2 =
+      config.enableHttp2 !== undefined ? config.enableHttp2 : httpConfig.enableHttp2;
+    this.dnsCacheTtl =
+      config.dnsCacheTtl !== undefined ? config.dnsCacheTtl : httpConfig.dnsCacheTtl;
     this.tlsOptions = config.tlsOptions;
 
     // Initialize connection pooling with agents
@@ -998,18 +1000,18 @@ export class HttpClient {
       if (this.debug) {
         console.log(`[HttpClient] ${method} ${urlWithParams}`);
         if (data) {
-          console.log(`[HttpClient] Request body:`, data);
+          console.log(`[HttpClient] Request body:`, JSON.stringify(data));
         }
       }
 
       // Execute request with retry logic
       const response = await this.retryPolicy.execute(async () => {
         const response = await fetch(urlWithParams, requestOptions);
-
         // Handle non-successful responses
         if (!response.ok) {
           // Use the errorFromHttpResponse helper with the correct number of arguments
-          return errorFromHttpResponse(
+
+          throw errorFromHttpResponse(
             response.status,
             await this.parseResponseBody(response),
             method,
@@ -1084,7 +1086,7 @@ export class HttpClient {
 
     // Add API key if available
     if (this.apiKey) {
-      headers['X-API-Key'] = this.apiKey;
+      headers['Authorization'] = this.apiKey;
     }
 
     // Add idempotency key for non-GET requests if enabled

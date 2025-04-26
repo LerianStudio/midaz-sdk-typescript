@@ -13,6 +13,7 @@
  */
 
 import {
+  ConfigService,
   createAccountBuilder,
   createAssetBuilderWithType,
   createDepositTransaction,
@@ -23,15 +24,14 @@ import {
   executeTransaction,
   extractItems,
   formatAccountBalance,
-  processError,
   groupAccountsByAsset,
   isExternalAccount,
   Ledger,
   logDetailedError,
   MidazClient,
   Organization,
+  processError,
   withErrorRecovery,
-  ConfigService,
 } from '../src';
 
 /**
@@ -73,7 +73,7 @@ async function main() {
         serviceName: 'midaz-workflow-example',
       },
     });
-    
+
     // Initialize client using the centralized configuration
     const client = new MidazClient({
       apiKey: 'teste', // Auth is off, so no matter what is here
