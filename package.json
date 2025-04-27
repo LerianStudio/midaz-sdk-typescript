@@ -17,10 +17,8 @@
     "docs:jsdoc": "jsdoc -r src -d docs/jsdoc -c jsdoc.json",
     "docs": "npm run docs:typedoc && npm run docs:jsdoc",
     "example:workflow": "npx ts-node examples/workflow.ts",
-    "example:custom-workflow": "npx ts-node examples/custom-workflow.ts",
     "example:client-config": "npx ts-node examples/client-config-example.ts",
-    "example:api-versioning": "npx ts-node examples/api-versioning-example.ts",
-    "example:simple": "node examples/simple-example.js"
+    "example:api-versioning": "npx ts-node examples/api-versioning-example.ts"
   },
   "keywords": [
     "midaz",
