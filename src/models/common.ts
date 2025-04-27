@@ -57,7 +57,7 @@ export interface ListMetadata {
  * Paginated response containing a list of items and pagination metadata
  * @template T - The type of items in the list
  */
-export interface ListResponse<T> {
+export interface ListResponse<T> extends ApiResponse {
   /** Array of items in the current page */
   items: T[];
 
