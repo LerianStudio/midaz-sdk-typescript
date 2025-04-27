@@ -143,6 +143,16 @@ export interface TransactionsService {
  *   const transactions = await paginator.next();
  *   // Process the page of transactions
  * }
+ * 
+ * // Or use convenience methods
+ * const allTransactions = await paginator.getAllTransactions();
+ * 
+ * // Or categorize transactions
+ * const categories = await paginator.categorizeTransactions(
+ *   async (transaction, category) => {
+ *     console.log(`Transaction ${transaction.id} is in category: ${category}`);
+ *   }
+ * );
  * ```
  */
 export interface TransactionPaginator {
@@ -159,4 +169,28 @@ export interface TransactionPaginator {
    * @returns Promise resolving to the next page of transactions
    */
   next(): Promise<Transaction[]>;
+  
+  /**
+   * Gets the current page of transactions
+   * 
+   * @returns Promise resolving to the current page of transactions
+   */
+  getCurrentPage(): Promise<Transaction[]>;
+  
+  /**
+   * Gets all remaining transactions
+   * 
+   * @returns Promise resolving to all transactions
+   */
+  getAllTransactions(): Promise<Transaction[]>;
+  
+  /**
+   * Process transactions by category
+   * 
+   * @param categoryHandler - Function to call for each transaction with its category
+   * @returns Map of categories to transaction counts
+   */
+  categorizeTransactions(
+    categoryHandler: (transaction: Transaction, category: string) => Promise<void>
+  ): Promise<Map<string, number>>;
 }

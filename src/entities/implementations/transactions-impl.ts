@@ -6,6 +6,7 @@
 import { TransactionApiClient } from '../../api/interfaces/transaction-api-client';
 import { ListOptions, ListResponse } from '../../models/common';
 import { CreateTransactionInput, Transaction } from '../../models/transaction';
+import { BasePaginator, PaginatorConfig } from '../../util/data/pagination-abstraction';
 import { Observability } from '../../util/observability/observability';
 import { TransactionPaginator, TransactionsService } from '../transactions';
 
@@ -297,11 +298,21 @@ export class TransactionsServiceImpl implements TransactionsService {
  * @inheritdoc
  * @implements {TransactionPaginator}
  */
-export class TransactionPaginatorImpl implements TransactionPaginator {
-  private nextCursor?: string;
-  private hasNextPage = true;
-  private currentPage?: Transaction[];
-  private readonly observability: Observability;
+export class TransactionPaginatorImpl extends BasePaginator<Transaction> implements TransactionPaginator {
+  /**
+   * Organization ID
+   */
+  private readonly orgId: string;
+
+  /**
+   * Ledger ID
+   */
+  private readonly ledgerId: string;
+
+  /**
+   * Transaction API client
+   */
+  private readonly apiClient: TransactionApiClient;
 
   /**
    * Creates a new TransactionPaginatorImpl
@@ -313,54 +324,29 @@ export class TransactionPaginatorImpl implements TransactionPaginator {
    * @param observability - Optional observability instance (if not provided, a new one will be created)
    */
   constructor(
-    private readonly apiClient: TransactionApiClient,
-    private readonly orgId: string,
-    private readonly ledgerId: string,
-    private readonly opts?: ListOptions,
+    apiClient: TransactionApiClient,
+    orgId: string,
+    ledgerId: string,
+    opts?: ListOptions,
     observability?: Observability
   ) {
-    // Use provided observability or create a new one
-    this.observability =
-      observability ||
-      new Observability({
-        serviceName: 'midaz-transaction-paginator',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-          : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-          : false,
-      });
-  }
+    // Create the configuration for the base paginator
+    const config: PaginatorConfig<Transaction> = {
+      fetchPage: (options) => apiClient.listTransactions(orgId, ledgerId, options),
+      initialOptions: opts,
+      observability,
+      serviceName: 'transaction-paginator',
+      spanAttributes: {
+        orgId,
+        ledgerId
+      }
+    };
 
-  /**
-   * Checks if there are more transactions to retrieve
-   *
-   * Determines if there are additional pages of transactions available.
-   * Returns true if there are more transactions to retrieve, false otherwise.
-   *
-   * This method is based on the presence of a nextCursor in the API response.
-   *
-   * @returns Promise resolving to true if there are more transactions
-   */
-  public async hasNext(): Promise<boolean> {
-    // Create a span for tracing this operation
-    const span = this.observability.startSpan('hasNext');
-    span.setAttribute('orgId', this.orgId);
-    span.setAttribute('ledgerId', this.ledgerId);
+    super(config);
 
-    try {
-      const result = this.hasNextPage;
-      span.setAttribute('hasNext', result);
-      span.setStatus('ok');
-      return result;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus('error', (error as Error).message);
-      throw error;
-    } finally {
-      span.end();
-    }
+    this.orgId = orgId;
+    this.ledgerId = ledgerId;
+    this.apiClient = apiClient;
   }
 
   /**
@@ -369,57 +355,54 @@ export class TransactionPaginatorImpl implements TransactionPaginator {
    * Retrieves the next page of transactions based on the pagination settings.
    * If there are no more transactions, returns an empty array.
    *
-   * This method:
-   * 1. Checks if there are more transactions to retrieve
-   * 2. Makes an API request with the current cursor
-   * 3. Updates the cursor and hasNextPage flag based on the response
-   * 4. Returns the current page of transactions
+   * This implementation adds transaction-specific metrics in addition to the
+   * standard pagination metrics.
    *
    * @returns Promise resolving to the next page of transactions
    */
   public async next(): Promise<Transaction[]> {
-    // Create a span for tracing this operation
-    const span = this.observability.startSpan('next');
-    span.setAttribute('orgId', this.orgId);
-    span.setAttribute('ledgerId', this.ledgerId);
-
+    const span = this.createSpan('next');
+    
     try {
-      // If there are no more pages, return an empty array
-      if (!this.hasNextPage) {
+      // Check if there are more transactions to retrieve
+      if (!(await this.hasNext())) {
         span.setAttribute('transactionCount', 0);
         span.setStatus('ok');
         return [];
       }
-
+      
       // Prepare options with cursor
       const paginationOpts = {
-        ...this.opts,
+        ...this.options,
         cursor: this.nextCursor,
       };
-
-      // Make the request through the API client
+      
+      // Make the API request
+      this.lastFetchTimestamp = Date.now();
       const response = await this.apiClient.listTransactions(
         this.orgId,
         this.ledgerId,
         paginationOpts
       );
-
+      
       // Update pagination state
       this.nextCursor = response.meta?.nextCursor;
-      this.hasNextPage = !!this.nextCursor;
+      this.hasMorePages = !!this.nextCursor;
       this.currentPage = response.items;
+      this.pagesFetched++;
+      this.itemsFetched += response.items.length;
 
-      // Record metrics
+      // Record transaction-specific metrics
       this.observability.recordMetric('transactions.paginator.fetch', 1, {
         orgId: this.orgId,
         ledgerId: this.ledgerId,
-        count: this.currentPage?.length || 0,
+        count: response.items.length
       });
-
-      span.setAttribute('transactionCount', this.currentPage?.length || 0);
-      span.setAttribute('hasMore', this.hasNextPage);
+      
+      span.setAttribute('transactionCount', response.items.length);
+      span.setAttribute('hasMore', this.hasMorePages);
       span.setStatus('ok');
-
+      
       return this.currentPage || [];
     } catch (error) {
       span.recordException(error as Error);
@@ -431,35 +414,56 @@ export class TransactionPaginatorImpl implements TransactionPaginator {
   }
 
   /**
-   * Gets the current page of transactions
-   *
-   * @returns The current page of transactions
+   * Gets all transactions
+   * 
+   * Retrieves all transactions that match the filters, handling
+   * pagination automatically.
+   * 
+   * @returns Promise resolving to all matching transactions
    */
-  public async getCurrentPage(): Promise<Transaction[]> {
-    const span = this.observability.startSpan('TransactionPaginator.getCurrentPage');
+  public async getAllTransactions(): Promise<Transaction[]> {
+    return this.getAllItems();
+  }
 
+  /**
+   * Process transactions by category
+   * 
+   * Processes all transactions and groups them by category
+   * 
+   * @param categoryHandler - Function to call for each transaction with its category
+   * @returns Map of categories to transaction counts
+   */
+  public async categorizeTransactions(
+    categoryHandler: (transaction: Transaction, category: string) => Promise<void>
+  ): Promise<Map<string, number>> {
+    const span = this.createSpan('categorizeTransactions');
+    const categoryMap = new Map<string, number>();
+    
     try {
-      // Fetch current page if not already fetched
-      if (!this.currentPage) {
-        await this.next();
-      }
-
+      await this.forEachItem(async (transaction) => {
+        // Determine category (using a simplified approach for this example)
+        const category = transaction.type || 'uncategorized';
+        
+        // Update category count
+        const currentCount = categoryMap.get(category) || 0;
+        categoryMap.set(category, currentCount + 1);
+        
+        // Call the handler
+        await categoryHandler(transaction, category);
+      });
+      
       // Record metrics
-      this.observability.recordMetric(
-        'transactions.paginator.page_size',
-        this.currentPage?.length || 0,
-        {
-          organizationId: this.orgId,
+      for (const [category, count] of categoryMap.entries()) {
+        this.observability.recordMetric('transactions.category', count, {
+          orgId: this.orgId,
           ledgerId: this.ledgerId,
-          count: this.currentPage?.length || 0,
-        }
-      );
-
-      span.setAttribute('transactionCount', this.currentPage?.length || 0);
+          category
+        });
+      }
+      
+      span.setAttribute('categoryCount', categoryMap.size);
       span.setStatus('ok');
-
-      // Return current page
-      return this.currentPage || [];
+      return categoryMap;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);

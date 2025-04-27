@@ -4,8 +4,9 @@
  * response helpers, and formatting
  */
 
-// Export pagination utilities
-export * from './pagination';
+// Export pagination abstraction instead of the old pagination
+// (Updated to use the newer, more comprehensive implementation)
+export * from './pagination-abstraction';
 
 // Export response helper utilities
 export * from './response-helpers';

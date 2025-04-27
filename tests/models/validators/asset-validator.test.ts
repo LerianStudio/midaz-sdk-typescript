@@ -122,7 +122,7 @@ describe('Asset Validator', () => {
     it('shouldFailValidationForInvalidCurrencyCodeFormat', () => {
       const invalidInput: CreateAssetInput = {
         name: 'US Dollar',
-        code: 'US', // Only 2 characters, should be 3
+        code: 'US$', // Contains special characters, should be only uppercase letters and numbers
         type: 'currency'
       };
       

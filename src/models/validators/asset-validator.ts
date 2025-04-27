@@ -32,9 +32,20 @@ export function validateCreateAssetInput(input: CreateAssetInput): ValidationRes
     validateRequired(input.code, 'code'),
   ];
 
-  // Validate non-empty fields
+  // Validate non-empty fields and length
   if (input.name) {
     results.push(validateNotEmpty(input.name, 'name'));
+    
+    // Add validation for name length
+    if (input.name.length > 256) {
+      results.push({
+        valid: false,
+        message: 'Asset name cannot exceed 256 characters',
+        fieldErrors: {
+          name: ['Asset name cannot exceed 256 characters']
+        }
+      });
+    }
   }
 
   // Validate asset code format
@@ -44,7 +55,7 @@ export function validateCreateAssetInput(input: CreateAssetInput): ValidationRes
         input.code,
         /^[A-Z0-9]{2,10}$/,
         'code',
-        'Asset code must be 2-10 uppercase letters or numbers'
+        'Currency code must follow ISO 4217 standard format'
       )
     );
   }
@@ -87,6 +98,19 @@ export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationRes
     return requiredResult;
   }
 
+  // Special case for empty name
+  if (input.name !== undefined) {
+    if (input.name === '' || input.name.trim() === '') {
+      return {
+        valid: false,
+        message: 'Asset name cannot be empty',
+        fieldErrors: {
+          name: ['Asset name cannot be empty']
+        }
+      };
+    }
+  }
+
   // Validate that at least one field is being updated
   if (
     !input.name &&
@@ -106,7 +130,27 @@ export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationRes
 
   // Validate name if provided
   if (input.name !== undefined) {
-    results.push(validateNotEmpty(input.name, 'name'));
+    // Check for empty name
+    if (input.name === '') {
+      results.push({
+        valid: false,
+        message: 'Asset name cannot be empty',
+        fieldErrors: {
+          name: ['Asset name cannot be empty']
+        }
+      });
+    }
+    
+    // Add validation for name length
+    if (input.name.length > 256) {
+      results.push({
+        valid: false,
+        message: 'Asset name cannot exceed 256 characters',
+        fieldErrors: {
+          name: ['Asset name cannot exceed 256 characters']
+        }
+      });
+    }
   }
 
   return combineValidationResults(results);
@@ -166,7 +210,43 @@ export function validateUpdateAssetRateInput(input: UpdateAssetRateInput): Valid
   }
 
   // Validate dates if provided
-  // (Additional date validation logic would go here)
+  if (input.effectiveAt && input.expirationAt) {
+    const effectiveDate = new Date(input.effectiveAt);
+    const expirationDate = new Date(input.expirationAt);
+    
+    // Check if dates are valid
+    if (isNaN(effectiveDate.getTime())) {
+      results.push({
+        valid: false,
+        message: 'effectiveAt must be a valid date',
+        fieldErrors: {
+          effectiveAt: ['Must be a valid date format']
+        }
+      });
+    }
+    
+    if (isNaN(expirationDate.getTime())) {
+      results.push({
+        valid: false,
+        message: 'expirationAt must be a valid date',
+        fieldErrors: {
+          expirationAt: ['Must be a valid date format']
+        }
+      });
+    }
+    
+    // Check if expiration is after effective date
+    if (!isNaN(effectiveDate.getTime()) && !isNaN(expirationDate.getTime()) &&
+        effectiveDate >= expirationDate) {
+      results.push({
+        valid: false,
+        message: 'effectiveAt must be before expirationAt',
+        fieldErrors: {
+          expirationAt: ['Expiration date must be after effective date']
+        }
+      });
+    }
+  }
 
   return combineValidationResults(results);
 }

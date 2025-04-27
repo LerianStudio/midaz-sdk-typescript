@@ -70,19 +70,22 @@ describe('ConfigService', () => {
     it('should return default values when no environment variables are set', () => {
       const config = ConfigService.getInstance().getApiUrlConfig();
       expect(config).toEqual({
-        onboardingUrl: 'http://localhost:3000/v1',
-        transactionUrl: 'http://localhost:3001/v1',
+        onboardingUrl: 'http://localhost:3000',
+        transactionUrl: 'http://localhost:3001',
+        apiVersion: 'v1'
       });
     });
 
     it('should use environment variables when they are set', () => {
-      process.env.MIDAZ_ONBOARDING_URL = 'http://custom-onboarding.example.com/v1';
-      process.env.MIDAZ_TRANSACTION_URL = 'http://custom-transaction.example.com/v1';
+      process.env.MIDAZ_ONBOARDING_URL = 'http://custom-onboarding.example.com';
+      process.env.MIDAZ_TRANSACTION_URL = 'http://custom-transaction.example.com';
+      process.env.MIDAZ_API_VERSION = 'v1';
 
       const config = ConfigService.getInstance().getApiUrlConfig();
       expect(config).toEqual({
-        onboardingUrl: 'http://custom-onboarding.example.com/v1',
-        transactionUrl: 'http://custom-transaction.example.com/v1',
+        onboardingUrl: 'http://custom-onboarding.example.com',
+        transactionUrl: 'http://custom-transaction.example.com',
+        apiVersion: 'v1'
       });
     });
   });

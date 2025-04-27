@@ -428,7 +428,7 @@ describe('TransactionPaginatorImpl', () => {
         value: [mockTransaction],
         writable: true
       },
-      hasNextPage: {
+      hasMorePages: {
         value: true,
         writable: true
       },
@@ -447,7 +447,7 @@ describe('TransactionPaginatorImpl', () => {
     
     it('should return false if there are no more pages', async () => {
       // Setup
-      Object.defineProperty(paginator, 'hasNextPage', {
+      Object.defineProperty(paginator, 'hasMorePages', {
         value: false,
         writable: true
       });
@@ -483,12 +483,12 @@ describe('TransactionPaginatorImpl', () => {
       
       // Check that the private properties were updated correctly
       expect(paginator['nextCursor']).toBe('another_cursor');
-      expect(paginator['hasNextPage']).toBe(true);
+      expect(paginator['hasMorePages']).toBe(true);
     });
     
     it('should return an empty array if there are no more pages', async () => {
       // Setup
-      Object.defineProperty(paginator, 'hasNextPage', {
+      Object.defineProperty(paginator, 'hasMorePages', {
         value: false,
         writable: true
       });

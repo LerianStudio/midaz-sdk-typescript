@@ -24,31 +24,23 @@ export function validateCreateAccountInput(input: CreateAccountInput): Validatio
     return requiredResult;
   }
 
-  // Validate required fields
-  const results: ValidationResult[] = [
-    validateRequired(input.name, 'name'),
-    validateRequired(input.assetCode, 'assetCode'),
-    validateRequired(input.type, 'type'),
-  ];
-
-  // Validate non-empty fields
-  if (input.name) {
-    results.push(validateNotEmpty(input.name, 'name'));
+  // Create a validations array to collect all errors
+  const fieldErrors: Record<string, string[]> = {};
+  
+  // Check required fields
+  if (!input.name) {
+    fieldErrors.name = ['name is required'];
   }
-
-  // Validate asset code format (ISO 4217-like, 2-10 uppercase letters or numbers)
-  if (input.assetCode) {
-    results.push(
-      validatePattern(
-        input.assetCode, 
-        /^[A-Z0-9]{2,10}$/, 
-        'assetCode',
-        'Asset code must be 2-10 uppercase letters or numbers'
-      )
-    );
+  
+  if (!input.assetCode) {
+    fieldErrors.assetCode = ['assetCode is required'];
   }
-
-  // Validate account type is one of the allowed values
+  
+  if (!input.type) {
+    fieldErrors.type = ['type is required'];
+  }
+  
+  // Also validate type if present
   if (input.type) {
     const validTypes = [
       'deposit',
@@ -60,17 +52,38 @@ export function validateCreateAccountInput(input: CreateAccountInput): Validatio
     ];
 
     if (!validTypes.includes(input.type)) {
-      results.push({
-        valid: false,
-        message: `Account type must be one of: ${validTypes.join(', ')}`,
-        fieldErrors: {
-          type: [`Account type must be one of: ${validTypes.join(', ')}`]
-        }
-      });
+      fieldErrors.type = fieldErrors.type || [];
+      fieldErrors.type.push(`Account type must be one of: ${validTypes.join(', ')}`);
     }
   }
-
-  return combineValidationResults(results);
+  
+  // Validate asset code format if present
+  if (input.assetCode) {
+    if (!/^[A-Z]{3}$/.test(input.assetCode)) {
+      fieldErrors.assetCode = fieldErrors.assetCode || [];
+      fieldErrors.assetCode.push('ISO 4217 currency code format required (exactly 3 uppercase letters)');
+    }
+  }
+  
+  // Validate non-empty name if present
+  if (input.name && input.name.trim() === '') {
+    fieldErrors.name = fieldErrors.name || [];
+    fieldErrors.name.push('name cannot be empty');
+  }
+  
+  // Return all validation errors together
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      valid: false,
+      message: Object.entries(fieldErrors)
+        .map(([field, errors]) => errors[0])
+        .join('; '),
+      fieldErrors
+    };
+  }
+  
+  // If we made it here, all validations passed
+  return { valid: true };
 }
 
 /**
@@ -86,6 +99,19 @@ export function validateUpdateAccountInput(input: UpdateAccountInput): Validatio
     return requiredResult;
   }
 
+  // Special case for empty name - handle it before other validations
+  if (input.name !== undefined) {
+    if (input.name === '' || input.name.trim() === '') {
+      return {
+        valid: false,
+        message: 'name cannot be empty',
+        fieldErrors: {
+          name: ['name cannot be empty']
+        }
+      };
+    }
+  }
+
   // Validate that at least one field is being updated
   if (
     !input.name &&
@@ -96,19 +122,14 @@ export function validateUpdateAccountInput(input: UpdateAccountInput): Validatio
   ) {
     return {
       valid: false,
-      message: 'At least one field must be updated',
+      message: 'At least one field must be provided',
       fieldErrors: {
-        input: ['At least one field must be updated']
+        input: ['At least one field must be provided']
       }
     };
   }
 
   const results: ValidationResult[] = [];
-
-  // Validate name if provided
-  if (input.name !== undefined) {
-    results.push(validateNotEmpty(input.name, 'name'));
-  }
 
   // Validate status if provided
   if (input.status) {

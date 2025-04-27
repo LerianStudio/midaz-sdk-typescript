@@ -62,6 +62,9 @@ export interface Account {
   /** Timestamp when the account was last updated */
   updatedAt: string;
 
+  /** Timestamp when the account was deleted, if applicable */
+  deletedAt?: string;
+
   /** Custom metadata fields for the account */
   metadata?: Record<string, any>;
 }
@@ -259,7 +262,16 @@ export function newCreateAccountInput(
   assetCode: string,
   type: AccountType
 ): CreateAccountInput {
-  return { name, assetCode, type };
+  if (!name) {
+    throw new Error('Account name is required');
+  }
+  if (!assetCode) {
+    throw new Error('Asset code is required');
+  }
+  if (!type || !['deposit', 'savings', 'loans', 'marketplace', 'creditCard', 'external'].includes(type)) {
+    throw new Error('Valid account type is required');
+  }
+  return { name, assetCode, type, status: StatusCode.ACTIVE };
 }
 
 /**
@@ -272,5 +284,17 @@ export function newCreateAccountInputWithAlias(
   type: AccountType,
   alias: string
 ): CreateAccountInput {
-  return { name, assetCode, type, alias };
+  if (!name) {
+    throw new Error('Account name is required');
+  }
+  if (!assetCode) {
+    throw new Error('Asset code is required');
+  }
+  if (!type || !['deposit', 'savings', 'loans', 'marketplace', 'creditCard', 'external'].includes(type)) {
+    throw new Error('Valid account type is required');
+  }
+  if (!alias) {
+    throw new Error('Account alias is required');
+  }
+  return { name, assetCode, type, alias, status: StatusCode.ACTIVE };
 }

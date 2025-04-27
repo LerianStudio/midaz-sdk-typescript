@@ -192,7 +192,8 @@ export function withStatus<T extends { status?: StatusCode }>(
   input: T,
   status: StatusCode
 ): T {
-  return { ...input, status };
+  input.status = status;
+  return input;
 }
 
 /**
@@ -202,7 +203,8 @@ export function withMetadata<T extends { metadata?: Record<string, any> }>(
   input: T,
   metadata: Record<string, any>
 ): T {
-  return { ...input, metadata };
+  input.metadata = metadata;
+  return input;
 }
 
 /**
@@ -216,5 +218,6 @@ export function newUpdateAssetInput(): UpdateAssetInput {
  * Sets name on an UpdateAssetInput
  */
 export function withName(input: UpdateAssetInput, name: string): UpdateAssetInput {
-  return { ...input, name };
+  input.name = name;
+  return input;
 }
