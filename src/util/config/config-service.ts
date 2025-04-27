@@ -44,15 +44,21 @@ export interface ObservabilityConfig {
 export interface ApiUrlConfig {
   /**
    * Base URL for the onboarding service
-   * @default "http://localhost:3000/v1"
+   * @default "http://localhost:3000"
    */
   onboardingUrl: string;
 
   /**
    * Base URL for the transaction service
-   * @default "http://localhost:3001/v1"
+   * @default "http://localhost:3001"
    */
   transactionUrl: string;
+  
+  /**
+   * API version to use for requests
+   * @default "v1"
+   */
+  apiVersion: string;
 }
 
 /**
@@ -248,8 +254,9 @@ export class ConfigService {
    */
   public getApiUrlConfig(): ApiUrlConfig {
     const defaults: ApiUrlConfig = {
-      onboardingUrl: this.getEnv('MIDAZ_ONBOARDING_URL', 'http://localhost:3000/v1'),
-      transactionUrl: this.getEnv('MIDAZ_TRANSACTION_URL', 'http://localhost:3001/v1'),
+      onboardingUrl: this.getEnv('MIDAZ_ONBOARDING_URL', 'http://localhost:3000'),
+      transactionUrl: this.getEnv('MIDAZ_TRANSACTION_URL', 'http://localhost:3001'),
+      apiVersion: this.getEnv('MIDAZ_API_VERSION', 'v1'),
     };
 
     return {

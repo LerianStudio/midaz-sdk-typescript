@@ -48,6 +48,12 @@ export interface RequestOptions {
    * Useful for ensuring that a request is only processed once, even if sent multiple times
    */
   idempotencyKey?: string;
+
+  /**
+   * Custom headers to include in the request
+   * These headers will be merged with the default headers
+   */
+  headers?: Record<string, string>;
 }
 
 /**

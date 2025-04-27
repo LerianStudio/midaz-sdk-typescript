@@ -9,6 +9,7 @@ The Midaz SDK enables seamless integration with Midaz's financial services platf
 ## Features
 
 - **Type-Safe API**: Full TypeScript support with accurate type definitions
+- **API Versioning**: Support for different API versions with version negotiation
 - **Comprehensive Error Handling**: Structured error types with detailed information
 - **Observability**: Built-in tracing, metrics, and logging capabilities
 - **Automatic Retries**: Configurable retry policies for transient failures
@@ -251,10 +252,13 @@ const client = new MidazClient({
   // Environment
   environment: 'sandbox', // 'development', 'sandbox', or 'production'
   
+  // API Version
+  apiVersion: 'v1', // API version to use (defaults to 'v1')
+  
   // Custom base URLs
   baseUrls: {
-    onboarding: 'https://custom.onboarding.api.example.com/v1',
-    transaction: 'https://custom.transaction.api.example.com/v1'
+    onboarding: 'https://custom.onboarding.api.example.com',
+    transaction: 'https://custom.transaction.api.example.com'
   },
   
   // Network settings
@@ -317,7 +321,7 @@ npm run docs
 
 ## Documentation
 
-- [API Response Patterns](./docs/api-patterns.md): Standardized patterns for API responses and client interaction
+- [API Version Migration Guide](./docs/api-version-migration-guide.md): Guide for migrating between API versions
 - [JSDoc Documentation](./docs/jsdoc/): Detailed API documentation for all classes and methods
 - [TypeDoc Documentation](./docs/typedoc/): TypeScript interface documentation
 

@@ -24,6 +24,7 @@ import { UrlBuilder } from '../url-builder';
  */
 export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   protected readonly observability: Observability;
+  protected readonly apiVersion: string;
 
   /**
    * Creates a new HttpBaseApiClient
@@ -51,6 +52,9 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
           ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
           : false,
       });
+    
+    // Get API version from URL builder
+    this.apiVersion = this.urlBuilder.getApiVersion();
   }
 
   /**
@@ -72,12 +76,23 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
 
     try {
       span.setAttribute('url', url);
+      span.setAttribute('apiVersion', this.apiVersion);
+      
       if (options?.params) {
         span.setAttribute('hasParams', true);
         this.setListOptionsAttributes(span, options.params as ListOptions);
       }
 
-      const result = await this.httpClient.get<R>(url, options);
+      // Add version header to requests
+      const requestOptions = {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'X-API-Version': this.apiVersion
+        }
+      };
+
+      const result = await this.httpClient.get<R>(url, requestOptions);
 
       this.recordResponseMetrics(operationName, result, attributes);
       span.setStatus('ok');
@@ -111,8 +126,18 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
 
     try {
       span.setAttribute('url', url);
+      span.setAttribute('apiVersion', this.apiVersion);
 
-      const result = await this.httpClient.post<R>(url, data, options);
+      // Add version header to requests
+      const requestOptions = {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'X-API-Version': this.apiVersion
+        }
+      };
+
+      const result = await this.httpClient.post<R>(url, data, requestOptions);
 
       this.recordResponseMetrics(operationName, result, attributes);
       span.setStatus('ok');
@@ -146,8 +171,18 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
 
     try {
       span.setAttribute('url', url);
+      span.setAttribute('apiVersion', this.apiVersion);
 
-      const result = await this.httpClient.patch<R>(url, data, options);
+      // Add version header to requests
+      const requestOptions = {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'X-API-Version': this.apiVersion
+        }
+      };
+
+      const result = await this.httpClient.patch<R>(url, data, requestOptions);
 
       this.recordResponseMetrics(operationName, result, attributes);
       span.setStatus('ok');
@@ -179,8 +214,18 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
 
     try {
       span.setAttribute('url', url);
+      span.setAttribute('apiVersion', this.apiVersion);
 
-      await this.httpClient.delete(url, options);
+      // Add version header to requests
+      const requestOptions = {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'X-API-Version': this.apiVersion
+        }
+      };
+
+      await this.httpClient.delete(url, requestOptions);
 
       this.recordMetrics(`${operationName}.count`, 1, attributes);
       span.setStatus('ok');

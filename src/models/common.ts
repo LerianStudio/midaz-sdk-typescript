@@ -2,10 +2,15 @@
 
 /** 
  * Base marker interface for all API responses 
- * This is used for type checking and doesn't contain any properties
+ * This interface now also serves as an extensible object type for API responses
  */
 export interface ApiResponse {
   readonly __apiResponse?: never;
+  
+  /**
+   * Allow any additional properties in API responses
+   */
+  [key: string]: any;
 }
 
 /** 

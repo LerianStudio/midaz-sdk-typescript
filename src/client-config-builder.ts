@@ -12,16 +12,16 @@ import { RetryPolicy } from './util/network/retry-policy';
  */
 const ENVIRONMENT_URLS: Record<string, Record<string, string>> = {
   development: {
-    onboarding: 'https://api.dev.midaz.io/v1',
-    transaction: 'https://api.dev.midaz.io/v1',
+    onboarding: 'https://api.dev.midaz.io',
+    transaction: 'https://api.dev.midaz.io',
   },
   sandbox: {
-    onboarding: 'https://api.sandbox.midaz.io/v1',
-    transaction: 'https://api.sandbox.midaz.io/v1',
+    onboarding: 'https://api.sandbox.midaz.io',
+    transaction: 'https://api.sandbox.midaz.io',
   },
   production: {
-    onboarding: 'https://api.midaz.io/v1',
-    transaction: 'https://api.midaz.io/v1',
+    onboarding: 'https://api.midaz.io',
+    transaction: 'https://api.midaz.io',
   },
 };
 
@@ -30,6 +30,7 @@ const ENVIRONMENT_URLS: Record<string, Record<string, string>> = {
  */
 const DEFAULT_CONFIG: Partial<MidazConfig> = {
   environment: 'production',
+  apiVersion: 'v1',
   timeout: 30000,
   retries: {
     maxRetries: 3,
@@ -71,6 +72,12 @@ export interface ClientConfigBuilder {
    * @param environment - Environment to connect to
    */
   withEnvironment(environment: 'development' | 'sandbox' | 'production'): ClientConfigBuilder;
+
+  /**
+   * Set the API version to use for requests
+   * @param apiVersion - API version (e.g., 'v1', 'v2')
+   */
+  withApiVersion(apiVersion: string): ClientConfigBuilder;
 
   /**
    * Set custom base URLs for services
@@ -158,6 +165,11 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
     this.config.environment = environment;
     // Set default base URLs for the environment
     this.config.baseUrls = { ...ENVIRONMENT_URLS[environment] };
+    return this;
+  }
+
+  withApiVersion(apiVersion: string): ClientConfigBuilder {
+    this.config.apiVersion = apiVersion;
     return this;
   }
 
@@ -264,41 +276,53 @@ export function createClientConfigWithToken(authToken: string): ClientConfigBuil
 /**
  * Creates a development environment configuration builder
  * @param apiKey - API key for authentication
+ * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with development environment defaults
  */
-export function createDevelopmentConfig(apiKey: string): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey).withEnvironment('development').withDebugMode(true);
+export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
+  return createClientConfigBuilder(apiKey)
+    .withEnvironment('development')
+    .withApiVersion(apiVersion)
+    .withDebugMode(true);
 }
 
 /**
  * Creates a sandbox environment configuration builder
  * @param apiKey - API key for authentication
+ * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with sandbox environment defaults
  */
-export function createSandboxConfig(apiKey: string): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey).withEnvironment('sandbox');
+export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
+  return createClientConfigBuilder(apiKey)
+    .withEnvironment('sandbox')
+    .withApiVersion(apiVersion);
 }
 
 /**
  * Creates a production environment configuration builder
  * @param apiKey - API key for authentication
+ * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with production environment defaults
  */
-export function createProductionConfig(apiKey: string): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey).withEnvironment('production');
+export function createProductionConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
+  return createClientConfigBuilder(apiKey)
+    .withEnvironment('production')
+    .withApiVersion(apiVersion);
 }
 
 /**
  * Creates a local development configuration builder
  * @param apiKey - API key for authentication
  * @param port - Base port for local services (onboarding will use this port, transaction will use port+1)
+ * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with local development defaults
  */
-export function createLocalConfig(apiKey: string, port = 3000): ClientConfigBuilder {
+export function createLocalConfig(apiKey: string, port = 3000, apiVersion = 'v1'): ClientConfigBuilder {
   return createClientConfigBuilder(apiKey)
     .withBaseUrls({
-      onboarding: `http://localhost:${port}/v1`,
-      transaction: `http://localhost:${port + 1}/v1`,
+      onboarding: `http://localhost:${port}`,
+      transaction: `http://localhost:${port + 1}`,
     })
+    .withApiVersion(apiVersion)
     .withDebugMode(true);
 }

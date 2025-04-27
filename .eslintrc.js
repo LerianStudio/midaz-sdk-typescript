@@ -13,7 +13,7 @@ module.exports = {
   rules: {
     // Basic code style rules
     'no-console': ['off', { allow: ['warn', 'error', 'info'] }],
-    'no-unused-vars': 'on', // TypeScript handles this better
+    'no-unused-vars': 'off', // TypeScript handles this better
     '@typescript-eslint/no-unused-vars': [
       'error',
       {

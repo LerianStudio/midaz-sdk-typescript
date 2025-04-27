@@ -95,8 +95,8 @@ async function main() {
     // Configure with ConfigService for local development settings
     ConfigService.configure({
       apiUrls: {
-        onboardingUrl: 'http://localhost:3000/v1',
-        transactionUrl: 'http://localhost:3001/v1',
+        onboardingUrl: 'http://localhost:3000', // Base URL without version
+        transactionUrl: 'http://localhost:3001', // Base URL without version
       },
       httpClient: {
         debug: false,
@@ -117,6 +117,7 @@ async function main() {
     // Initialize client using the centralized configuration
     const client = new MidazClient({
       apiKey: 'test-key',
+      apiVersion: 'v1', // Specify API version explicitly
     });
 
     // Set up custom cache for the workflow

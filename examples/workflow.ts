@@ -13,6 +13,7 @@
  */
 
 import {
+  ConfigService,
   createAccountBuilder,
   createAssetBuilderWithType,
   createDepositTransaction,
@@ -23,15 +24,14 @@ import {
   executeTransaction,
   extractItems,
   formatAccountBalance,
-  processError,
   groupAccountsByAsset,
   isExternalAccount,
   Ledger,
   logDetailedError,
   MidazClient,
   Organization,
+  processError,
   withErrorRecovery,
-  ConfigService,
 } from '../src';
 
 /**
@@ -60,8 +60,8 @@ async function main() {
     // Configure with ConfigService for local development settings
     ConfigService.configure({
       apiUrls: {
-        onboardingUrl: 'http://localhost:3000/v1',
-        transactionUrl: 'http://localhost:3001/v1',
+        onboardingUrl: 'http://localhost:3000', // Base URL without version
+        transactionUrl: 'http://localhost:3001', // Base URL without version
       },
       httpClient: {
         debug: false,
@@ -77,6 +77,7 @@ async function main() {
     // Initialize client using the centralized configuration
     const client = new MidazClient({
       apiKey: 'teste', // Auth is off, so no matter what is here
+      apiVersion: 'v1', // Specify API version explicitly
     });
 
     // Create organization

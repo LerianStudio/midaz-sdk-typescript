@@ -29,6 +29,11 @@ export interface MidazConfig {
   baseUrls?: Record<string, string>;
 
   /**
+   * API version to use for requests (default: 'v1')
+   */
+  apiVersion?: string;
+
+  /**
    * Request timeout in milliseconds (default: 30000)
    */
   timeout?: number;
@@ -146,6 +151,15 @@ export class MidazClient {
     // Initialize observability
     this.observability = new Observability(this.config.observability);
 
+    // Import ConfigService for fallback values
+    const { ConfigService } = require('./util/config');
+    const configService = ConfigService.getInstance();
+    
+    // Get API version from config or ConfigService
+    if (!this.config.apiVersion) {
+      this.config.apiVersion = configService.getApiUrlConfig().apiVersion;
+    }
+    
     // Initialize HTTP client
     this.httpClient =
       this.config.httpClient ||

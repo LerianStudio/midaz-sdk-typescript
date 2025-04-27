@@ -26,6 +26,7 @@ async function builderExample() {
   const client = new MidazClient(
     createClientConfigBuilder('your-api-key')
       .withEnvironment('sandbox')
+      .withApiVersion('v1') // Specify API version explicitly
       .withTimeout(5000)
       .withRetryPolicy({
         maxRetries: 3,
@@ -60,15 +61,16 @@ async function factoryExample() {
 
   // Create a client with sandbox configuration
   const _sandboxClient = new MidazClient(
-    createSandboxConfig('your-sandbox-key').withObservability({
-      enableMetrics: true,
-    })
+    createSandboxConfig('your-sandbox-key', 'v1') // Specify API version explicitly
+      .withObservability({
+        enableMetrics: true,
+      })
   );
 
   console.log('Sandbox client created with factory function');
 
   // Create a client with local development configuration
-  const localClient = new MidazClient(createLocalConfig('test-key', 3000));
+  const localClient = new MidazClient(createLocalConfig('test-key', 3000, 'v1')); // Specify port and API version
 
   console.log('Local client created with factory function');
   // Get config details
@@ -88,8 +90,8 @@ async function configServiceBasicExample() {
   // Configure global settings using ConfigService
   ConfigService.configure({
     apiUrls: {
-      onboardingUrl: 'https://api.example.com/v1/onboarding',
-      transactionUrl: 'https://api.example.com/v1/transaction',
+      onboardingUrl: 'https://api.example.com/onboarding', // Base URL without version
+      transactionUrl: 'https://api.example.com/transaction', // Base URL without version
     },
     observability: {
       enableTracing: true,
@@ -110,6 +112,7 @@ async function configServiceBasicExample() {
   // Create client with minimal configuration - it will use the global config
   const _client = new MidazClient({
     apiKey: 'your-api-key',
+    apiVersion: 'v1', // Specify API version explicitly
   });
   
   console.log('Client created with ConfigService');
@@ -145,10 +148,10 @@ async function configServiceCompleteExample() {
       serviceName: 'my-example-service',
     },
     
-    // Set API URLs
+    // Set API URLs (without version suffix)
     apiUrls: {
-      onboardingUrl: 'https://custom-onboarding-api.example.com/v1',
-      transactionUrl: 'https://custom-transaction-api.example.com/v1',
+      onboardingUrl: 'https://custom-onboarding-api.example.com',
+      transactionUrl: 'https://custom-transaction-api.example.com',
     },
     
     // Set retry policy
@@ -170,6 +173,7 @@ async function configServiceCompleteExample() {
   // Create a client - configuration will be applied automatically
   const _client = new MidazClient({
     apiKey: 'your-api-key',
+    apiVersion: 'v2', // Using v2 API version for example
   });
   
   console.log('Client created with comprehensive configuration');
@@ -213,8 +217,8 @@ async function configureEnvironmentsExample() {
   console.log('Configuring for development environment');
   ConfigService.configure({
     apiUrls: {
-      onboardingUrl: 'http://localhost:3000/v1',
-      transactionUrl: 'http://localhost:3001/v1',
+      onboardingUrl: 'http://localhost:3000', // Base URL without version
+      transactionUrl: 'http://localhost:3001', // Base URL without version
     },
     observability: {
       enableTracing: true,
@@ -229,6 +233,7 @@ async function configureEnvironmentsExample() {
   
   const _devClient = new MidazClient({
     apiKey: 'dev-api-key',
+    apiVersion: 'v1', // Using v1 API version for development
   });
   
   // Reset and configure for production environment
@@ -236,8 +241,8 @@ async function configureEnvironmentsExample() {
   ConfigService.reset();
   ConfigService.configure({
     apiUrls: {
-      onboardingUrl: 'https://api.midaz.io/v1/onboarding',
-      transactionUrl: 'https://api.midaz.io/v1/transaction',
+      onboardingUrl: 'https://api.midaz.io/onboarding', // Base URL without version
+      transactionUrl: 'https://api.midaz.io/transaction', // Base URL without version
     },
     observability: {
       enableTracing: true,
@@ -253,6 +258,7 @@ async function configureEnvironmentsExample() {
   
   const _prodClient = new MidazClient({
     apiKey: 'prod-api-key',
+    apiVersion: 'v1', // Using v1 API version for production
   });
   
   console.log('Clients created for both environments');
