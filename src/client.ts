@@ -3,6 +3,7 @@ import { Entity } from './entities/entity';
 import { HttpClient } from './util/network/http-client';
 import { RetryPolicy } from './util/network/retry-policy';
 import { Observability } from './util/observability/observability';
+import { ConfigService } from './util/config';
 
 /**
  * Configuration options for the Midaz client
@@ -151,8 +152,7 @@ export class MidazClient {
     // Initialize observability
     this.observability = new Observability(this.config.observability);
 
-    // Import ConfigService for fallback values
-    const { ConfigService } = require('./util/config');
+    // Get ConfigService instance
     const configService = ConfigService.getInstance();
     
     // Get API version from config or ConfigService
