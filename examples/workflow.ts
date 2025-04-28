@@ -1258,8 +1258,11 @@ async function displayBalances(
             `@system/external/${assetCode}`
           ];
 
+          console.log(`\n    DEBUG: Searching for external account for ${assetCode} in ${ledgerName} ledger...`);
+          
           for (const externalAccountId of externalAccountIdPatterns) {
             try {
+              console.log(`      DEBUG: Trying pattern: ${externalAccountId}`);
               const accountBalances = await client.entities.balances.listAccountBalances(
                 organizationId,
                 ledgerId,
@@ -1267,63 +1270,122 @@ async function displayBalances(
               );
 
               const items = extractItems(accountBalances);
+              console.log(`      DEBUG: Response for ${externalAccountId}:`, JSON.stringify(items).substring(0, 300));
+              
               if (items && items.length > 0) {
                 externalBalances.push(...items);
-                console.log(`      Found external account with pattern: ${externalAccountId}`);
+                console.log(`      FOUND: External account with pattern: ${externalAccountId}`);
                 break; // If successful, no need to try other patterns
+              } else {
+                console.log(`      DEBUG: Found account but no balances for pattern: ${externalAccountId}`);
               }
-            } catch (error) {
+            } catch (error: any) {
+              // Log the error details
+              console.log(`      DEBUG: Error for pattern ${externalAccountId}: ${error.message || 'Unknown error'}`);
+              
               // Try next pattern
               continue;
             }
           }
-        } catch (error) {
-          // Continue silently - some asset codes might not have external accounts
+        } catch (error: any) {
+          // Log but continue
+          console.log(`      DEBUG: General error for asset ${assetCode}: ${error.message || 'Unknown error'}`);
         }
       }
 
       // Also try to find external accounts in the full balance list
+      console.log(`\n    DEBUG: Searching for external accounts in full balance list...`);
       try {
-        const allBalances = extractItems(await client.entities.balances.listBalances(organizationId, ledgerId));
-        const potentialExternal = allBalances.filter((balance: any) => {
-          const accountId = balance?.accountId || '';
-          return (
-            accountId.includes('external') || 
-            accountId.startsWith('@') || 
-            (balance?.available && parseInt(balance.available) < 0)
-          );
+        const balanceResponse = await client.entities.balances.listBalances(organizationId, ledgerId);
+        console.log(`      DEBUG: Full balances response:`, JSON.stringify(balanceResponse).substring(0, 300));
+        
+        const allBalances = extractItems(balanceResponse);
+        console.log(`      DEBUG: Number of balances: ${allBalances.length}`);
+        
+        // Log all accounts with their IDs to help identify patterns
+        console.log(`      DEBUG: All account IDs in balance list:`);
+        allBalances.forEach((balance: any) => {
+          console.log(`        ${balance?.accountId || 'unknown'} - Asset: ${balance?.assetCode || 'unknown'}`);
         });
         
+        const potentialExternal = allBalances.filter((balance: any) => {
+          const accountId = balance?.accountId || '';
+          const isNegative = balance?.available && parseInt(balance.available) < 0;
+          
+          const result = (
+            accountId.includes('external') || 
+            accountId.startsWith('@') || 
+            isNegative
+          );
+          
+          if (result) {
+            console.log(`      DEBUG: Found potential external account: ${accountId} - Asset: ${balance?.assetCode || 'unknown'}, Available: ${balance?.available || 'unknown'}`);
+          }
+          
+          return result;
+        });
+        
+        console.log(`      DEBUG: Found ${potentialExternal.length} potential external accounts in full balance list`);
         externalBalances.push(...potentialExternal);
-      } catch (error) {
-        // Silently continue if this fails
+      } catch (error: any) {
+        // Log the error
+        console.log(`      DEBUG: Error getting full balance list: ${error.message || 'Unknown error'}`);
       }
 
       // For ledgers with assets but missing external accounts, make a final attempt
-      // to find all accounts with negative balances
+      // to find all accounts with specific identifiers that might be external accounts
+      console.log(`\n    DEBUG: Searching for external accounts by account ID patterns...`);
       try {
-        const allAccounts = extractItems(await client.entities.accounts.listAccounts(organizationId, ledgerId));
+        const accountsResponse = await client.entities.accounts.listAccounts(organizationId, ledgerId);
+        console.log(`      DEBUG: Accounts response:`, JSON.stringify(accountsResponse).substring(0, 300));
+        
+        const allAccounts = extractItems(accountsResponse);
+        console.log(`      DEBUG: Number of accounts: ${allAccounts.length}`);
+        
+        // Log all account IDs to help identify patterns
+        console.log(`      DEBUG: All account IDs in account list:`);
+        allAccounts.forEach((account: any) => {
+          const accountAny = account as any;
+          const accountId = accountAny?.id || '';
+          const assetCode = accountAny?.assetCode || 'unknown';
+          const accountType = accountAny?.type || 'unknown';
+          console.log(`        ${accountId} - Asset: ${assetCode}, Type: ${accountType}`);
+        });
+        
         for (const account of allAccounts) {
           const accAny = account as any;
           const accountId = accAny?.id || '';
+          const assetCode = accAny?.assetCode || 'unknown';
           
           // Check if this could be an external account
           if (accountId.includes('external') || 
               accountId.startsWith('@') || 
               accountId.includes('system')) {
             
+            console.log(`      DEBUG: Found potential external account in account list: ${accountId} - Asset: ${assetCode}`);
+            
             try {
+              console.log(`      DEBUG: Getting balances for: ${accountId}`);
               const accountBalances = await client.entities.balances.listAccountBalances(
                 organizationId, ledgerId, accountId
               );
-              externalBalances.push(...extractItems(accountBalances));
-            } catch (error) {
-              // Continue if we can't get balances
+              
+              const items = extractItems(accountBalances);
+              console.log(`      DEBUG: Balance response for ${accountId}:`, JSON.stringify(items).substring(0, 300));
+              
+              if (items && items.length > 0) {
+                console.log(`      FOUND: External account balances for account: ${accountId}`);
+                externalBalances.push(...items);
+              } else {
+                console.log(`      DEBUG: No balances found for account: ${accountId}`);
+              }
+            } catch (error: any) {
+              console.log(`      DEBUG: Error getting balances for account ${accountId}: ${error.message || 'Unknown error'}`);
             }
           }
         }
-      } catch (error) {
-        // Continue if this fails
+      } catch (error: any) {
+        console.log(`      DEBUG: Error getting accounts list: ${error.message || 'Unknown error'}`);
       }
 
       // For Operating Ledger, we expect all 3 assets to have external accounts (EUR, USD, BTC)
@@ -1331,71 +1393,102 @@ async function displayBalances(
       // Let's actively search for the EUR external account which sometimes is harder to find
       
       // List all accounts to find candidate external accounts 
-      const allAccounts = extractItems(await client.entities.accounts.listAccounts(organizationId, ledgerId));
-      
-      // Find accounts that might be external accounts but weren't identified as such yet
-      for (const account of allAccounts) {
-        const accountAny = account as any;
-        if (!accountAny || !accountAny.id) continue;
+      console.log(`\n    DEBUG: Looking for missing asset-specific external accounts...`);
+      try {
+        const accountsResponse = await client.entities.accounts.listAccounts(organizationId, ledgerId);
+        const allAccounts = extractItems(accountsResponse);
         
-        const accountId = accountAny.id;
-        const isLikelyExternal = 
-          accountId.includes('external') || 
-          accountId.startsWith('@') || 
-          accountId.includes('system') ||
-          (accountAny.name && (
-            accountAny.name.includes('External') || 
-            accountAny.name.includes('System')
-          ));
+        console.log(`      DEBUG: Existing external balances (assetCodes):`);
+        externalBalances.forEach((balance: any) => {
+          const assetCode = balance?.assetCode || 'unknown';
+          const accountId = balance?.accountId || 'unknown';
+          console.log(`        ${assetCode} - Account: ${accountId}`);
+        });
         
-        // If likely external and contains an asset code, check if it's for EUR
-        if (isLikelyExternal) {
-          // Try to determine the asset
-          let assetCode = '';
-          if (accountAny.assetCode) {
-            assetCode = accountAny.assetCode;
-          } else if (accountId.includes('EUR')) {
-            assetCode = 'EUR';
-          } else if (accountId.includes('USD')) {
-            assetCode = 'USD';
-          } else if (accountId.includes('BTC')) {
-            assetCode = 'BTC'; 
-          }
+        // Find accounts that might be external accounts but weren't identified as such yet
+        for (const account of allAccounts) {
+          const accountAny = account as any;
+          if (!accountAny || !accountAny.id) continue;
           
-          if (assetCode) {
-            // Check if we already have an external account for this asset
-            const hasExternalForAsset = externalBalances.some((balance: any) => 
-              balance?.assetCode === assetCode || 
-              (balance?.accountId && balance.accountId.includes(assetCode))
-            );
+          const accountId = accountAny.id;
+          const isLikelyExternal = 
+            accountId.includes('external') || 
+            accountId.startsWith('@') || 
+            accountId.includes('system') ||
+            (accountAny.name && (
+              accountAny.name.includes('External') || 
+              accountAny.name.includes('System')
+            ));
+          
+          // If likely external and contains an asset code, check if it's for EUR
+          if (isLikelyExternal) {
+            console.log(`      DEBUG: Found likely external account: ${accountId}`);
             
-            if (!hasExternalForAsset) {
-              try {
-                // Try to get balance for this account
-                const accountBalance = await client.entities.balances.listAccountBalances(
-                  organizationId, 
-                  ledgerId,
-                  accountId
-                );
-                
-                const balanceItems = extractItems(accountBalance);
-                if (balanceItems && balanceItems.length > 0) {
-                  // Found the balance for this external account
-                  for (const balance of balanceItems) {
-                    const balanceAny = balance as any;
-                    if (!balanceAny.assetCode) {
-                      balanceAny.assetCode = assetCode;
-                    }
-                    externalBalances.push(balanceAny);
-                  }
-                  console.log(`      Found external account for ${assetCode}: ${accountId}`);
+            // Try to determine the asset
+            let assetCode = '';
+            if (accountAny.assetCode) {
+              assetCode = accountAny.assetCode;
+            } else if (accountId.includes('EUR')) {
+              assetCode = 'EUR';
+            } else if (accountId.includes('USD')) {
+              assetCode = 'USD';
+            } else if (accountId.includes('BTC')) {
+              assetCode = 'BTC'; 
+            }
+            
+            if (assetCode) {
+              console.log(`      DEBUG: Determined asset code for ${accountId}: ${assetCode}`);
+              
+              // Check if we already have an external account for this asset
+              const hasExternalForAsset = externalBalances.some((balance: any) => {
+                const result = balance?.assetCode === assetCode || 
+                  (balance?.accountId && balance.accountId.includes(assetCode));
+                  
+                if (result) {
+                  console.log(`      DEBUG: Already have external account for ${assetCode}: ${balance?.accountId || 'unknown'}`);
                 }
-              } catch (error) {
-                // Silently continue if balance fetch fails
+                
+                return result;
+              });
+              
+              if (!hasExternalForAsset) {
+                console.log(`      DEBUG: Missing external account for ${assetCode}, trying to get balance for ${accountId}...`);
+                try {
+                  // Try to get balance for this account
+                  const accountBalance = await client.entities.balances.listAccountBalances(
+                    organizationId, 
+                    ledgerId,
+                    accountId
+                  );
+                  
+                  const balanceItems = extractItems(accountBalance);
+                  console.log(`      DEBUG: Balance response for ${accountId}:`, JSON.stringify(balanceItems).substring(0, 300));
+                  
+                  if (balanceItems && balanceItems.length > 0) {
+                    // Found the balance for this external account
+                    for (const balance of balanceItems) {
+                      const balanceAny = balance as any;
+                      if (!balanceAny.assetCode) {
+                        balanceAny.assetCode = assetCode;
+                        console.log(`      DEBUG: Added missing assetCode ${assetCode} to balance`);
+                      }
+                      externalBalances.push(balanceAny);
+                    }
+                    console.log(`      FOUND: External account for ${assetCode}: ${accountId}`);
+                  } else {
+                    console.log(`      DEBUG: No balance items found for account ${accountId}`);
+                  }
+                } catch (error: any) {
+                  console.log(`      DEBUG: Error getting balance for ${accountId}: ${error.message || 'Unknown error'}`);
+                }
               }
+            } else {
+              console.log(`      DEBUG: Could not determine asset code for account ${accountId}`);
             }
           }
         }
+      } catch (error: any) {
+        console.log(`      DEBUG: Error in asset-specific search: ${error.message || 'Unknown error'}`);
       }
 
       // Manual deduplication
@@ -1412,7 +1505,20 @@ async function displayBalances(
       // As a last resort, check if we're missing any expected external accounts
       // For Operating Ledger, we should have 3 external accounts (EUR, USD, BTC)
       // For Investment Ledger, we should have 2 external accounts (USD, BTC)
+      console.log(`\n    DEBUG: Final check for missing external accounts...`);
+      
+      // Output summary of what we've found so far
+      console.log(`      DEBUG: Current uniqueExternalBalances (${uniqueExternalBalances.length}):`);
+      uniqueExternalBalances.forEach((balance: any) => {
+        const assetCode = balance?.assetCode || 'unknown';
+        const accountId = balance?.accountId || 'unknown';
+        const available = balance?.available || 'unknown';
+        console.log(`        ${assetCode} - Account: ${accountId}, Available: ${available}`);
+      });
+      
       for (const assetCode of assetCodes) {
+        console.log(`      DEBUG: Checking if we have external account for ${assetCode}...`);
+        
         // Check more carefully if we have an external account for this asset
         const hasExternalForAsset = uniqueExternalBalances.some((balance: any) => {
           const balanceAny = balance as any;
@@ -1420,6 +1526,7 @@ async function displayBalances(
           if (balanceAny && typeof balanceAny === 'object') {
             // Check for asset code match
             if (balanceAny.assetCode === assetCode) {
+              console.log(`        DEBUG: Found by assetCode match: ${balanceAny.assetCode}`);
               return true;
             }
             
@@ -1427,6 +1534,7 @@ async function displayBalances(
             if (balanceAny.accountId && 
                 typeof balanceAny.accountId === 'string' && 
                 balanceAny.accountId.includes(assetCode)) {
+              console.log(`        DEBUG: Found by accountId match: ${balanceAny.accountId}`);
               return true;
             }
           }
@@ -1434,6 +1542,8 @@ async function displayBalances(
         });
         
         if (!hasExternalForAsset) {
+          console.log(`      DEBUG: No external account found for ${assetCode}`);
+          
           // Only add synthetic accounts if we're in the right ledger
           const shouldAddAsset = 
             (assetCode === 'EUR' && ledgerId === operatingLedgerId) || // EUR only in Operating
@@ -1441,17 +1551,26 @@ async function displayBalances(
             assetCode === 'BTC';   // BTC in both ledgers
             
           if (shouldAddAsset) {
-            console.log(`      Note: External account for ${assetCode} not found in API - creating placeholder for display`);
+            console.log(`      NOTE: External account for ${assetCode} not found in API - creating placeholder for display`);
+            console.log(`      DEBUG: Backend bug confirmed - asset exists but no corresponding external account accessible via API`);
+            
             // Add a synthetic external account as placeholder with correct name format
-            uniqueExternalBalances.push({
+            const placeholderAccount = {
               accountId: `external/${assetCode}`,
               assetCode: assetCode,
               available: '-3000',  // Negative balance representing funds sent into the system
               onHold: '0',
               synthetic: true,     // Mark as synthetic for our reference
               placeholder: true    // Explicitly mark as placeholder
-            });
+            };
+            
+            console.log(`      DEBUG: Created placeholder: ${JSON.stringify(placeholderAccount)}`);
+            uniqueExternalBalances.push(placeholderAccount);
+          } else {
+            console.log(`      DEBUG: Skipping placeholder for ${assetCode} in ${ledgerName} ledger (not expected)`);
           }
+        } else {
+          console.log(`      DEBUG: External account for ${assetCode} already exists`);
         }
       }
       
