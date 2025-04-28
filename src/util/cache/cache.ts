@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * @file Cache utility for the Midaz SDK
  * @description Provides a flexible in-memory caching mechanism with TTL and LRU eviction

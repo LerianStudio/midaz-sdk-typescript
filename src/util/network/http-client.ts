@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 /**
  * @file HTTP client implementation for the Midaz SDK
  * @description Provides a robust HTTP client with retry logic, error handling, and observability
  */
 
 import { createHash } from 'crypto';
+import * as dns from 'dns';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
 import { URL } from 'url';
@@ -427,8 +429,22 @@ export class HttpClient {
    * @param config - Configuration options for the client
    */
   constructor(config: HttpClientConfig = {}) {
-    // Import ConfigService
-    // We need to use require here because of circular dependencies
+    // Initialize all properties with default values to avoid undefined errors
+    this.baseUrls = {};
+    this.timeout = 30000; // Default timeout
+    this.retryPolicy = new RetryPolicy();
+    this.debug = false;
+    this.headers = {};
+    this.useIdempotencyKey = true;
+    this.idempotencyKeyHeader = 'Idempotency-Key';
+    this.keepAlive = true;
+    this.maxSockets = 10;
+    this.keepAliveMsecs = 60000;
+    this.enableHttp2 = true;
+    this.dnsCacheTtl = 300000;
+
+    // Import ConfigService using a dynamic require to avoid circular dependencies
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { ConfigService } = require('../config');
     const configService = ConfigService.getInstance();
 
@@ -1201,25 +1217,21 @@ export class HttpClient {
       }
 
       // If not in cache or expired, do a fresh lookup
-      require('dns').lookup(
-        hostname,
-        options,
-        (err: Error | null, address: string, family: number) => {
-          if (err) {
-            callback(err);
-            return;
-          }
-
-          // Cache the result
-          dnsCache.set(cacheKey, {
-            expires: now + ttl,
-            addresses: [address],
-            family,
-          });
-
-          callback(null, address, family);
+      dns.lookup(hostname, options, (err: Error | null, address: string, family: number) => {
+        if (err) {
+          callback(err);
+          return;
         }
-      );
+
+        // Cache the result
+        dnsCache.set(cacheKey, {
+          expires: now + ttl,
+          addresses: [address],
+          family,
+        });
+
+        callback(null, address, family);
+      });
     };
   }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * @file Validation utilities for the Midaz SDK
  * @description Provides comprehensive validation functions for data validation and error handling

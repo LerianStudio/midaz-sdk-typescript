@@ -5,6 +5,7 @@
 
 import { ApiFactory } from '../api/api-factory';
 import { MidazConfig } from '../client';
+import { ConfigService } from '../util/config';
 import { HttpClient } from '../util/network/http-client';
 import { Observability } from '../util/observability/observability';
 
@@ -128,8 +129,7 @@ export class Entity {
     config?: MidazConfig,
     observability?: Observability
   ) {
-    // Import ConfigService
-    const { ConfigService } = require('../util/config');
+    // Get ConfigService instance
     const configService = ConfigService.getInstance();
 
     // Initialize observability using ConfigService
