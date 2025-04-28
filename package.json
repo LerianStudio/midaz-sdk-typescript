@@ -33,7 +33,7 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^18.19.86",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
-    "@typescript-eslint/parser": "^5.57.1",
+    "@typescript-eslint/parser": "^8.31.1",
     "better-docs": "^2.7.3",
     "dotenv": "^16.5.0",
     "eslint": "^9.25.1",
