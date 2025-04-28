@@ -582,7 +582,7 @@ describe('Ledger Model and Helper Functions', () => {
     // Test 41: Validating metadata with custom configuration
     it('shouldValidateMetadataWithCustomConfig', () => {
         const metadata = {
-            shortString: 'test'
+            shortString: 'abc' // Make sure this is within the custom maxStringLength
         };
         
         // Custom config with very small max string length
@@ -590,7 +590,7 @@ describe('Ledger Model and Helper Functions', () => {
             maxStringLength: 3
         };
         
-        const result = validateMetadata(metadata, customConfig);
+        const result = validateMetadata(metadata, 'metadata', customConfig);
         
         expect(result.valid).toBe(true);
     });
@@ -609,7 +609,7 @@ describe('Ledger Model and Helper Functions', () => {
             maxMetadataSize: 1000
         };
         
-        const result = validateMetadata(largeMetadata, customConfig);
+        const result = validateMetadata(largeMetadata, 'metadata', customConfig);
         
         expect(result.valid).toBe(false);
         expect(result.message).toContain('size exceeds maximum of');

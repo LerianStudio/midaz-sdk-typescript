@@ -1105,14 +1105,19 @@ async function getEntityDetails(
           account.id
         );
 
-        const balanceItems = extractItems(accountBalances);
+        // Make sure we can safely extract items
+        if (accountBalances) {
+          const balanceItems = extractItems(accountBalances);
 
-        if (balanceItems.length > 0) {
-          // Use the SDK's balance formatting utility
-          const formattedBalance = formatAccountBalance(balanceItems[0]);
-          console.log(
-            `    Balance: Available ${formattedBalance.available}, On Hold ${formattedBalance.onHold}`
-          );
+          if (balanceItems && balanceItems.length > 0) {
+            // Use the SDK's balance formatting utility
+            const formattedBalance = formatAccountBalance(balanceItems[0]);
+            console.log(
+              `    Balance: Available ${formattedBalance.available}, On Hold ${formattedBalance.onHold}`
+            );
+          } else {
+            console.log(`    No balance information available`);
+          }
         } else {
           console.log(`    No balance information available`);
         }

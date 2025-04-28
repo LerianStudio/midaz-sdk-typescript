@@ -220,7 +220,8 @@ export function validatePattern(
   }
 
   // At this point, value is guaranteed to exist due to validateRequired check
-  if (value && !pattern.test(value)) {
+  // For empty strings, we need to check if they match the pattern or not
+  if (!pattern.test(value as string)) {
     return {
       valid: false,
       message: `${fieldName} must match ${patternDescription}`,
