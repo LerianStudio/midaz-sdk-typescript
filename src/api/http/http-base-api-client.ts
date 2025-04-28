@@ -43,15 +43,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     // Use provided observability or create a new one
     this.observability =
       observability ||
-      new Observability({
-        serviceName,
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-          : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-          : false,
-      });
+      Observability.getInstance();
     
     // Get API version from URL builder
     this.apiVersion = this.urlBuilder.getApiVersion();

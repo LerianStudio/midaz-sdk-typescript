@@ -58,15 +58,7 @@ export class OperationsServiceImpl implements OperationsService {
     // Use provided observability or create a new one
     this.observability =
       observability ||
-      new Observability({
-        serviceName: 'midaz-operations-service',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-          : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-          : false,
-      });
+      Observability.getInstance();
   }
 
   /**

@@ -431,9 +431,25 @@ export class HttpClient {
    * @private
    */
   private tlsOptions?: {
+    /**
+     * Whether to reject unauthorized certificates
+     * @default true
+     */
     rejectUnauthorized?: boolean;
+
+    /**
+     * Custom CA certificates to trust
+     */
     ca?: Buffer | Buffer[] | string | string[];
+
+    /**
+     * Client certificate for mutual TLS
+     */
     cert?: Buffer | string;
+
+    /**
+     * Client key for mutual TLS
+     */
     key?: Buffer | string;
   };
 
@@ -1011,23 +1027,39 @@ export class HttpClient {
       }
 
       // Execute request with retry logic
-      const response = await this.retryPolicy.execute(async () => {
-        const response = await fetch(urlWithParams, requestOptions);
+      const response = await this.retryPolicy.execute(
+        async () => {
+          const response = await fetch(urlWithParams, requestOptions);
 
-        // Handle non-successful responses
-        if (!response.ok) {
-          // Use the errorFromHttpResponse helper with the correct number of arguments
-          return errorFromHttpResponse(
-            response.status,
-            await this.parseResponseBody(response),
-            method,
-            url
-          );
+          // Handle non-successful responses
+          if (!response.ok) {
+            // Use the errorFromHttpResponse helper with the correct number of arguments
+            return errorFromHttpResponse(
+              response.status,
+              await this.parseResponseBody(response),
+              method,
+              url
+            );
+          }
+
+          // Parse and return response body
+          return this.parseResponseBody(response);
+        },
+        // Track retry attempts in the span
+        (info) => {
+          if (info.attempt === 0) {
+            // First attempt - set the max retries attribute
+            span.setAttribute('retry.max_attempts', info.maxRetries);
+          } else {
+            // Retry attempt - record the attempt number and delay
+            span.setAttribute('retry.attempt', info.attempt);
+            span.setAttribute('retry.count', info.attempt);
+            if (info.delay) {
+              span.setAttribute('retry.delay_ms', info.delay);
+            }
+          }
         }
-
-        // Parse and return response body
-        return this.parseResponseBody(response);
-      });
+      );
 
       // Log response if debug is enabled
       if (this.debug) {

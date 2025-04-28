@@ -24,11 +24,7 @@ export class AccountsServiceImpl implements AccountsService {
     private readonly accountApiClient: AccountApiClient,
     observability?: Observability
   ) {
-    this.observability = observability || new Observability({
-      serviceName: 'midaz-accounts-service',
-      enableTracing: process.env.MIDAZ_ENABLE_TRACING?.toLowerCase() === 'true',
-      enableMetrics: process.env.MIDAZ_ENABLE_METRICS?.toLowerCase() === 'true',
-    });
+    this.observability = observability || Observability.getInstance();
   }
 
   /** @inheritdoc */

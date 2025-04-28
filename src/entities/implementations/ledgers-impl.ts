@@ -22,11 +22,7 @@ export class LedgersServiceImpl implements LedgersService {
     private readonly apiClient: LedgerApiClient,
     observability?: Observability
   ) {
-    this.observability = observability || new Observability({
-      serviceName: 'midaz-ledgers-service',
-      enableTracing: process.env.MIDAZ_ENABLE_TRACING?.toLowerCase() === 'true',
-      enableMetrics: process.env.MIDAZ_ENABLE_METRICS?.toLowerCase() === 'true',
-    });
+    this.observability = observability || Observability.getInstance();
   }
 
   /**

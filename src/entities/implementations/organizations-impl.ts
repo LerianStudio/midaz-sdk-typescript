@@ -34,15 +34,7 @@ export class OrganizationsServiceImpl implements OrganizationsService {
     // Initialize observability with service name
     this.observability =
       observability ||
-      new Observability({
-        serviceName: 'midaz-organizations-service',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-          : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-          : false,
-      });
+      Observability.getInstance();
   }
 
   /**

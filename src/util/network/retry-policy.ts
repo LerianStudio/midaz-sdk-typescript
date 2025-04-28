@@ -98,13 +98,22 @@ export class RetryPolicy {
    * Executes a function with retry logic
    * 
    * @param fn - Function to execute with retry logic
+   * @param onAttempt - Optional callback that receives the current attempt number and retry information
    * @returns Promise resolving to the function's result
    * @throws Error if all retry attempts fail
    */
-  public async execute<T>(fn: () => Promise<T>): Promise<T> {
+  public async execute<T>(
+    fn: () => Promise<T>, 
+    onAttempt?: (info: { attempt: number; maxRetries: number; delay?: number }) => void
+  ): Promise<T> {
     let lastError: Error | undefined;
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      // Call the onAttempt callback if provided
+      if (onAttempt) {
+        onAttempt({ attempt, maxRetries: this.maxRetries });
+      }
+      
       try {
         return await fn();
       } catch (error) {
@@ -115,7 +124,14 @@ export class RetryPolicy {
           break;
         }
 
-        await this.sleep(this.calculateDelay(attempt));
+        const delay = this.calculateDelay(attempt);
+        
+        // Call the onAttempt callback with delay information if provided
+        if (onAttempt) {
+          onAttempt({ attempt, maxRetries: this.maxRetries, delay });
+        }
+        
+        await this.sleep(delay);
       }
     }
 

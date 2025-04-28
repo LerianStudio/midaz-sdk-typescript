@@ -105,16 +105,22 @@ export type AttributeValue = string | number | boolean;
  */
 export class Observability {
   /** Configured observability options */
-  public readonly options: ObservabilityOptions;
+  public readonly options!: ObservabilityOptions;
 
   /** OpenTelemetry provider instance (if enabled) @protected */
   protected readonly otelProvider?: OpenTelemetryProvider;
 
   /** Creates a new observability provider with the specified options */
   constructor(options?: Partial<ObservabilityOptions>) {
+    // If a global instance already exists, reuse it to avoid duplicating providers
+    if (Observability.instance) {
+      // Ignore any new options and just return existing instance
+      return Observability.instance;
+    }
+
     // Get default options from ConfigService and override with provided options
     const defaultOptions = getDefaultObservabilityOptions();
-    
+
     this.options = {
       ...defaultOptions,
       ...options,
@@ -124,6 +130,9 @@ export class Observability {
     if (this.isEnabled()) {
       this.otelProvider = this.createOtelProvider(this.options);
     }
+
+    // Register this as the global instance
+    Observability.instance = this;
   }
 
   /** Determines if any observability features are enabled @protected */

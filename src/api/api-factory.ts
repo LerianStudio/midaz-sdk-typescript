@@ -52,17 +52,7 @@ export class ApiFactory {
     observability?: Observability
   ) {
     this.urlBuilder = new UrlBuilder(config);
-    this.observability =
-      observability ||
-      new Observability({
-        serviceName: 'midaz-api-factory',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-          : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-          : false,
-      });
+    this.observability = observability || Observability.getInstance();
   }
 
   /**
