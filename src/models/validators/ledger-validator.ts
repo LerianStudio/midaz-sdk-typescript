@@ -6,7 +6,6 @@
 import {
   combineValidationResults,
   validateNotEmpty,
-  validatePattern,
   validateRequired,
   ValidationResult,
 } from '../../util/validation';

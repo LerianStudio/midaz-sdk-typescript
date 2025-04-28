@@ -4,7 +4,6 @@
  */
 
 import { Asset, CreateAssetInput, UpdateAssetInput } from '../models/asset';
-import { AssetRate, UpdateAssetRateInput } from '../models/asset-rate';
 import { ListOptions, ListResponse } from '../models/common';
 
 /**

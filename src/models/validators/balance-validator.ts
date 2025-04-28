@@ -3,11 +3,7 @@
  * @description Provides validation functions to ensure balance data meets required format and business rules
  */
 
-import {
-  combineValidationResults,
-  validateRequired,
-  ValidationResult,
-} from '../../util/validation';
+import { validateRequired, ValidationResult } from '../../util/validation';
 import { UpdateBalanceInput } from '../balance';
 
 /**

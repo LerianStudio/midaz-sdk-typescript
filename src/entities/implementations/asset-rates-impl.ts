@@ -6,7 +6,6 @@
 import { AssetRateApiClient } from '../../api/interfaces/asset-rate-api-client';
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
 import { Observability } from '../../util/observability/observability';
-import { ValidationError } from '../../util/validation';
 import { AssetRatesService } from '../asset-rates';
 
 /**

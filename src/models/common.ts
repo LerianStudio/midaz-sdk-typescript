@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-interface */
 /**
  * @file Common model definitions for the Midaz SDK
  * @description Defines shared data structures, enums, and constants used throughout the Midaz ledger system

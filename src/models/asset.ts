@@ -3,7 +3,7 @@
  * @description Defines the asset data structures and helper functions for managing assets in the Midaz ledger system
  */
 
-import { ListResponse, Status, StatusCode } from './common';
+import { Status, StatusCode } from './common';
 import { BuildableModel, Builder, ModelBuilder } from './common-helpers';
 
 /**

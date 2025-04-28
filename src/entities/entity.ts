@@ -131,15 +131,17 @@ export class Entity {
     // Import ConfigService
     const { ConfigService } = require('../util/config');
     const configService = ConfigService.getInstance();
-    
+
     // Initialize observability using ConfigService
     const observabilityConfig = configService.getObservabilityConfig();
-    this.observability = observability || new Observability({
-      serviceName: 'midaz-entity-factory',
-      enableTracing: observabilityConfig.enableTracing,
-      enableMetrics: observabilityConfig.enableMetrics,
-      enableLogging: observabilityConfig.enableLogging,
-    });
+    this.observability =
+      observability ||
+      new Observability({
+        serviceName: 'midaz-entity-factory',
+        enableTracing: observabilityConfig.enableTracing,
+        enableMetrics: observabilityConfig.enableMetrics,
+        enableLogging: observabilityConfig.enableLogging,
+      });
 
     // Create an empty config if not provided (will be updated via configure())
     const initialConfig: MidazConfig = config || {

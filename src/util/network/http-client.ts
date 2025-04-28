@@ -4,18 +4,12 @@
  */
 
 import { createHash } from 'crypto';
-import http, { Agent as HttpAgent } from 'http';
-import https, { Agent as HttpsAgent } from 'https';
+import { Agent as HttpAgent } from 'http';
+import { Agent as HttpsAgent } from 'https';
 import { URL } from 'url';
 
 import { Cache } from '../cache/cache';
-import {
-  ErrorCategory,
-  ErrorCode,
-  errorFromHttpResponse,
-  MidazError,
-  newNetworkError,
-} from '../error';
+import { errorFromHttpResponse } from '../error';
 import { Observability, Span } from '../observability/observability';
 
 import { RetryPolicy } from './retry-policy';

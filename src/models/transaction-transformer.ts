@@ -4,6 +4,7 @@
  */
 
 import { createModelTransformer, ModelTransformer } from '../util/data/model-transformer';
+
 import { CreateTransactionInput, Transaction } from './transaction';
 
 /**

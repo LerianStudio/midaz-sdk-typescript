@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file OpenTelemetry implementation for the Midaz SDK observability system
  * @description Provides OpenTelemetry-compatible implementations of tracing, metrics, and logging
@@ -321,6 +322,7 @@ export class OpenTelemetryProvider {
   private initializeMetrics(options: ObservabilityOptions): Meter {
     // In a real implementation, this would initialize the OpenTelemetry metrics SDK
     // For demonstration purposes, we're creating a simplified version
+
     return {
       createCounter: (name: string, options?: any) => {
         console.debug(`[OpenTelemetry] Creating counter: ${name}`, options);

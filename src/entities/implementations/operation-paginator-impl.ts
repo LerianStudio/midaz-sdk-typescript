@@ -4,9 +4,8 @@
  */
 
 import { OperationApiClient } from '../../api/interfaces/operation-api-client';
-import { ListOptions, ListResponse } from '../../models/common';
+import { ListOptions } from '../../models/common';
 import { Operation } from '../../models/transaction';
-import { HttpClient } from '../../util/network/http-client';
 import { Observability } from '../../util/observability/observability';
 import { OperationPaginator } from '../operations';
 

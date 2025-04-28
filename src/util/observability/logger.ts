@@ -4,6 +4,11 @@
  * custom handlers, module-specific loggers, and request tracking
  */
 
+//  const fs = require('fs');
+//   const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
+
 /**
  * Available log levels in order of increasing severity
  *
@@ -535,9 +540,6 @@ export function createFileLogger(filePath: string, options: LoggerOptions = {}):
 
   // In Node.js, use the fs module to write to a file
   try {
-    const fs = require('fs');
-    const path = require('path');
-
     // Ensure the directory exists
     const directory = path.dirname(filePath);
     if (!fs.existsSync(directory)) {

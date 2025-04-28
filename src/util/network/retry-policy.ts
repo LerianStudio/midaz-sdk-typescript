@@ -3,6 +3,7 @@
  * @description Provides configurable retry logic with exponential backoff for API requests
  */
 
+import { ConfigService } from '../config';
 import { MidazError } from '../error';
 
 /**
@@ -39,9 +40,6 @@ export interface RetryOptions {
    */
   retryCondition?: (error: Error) => boolean;
 }
-
-// Import ConfigService
-import { ConfigService } from '../config';
 
 /**
  * Default retry options

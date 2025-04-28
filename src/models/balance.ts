@@ -3,8 +3,6 @@
  * @description Defines the balance data structures and helper functions for managing account balances in the Midaz ledger system
  */
 
-import { Status } from './common';
-
 /**
  * Balance represents an account balance in the Midaz system.
  *

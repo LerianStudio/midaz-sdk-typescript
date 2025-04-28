@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file Worker pool utilities for the Midaz SDK
  * @description Provides tools for parallel processing with controlled concurrency, batching, and throttling

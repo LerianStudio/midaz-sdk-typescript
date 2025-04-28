@@ -1,23 +1,17 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @file Error handler for the Midaz SDK
  * @description Provides error handling and recovery functions
  */
 
-import type { LogLevel } from '../observability/logger';
-import { 
-  EnhancedErrorInfo, 
-  ErrorHandlerOptions, 
-  ErrorRecoveryOptions, 
-  OperationResult, 
-  TransactionErrorCategory
-} from './error-types';
-import { 
-  processError, 
-  isRetryableError, 
-  isInsufficientFundsError, 
-  isAccountEligibilityError, 
+import { ErrorHandlerOptions, ErrorRecoveryOptions, OperationResult } from './error-types';
+import {
+  isAccountEligibilityError,
+  isDuplicateTransactionError,
   isInsufficientBalanceError,
-  isDuplicateTransactionError
+  isInsufficientFundsError,
+  isRetryableError,
+  processError,
 } from './error-utils';
 
 /**
@@ -89,7 +83,7 @@ export function logDetailedError(
 
 /**
  * Creates a standardized error handler with configurable behavior
- * 
+ *
  * @param options - Error handler configuration options
  * @returns A function that handles errors according to the specified options
  */
@@ -118,7 +112,7 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
     if (logErrors) {
       logDetailedError(error, handlerContext, (message, ...args) => {
         // Handle different log levels appropriately
-        switch(logLevel) {
+        switch (logLevel) {
           case 'debug':
             console.debug(message, ...args);
             break;
@@ -148,7 +142,7 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
 
 /**
  * Handles a function that may throw errors with consistent error handling
- * 
+ *
  * @param fn - Function to execute
  * @param options - Error handler options
  * @returns Result of the function or default value if it fails
@@ -158,7 +152,7 @@ export async function withErrorHandling<T>(
   options?: ErrorHandlerOptions
 ): Promise<T | null> {
   const handler = createErrorHandler(options);
-  
+
   try {
     return await fn();
   } catch (error) {
@@ -242,12 +236,12 @@ export async function withErrorRecovery<T>(
 
 /**
  * Safely executes an operation with advanced error handling and recovery
- * 
+ *
  * This function provides a standardized way to handle operations that may fail
  * with domain-specific error handling and automatic retries when appropriate.
  * It returns a detailed result object with status and error information.
- * 
- * @param operation - Function to execute 
+ *
+ * @param operation - Function to execute
  * @param options - Error recovery options
  * @returns Operation result with status and error information
  */
@@ -259,13 +253,10 @@ export async function executeOperation<T>(
 
   try {
     // First, try to execute the operation with automatic retries for retryable errors
-    const result = await withErrorRecovery(
-      async () => {
-        attempts++;
-        return await operation();
-      },
-      options
-    );
+    const result = await withErrorRecovery(async () => {
+      attempts++;
+      return await operation();
+    }, options);
 
     // Operation succeeded
     return {
@@ -310,7 +301,7 @@ export async function executeOperation<T>(
 /**
  * Specialized version of executeOperation for financial transactions
  * with domain-specific error handling for common financial operation errors
- * 
+ *
  * @param transactionFn - Transaction function to execute
  * @param options - Error recovery options
  * @returns Transaction result and status information
@@ -319,26 +310,23 @@ export async function executeTransaction<T>(
   transactionFn: () => Promise<T>,
   options?: Partial<ErrorRecoveryOptions>
 ): Promise<OperationResult<T>> {
-  return executeOperation(
-    transactionFn,
-    {
-      // Use custom retry condition that only retries network errors, not business logic errors
-      retryCondition: (error) => {
-        // Don't retry business logic errors like insufficient funds
-        if (
-          isInsufficientFundsError(error) ||
-          isInsufficientBalanceError(error) ||
-          isAccountEligibilityError(error)
-        ) {
-          return false;
-        }
+  return executeOperation(transactionFn, {
+    // Use custom retry condition that only retries network errors, not business logic errors
+    retryCondition: (error) => {
+      // Don't retry business logic errors like insufficient funds
+      if (
+        isInsufficientFundsError(error) ||
+        isInsufficientBalanceError(error) ||
+        isAccountEligibilityError(error)
+      ) {
+        return false;
+      }
 
-        // Use standard retry condition for other errors
-        return isRetryableError(error);
-      },
-      ...options,
-    }
-  );
+      // Use standard retry condition for other errors
+      return isRetryableError(error);
+    },
+    ...options,
+  });
 }
 
 // For backward compatibility

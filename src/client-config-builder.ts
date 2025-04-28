@@ -5,7 +5,6 @@
 
 import { MidazConfig } from './client';
 import { HttpClient } from './util/network/http-client';
-import { RetryPolicy } from './util/network/retry-policy';
 
 /**
  * Environment-specific base URLs

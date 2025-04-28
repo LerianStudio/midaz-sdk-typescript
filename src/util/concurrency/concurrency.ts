@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-catch */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * @file Concurrency utilities for the Midaz SDK
  * @description Provides tools for parallel processing with controlled concurrency while maintaining result order

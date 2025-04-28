@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 /**
  * @file Observability utilities for the Midaz SDK
  * @description Provides tracing, metrics, and logging capabilities for monitoring and debugging
@@ -52,7 +53,7 @@ import { ConfigService } from '../config';
 function getDefaultObservabilityOptions(): ObservabilityOptions {
   const configService = ConfigService.getInstance();
   const observabilityConfig = configService.getObservabilityConfig();
-  
+
   return {
     enableTracing: observabilityConfig.enableTracing,
     enableMetrics: observabilityConfig.enableMetrics,
@@ -115,7 +116,7 @@ export interface Span {
  */
 class NoopSpan implements Span {
   setAttribute(): void {}
-  recordException(error: unknown): void {}
+  recordException(_error: unknown): void {}
   setStatus(): void {}
   end(): void {}
 }
@@ -187,7 +188,7 @@ export class Observability {
   constructor(options?: Partial<ObservabilityOptions>) {
     // Get default options from ConfigService and override with provided options
     const defaultOptions = getDefaultObservabilityOptions();
-    
+
     this.options = {
       ...defaultOptions,
       ...options,
