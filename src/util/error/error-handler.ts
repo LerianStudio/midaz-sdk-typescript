@@ -6,17 +6,23 @@
 import type { LogLevel } from '../observability/logger';
 import { 
   EnhancedErrorInfo, 
-  TransactionErrorCategory, 
   ErrorHandlerOptions, 
   ErrorRecoveryOptions, 
-  OperationResult
+  OperationResult, 
+  TransactionErrorCategory
+} from './error-types';
+import { 
+  ErrorCategory, 
+  ErrorCode, 
+  MidazError, 
+  TransactionErrorType 
 } from './error-types';
 import { 
   isAccountEligibilityError, 
   isDuplicateTransactionError, 
   isInsufficientBalanceError,
   isInsufficientFundsError, 
-  isRetryableError, 
+  isRetryableError,
   processError
 } from './error-utils';
 
@@ -47,32 +53,32 @@ export function logDetailedError(
   const errorInfo = processError(error);
 
   logger('===== ERROR DETAILS =====');
-  logger(`Type: ${errorInfo.type}`);
-  logger(`Message: ${errorInfo.message}`);
+  logger(`Type: ${errorInfo?.type || 'Unknown'}`);
+  logger(`Message: ${errorInfo?.message || 'No message available'}`);
 
-  if (errorInfo.transactionErrorType) {
+  if (errorInfo?.transactionErrorType) {
     logger(`Transaction Error Type: ${errorInfo.transactionErrorType}`);
   }
 
-  if (errorInfo.statusCode) {
+  if (errorInfo?.statusCode) {
     logger(`Status Code: ${errorInfo.statusCode}`);
   }
 
-  if (errorInfo.resource) {
+  if (errorInfo?.resource) {
     logger(
       `Resource: ${errorInfo.resource}${errorInfo.resourceId ? `/${errorInfo.resourceId}` : ''}`
     );
   }
 
-  if (errorInfo.requestId) {
+  if (errorInfo?.requestId) {
     logger(`Request ID: ${errorInfo.requestId}`);
   }
 
-  if (errorInfo.recoveryRecommendation) {
+  if (errorInfo?.recoveryRecommendation) {
     logger(`Recovery Recommendation: ${errorInfo.recoveryRecommendation}`);
   }
 
-  logger(`Retryable: ${errorInfo.isRetryable}`);
+  logger(`Retryable: ${errorInfo?.isRetryable}`);
 
   if (context) {
     logger('Context:', context);
@@ -102,10 +108,17 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
   return function handleError(error: unknown, handlerContext?: Record<string, any>) {
     // Process the error to get all details
     const errorInfo = processError(error);
+    
+    // Get the error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Handle user display if enabled
-    if (displayErrors && errorInfo.shouldShowUser) {
-      const displayMessage = formatMessage ? formatMessage(errorInfo) : errorInfo.userMessage;
+    if (displayErrors) {
+      // If we have a formatter and valid errorInfo, use it, otherwise use the raw error message
+      const displayMessage = formatMessage && errorInfo 
+        ? formatMessage(errorInfo) 
+        : errorMessage;
+      
       displayFn(displayMessage);
     }
 
