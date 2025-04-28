@@ -3,7 +3,7 @@
  * 
  * This example demonstrates a complete financial workflow using the Midaz SDK,
  * including advanced features such as transaction pairs, batch processing,
- * and error recovery mechanisms.
+ * error recovery mechanisms, pagination, and observability.
  */
 
 import {
@@ -36,7 +36,20 @@ import {
   createBatch,
   executeBatch,
   TransactionBatch,
+  // Observability utilities
+  Observability,
+  LogLevel,
+  Logger,
 } from '../src';
+
+// Import pagination utilities directly from the module
+import { 
+  createPaginator, 
+  paginateItems, 
+  fetchAllItems, 
+  StandardPaginator as Paginator,
+  PaginatorConfig
+} from '../src/util/data/pagination-abstraction';
 
 /**
  * Main workflow function that demonstrates a complete financial system workflow
@@ -57,12 +70,29 @@ async function main() {
         debug: false,
       },
       observability: {
-        enableTracing: false,
-        enableMetrics: false,
-        enableLogging: false,
+        enableTracing: true,
+        enableMetrics: true,
+        enableLogging: true,
         serviceName: 'midaz-workflow-example',
       },
     });
+    
+    // Set up observability and logging
+    const logger = new Logger({
+      minLevel: LogLevel.DEBUG,
+      defaultModule: 'workflow',
+      includeTimestamps: true,
+    });
+    
+    // Initialize global observability
+    Observability.configure({
+      enableTracing: true,
+      enableMetrics: true,
+      enableLogging: true,
+      serviceName: 'midaz-workflow-example',
+    });
+    
+    logger.info('Starting workflow example', { timestamp: new Date().toISOString() });
     
     // Initialize client using the centralized configuration
     const client = new MidazClient({
@@ -70,73 +100,184 @@ async function main() {
       apiVersion: 'v1', // Specify API version explicitly
     });
 
-    // Create organization
-    console.log('\n[1/8] CREATING ORGANIZATION...');
-    const organization = await setupOrganization(client);
-    console.log(`✓ Organization "${organization.legalName}" created with ID: ${organization.id}`);
+    // Create a workflow span to track the entire process
+    const workflowSpan = Observability.startSpan('complete-workflow', {
+      startTime: Date.now()
+    });
+    
+    try {
+      // Create organization
+      console.log('\n[1/8] CREATING ORGANIZATION...');
+      workflowSpan.setAttribute('currentStep', 'create-organization');
+      const organizationSpan = Observability.startSpan('create-organization');
+      
+      const organization = await setupOrganization(client);
+      console.log(`✓ Organization "${organization.legalName}" created with ID: ${organization.id}`);
+      
+      organizationSpan.setAttribute('organizationId', organization.id);
+      organizationSpan.setStatus('ok');
+      organizationSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-organization' });
 
-    // Create ledgers
-    console.log('\n[2/8] CREATING LEDGERS...');
-    const { operatingLedger, investmentLedger } = await setupLedgers(client, organization.id);
-    console.log(`✓ Created ledgers: "${operatingLedger.name}" and "${investmentLedger.name}"`);
+      // Create ledgers
+      console.log('\n[2/8] CREATING LEDGERS...');
+      workflowSpan.setAttribute('currentStep', 'create-ledgers');
+      const ledgerSpan = Observability.startSpan('create-ledgers');
+      
+      const { operatingLedger, investmentLedger } = await setupLedgers(client, organization.id);
+      console.log(`✓ Created ledgers: "${operatingLedger.name}" and "${investmentLedger.name}"`);
+      
+      ledgerSpan.setAttribute('operatingLedgerId', operatingLedger.id);
+      ledgerSpan.setAttribute('investmentLedgerId', investmentLedger.id);
+      ledgerSpan.setStatus('ok');
+      ledgerSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-ledgers' });
 
-    // Create assets
-    console.log('\n[3/8] CREATING ASSETS...');
-    const createdAssets = await setupAssets(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id
-    );
-    console.log(`✓ Created ${createdAssets.length} assets across ledgers`);
+      // Create assets
+      console.log('\n[3/8] CREATING ASSETS...');
+      workflowSpan.setAttribute('currentStep', 'create-assets');
+      const assetSpan = Observability.startSpan('create-assets');
+      
+      const createdAssets = await setupAssets(
+        client,
+        organization.id,
+        operatingLedger.id,
+        investmentLedger.id
+      );
+      console.log(`✓ Created ${createdAssets.length} assets across ledgers`);
+      
+      assetSpan.setAttribute('assetCount', createdAssets.length);
+      assetSpan.setStatus('ok');
+      assetSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-assets' });
 
-    // Create accounts
-    console.log('\n[4/8] CREATING ACCOUNTS...');
-    const createdAccounts = await setupAccounts(client, organization.id, createdAssets);
-    console.log(`✓ Created ${createdAccounts.length} accounts across all assets`);
+      // Create accounts
+      console.log('\n[4/8] CREATING ACCOUNTS...');
+      workflowSpan.setAttribute('currentStep', 'create-accounts');
+      const accountSpan = Observability.startSpan('create-accounts');
+      
+      const createdAccounts = await setupAccounts(client, organization.id, createdAssets);
+      console.log(`✓ Created ${createdAccounts.length} accounts across all assets`);
+      
+      accountSpan.setAttribute('accountCount', createdAccounts.length);
+      accountSpan.setStatus('ok');
+      accountSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-accounts' });
 
-    // Create initial deposits using batch processing
-    console.log('\n[5/8] CREATING INITIAL DEPOSITS WITH BATCH PROCESSING...');
-    const depositCount = await createInitialDeposits(
-      client,
-      organization.id,
-      createdAccounts
-    );
-    console.log(`✓ Created ${depositCount} initial deposits`);
+      // Create initial deposits using batch processing
+      console.log('\n[5/8] CREATING INITIAL DEPOSITS WITH BATCH PROCESSING...');
+      workflowSpan.setAttribute('currentStep', 'create-deposits');
+      const depositSpan = Observability.startSpan('create-deposits');
+      
+      const depositCount = await createInitialDeposits(
+        client,
+        organization.id,
+        createdAccounts
+      );
+      console.log(`✓ Created ${depositCount} initial deposits`);
+      
+      depositSpan.setAttribute('depositCount', depositCount);
+      depositSpan.setStatus('ok');
+      depositSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-deposits' });
 
-    // Create transaction pairs (credit/debit pairs)
-    console.log('\n[6/8] CREATING TRANSACTION PAIRS...');
-    const transactionPairsCount = await createAdditionalTransactions(
-      client,
-      organization.id,
-      operatingLedger.id,
-      createdAccounts
-    );
-    console.log(`✓ Created ${transactionPairsCount} transaction pairs`);
+      // Create transaction pairs (credit/debit pairs)
+      console.log('\n[6/8] CREATING TRANSACTION PAIRS...');
+      workflowSpan.setAttribute('currentStep', 'create-transaction-pairs');
+      const pairSpan = Observability.startSpan('create-transaction-pairs');
+      
+      const transactionPairsCount = await createAdditionalTransactions(
+        client,
+        organization.id,
+        operatingLedger.id,
+        createdAccounts
+      );
+      console.log(`✓ Created ${transactionPairsCount} transaction pairs`);
+      
+      pairSpan.setAttribute('transactionPairsCount', transactionPairsCount);
+      pairSpan.setStatus('ok');
+      pairSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-transaction-pairs' });
 
-    // Create complex transaction patterns
-    console.log('\n[7/8] DEMONSTRATING ADVANCED TRANSACTION PATTERNS...');
-    const patternCount = await demonstrateTransactionPatterns(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id,
-      createdAccounts
-    );
-    console.log(`✓ Executed ${patternCount} advanced transaction patterns`);
+      // Create complex transaction patterns
+      console.log('\n[7/8] DEMONSTRATING ADVANCED TRANSACTION PATTERNS...');
+      workflowSpan.setAttribute('currentStep', 'demonstrate-patterns');
+      const patternSpan = Observability.startSpan('demonstrate-patterns');
+      
+      const patternCount = await demonstrateTransactionPatterns(
+        client,
+        organization.id,
+        operatingLedger.id,
+        investmentLedger.id,
+        createdAccounts
+      );
+      console.log(`✓ Executed ${patternCount} advanced transaction patterns`);
+      
+      patternSpan.setAttribute('patternCount', patternCount);
+      patternSpan.setStatus('ok');
+      patternSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'demonstrate-patterns' });
 
-    // Display balances with error recovery
-    console.log('\n[8/8] DISPLAYING ACCOUNT BALANCES WITH ERROR RECOVERY...');
-    await displayBalances(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id,
-      createdAccounts
-    );
-    console.log('✓ Retrieved and displayed account balances');
-
-    console.log('\n=== WORKFLOW COMPLETED SUCCESSFULLY ===');
+      // Display balances with error recovery and pagination
+      console.log('\n[8/8] DISPLAYING ACCOUNT BALANCES WITH ERROR RECOVERY AND PAGINATION...');
+      workflowSpan.setAttribute('currentStep', 'display-balances');
+      const balanceSpan = Observability.startSpan('display-balances');
+      
+      await displayBalances(
+        client,
+        organization.id,
+        operatingLedger.id,
+        investmentLedger.id,
+        createdAccounts
+      );
+      console.log('✓ Retrieved and displayed account balances');
+      
+      balanceSpan.setStatus('ok');
+      balanceSpan.end();
+      
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'display-balances' });
+      
+      // Mark the overall workflow as successful
+      workflowSpan.setStatus('ok');
+      Observability.recordMetric('workflow.completed', 1, { success: 'true' });
+      
+      console.log('\n=== WORKFLOW COMPLETED SUCCESSFULLY ===');
+    } catch (error) {
+      // Record the current step where the error occurred
+      // Get the current step value directly instead of using getAttribute
+      const currentStep = workflowSpan.hasOwnProperty('_attributes') ? 
+        (workflowSpan as any)._attributes?.currentStep || 'unknown' : 'unknown';
+      workflowSpan.setAttribute('failedStep', currentStep);
+      workflowSpan.recordException(error);
+      workflowSpan.setStatus('error', error instanceof Error ? error.message : String(error));
+      
+      // Record failure metric
+      Observability.recordMetric('workflow.completed', 1, { success: 'false' });
+      
+      throw error;
+    } finally {
+      // Complete duration measurement and end span
+      workflowSpan.setAttribute('endTime', Date.now());
+      workflowSpan.end();
+      
+      // Ensure all telemetry is flushed
+      await Observability.getInstance().shutdown();
+    }
   } catch (error) {
     console.error('\n❌ WORKFLOW ERROR:');
     handleError(error);
@@ -657,63 +798,132 @@ async function displayBalances(
   investmentLedgerId: string,
   accounts: AccountInfo[]
 ): Promise<void> {
-  // Helper function to display balances for a specific ledger with error recovery
+  // Helper function to display balances for a specific ledger with error recovery and pagination
   async function displayLedgerBalances(ledgerId: string, ledgerName: string) {
     console.log(`  ${ledgerName} Ledger Balances:`);
+    const logger = new Logger({ 
+      minLevel: LogLevel.DEBUG, 
+      defaultModule: 'balance-display' 
+    });
     
-    // Use enhanced error recovery for the balance retrieval
-    const balances = await executeWithEnhancedRecovery(
-      () => client.entities.balances.listBalances(organizationId, ledgerId),
-      {
-        maxRetries: 3,
-        usePolledVerification: true,
-        verifyOperation: async () => {
+    // Create a span for balance loading operation
+    const span = Observability.startSpan('fetch-balances', {
+      ledgerId,
+      ledgerName,
+      organizationId
+    });
+    
+    try {
+      logger.info(`Fetching balances for ledger ${ledgerName}`, { ledgerId });
+      
+      // Use pagination to handle potentially large numbers of balances
+      const paginator = createPaginator<any>({
+        fetchPage: (options) => client.entities.balances.listBalances(
+          organizationId, 
+          ledgerId, 
+          options
+        ),
+        maxItems: 1000, // Limit total number of items
+        maxPages: 50,   // Limit number of pages
+        spanAttributes: {
+          ledgerId,
+          ledgerName
+        }
+      });
+      
+      // Collect all balances across pages
+      const allBalances: any[] = [];
+      let pageCount = 0;
+      
+      // Use enhanced error recovery wrapped around pagination
+      await executeWithEnhancedRecovery(
+        async () => {
+          await paginator.forEachPage(async (balances) => {
+            pageCount++;
+            logger.info(`Processing balance page ${pageCount}`, { 
+              itemCount: balances.length 
+            });
+            allBalances.push(...balances);
+            
+            // Record metrics for each page received
+            Observability.recordMetric('balances.fetched', balances.length, {
+              ledgerId,
+              ledgerName
+            });
+          });
+          return allBalances;
+        },
+        {
+          maxRetries: 3,
+          usePolledVerification: true,
+          verifyOperation: async () => {
+            try {
+              // Try a simple check to verify API is responsive
+              await client.entities.ledgers.getLedger(organizationId, ledgerId);
+              return true;
+            } catch {
+              return false;
+            }
+          }
+        }
+      );
+      
+      // Mark span as successful
+      span.setStatus('ok');
+      const paginationState = paginator.getPaginationState();
+      span.setAttribute('balanceCount', allBalances.length);
+      span.setAttribute('pageCount', pageCount);
+      span.setAttribute('lastFetchTimestamp', paginationState.lastFetchTimestamp || 0);
+      
+      logger.info(`Retrieved ${allBalances.length} balances in ${pageCount} pages`, {
+        ledgerId,
+        ledgerName,
+        paginationState
+      });
+      
+      // Group by asset for easier reading
+      const balancesByAsset: Record<string, any[]> = {};
+      
+      for (const balance of allBalances) {
+        const assetCode = balance.assetCode || 'Unknown';
+        
+        if (!balancesByAsset[assetCode]) {
+          balancesByAsset[assetCode] = [];
+        }
+        
+        balancesByAsset[assetCode].push(balance);
+      }
+      
+      // Display balances by asset
+      for (const assetCode in balancesByAsset) {
+        console.log(`    ${assetCode} Accounts:`);
+        
+        for (const balance of balancesByAsset[assetCode]) {
           try {
-            // Try a simple check to verify API is responsive
-            await client.entities.ledgers.getLedger(organizationId, ledgerId);
-            return true;
-          } catch {
-            return false;
+            // Find account info for this balance
+            const account = accounts.find(a => 
+              a.id === balance.accountId && a.ledgerId === ledgerId
+            );
+            
+            // Format and display the balance
+            const formattedBalance = formatAccountBalance(balance);
+            console.log(`      ${account ? account.name : balance.accountId}: ${formattedBalance.displayString}`);
+          } catch (error) {
+            // Fallback display if formatting fails
+            console.log(`      ${balance.accountId}: Available ${balance.available || '0'}`);
+            logger.warn('Failed to format balance', { error, accountId: balance.accountId });
           }
         }
       }
-    );
-    
-    // Extract and process balances
-    const balanceItems = extractItems(balances.result || { items: [] });
-    
-    // Group by asset for easier reading
-    const balancesByAsset: Record<string, any[]> = {};
-    
-    for (const balance of balanceItems) {
-      const assetCode = (balance as any).assetCode || 'Unknown';
-      
-      if (!balancesByAsset[assetCode]) {
-        balancesByAsset[assetCode] = [];
-      }
-      
-      balancesByAsset[assetCode].push(balance);
-    }
-    
-    // Display balances by asset
-    for (const assetCode in balancesByAsset) {
-      console.log(`    ${assetCode} Accounts:`);
-      
-      for (const balance of balancesByAsset[assetCode]) {
-        try {
-          // Find account info for this balance
-          const account = accounts.find(a => 
-            a.id === (balance as any).accountId && a.ledgerId === ledgerId
-          );
-          
-          // Format and display the balance
-          const formattedBalance = formatAccountBalance(balance);
-          console.log(`      ${account ? account.name : balance.accountId}: ${formattedBalance.displayString}`);
-        } catch (error) {
-          // Fallback display if formatting fails
-          console.log(`      ${(balance as any).accountId}: Available ${(balance as any).available || '0'}`);
-        }
-      }
+    } catch (error) {
+      // Record error in the span
+      span.recordException(error);
+      span.setStatus('error', error instanceof Error ? error.message : String(error));
+      logger.error('Failed to retrieve balances', { error, ledgerId });
+      throw error;
+    } finally {
+      // Always end the span
+      span.end();
     }
   }
   
@@ -806,36 +1016,94 @@ async function createAccount(
 
 /**
  * Handles errors from the Midaz API with enhanced error information
+ * and integrates with observability framework
  */
 function handleError(error: any): void {
-  // Get comprehensive error information
-  const errorInfo = processError(error);
-
-  // Log detailed error information for debugging
-  logDetailedError(error, {
-    source: 'workflow-example',
-    timestamp: new Date().toISOString(),
+  // Create logger for error handling
+  const logger = new Logger({
+    minLevel: LogLevel.ERROR,
+    defaultModule: 'error-handler'
   });
-
-  // Display user-friendly error information
-  console.error(`  Error: ${errorInfo.userMessage}`);
-
-  // Show recovery recommendation if available
-  if (errorInfo.recoveryRecommendation) {
-    console.error(`  Recommendation: ${errorInfo.recoveryRecommendation}`);
-  }
   
-  // Show recovery steps if available (enhanced error recovery)
-  if (errorInfo.recoverySteps && errorInfo.recoverySteps.length > 0) {
-    console.error('  Recovery steps attempted:');
-    errorInfo.recoverySteps.forEach((step, index) => {
-      console.error(`    ${index + 1}. ${step}`);
+  // Create error span
+  const span = Observability.startSpan('error-handling', {
+    timestamp: new Date().toISOString(),
+    source: 'workflow-example'
+  });
+  
+  try {
+    // Get comprehensive error information
+    const errorInfo = processError(error);
+    
+    // Add error details to the span
+    span.setAttribute('errorType', errorInfo.type || 'unknown');
+    span.setAttribute('statusCode', errorInfo.statusCode?.toString() || 'none');
+    span.setAttribute('retryable', errorInfo.isRetryable?.toString() || 'false');
+    
+    // Record exception in observability
+    span.recordException(error);
+    span.setStatus('error', error instanceof Error ? error.message : String(error));
+    
+    // Log detailed error information for debugging
+    logDetailedError(error, {
+      source: 'workflow-example',
+      timestamp: new Date().toISOString(),
     });
+    
+    // Log through observability system
+    logger.error('Workflow error occurred', {
+      error: errorInfo,
+      message: errorInfo.userMessage,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Record error metric
+    Observability.recordMetric('workflow.error', 1, {
+      errorType: errorInfo.type || 'unknown',
+      statusCode: errorInfo.statusCode?.toString() || 'none'
+    });
+
+    // Display user-friendly error information
+    console.error(`  Error: ${errorInfo.userMessage}`);
+
+    // Show recovery recommendation if available
+    if (errorInfo.recoveryRecommendation) {
+      console.error(`  Recommendation: ${errorInfo.recoveryRecommendation}`);
+    }
+    
+    // Show recovery steps if available (enhanced error recovery)
+    if (errorInfo.recoverySteps && errorInfo.recoverySteps.length > 0) {
+      console.error('  Recovery steps attempted:');
+      errorInfo.recoverySteps.forEach((step, index) => {
+        console.error(`    ${index + 1}. ${step}`);
+      });
+    }
+  } finally {
+    // Always end the span
+    span.end();
   }
 }
 
-// Run the example
+// Run the example with cleanup
 main().catch((error) => {
   console.error('Unhandled error:', error);
-  process.exit(1);
+  
+  // Create an error handler logger
+  const logger = new Logger({ 
+    minLevel: LogLevel.ERROR,
+    defaultModule: 'main-error-handler'
+  });
+  
+  logger.error('Unhandled error in main workflow', { error });
+  
+  // Record fatal error metric
+  Observability.recordMetric('workflow.fatal_error', 1, {
+    errorMessage: error.message || 'Unknown error'
+  });
+  
+  // Shutdown observability to flush telemetry
+  Observability.getInstance().shutdown()
+    .finally(() => {
+      process.exit(1);
+    });
 });
