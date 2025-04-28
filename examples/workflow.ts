@@ -1,6 +1,9 @@
 /**
- * Midaz SDK - Financial Workflow Example (Fixed Version)
- * This is a simplified version of the workflow example that works with the current SDK
+ * Midaz SDK - Financial Workflow Example
+ * 
+ * This example demonstrates a complete financial workflow using the Midaz SDK,
+ * including advanced features such as transaction pairs, batch processing,
+ * and error recovery mechanisms.
  */
 
 import {
@@ -22,12 +25,23 @@ import {
   executeTransactionPair,
   // Transaction pattern utilities
   createCreditDebitPair,
+  createUserTransfer,
+  createMultiAccountTransfer,
+  createRecurringPayment,
+  // Enhanced error recovery utilities
+  executeWithRetry,
+  executeWithVerification,
+  executeWithEnhancedRecovery,
+  // Batch utilities
+  createBatch,
+  executeBatch,
+  TransactionBatch,
 } from '../src';
 
 /**
  * Main workflow function that demonstrates a complete financial system workflow
  * using the Midaz SDK. This function orchestrates the entire process from
- * organization creation to account balance display.
+ * organization creation to account balance display and advanced transaction patterns.
  */
 async function main() {
   try {
@@ -57,31 +71,41 @@ async function main() {
     });
 
     // Create organization
-    console.log('\n[1/5] CREATING ORGANIZATION...');
+    console.log('\n[1/8] CREATING ORGANIZATION...');
     const organization = await setupOrganization(client);
     console.log(`✓ Organization "${organization.legalName}" created with ID: ${organization.id}`);
 
     // Create ledgers
-    console.log('\n[2/5] CREATING LEDGERS...');
-    const { operatingLedger } = await setupLedgers(client, organization.id);
-    console.log(`✓ Created ledger: "${operatingLedger.name}"`);
+    console.log('\n[2/8] CREATING LEDGERS...');
+    const { operatingLedger, investmentLedger } = await setupLedgers(client, organization.id);
+    console.log(`✓ Created ledgers: "${operatingLedger.name}" and "${investmentLedger.name}"`);
 
     // Create assets
-    console.log('\n[3/5] CREATING ASSETS...');
+    console.log('\n[3/8] CREATING ASSETS...');
     const createdAssets = await setupAssets(
       client,
       organization.id,
-      operatingLedger.id
+      operatingLedger.id,
+      investmentLedger.id
     );
-    console.log(`✓ Created ${createdAssets.length} assets`);
+    console.log(`✓ Created ${createdAssets.length} assets across ledgers`);
 
     // Create accounts
-    console.log('\n[4/5] CREATING ACCOUNTS...');
+    console.log('\n[4/8] CREATING ACCOUNTS...');
     const createdAccounts = await setupAccounts(client, organization.id, createdAssets);
     console.log(`✓ Created ${createdAccounts.length} accounts across all assets`);
 
-    // Create additional credit and debit transactions for each account
-    console.log('\n[5/5] CREATING ADDITIONAL TRANSACTIONS...');
+    // Create initial deposits using batch processing
+    console.log('\n[5/8] CREATING INITIAL DEPOSITS WITH BATCH PROCESSING...');
+    const depositCount = await createInitialDeposits(
+      client,
+      organization.id,
+      createdAccounts
+    );
+    console.log(`✓ Created ${depositCount} initial deposits`);
+
+    // Create transaction pairs (credit/debit pairs)
+    console.log('\n[6/8] CREATING TRANSACTION PAIRS...');
     const transactionPairsCount = await createAdditionalTransactions(
       client,
       organization.id,
@@ -89,6 +113,28 @@ async function main() {
       createdAccounts
     );
     console.log(`✓ Created ${transactionPairsCount} transaction pairs`);
+
+    // Create complex transaction patterns
+    console.log('\n[7/8] DEMONSTRATING ADVANCED TRANSACTION PATTERNS...');
+    const patternCount = await demonstrateTransactionPatterns(
+      client,
+      organization.id,
+      operatingLedger.id,
+      investmentLedger.id,
+      createdAccounts
+    );
+    console.log(`✓ Executed ${patternCount} advanced transaction patterns`);
+
+    // Display balances with error recovery
+    console.log('\n[8/8] DISPLAYING ACCOUNT BALANCES WITH ERROR RECOVERY...');
+    await displayBalances(
+      client,
+      organization.id,
+      operatingLedger.id,
+      investmentLedger.id,
+      createdAccounts
+    );
+    console.log('✓ Retrieved and displayed account balances');
 
     console.log('\n=== WORKFLOW COMPLETED SUCCESSFULLY ===');
   } catch (error) {
@@ -135,8 +181,15 @@ async function setupLedgers(
     'Operating Ledger',
     'Main ledger for day-to-day operations'
   );
+  
+  const investmentLedger = await createLedger(
+    client,
+    organizationId,
+    'Investment Ledger',
+    'Ledger for long-term investments and portfolios'
+  );
 
-  return { operatingLedger };
+  return { operatingLedger, investmentLedger };
 }
 
 /**
@@ -158,17 +211,19 @@ interface AccountInfo {
 async function setupAssets(
   client: MidazClient,
   organizationId: string,
-  operatingLedgerId: string
+  operatingLedgerId: string,
+  investmentLedgerId: string
 ): Promise<AccountInfo[]> {
-  // Define asset configurations - simplified to 2 assets
+  // Define asset configurations for all supported asset types
   const assetConfigs = [
     { name: 'US Dollar', code: 'USD', type: 'currency', symbol: '$', decimalPlaces: 2 },
     { name: 'Euro', code: 'EUR', type: 'currency', symbol: '€', decimalPlaces: 2 },
+    { name: 'Bitcoin', code: 'BTC', type: 'crypto', symbol: '₿', decimalPlaces: 8 },
   ];
 
   const createdAssets: AccountInfo[] = [];
 
-  // Create assets in Operating Ledger
+  // Create assets in Operating Ledger (all assets)
   for (const assetConfig of assetConfigs) {
     const asset = await createAsset(
       client,
@@ -187,6 +242,33 @@ async function setupAssets(
       ledgerId: operatingLedgerId,
       name: assetConfig.name,
       ledgerName: 'Operating',
+      decimalPlaces: assetConfig.decimalPlaces,
+    });
+  }
+  
+  // Create only USD and BTC in the Investment Ledger
+  const investmentAssetConfigs = assetConfigs.filter(asset => 
+    asset.code === 'USD' || asset.code === 'BTC'
+  );
+  
+  for (const assetConfig of investmentAssetConfigs) {
+    const asset = await createAsset(
+      client,
+      organizationId,
+      investmentLedgerId,
+      assetConfig.name,
+      assetConfig.code,
+      assetConfig.type,
+      assetConfig.symbol,
+      assetConfig.decimalPlaces
+    );
+
+    createdAssets.push({
+      id: asset.id,
+      assetCode: assetConfig.code,
+      ledgerId: investmentLedgerId,
+      name: assetConfig.name,
+      ledgerName: 'Investment',
       decimalPlaces: assetConfig.decimalPlaces,
     });
   }
@@ -239,7 +321,117 @@ async function setupAccounts(
 }
 
 /**
+ * Creates initial deposits for accounts using batch processing
+ * This demonstrates the batch processing capabilities of the SDK
+ */
+async function createInitialDeposits(
+  client: MidazClient,
+  organizationId: string,
+  accounts: AccountInfo[]
+): Promise<number> {
+  let successCount = 0;
+  
+  // Group accounts by ledger and asset for more organized processing
+  const accountsByLedger: Record<string, Record<string, AccountInfo[]>> = {};
+  
+  for (const account of accounts) {
+    if (!accountsByLedger[account.ledgerId]) {
+      accountsByLedger[account.ledgerId] = {};
+    }
+    
+    if (!accountsByLedger[account.ledgerId][account.assetCode]) {
+      accountsByLedger[account.ledgerId][account.assetCode] = [];
+    }
+    
+    accountsByLedger[account.ledgerId][account.assetCode].push(account);
+  }
+  
+  // Process deposits by ledger and asset using batch processing
+  for (const ledgerId in accountsByLedger) {
+    for (const assetCode in accountsByLedger[ledgerId]) {
+      const ledgerAssetAccounts = accountsByLedger[ledgerId][assetCode];
+      
+      console.log(`  Processing ${ledgerAssetAccounts.length} ${assetCode} accounts in ledger ${ledgerId}...`);
+      
+      // Create a batch for processing deposits
+      const batch = createBatch({
+        maxConcurrency: 3,
+        delayBetweenTransactions: 50,
+      });
+      
+      // Add deposit transactions to the batch
+      for (const account of ledgerAssetAccounts) {
+        // Create deposit transaction (from external account to user account)
+        const depositAmount = account.assetCode === 'BTC' ? 0.5 : 1000; // Different amounts based on asset
+        const depositTx = createDepositTransaction(
+          `external/${account.assetCode}`,
+          account.id,
+          depositAmount,
+          account.assetCode,
+          account.decimalPlaces,
+          `Initial deposit to ${account.name}`,
+          { 
+            batchId: `initial-deposits-${Date.now()}`,
+            createdBy: 'workflow-script'
+          }
+        );
+        
+        // Add the transaction to the batch - we use a closure to capture the context
+        batch.add(async () => {
+          try {
+            // Use enhanced error recovery for better reliability
+            const result = await executeWithEnhancedRecovery(
+              () => client.entities.transactions.createTransaction(
+                organizationId, 
+                ledgerId, 
+                depositTx
+              ),
+              {
+                maxRetries: 2,
+                fallbackAttempts: 1,
+                verifyOperation: async () => {
+                  // Verify the transaction was created (this is a simplified check)
+                  const transactions = await client.entities.transactions.listTransactions(
+                    organizationId, 
+                    ledgerId,
+                    { limit: 100 }
+                  );
+                  
+                  const items = extractItems(transactions);
+                  // Check if there's a transaction with matching description
+                  return items.some((tx: any) => 
+                    tx.description === depositTx.description
+                  );
+                }
+              }
+            );
+            
+            return result;
+          } catch (error) {
+            console.error(`  Error creating deposit for ${account.id}: ${error}`);
+            throw error;
+          }
+        });
+      }
+      
+      // Execute the batch
+      const results = await executeBatch(batch);
+      
+      // Count successful transactions
+      for (const result of results) {
+        if (result.status === 'success' || result.status === 'duplicate') {
+          successCount++;
+        }
+      }
+    }
+  }
+  
+  return successCount;
+}
+
+/**
  * Creates additional credit and debit transactions for each account
+ * This demonstrates the transaction pair utilities
  */
 async function createAdditionalTransactions(
   client: MidazClient,
@@ -254,7 +446,16 @@ async function createAdditionalTransactions(
   
   // Create transactions by asset
   for (const assetCode in accountsByAsset) {
-    const assetAccounts = accountsByAsset[assetCode];
+    const assetAccounts = accountsByAsset[assetCode].filter(
+      account => account.ledgerId === ledgerId
+    );
+    
+    if (assetAccounts.length < 2) {
+      console.log(`  Skipping ${assetCode}: Need at least 2 accounts`);
+      continue;
+    }
+    
+    console.log(`  Creating transaction pairs for ${assetAccounts.length} ${assetCode} accounts...`);
     
     // Create transaction pairs for each account
     for (const account of assetAccounts) {
@@ -270,14 +471,17 @@ async function createAdditionalTransactions(
       const otherAccount = otherAccounts[Math.floor(Math.random() * otherAccounts.length)];
       
       // Create a credit/debit pair using the SDK utility
-      const creditAmount = 25;
+      const creditAmount = assetCode === 'BTC' ? 0.05 : 25;
       const { creditTx, debitTx } = createCreditDebitPair(
         otherAccount.id,
         account.id,
         creditAmount,
         assetCode,
         `Transaction between ${otherAccount.name} and ${account.name}`,
-        { createdBy: 'workflow-script' }
+        { 
+          pairId: `pair-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          createdBy: 'workflow-script' 
+        }
       );
       
       // Execute both transactions as a pair with error recovery
@@ -299,7 +503,7 @@ async function createAdditionalTransactions(
           successCount++;
         }
       } catch (error) {
-        console.error(`Error creating transaction pair: ${error}`);
+        console.error(`  Error creating transaction pair: ${error}`);
       }
       
       // Add a delay between accounts
@@ -308,6 +512,214 @@ async function createAdditionalTransactions(
   }
   
   return successCount / 2; // Count pairs, not individual transactions
+}
+
+/**
+ * Demonstrates advanced transaction patterns
+ * This showcases various transaction pattern utilities from the SDK
+ */
+async function demonstrateTransactionPatterns(
+  client: MidazClient,
+  organizationId: string,
+  operatingLedgerId: string,
+  investmentLedgerId: string,
+  accounts: AccountInfo[]
+): Promise<number> {
+  let successCount = 0;
+  
+  // Filter accounts by ledger and asset
+  const operatingUsdAccounts = accounts.filter(
+    account => account.ledgerId === operatingLedgerId && account.assetCode === 'USD'
+  );
+  
+  const investmentUsdAccounts = accounts.filter(
+    account => account.ledgerId === investmentLedgerId && account.assetCode === 'USD'
+  );
+  
+  const operatingBtcAccounts = accounts.filter(
+    account => account.ledgerId === operatingLedgerId && account.assetCode === 'BTC'
+  );
+  
+  // 1. Create a user transfer between accounts
+  if (operatingUsdAccounts.length >= 2) {
+    console.log('  1. Creating a user transfer between USD accounts...');
+    
+    const sourceAccount = operatingUsdAccounts[0];
+    const destinationAccount = operatingUsdAccounts[1];
+    
+    try {
+      const result = await createUserTransfer(
+        sourceAccount.id,
+        destinationAccount.id,
+        50, // $50 transfer
+        'USD',
+        {
+          client,
+          organizationId,
+          ledgerId: operatingLedgerId,
+          metadata: {
+            transferType: 'user-initiated',
+            purpose: 'demonstration',
+          },
+          description: `Demo transfer from ${sourceAccount.name} to ${destinationAccount.name}`
+        }
+      );
+      
+      if (result.status === 'success' || result.status === 'duplicate') {
+        console.log(`    ✓ User transfer created successfully`);
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`    ✗ Error creating user transfer: ${error}`);
+    }
+  }
+  
+  // 2. Create a multi-account transfer (chain of transfers)
+  if (operatingUsdAccounts.length >= 3) {
+    console.log('  2. Creating a multi-account transfer (chain of transfers)...');
+    
+    // Select 3 accounts for the chain
+    const accountChain = operatingUsdAccounts.slice(0, 3).map(acc => acc.id);
+    
+    try {
+      const result = await createMultiAccountTransfer(
+        accountChain,
+        30, // $30 through the chain
+        'USD',
+        {
+          client,
+          organizationId,
+          ledgerId: operatingLedgerId,
+          metadata: {
+            transferType: 'chain',
+            purpose: 'settlement',
+          },
+          description: 'Multi-account chain transfer demonstration'
+        }
+      );
+      
+      if (typeof result === 'object' && result.batchId) {
+        console.log(`    ✓ Multi-account transfer created successfully: ${accountChain.length - 1} transfers`);
+        successCount += accountChain.length - 1; // Count the number of transfers in the chain
+      }
+    } catch (error) {
+      console.error(`    ✗ Error creating multi-account transfer: ${error}`);
+    }
+  }
+  
+  // 3. Create a recurring payment (subscription)
+  if (operatingUsdAccounts.length >= 2) {
+    console.log('  3. Creating a recurring payment (subscription)...');
+    
+    const payer = operatingUsdAccounts[0];
+    const payee = operatingUsdAccounts[1];
+    
+    try {
+      const result = await createRecurringPayment(
+        payer.id,
+        payee.id,
+        9.99, // $9.99 subscription fee
+        'USD',
+        'subscription-monthly',
+        {
+          client,
+          organizationId,
+          ledgerId: operatingLedgerId,
+          metadata: {
+            frequency: 'monthly',
+            paymentNumber: 1,
+            subscriptionName: 'Premium Service',
+            nextPaymentDate: new Date(Date.now() + 30*24*60*60*1000).toISOString()
+          },
+          description: 'Monthly subscription payment'
+        }
+      );
+      
+      if (result.status === 'success' || result.status === 'duplicate') {
+        console.log(`    ✓ Recurring payment created successfully`);
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`    ✗ Error creating recurring payment: ${error}`);
+    }
+  }
+  
+  return successCount;
+}
+
+/**
+ * Displays account balances with enhanced error recovery
+ */
+async function displayBalances(
+  client: MidazClient,
+  organizationId: string,
+  operatingLedgerId: string,
+  investmentLedgerId: string,
+  accounts: AccountInfo[]
+): Promise<void> {
+  // Helper function to display balances for a specific ledger with error recovery
+  async function displayLedgerBalances(ledgerId: string, ledgerName: string) {
+    console.log(`  ${ledgerName} Ledger Balances:`);
+    
+    // Use enhanced error recovery for the balance retrieval
+    const balances = await executeWithEnhancedRecovery(
+      () => client.entities.balances.listBalances(organizationId, ledgerId),
+      {
+        maxRetries: 3,
+        usePolledVerification: true,
+        verifyOperation: async () => {
+          try {
+            // Try a simple check to verify API is responsive
+            await client.entities.ledgers.getLedger(organizationId, ledgerId);
+            return true;
+          } catch {
+            return false;
+          }
+        }
+      }
+    );
+    
+    // Extract and process balances
+    const balanceItems = extractItems(balances.result || { items: [] });
+    
+    // Group by asset for easier reading
+    const balancesByAsset: Record<string, any[]> = {};
+    
+    for (const balance of balanceItems) {
+      const assetCode = (balance as any).assetCode || 'Unknown';
+      
+      if (!balancesByAsset[assetCode]) {
+        balancesByAsset[assetCode] = [];
+      }
+      
+      balancesByAsset[assetCode].push(balance);
+    }
+    
+    // Display balances by asset
+    for (const assetCode in balancesByAsset) {
+      console.log(`    ${assetCode} Accounts:`);
+      
+      for (const balance of balancesByAsset[assetCode]) {
+        try {
+          // Find account info for this balance
+          const account = accounts.find(a => 
+            a.id === (balance as any).accountId && a.ledgerId === ledgerId
+          );
+          
+          // Format and display the balance
+          const formattedBalance = formatAccountBalance(balance);
+          console.log(`      ${account ? account.name : balance.accountId}: ${formattedBalance.displayString}`);
+        } catch (error) {
+          // Fallback display if formatting fails
+          console.log(`      ${(balance as any).accountId}: Available ${(balance as any).available || '0'}`);
+        }
+      }
+    }
+  }
+  
+  // Display balances for both ledgers
+  await displayLedgerBalances(operatingLedgerId, 'Operating');
+  await displayLedgerBalances(investmentLedgerId, 'Investment');
 }
 
 /**
@@ -411,6 +823,14 @@ function handleError(error: any): void {
   // Show recovery recommendation if available
   if (errorInfo.recoveryRecommendation) {
     console.error(`  Recommendation: ${errorInfo.recoveryRecommendation}`);
+  }
+  
+  // Show recovery steps if available (enhanced error recovery)
+  if (errorInfo.recoverySteps && errorInfo.recoverySteps.length > 0) {
+    console.error('  Recovery steps attempted:');
+    errorInfo.recoverySteps.forEach((step, index) => {
+      console.error(`    ${index + 1}. ${step}`);
+    });
   }
 }
 
