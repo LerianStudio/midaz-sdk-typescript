@@ -3,7 +3,7 @@
  * This file tests how the system handles various network failure scenarios
  */
 import { HttpClient } from '../../../src/util/network/http-client';
-import { MidazError, ErrorCategory, ErrorCode } from '../../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 import { MockObservability, MockSpan } from '../mocks/mock-observability';
 
 // We need to mock RetryPolicy before importing it

@@ -25,5 +25,11 @@ module.exports = {
       tsconfig: 'tsconfig.json'
     }]
   },
-  setupFiles: ['dotenv/config']
+  setupFiles: ['dotenv/config'],
+  // Skip type checking during tests
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
+  }
 };

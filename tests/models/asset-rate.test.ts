@@ -1,7 +1,7 @@
 import {
     AssetRate,
-    UpdateAssetRateInput,
-    createUpdateAssetRateInput
+    createUpdateAssetRateInput,
+    UpdateAssetRateInput
 } from '../../src/models/asset-rate';
 
 describe('Asset Rate Model and Helper Functions', () => {

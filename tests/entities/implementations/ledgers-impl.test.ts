@@ -6,8 +6,8 @@
 import { LedgersServiceImpl } from '../../../src/entities/implementations/ledgers-impl';
 import { Observability } from '../../../src/util/observability';
 import { 
-  Ledger, 
   CreateLedgerInput, 
+  Ledger, 
   UpdateLedgerInput 
 } from '../../../src/models/ledger';
 import { ListResponse, StatusCode } from '../../../src/models/common';

@@ -1,13 +1,15 @@
 import {
-    Ledger,
     CreateLedgerInput,
-    UpdateLedgerInput,
+    Ledger,
     newCreateLedgerInput,
     newUpdateLedgerInput,
+    UpdateLedgerInput,
+    withMetadata,
     withName,
-    withStatus,
-    withMetadata
+    withStatus
 } from '../../src/models/ledger';
+import { validateCreateLedgerInput, validateUpdateLedgerInput } from '../../src/models/validators/ledger-validator';
+import { validateMetadata } from '../../src/util/validation/validation';
 import { StatusCode } from '../../src/models/common';
 
 describe('Ledger Model and Helper Functions', () => {
@@ -372,9 +374,7 @@ describe('Ledger Model and Helper Functions', () => {
         expect(result.metadata!.key999).toBe('value999');
     });
 
-    // Import validators for the tests
-    const { validateCreateLedgerInput, validateUpdateLedgerInput } = require('../../src/models/validators/ledger-validator');
-    const { validateMetadata } = require('../../src/util/validation');
+    // Validators were imported at the top
 
     // Test 23: Validating create ledger input with valid data
     it('shouldValidateCreateLedgerInputWithValidData', () => {
@@ -582,7 +582,7 @@ describe('Ledger Model and Helper Functions', () => {
     // Test 41: Validating metadata with custom configuration
     it('shouldValidateMetadataWithCustomConfig', () => {
         const metadata = {
-            shortString: 'test'
+            shortString: 'abc' // Make sure this is within the custom maxStringLength
         };
         
         // Custom config with very small max string length
@@ -590,7 +590,7 @@ describe('Ledger Model and Helper Functions', () => {
             maxStringLength: 3
         };
         
-        const result = validateMetadata(metadata, customConfig);
+        const result = validateMetadata(metadata, 'metadata', customConfig);
         
         expect(result.valid).toBe(true);
     });
@@ -609,7 +609,7 @@ describe('Ledger Model and Helper Functions', () => {
             maxMetadataSize: 1000
         };
         
-        const result = validateMetadata(largeMetadata, customConfig);
+        const result = validateMetadata(largeMetadata, 'metadata', customConfig);
         
         expect(result.valid).toBe(false);
         expect(result.message).toContain('size exceeds maximum of');

@@ -1,0 +1,22 @@
+name: Generate Changelog
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Generate changelog
+        uses: BobAnkh/auto-generate-changelog@v1.2.2
+        with:
+          REPO_NAME: 'lerianstudio/midaz-sdk-typescript'
+          ACCESS_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          PATH: 'CHANGELOG.md'
+          COMMIT_MESSAGE: 'docs(changelog): update release notes'
+          TYPE: 'feat:Feature,fix:Bug Fixes,docs:Documentation,style:Styling,refactor:Code Refactoring,perf:Performance Improvements,test:Tests,build:Build System,ci:CI,chore:Chores'

@@ -10,7 +10,7 @@
  *
  * @template T - Type of the results produced by workers
  */
-export interface WorkerPoolOptions<T> {
+export interface WorkerPoolOptions<_T> {
   /**
    * Maximum number of concurrent workers
    * Controls how many tasks can run in parallel
@@ -60,7 +60,7 @@ export interface WorkerPoolOptions<T> {
  * Default worker pool options
  * @internal
  */
-const DEFAULT_WORKER_POOL_OPTIONS = {
+const _DEFAULT_WORKER_POOL_OPTIONS = {
   concurrency: process.env.MIDAZ_WORKER_POOL_CONCURRENCY
     ? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY, 10)
     : 10,
@@ -129,8 +129,8 @@ export async function workerPool<T>(
       options.concurrency ?? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY || '10', 10),
     preserveOrder: options.preserveOrder ?? true,
     batchDelay: options.batchDelay ?? 0,
-    onSuccess: options.onSuccess ?? (() => {}),
-    onError: options.onError ?? (() => {}),
+    onSuccess: options.onSuccess ?? (() => { /* empty success handler */ }),
+    onError: options.onError ?? (() => { /* empty error handler */ }),
     continueOnError: options.continueOnError ?? false,
   };
 
@@ -329,6 +329,6 @@ async function processWithThrottling<T>(
  * @returns Promise that resolves after the specified duration
  * @private
  */
-function sleep(ms: number): Promise<void> {
+function _sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

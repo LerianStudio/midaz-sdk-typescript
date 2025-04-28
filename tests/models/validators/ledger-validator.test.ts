@@ -1,3 +1,4 @@
+
 import { validateCreateLedgerInput, validateUpdateLedgerInput } from '../../../src/models/validators/ledger-validator';
 import { CreateLedgerInput, UpdateLedgerInput } from '../../../src/models/ledger';
 import { StatusCode } from '../../../src/models/common';
@@ -18,8 +19,8 @@ describe('Ledger Validator', () => {
             expect(result.message || '').toBe('');
         });
 
-        // Test 2: Missing name should fail validation
-        it('shouldFailValidationForMissingName', () => {
+        // Test 2: Empty name should fail validation
+        it('shouldFailValidationForEmptyName', () => {
             const invalidInput: CreateLedgerInput = {
                 name: ''
             };
@@ -28,7 +29,7 @@ describe('Ledger Validator', () => {
             
             expect(result.valid).toBe(false);
             expect(result.fieldErrors?.name).toBeDefined();
-            expect(result.message).toContain('name');
+            expect(result.message).toContain('empty');
         });
 
         // Test 3: Null input should fail validation

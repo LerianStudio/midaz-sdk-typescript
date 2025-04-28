@@ -1,6 +1,6 @@
 /**
- * @file Ledgers service implementation for the Midaz SDK
- * @description Implements the LedgersService interface for managing ledgers within the Midaz system
+ * @file Ledgers service implementation
+ * @description Implements the LedgersService interface
  */
 
 import { LedgerApiClient } from '../../api/interfaces/ledger-api-client';
@@ -10,61 +10,23 @@ import { Observability } from '../../util/observability/observability';
 import { LedgersService } from '../ledgers';
 
 /**
- * Implementation of the LedgersService interface
- *
- * This class provides the concrete implementation of the LedgersService interface,
- * delegating HTTP communication to the provided API client while focusing on business logic.
- * It handles validation, error handling, observability, and pagination.
- *
+ * @inheritdoc
  * @implements {LedgersService}
- *
- * @example
- * ```typescript
- * // Creating an instance (typically done through dependency injection)
- * const apiClient = new HttpLedgerApiClient(httpClient, urlBuilder);
- * const ledgersService = new LedgersServiceImpl(apiClient);
- *
- * // Using the service
- * const ledgers = await ledgersService.listLedgers("org_123");
- * ```
  */
 export class LedgersServiceImpl implements LedgersService {
-  /**
-   * Observability instance for tracing and metrics
-   * @private
-   */
+  /** Observability instance for tracing and metrics @private */
   private readonly observability: Observability;
 
-  /**
-   * Creates a new LedgersServiceImpl
-   *
-   * @param apiClient - API client for ledger-related operations
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
-   */
-  constructor(private readonly apiClient: LedgerApiClient, observability?: Observability) {
-    // Initialize observability with service name
-    this.observability =
-      observability ||
-      new Observability({
-        serviceName: 'midaz-ledgers-service',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-          : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-          : false,
-      });
+  /** Creates a new LedgersServiceImpl */
+  constructor(
+    private readonly apiClient: LedgerApiClient,
+    observability?: Observability
+  ) {
+    this.observability = observability || Observability.getInstance();
   }
 
   /**
-   * Lists ledgers with optional filters
-   *
-   * Retrieves a paginated list of ledgers within the specified organization.
-   * The results can be filtered, sorted, and paginated using the options parameter.
-   *
-   * @param orgId - Organization ID that owns the ledgers
-   * @param opts - List options for pagination, sorting, and filtering
-   * @returns Promise resolving to a paginated list of ledgers
+   * @inheritdoc
    */
   public async listLedgers(orgId: string, opts?: ListOptions): Promise<ListResponse<Ledger>> {
     // Create a span for tracing this operation
@@ -100,14 +62,7 @@ export class LedgersServiceImpl implements LedgersService {
   }
 
   /**
-   * Gets a ledger by ID
-   *
-   * Retrieves a single ledger by its unique identifier within the specified
-   * organization.
-   *
-   * @param orgId - Organization ID that owns the ledger
-   * @param id - Ledger ID to retrieve
-   * @returns Promise resolving to the ledger
+   * @inheritdoc
    */
   public async getLedger(orgId: string, id: string): Promise<Ledger> {
     // Create a span for tracing this operation
@@ -131,15 +86,7 @@ export class LedgersServiceImpl implements LedgersService {
   }
 
   /**
-   * Creates a new ledger
-   *
-   * Creates a new ledger within the specified organization using
-   * the provided ledger details. The ledger will be initialized with the
-   * specified properties and assigned a unique identifier.
-   *
-   * @param orgId - Organization ID that will own the ledger
-   * @param input - Ledger creation input with required properties
-   * @returns Promise resolving to the created ledger
+   * @inheritdoc
    */
   public async createLedger(orgId: string, input: CreateLedgerInput): Promise<Ledger> {
     // Create a span for tracing this operation
@@ -179,16 +126,7 @@ export class LedgersServiceImpl implements LedgersService {
   }
 
   /**
-   * Updates an existing ledger
-   *
-   * Updates the properties of an existing ledger within the specified
-   * organization. Only the properties included in the input
-   * will be modified; others will remain unchanged.
-   *
-   * @param orgId - Organization ID that owns the ledger
-   * @param id - Ledger ID to update
-   * @param input - Ledger update input with properties to change
-   * @returns Promise resolving to the updated ledger
+   * @inheritdoc
    */
   public async updateLedger(orgId: string, id: string, input: UpdateLedgerInput): Promise<Ledger> {
     // Create a span for tracing this operation
@@ -229,16 +167,7 @@ export class LedgersServiceImpl implements LedgersService {
   }
 
   /**
-   * Deletes a ledger
-   *
-   * Deletes a ledger from the specified organization.
-   * This operation may be restricted if the ledger has associated accounts,
-   * balances, or transactions. In many cases, ledgers are soft-deleted (marked as deleted
-   * but retained in the system) to maintain audit history.
-   *
-   * @param orgId - Organization ID that owns the ledger
-   * @param id - Ledger ID to delete
-   * @returns Promise that resolves when the ledger is deleted
+   * @inheritdoc
    */
   public async deleteLedger(orgId: string, id: string): Promise<void> {
     // Create a span for tracing this operation

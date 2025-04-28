@@ -7,15 +7,18 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint src --ext .ts && eslint tests --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix && eslint tests --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\" \"examples/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"examples/**/*.ts\"",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "docs:typedoc": "typedoc --options typedoc.json",
     "docs:jsdoc": "jsdoc -r src -d docs/jsdoc -c jsdoc.json",
-    "docs": "npm run docs:typedoc && npm run docs:jsdoc"
+    "docs": "npm run docs:typedoc && npm run docs:jsdoc",
+    "example:workflow": "npx ts-node examples/workflow.ts",
+    "example:client-config": "npx ts-node examples/client-config-example.ts",
+    "example:api-versioning": "npx ts-node examples/api-versioning-example.ts"
   },
   "keywords": [
     "midaz",

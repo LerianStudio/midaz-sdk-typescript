@@ -10,6 +10,9 @@ import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
 import { URL } from 'url';
 
+// Import these at the top to avoid require statements
+import { ConfigService } from '../config';
+
 import { Cache } from '../cache/cache';
 import { errorFromHttpResponse } from '../error';
 import { Observability, Span } from '../observability/observability';
@@ -44,6 +47,12 @@ export interface RequestOptions {
    * Useful for ensuring that a request is only processed once, even if sent multiple times
    */
   idempotencyKey?: string;
+
+  /**
+   * Custom headers to include in the request
+   * These headers will be merged with the default headers
+   */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -417,9 +426,25 @@ export class HttpClient {
    * @private
    */
   private tlsOptions?: {
+    /**
+     * Whether to reject unauthorized certificates
+     * @default true
+     */
     rejectUnauthorized?: boolean;
+
+    /**
+     * Custom CA certificates to trust
+     */
     ca?: Buffer | Buffer[] | string | string[];
+
+    /**
+     * Client certificate for mutual TLS
+     */
     cert?: Buffer | string;
+
+    /**
+     * Client key for mutual TLS
+     */
     key?: Buffer | string;
   };
 
@@ -429,23 +454,7 @@ export class HttpClient {
    * @param config - Configuration options for the client
    */
   constructor(config: HttpClientConfig = {}) {
-    // Initialize all properties with default values to avoid undefined errors
-    this.baseUrls = {};
-    this.timeout = 30000; // Default timeout
-    this.retryPolicy = new RetryPolicy();
-    this.debug = false;
-    this.headers = {};
-    this.useIdempotencyKey = true;
-    this.idempotencyKeyHeader = 'Idempotency-Key';
-    this.keepAlive = true;
-    this.maxSockets = 10;
-    this.keepAliveMsecs = 60000;
-    this.enableHttp2 = true;
-    this.dnsCacheTtl = 300000;
-
-    // Import ConfigService using a dynamic require to avoid circular dependencies
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { ConfigService } = require('../config');
+    // Get the config service instance
     const configService = ConfigService.getInstance();
 
     // Get API URL configuration from ConfigService
@@ -1015,23 +1024,39 @@ export class HttpClient {
       }
 
       // Execute request with retry logic
-      const response = await this.retryPolicy.execute(async () => {
-        const response = await fetch(urlWithParams, requestOptions);
-        // Handle non-successful responses
-        if (!response.ok) {
-          // Use the errorFromHttpResponse helper with the correct number of arguments
+      const response = await this.retryPolicy.execute(
+        async () => {
+          const response = await fetch(urlWithParams, requestOptions);
+          // Handle non-successful responses
+          if (!response.ok) {
+            // Use the errorFromHttpResponse helper with the correct number of arguments
 
-          throw errorFromHttpResponse(
-            response.status,
-            await this.parseResponseBody(response),
-            method,
-            url
-          );
+            throw errorFromHttpResponse(
+              response.status,
+              await this.parseResponseBody(response),
+              method,
+              url
+            );
+          }
+
+          // Parse and return response body
+          return this.parseResponseBody(response);
+        },
+        // Track retry attempts in the span
+        (info) => {
+          if (info.attempt === 0) {
+            // First attempt - set the max retries attribute
+            span.setAttribute('retry.max_attempts', info.maxRetries);
+          } else {
+            // Retry attempt - record the attempt number and delay
+            span.setAttribute('retry.attempt', info.attempt);
+            span.setAttribute('retry.count', info.attempt);
+            if (info.delay) {
+              span.setAttribute('retry.delay_ms', info.delay);
+            }
+          }
         }
-
-        // Parse and return response body
-        return this.parseResponseBody(response);
-      });
+      );
 
       // Log response if debug is enabled
       if (this.debug) {
@@ -1250,10 +1275,18 @@ export class HttpClient {
 
     // Return a no-op span if observability is not available
     return {
-      setAttribute: () => {},
-      recordException: () => {},
-      setStatus: () => {},
-      end: () => {},
+      setAttribute: () => {
+        /* empty setAttribute */
+      },
+      recordException: () => {
+        /* empty recordException */
+      },
+      setStatus: () => {
+        /* empty setStatus */
+      },
+      end: () => {
+        /* empty end */
+      },
     };
   }
 }

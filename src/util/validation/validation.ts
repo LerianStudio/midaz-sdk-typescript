@@ -1,31 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
- * @file Validation utilities for the Midaz SDK
- * @description Provides comprehensive validation functions for data validation and error handling
+ * @file Validation utilities
+ * @description Comprehensive data validation with structured error handling
  */
 
 import { ErrorCategory, ErrorCode, MidazError } from '../error';
 
-/**
- * ValidationError class for validation-specific errors
- *
- * Extends the base MidazError with field-specific error information,
- * allowing for more detailed validation feedback.
- */
+/** Validation-specific error with field-level error details */
 export class ValidationError extends MidazError {
-  /**
-   * Field-specific errors
-   * Maps field names to arrays of error messages
-   */
+  /** Maps field names to arrays of error messages */
   public readonly fieldErrors?: Record<string, string[]>;
 
-  /**
-   * Creates a new ValidationError instance
-   *
-   * @param message Error message
-   * @param fieldErrors Optional field-specific errors
-   * @param cause Optional cause of the error
-   */
+  /** Creates a new ValidationError instance */
   constructor(message: string, fieldErrors?: Record<string, string[]>, cause?: Error) {
     super({
       message,
@@ -38,101 +24,61 @@ export class ValidationError extends MidazError {
   }
 }
 
-/**
- * Result of a validation operation
- */
+/** Result of a validation operation */
 export interface ValidationResult {
-  /**
-   * Whether the validation passed
-   */
+  /** Whether the validation passed */
   valid: boolean;
 
-  /**
-   * Optional error message if validation failed
-   */
+  /** Optional error message if validation failed */
   message?: string;
 
-  /**
-   * Optional field-specific errors
-   */
+  /** Optional field-specific errors */
   fieldErrors?: Record<string, string[]>;
 }
 
-/**
- * Address validation interface
- */
+/** Address validation interface */
 export interface Address {
-  /**
-   * First line of the address
-   */
+  /** First line of the address */
   line1: string;
 
-  /**
-   * Optional second line of the address
-   */
+  /** Optional second line of the address */
   line2?: string;
 
-  /**
-   * City
-   */
+  /** City */
   city: string;
 
-  /**
-   * State or province
-   */
+  /** State or province */
   state: string;
 
-  /**
-   * Postal code
-   */
+  /** Postal code */
   postalCode: string;
 
-  /**
-   * Country code (ISO 3166-1 alpha-2)
-   */
+  /** Country code (ISO 3166-1 alpha-2) */
   countryCode: string;
 }
 
-/**
- * Options for number validation
- */
+/** Options for number validation */
 export interface NumberValidationOptions {
-  /**
-   * Minimum allowed value (inclusive)
-   */
+  /** Minimum allowed value (inclusive) */
   min?: number;
 
-  /**
-   * Maximum allowed value (inclusive)
-   */
+  /** Maximum allowed value (inclusive) */
   max?: number;
 
-  /**
-   * Whether the number should be an integer
-   */
+  /** Whether the number should be an integer */
   integer?: boolean;
 
-  /**
-   * Whether to allow negative values
-   */
+  /** Whether to allow negative values */
   allowNegative?: boolean;
 
-  /**
-   * Whether to allow zero value
-   */
+  /** Whether to allow zero value */
   allowZero?: boolean;
 }
 
-/**
- * Validator function type
- *
- * Takes a value and returns a validation result
- */
+/** Validator function type that takes a value and returns a validation result */
 export type Validator<T> = (value: T) => ValidationResult;
 
-/**
- * Default validation configuration
- */
+/** Default validation configuration */
 export const DEFAULT_VALIDATION_CONFIG = {
   maxStringLength: 256,
   maxMetadataSize: 1024 * 10, // 10KB
@@ -140,9 +86,7 @@ export const DEFAULT_VALIDATION_CONFIG = {
   maxMetadataValueLength: 1024,
 };
 
-/**
- * Common validation patterns
- */
+/** Common validation patterns */
 export const PATTERNS = {
   ASSET_CODE: /^[A-Z0-9]{3,8}$/,
   CURRENCY_CODE: /^[A-Z]{3}$/,
@@ -151,9 +95,7 @@ export const PATTERNS = {
   TRANSACTION_CODE: /^[a-zA-Z0-9._-]{1,64}$/,
 };
 
-/**
- * Valid account types
- */
+/** Valid account types */
 export const VALID_ACCOUNT_TYPES = [
   'deposit',
   'savings',
@@ -163,48 +105,26 @@ export const VALID_ACCOUNT_TYPES = [
   'external',
 ];
 
-/**
- * Valid asset types
- */
+/** Valid asset types */
 export const VALID_ASSET_TYPES = ['currency', 'crypto', 'commodities', 'others'];
 
-/**
- * Full validation configuration
- */
+/** Full validation configuration */
 export interface ValidationConfig {
-  /**
-   * Maximum string length
-   * @default 256
-   */
+  /** Maximum string length @default 256 */
   maxStringLength: number;
 
-  /**
-   * Maximum metadata size in bytes
-   * @default 10240 (10KB)
-   */
+  /** Maximum metadata size in bytes @default 10240 (10KB) */
   maxMetadataSize: number;
 
-  /**
-   * Maximum metadata key length
-   * @default 64
-   */
+  /** Maximum metadata key length @default 64 */
   maxMetadataKeyLength: number;
 
-  /**
-   * Maximum metadata value length
-   * @default 1024
-   */
+  /** Maximum metadata value length @default 1024 */
   maxMetadataValueLength: number;
 }
 
-/**
- * Combines multiple validation results into one
- *
- * If any validation fails, the combined result will be invalid.
- * Field errors and messages from all results are merged.
- *
- * @param results - Validation results to combine
- * @returns Combined validation result
+/** 
+ * Combines multiple validation results into one with merged error messages
  */
 export function combineValidationResults(results: ValidationResult[]): ValidationResult {
   if (results.length === 0) {
@@ -244,13 +164,7 @@ export function combineValidationResults(results: ValidationResult[]): Validatio
   };
 }
 
-/**
- * Validates that a value is present and not undefined or null
- *
- * @param value - Value to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates that a value is present and not undefined or null */
 export function validateRequired<T>(
   value: T | undefined | null,
   fieldName: string
@@ -268,14 +182,7 @@ export function validateRequired<T>(
   return { valid: true };
 }
 
-/**
- * Validates that a string is not empty
- *
- * @param value - String value to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- * @throws {ValidationError} When validation fails and in test mode
- */
+/** Validates that a string is not empty */
 export function validateNotEmpty(
   value: string | null | undefined,
   fieldName: string
@@ -286,7 +193,8 @@ export function validateNotEmpty(
     return requiredResult;
   }
 
-  if (value!.trim() === '') {
+  // At this point, value is guaranteed to exist due to validateRequired check
+  if (!value || value.trim() === '') {
     return {
       valid: false,
       message: `${fieldName} cannot be empty`,
@@ -299,16 +207,7 @@ export function validateNotEmpty(
   return { valid: true };
 }
 
-/**
- * Validates that a string matches a pattern
- *
- * @param value - String value to validate
- * @param pattern - Regular expression pattern to match
- * @param fieldName - Name of the field being validated
- * @param patternDescription - Description of the pattern for error messages
- * @returns Validation result
- * @throws {ValidationError} When validation fails and in test mode
- */
+/** Validates that a string matches a pattern */
 export function validatePattern(
   value: string | null | undefined,
   pattern: RegExp,
@@ -321,7 +220,9 @@ export function validatePattern(
     return requiredResult;
   }
 
-  if (!pattern.test(value!)) {
+  // At this point, value is guaranteed to exist due to validateRequired check
+  // For empty strings, we need to check if they match the pattern or not
+  if (!pattern.test(value as string)) {
     return {
       valid: false,
       message: `${fieldName} must match ${patternDescription}`,
@@ -334,15 +235,7 @@ export function validatePattern(
   return { valid: true };
 }
 
-/**
- * Validates a number against constraints
- *
- * @param value - Number value to validate
- * @param fieldName - Name of the field being validated
- * @param options - Validation options
- * @returns Validation result
- * @throws {ValidationError} When validation fails and throwOnError is true
- */
+/** Validates a number against constraints */
 export function validateNumber(
   value: number | null | undefined,
   fieldName: string,
@@ -420,15 +313,7 @@ export function validateNumber(
   return { valid: true };
 }
 
-/**
- * Validates that a value is within a range
- *
- * @param value - Number value to validate
- * @param min - Minimum allowed value (inclusive)
- * @param max - Maximum allowed value (inclusive)
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates that a number is within a specified range */
 export function validateRange(
   value: number | null | undefined,
   min: number,
@@ -438,13 +323,7 @@ export function validateRange(
   return validateNumber(value, fieldName, { min, max });
 }
 
-/**
- * Validates an asset code format
- *
- * @param assetCode - Asset code to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates an asset code format */
 export function validateAssetCode(
   assetCode: string | null | undefined,
   fieldName = 'assetCode'
@@ -476,13 +355,7 @@ export function validateAssetCode(
   );
 }
 
-/**
- * Validates a currency code format
- *
- * @param currencyCode - Currency code to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates a currency code format (3 uppercase letters) */
 export function validateCurrencyCode(
   currencyCode: string | null | undefined,
   fieldName = 'currencyCode'
@@ -501,13 +374,7 @@ export function validateCurrencyCode(
   );
 }
 
-/**
- * Validates an account type
- *
- * @param accountType - Account type to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates an account type against allowed values */
 export function validateAccountType(
   accountType: string | null | undefined,
   fieldName = 'accountType'
@@ -531,13 +398,7 @@ export function validateAccountType(
   return { valid: true };
 }
 
-/**
- * Validates an asset type
- *
- * @param assetType - Asset type to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates an asset type against allowed values */
 export function validateAssetType(
   assetType: string | null | undefined,
   fieldName = 'assetType'
@@ -561,13 +422,7 @@ export function validateAssetType(
   return { valid: true };
 }
 
-/**
- * Validates an account alias format
- *
- * @param alias - Account alias to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates an account alias format (optional field) */
 export function validateAccountAlias(
   alias: string | null | undefined,
   fieldName = 'alias'
@@ -585,13 +440,7 @@ export function validateAccountAlias(
   );
 }
 
-/**
- * Validates a country code format
- *
- * @param countryCode - Country code to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates a country code format (2 uppercase letters) */
 export function validateCountryCode(
   countryCode: string | null | undefined,
   fieldName = 'countryCode'
@@ -610,13 +459,7 @@ export function validateCountryCode(
   );
 }
 
-/**
- * Validates a transaction code format
- *
- * @param transactionCode - Transaction code to validate
- * @param fieldName - Name of the field being validated
- * @returns Validation result
- */
+/** Validates a transaction code format (optional field) */
 export function validateTransactionCode(
   transactionCode: string | null | undefined,
   fieldName = 'transactionCode'
@@ -634,15 +477,7 @@ export function validateTransactionCode(
   );
 }
 
-/**
- * Validates a date range
- *
- * @param startDate - Start date
- * @param endDate - End date
- * @param startFieldName - Name of the start date field
- * @param endFieldName - Name of the end date field
- * @returns Validation result
- */
+/** Validates that a start date comes before an end date */
 export function validateDateRange(
   startDate: string | Date | null | undefined,
   endDate: string | Date | null | undefined,
@@ -701,14 +536,7 @@ export function validateDateRange(
   return { valid: true };
 }
 
-/**
- * Validates metadata object
- *
- * @param metadata - Metadata object to validate
- * @param fieldName - Name of the field being validated
- * @param config - Validation configuration
- * @returns Validation result
- */
+/** Validates metadata object size and content */
 export function validateMetadata(
   metadata: Record<string, any> | null | undefined,
   fieldName = 'metadata',
@@ -855,14 +683,7 @@ export function validateMetadata(
   return { valid: true };
 }
 
-/**
- * Validates an address object
- *
- * @param address - Address object to validate
- * @param fieldName - Name of the field being validated
- * @param config - Validation configuration
- * @returns Validation result
- */
+/** Validates an address object structure and field values */
 export function validateAddress(
   address: Address | null | undefined,
   fieldName = 'address',
@@ -900,11 +721,13 @@ export function validateAddress(
   });
 
   // Validate line2 if provided
+  // At this point, address is guaranteed to exist due to the required check above
   if (
-    address!.line2 !== undefined &&
-    address!.line2 !== null &&
-    typeof address!.line2 === 'string' &&
-    address!.line2.length > maxStringLength
+    address &&
+    address.line2 !== undefined &&
+    address.line2 !== null &&
+    typeof address.line2 === 'string' &&
+    address.line2.length > maxStringLength
   ) {
     errors.push(`${fieldName}.line2 exceeds maximum length of ${maxStringLength} characters`);
     fieldErrors[`${fieldName}.line2`] = [
@@ -913,15 +736,18 @@ export function validateAddress(
   }
 
   // Validate country code if provided
+  // At this point, address is guaranteed to exist due to the required check above
   if (
-    address!.countryCode !== undefined &&
-    address!.countryCode !== null &&
-    typeof address!.countryCode === 'string'
+    address &&
+    address.countryCode !== undefined &&
+    address.countryCode !== null &&
+    typeof address.countryCode === 'string'
   ) {
-    const countryResult = validateCountryCode(address!.countryCode, `${fieldName}.countryCode`);
+    // We've already checked that address and countryCode exist in the condition above
+    const countryResult = validateCountryCode(address.countryCode, `${fieldName}.countryCode`);
 
     if (!countryResult.valid) {
-      errors.push(countryResult.message!);
+      errors.push(countryResult.message || `Invalid country code: ${address.countryCode}`);
 
       if (countryResult.fieldErrors) {
         Object.entries(countryResult.fieldErrors).forEach(([field, fieldErrs]) => {
@@ -942,14 +768,7 @@ export function validateAddress(
   return { valid: true };
 }
 
-/**
- * Validates an account reference
- *
- * @param accountId - Account ID to validate
- * @param assetCode - Asset code to validate
- * @param fieldName - Base name for validation fields
- * @returns Validation result
- */
+/** Validates an account reference (ID and asset code) */
 export function validateAccountReference(
   accountId: string | null | undefined,
   assetCode: string | null | undefined,
@@ -963,13 +782,7 @@ export function validateAccountReference(
   return combineValidationResults(results);
 }
 
-/**
- * Gets a formatted reference to an external account
- *
- * @param accountId - External account ID
- * @param assetCode - Asset code
- * @returns Formatted reference string
- */
+/** Gets a formatted reference to an external account */
 export function getExternalAccountReference(
   accountId: string | null | undefined,
   assetCode: string | null | undefined
@@ -981,14 +794,7 @@ export function getExternalAccountReference(
   return `${accountId}:${assetCode}`;
 }
 
-/**
- * Validate function that throws on validation failure
- *
- * @param value - Value to validate
- * @param validator - Validator function to apply
- * @param message - Optional custom error message
- * @throws ValidationError if validation fails
- */
+/** Validate function that throws ValidationError on validation failure */
 export function validate<T>(value: T, validator: Validator<T>, message?: string): void {
   const result = validator(value);
 

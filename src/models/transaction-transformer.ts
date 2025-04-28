@@ -1,18 +1,16 @@
 /**
- * @file Transaction model transformer
- * @description Transforms transaction models between client and API formats
+ * @file Transaction transformer
+ * @description Converts between client and API transaction formats
  */
 
 import { createModelTransformer, ModelTransformer } from '../util/data/model-transformer';
 
 import { CreateTransactionInput, Transaction } from './transaction';
 
-/**
+/** 
  * Transforms a client-side transaction to the API format
- * This handles the special structure expected by the backend
- *
+ * 
  * @param input - Client transaction input
- * @returns API transaction format
  */
 export function toApiTransaction(input: CreateTransactionInput): any {
   // Group operations by type (DEBIT and CREDIT)
@@ -72,13 +70,10 @@ export function toApiTransaction(input: CreateTransactionInput): any {
   return result;
 }
 
-/**
- * Transforms an API transaction to the client format
- * This is a pass-through function since the API response is already
- * in the format expected by the client
- *
+/** 
+ * Transforms an API transaction to the client format (currently pass-through)
+ * 
  * @param apiTransaction - API transaction
- * @returns Client transaction
  */
 export function toClientTransaction(apiTransaction: any): Transaction {
   // Currently a pass-through since the API response is already in the right format
@@ -86,8 +81,6 @@ export function toClientTransaction(apiTransaction: any): Transaction {
   return apiTransaction as Transaction;
 }
 
-/**
- * Transaction model transformer for converting between client and API formats
- */
+/** Transaction model transformer for client/API format conversion */
 export const transactionTransformer: ModelTransformer<CreateTransactionInput, any> =
   createModelTransformer(toApiTransaction, toClientTransaction);

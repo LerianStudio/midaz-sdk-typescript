@@ -1,3 +1,4 @@
+
 import { validateCreateSegmentInput, validateUpdateSegmentInput } from '../../../src/models/validators/segment-validator';
 import { CreateSegmentInput, UpdateSegmentInput } from '../../../src/models/segment';
 import { StatusCode } from '../../../src/models/common';
@@ -18,8 +19,8 @@ describe('Segment Validator', () => {
             expect(result.message || '').toBe('');
         });
 
-        // Test 2: Missing name should fail validation
-        it('shouldFailValidationForMissingName', () => {
+        // Test 2: Empty name should fail validation
+        it('shouldFailValidationForEmptyName', () => {
             const invalidInput: CreateSegmentInput = {
                 name: ''
             };
@@ -28,7 +29,7 @@ describe('Segment Validator', () => {
             
             expect(result.valid).toBe(false);
             expect(result.fieldErrors?.name).toBeDefined();
-            expect(result.message).toContain('name');
+            expect(result.message).toContain('empty');
         });
 
         // Test 3: Name exceeding maximum length should fail validation

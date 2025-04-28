@@ -3,12 +3,12 @@
  * This file tests how the system handles various validation edge cases
  */
 import {
+  ValidationError,
+  validateAssetCode,
+  validateNotEmpty,
   validateNumber,
   validatePattern,
-  validateRequired,
-  validateNotEmpty,
-  validateAssetCode,
-  ValidationError
+  validateRequired
 } from '../../../src/util/validation/validation';
 
 describe('Validation Edge Cases', () => {

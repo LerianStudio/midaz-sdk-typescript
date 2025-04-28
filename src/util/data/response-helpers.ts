@@ -36,8 +36,13 @@ export function extractItems<T>(response: T[] | ListResponse<T> | undefined | nu
     return response;
   }
 
-  if (response.items && Array.isArray(response.items)) {
-    return response.items;
+  try {
+    if (response.items && Array.isArray(response.items)) {
+      return response.items;
+    }
+  } catch (error) {
+    // If response is not an object or accessing response.items fails, return empty array
+    return [];
   }
 
   return [];

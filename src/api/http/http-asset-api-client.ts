@@ -16,10 +16,8 @@ import { AssetApiClient } from '../interfaces/asset-api-client';
 import { UrlBuilder } from '../url-builder';
 
 /**
- * HTTP implementation of the AssetApiClient interface
- *
- * This class handles HTTP communication with asset endpoints, including
- * URL construction, request formation, response handling, and error management.
+ * @inheritdoc
+ * @implements {AssetApiClient}
  */
 export class HttpAssetApiClient implements AssetApiClient {
   private readonly observability: Observability;
@@ -51,12 +49,7 @@ export class HttpAssetApiClient implements AssetApiClient {
   }
 
   /**
-   * Lists assets for a specific organization and ledger
-   *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param options - Optional list options for filtering and pagination
-   * @returns Promise resolving to a paginated list of assets
+   * @inheritdoc
    */
   public async listAssets(
     orgId: string,
@@ -105,12 +98,7 @@ export class HttpAssetApiClient implements AssetApiClient {
   }
 
   /**
-   * Gets an asset by ID
-   *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Asset ID
-   * @returns Promise resolving to the asset
+   * @inheritdoc
    */
   public async getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset> {
     // Create a span for tracing this operation
@@ -148,12 +136,7 @@ export class HttpAssetApiClient implements AssetApiClient {
   }
 
   /**
-   * Creates a new asset
-   *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param input - Asset creation input
-   * @returns Promise resolving to the created asset
+   * @inheritdoc
    */
   public async createAsset(
     orgId: string,
@@ -203,13 +186,7 @@ export class HttpAssetApiClient implements AssetApiClient {
   }
 
   /**
-   * Updates an existing asset
-   *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Asset ID
-   * @param input - Asset update input
-   * @returns Promise resolving to the updated asset
+   * @inheritdoc
    */
   public async updateAsset(
     orgId: string,
@@ -266,12 +243,7 @@ export class HttpAssetApiClient implements AssetApiClient {
   }
 
   /**
-   * Deletes an asset
-   *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Asset ID
-   * @returns Promise resolving when the asset is deleted
+   * @inheritdoc
    */
   public async deleteAsset(orgId: string, ledgerId: string, id: string): Promise<void> {
     // Create a span for tracing this operation

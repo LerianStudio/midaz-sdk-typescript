@@ -27,8 +27,8 @@ describe('Organization Validator', () => {
             expect(result.message || '').toBe('');
         });
 
-        // Test 2: Missing legalName should fail validation
-        it('shouldFailValidationForMissingLegalName', () => {
+        // Test 2: Empty legalName should fail validation
+        it('shouldFailValidationForEmptyLegalName', () => {
             const invalidInput: CreateOrganizationInput = {
                 legalName: '',
                 legalDocument: '123456789',
@@ -46,11 +46,11 @@ describe('Organization Validator', () => {
             
             expect(result.valid).toBe(false);
             expect(result.fieldErrors?.legalName).toBeDefined();
-            expect(result.message).toContain('legalName');
+            expect(result.message).toContain('empty');
         });
 
-        // Test 3: Missing legalDocument should fail validation
-        it('shouldFailValidationForMissingLegalDocument', () => {
+        // Test 3: Empty legalDocument should fail validation
+        it('shouldFailValidationForEmptyLegalDocument', () => {
             const invalidInput: CreateOrganizationInput = {
                 legalName: 'Acme Corporation',
                 legalDocument: '',
@@ -68,7 +68,7 @@ describe('Organization Validator', () => {
             
             expect(result.valid).toBe(false);
             expect(result.fieldErrors?.legalDocument).toBeDefined();
-            expect(result.message).toContain('legalDocument');
+            expect(result.message).toContain('empty');
         });
 
         // Test 4: Empty doingBusinessAs should fail validation

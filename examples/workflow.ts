@@ -1,57 +1,65 @@
 /**
- * Midaz SDK - Financial Workflow Example
+ * Midaz SDK - Comprehensive Financial Workflow Example
  *
- * This example demonstrates a complete financial workflow using the Midaz SDK:
- * 1. Creating organizations, ledgers, assets, and accounts
- * 2. Processing deposit and transfer transactions
- * 3. Retrieving and displaying entity details and balances
- * 4. Using error handling and recovery mechanisms
+ * This example demonstrates a complete end-to-end financial system workflow using the Midaz SDK.
+ * It shows how to set up and manage all main components of a financial platform:
+ * - Organizations, ledgers, assets, and accounts
+ * - Transactions, deposits, transfers, and complex transaction patterns
+ * - Error handling, recovery mechanisms, and data validation
+ * - Batch processing for high-throughput operations
+ * - Pagination for large datasets
+ * - Observability with complete OpenTelemetry integration (tracing, metrics, logging)
  *
- * The workflow simulates a typical financial application that manages multiple
- * ledgers (Operating and Investment) with various assets (USD, EUR, BTC) and
- * different account types (deposit, savings, loans).
+ * The workflow steps through the entire lifecycle:
+ * 1. Create organization structure
+ * 2. Set up ledgers (operating and investment accounts)
+ * 3. Define assets (currency types, values, properties)
+ * 4. Create accounts for each asset
+ * 5. Fund accounts with initial deposits (using batch processing)
+ * 6. Perform transactions between accounts (using transaction pairs)
+ * 7. Demonstrate advanced financial patterns (multi-account transfers, recurring payments)
+ * 8. Display account balances with error recovery and pagination
+ *
+ * Each section is well-documented with detailed comments to help understand the code.
+ * This can be used as both a learning resource and a reference implementation.
  */
 
 import {
   ConfigService,
   createAccountBuilder,
   createAssetBuilderWithType,
+  // Batch utilities
+  createBatch,
+  // Transaction pattern utilities
+  createCreditDebitPair,
   createDepositTransaction,
-  createErrorHandler,
   createLedgerBuilder,
+  createMultiAccountTransfer,
   createOrganizationBuilder,
-  createTransferTransaction,
-  executeTransaction,
+  createRecurringPayment,
+  createUserTransfer,
+  executeBatch,
+  executeTransactionPair,
   extractItems,
   formatAccountBalance,
   groupAccountsByAsset,
-  isExternalAccount,
-  Ledger,
   logDetailedError,
+  Logger,
+  LogLevel,
   MidazClient,
-  Organization,
+  // Observability utilities
+  Observability,
   processError,
-  withErrorRecovery,
+  withEnhancedRecovery,
 } from '../src';
+
+// Import pagination utilities directly from the module
+import { createPaginator } from '../src/util/data/pagination-abstraction';
 
 /**
  * Main workflow function that demonstrates a complete financial system workflow
  * using the Midaz SDK. This function orchestrates the entire process from
- * organization creation to account balance display.
- *
- * The workflow follows these steps:
- * 1. Create an organization (legal entity)
- * 2. Create operating and investment ledgers
- * 3. Create assets (USD, EUR, BTC) in both ledgers
- * 4. Create accounts for each asset with different types
- * 5. Process deposit transactions to fund accounts
- * 6. Process transfer transactions between accounts
- * 7. Update entity information (organization, ledgers, etc.)
- * 8. Retrieve and display entity details
- * 9. Set up additional entities (asset rates, portfolios, segments)
- * 10. Display account balances
- *
- * Each step uses error handling and recovery mechanisms to ensure robustness.
+ * organization creation to account balance display and advanced transaction patterns.
  */
 async function main() {
   try {
@@ -60,175 +68,250 @@ async function main() {
     // Configure with ConfigService for local development settings
     ConfigService.configure({
       apiUrls: {
-        onboardingUrl: 'http://localhost:3000/v1',
-        transactionUrl: 'http://localhost:3001/v1',
+        onboardingUrl: 'http://localhost:3000', // Base URL without version
+        transactionUrl: 'http://localhost:3001', // Base URL without version
       },
       httpClient: {
         debug: false,
       },
       observability: {
-        enableTracing: false,
-        enableMetrics: false,
-        enableLogging: false,
+        enableTracing: true,
+        enableMetrics: true,
+        enableLogging: true,
         serviceName: 'midaz-workflow-example',
       },
     });
 
+    // Set up observability and logging
+    const logger = new Logger({
+      minLevel: LogLevel.DEBUG,
+      defaultModule: 'workflow',
+      includeTimestamps: true,
+    });
+
+    // Initialize global observability
+    // This sets up OpenTelemetry with tracing, metrics, and logging
+    // The configuration is shared across the entire SDK
+    Observability.configure({
+      enableTracing: true, // Enable distributed tracing
+      enableMetrics: true, // Enable metrics collection
+      enableLogging: true, // Enable structured logging
+      serviceName: 'midaz-workflow-example',
+      // Disable console output for telemetry data while keeping the telemetry working
+      // This is useful for examples and production environments where you don't want
+      // to pollute the console but still want to send telemetry to backends
+      consoleExporter: false,
+    });
+
+    // Log the start of our workflow - this demonstrates structured logging
+    // The SDK supports rich context with every log message
+    logger.info('Starting workflow example', { timestamp: new Date().toISOString() });
+
     // Initialize client using the centralized configuration
     const client = new MidazClient({
       apiKey: 'teste', // Auth is off, so no matter what is here
+      apiVersion: 'v1', // Specify API version explicitly
     });
 
-    // Create organization
-    console.log('\n[1/10] CREATING ORGANIZATION...');
-    const organization = await setupOrganization(client);
-    console.log(`✓ Organization "${organization.legalName}" created with ID: ${organization.id}`);
-
-    // List all organizations to verify
-    console.log('\n📊 ALL ORGANIZATIONS:');
-    const organizations = await client.entities.organizations.listOrganizations();
-    const orgItems = extractItems(organizations);
-
-    console.log(`  Total: ${orgItems.length}`);
-    orgItems.forEach((org: any, index: number) => {
-      console.log(`  ${index + 1}. ${org.legalName} (${org.id})`);
+    // Create a workflow span to track the entire process
+    // This span will be the parent for all child spans in the workflow
+    // OpenTelemetry spans allow tracking detailed timing and context for operations
+    const workflowSpan = Observability.startSpan('complete-workflow', {
+      startTime: Date.now(),
     });
 
-    // Create ledgers
-    console.log('\n[2/10] CREATING LEDGERS...');
-    const { operatingLedger, investmentLedger } = await setupLedgers(client, organization.id);
-    console.log(`✓ Created 2 ledgers: "${operatingLedger.name}" and "${investmentLedger.name}"`);
+    try {
+      // STEP 1: CREATE ORGANIZATION
+      // Organizations are the top-level entities that group ledgers, accounts, etc.
+      console.log('\n[1/8] CREATING ORGANIZATION...');
 
-    // List all ledgers to verify
-    console.log('\n📊 ALL LEDGERS:');
-    const ledgers = await client.entities.ledgers.listLedgers(organization.id);
-    const ledgerItems = extractItems(ledgers);
+      // Track the current step in the workflow span
+      // This allows monitoring systems to see workflow progress
+      workflowSpan.setAttribute('currentStep', 'create-organization');
 
-    console.log(`  Total: ${ledgerItems.length}`);
-    ledgerItems.forEach((ledger: any, index: number) => {
-      console.log(`  ${index + 1}. ${ledger.name} (${ledger.id})`);
-    });
+      // Create a child span specifically for organization creation
+      // This creates a hierarchical trace for detailed performance analysis
+      const organizationSpan = Observability.startSpan('create-organization');
 
-    // Create assets
-    console.log('\n[3/10] CREATING ASSETS...');
-    const createdAssets = await setupAssets(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id
-    );
-    console.log(`✓ Created ${createdAssets.length} assets across both ledgers`);
+      // Call the helper function to create an organization with the SDK client
+      // See the setupOrganization function below for implementation details
+      const organization = await setupOrganization(client);
+      console.log(`✓ Organization "${organization.legalName}" created with ID: ${organization.id}`);
 
-    // List assets in each ledger to verify
-    console.log('\n📊 ASSETS:');
-    await listAssets(client, organization.id, operatingLedger.id, investmentLedger.id);
+      // Add important context to the span for later analysis
+      organizationSpan.setAttribute('organizationId', organization.id);
+      organizationSpan.setStatus('ok');
+      organizationSpan.end(); // Always end spans when operations complete
 
-    // Create accounts
-    console.log('\n[4/10] CREATING ACCOUNTS...');
-    const _createdAccounts = await setupAccounts(client, organization.id, createdAssets);
-    console.log(`✓ Created ${_createdAccounts.length} accounts across all assets`);
+      // Record a success metric for this step
+      // Metrics can be used for dashboards, alerts, and performance tracking
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-organization' });
 
-    // List accounts in each ledger to verify
-    console.log('\n📊 ACCOUNTS:');
-    await listAccounts(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id,
-      _createdAccounts
-    );
+      // STEP 2: CREATE LEDGERS
+      // Ledgers organize financial records within an organization
+      // We'll create two separate ledgers for different purposes:
+      // 1. Operating ledger - for day-to-day transactions
+      // 2. Investment ledger - for long-term investments
+      console.log('\n[2/8] CREATING LEDGERS...');
 
-    // Create deposit transactions
-    console.log('\n[5/10] CREATING DEPOSIT TRANSACTIONS...');
-    // Group accounts by asset for better management
-    const operatingDepositCount = await createTransactions(
-      client,
-      'deposit',
-      organization.id,
-      operatingLedger.id,
-      _createdAccounts
-    );
+      // Update the workflow span context
+      workflowSpan.setAttribute('currentStep', 'create-ledgers');
 
-    const investmentDepositCount = await createTransactions(
-      client,
-      'deposit',
-      organization.id,
-      investmentLedger.id,
-      _createdAccounts
-    );
-    console.log(
-      `✓ Created ${
-        operatingDepositCount + investmentDepositCount
-      } deposit transactions across all ledgers`
-    );
+      // Create a span specifically for ledger creation operations
+      const ledgerSpan = Observability.startSpan('create-ledgers');
 
-    // Create transfer transactions
-    console.log('\n[6/10] CREATING INTER-ACCOUNT TRANSACTIONS...');
-    const operatingTransferCount = await createTransactions(
-      client,
-      'transfer',
-      organization.id,
-      operatingLedger.id,
-      _createdAccounts
-    );
+      // Create both ledgers in a single helper function
+      // See the setupLedgers function below for implementation details
+      const { operatingLedger, investmentLedger } = await setupLedgers(client, organization.id);
+      console.log(`✓ Created ledgers: "${operatingLedger.name}" and "${investmentLedger.name}"`);
 
-    const investmentTransferCount = await createTransactions(
-      client,
-      'transfer',
-      organization.id,
-      investmentLedger.id,
-      _createdAccounts
-    );
-    console.log(
-      `✓ Created ${
-        operatingTransferCount + investmentTransferCount
-      } inter-account transactions across all ledgers`
-    );
+      // Add ledger IDs to the span for context and correlation
+      ledgerSpan.setAttribute('operatingLedgerId', operatingLedger.id);
+      ledgerSpan.setAttribute('investmentLedgerId', investmentLedger.id);
+      ledgerSpan.setStatus('ok');
+      ledgerSpan.end();
 
-    // List transactions in each ledger to verify
-    console.log('\n📊 TRANSACTIONS:');
-    await listTransactions(client, organization.id, operatingLedger.id, investmentLedger.id);
+      // Record metric for ledger creation success
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-ledgers' });
 
-    // Update entities
-    console.log('\n[7/10] UPDATING ENTITIES...');
-    await updateEntities(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id,
-      createdAssets,
-      _createdAccounts
-    );
+      // Create assets
+      console.log('\n[3/8] CREATING ASSETS...');
+      workflowSpan.setAttribute('currentStep', 'create-assets');
+      const assetSpan = Observability.startSpan('create-assets');
 
-    // Get entity details
-    console.log('\n[8/10] GETTING ENTITY DETAILS...');
-    await getEntityDetails(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id,
-      createdAssets,
-      _createdAccounts
-    );
-    console.log('✓ Retrieved entity details');
+      const createdAssets = await setupAssets(
+        client,
+        organization.id,
+        operatingLedger.id,
+        investmentLedger.id
+      );
+      console.log(`✓ Created ${createdAssets.length} assets across ledgers`);
 
-    // Setup and manage additional entities (asset rates, portfolios, segments)
-    console.log('\n[9/10] SETTING UP ADDITIONAL ENTITIES...');
-    await setupAdditionalEntities(
-      client,
-      organization.id,
-      operatingLedger.id,
-      investmentLedger.id,
-      createdAssets,
-      _createdAccounts
-    );
-    console.log('✓ Set up additional entities');
+      assetSpan.setAttribute('assetCount', createdAssets.length);
+      assetSpan.setStatus('ok');
+      assetSpan.end();
 
-    // Display account balances
-    console.log('\n[10/10] ACCOUNT BALANCES:');
-    await displayBalances(client, organization.id, operatingLedger.id, investmentLedger.id);
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-assets' });
 
-    console.log('\n=== WORKFLOW COMPLETED SUCCESSFULLY ===');
+      // Create accounts
+      console.log('\n[4/8] CREATING ACCOUNTS...');
+      workflowSpan.setAttribute('currentStep', 'create-accounts');
+      const accountSpan = Observability.startSpan('create-accounts');
+
+      const createdAccounts = await setupAccounts(client, organization.id, createdAssets);
+      console.log(`✓ Created ${createdAccounts.length} accounts across all assets`);
+
+      accountSpan.setAttribute('accountCount', createdAccounts.length);
+      accountSpan.setStatus('ok');
+      accountSpan.end();
+
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-accounts' });
+
+      // Create initial deposits using batch processing
+      console.log('\n[5/8] CREATING INITIAL DEPOSITS WITH BATCH PROCESSING...');
+      workflowSpan.setAttribute('currentStep', 'create-deposits');
+      const depositSpan = Observability.startSpan('create-deposits');
+
+      const depositCount = await createInitialDeposits(client, organization.id, createdAccounts);
+      console.log(`✓ Created ${depositCount} initial deposits`);
+
+      depositSpan.setAttribute('depositCount', depositCount);
+      depositSpan.setStatus('ok');
+      depositSpan.end();
+
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-deposits' });
+
+      // Create transaction pairs (credit/debit pairs)
+      console.log('\n[6/8] CREATING TRANSACTION PAIRS...');
+      workflowSpan.setAttribute('currentStep', 'create-transaction-pairs');
+      const pairSpan = Observability.startSpan('create-transaction-pairs');
+
+      const transactionPairsCount = await createAdditionalTransactions(
+        client,
+        organization.id,
+        operatingLedger.id,
+        createdAccounts
+      );
+      console.log(`✓ Created ${transactionPairsCount} transaction pairs`);
+
+      pairSpan.setAttribute('transactionPairsCount', transactionPairsCount);
+      pairSpan.setStatus('ok');
+      pairSpan.end();
+
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'create-transaction-pairs' });
+
+      // Create complex transaction patterns
+      console.log('\n[7/8] DEMONSTRATING ADVANCED TRANSACTION PATTERNS...');
+      workflowSpan.setAttribute('currentStep', 'demonstrate-patterns');
+      const patternSpan = Observability.startSpan('demonstrate-patterns');
+
+      const patternCount = await demonstrateTransactionPatterns(
+        client,
+        organization.id,
+        operatingLedger.id,
+        investmentLedger.id,
+        createdAccounts
+      );
+      console.log(`✓ Executed ${patternCount} advanced transaction patterns`);
+
+      patternSpan.setAttribute('patternCount', patternCount);
+      patternSpan.setStatus('ok');
+      patternSpan.end();
+
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'demonstrate-patterns' });
+
+      // Display balances with error recovery and pagination
+      console.log('\n[8/8] DISPLAYING ACCOUNT BALANCES WITH ERROR RECOVERY AND PAGINATION...');
+      workflowSpan.setAttribute('currentStep', 'display-balances');
+      const balanceSpan = Observability.startSpan('display-balances');
+
+      await displayBalances(
+        client,
+        organization.id,
+        operatingLedger.id,
+        investmentLedger.id,
+        createdAccounts
+      );
+      console.log('✓ Retrieved and displayed account balances');
+
+      balanceSpan.setStatus('ok');
+      balanceSpan.end();
+
+      // Record success metric
+      Observability.recordMetric('workflow.step.success', 1, { step: 'display-balances' });
+
+      // Mark the overall workflow as successful
+      workflowSpan.setStatus('ok');
+      Observability.recordMetric('workflow.completed', 1, { success: 'true' });
+
+      console.log('\n=== WORKFLOW COMPLETED SUCCESSFULLY ===');
+    } catch (error) {
+      // Record the current step where the error occurred
+      // Get the current step value directly instead of using getAttribute
+      const currentStep = Object.prototype.hasOwnProperty.call(workflowSpan, '_attributes')
+        ? (workflowSpan as any)._attributes?.currentStep || 'unknown'
+        : 'unknown';
+      workflowSpan.setAttribute('failedStep', currentStep);
+      workflowSpan.recordException(error);
+      workflowSpan.setStatus('error', error instanceof Error ? error.message : String(error));
+
+      // Record failure metric
+      Observability.recordMetric('workflow.completed', 1, { success: 'false' });
+
+      throw error;
+    } finally {
+      // Complete duration measurement and end span
+      workflowSpan.setAttribute('endTime', Date.now());
+      workflowSpan.end();
+
+      // Ensure all telemetry is flushed
+      await Observability.getInstance().shutdown();
+    }
   } catch (error) {
     console.error('\n❌ WORKFLOW ERROR:');
     handleError(error);
@@ -236,24 +319,26 @@ async function main() {
 }
 
 // -------------------------------------------------------------------------
-// ENTITY SETUP FUNCTIONS
+// HELPER FUNCTIONS
 // -------------------------------------------------------------------------
 
 /**
  * Creates an organization with required fields and metadata
  *
- * This function demonstrates:
- * - Using the organization creation helper functions
- * - Adding address information to an organization
- * - Adding metadata for additional organization properties
+ * Organizations are the top-level entities in the Midaz financial system.
+ * Each organization can have multiple ledgers, and each ledger can have
+ * multiple assets and accounts. Organizations typically represent a company,
+ * financial institution, or other entity operating a financial system.
  *
- * @param client - The initialized Midaz client
- * @returns A Promise resolving to the created Organization
+ * This function demonstrates:
+ * - Using the builder pattern to create complex objects
+ * - Setting required fields (legal name, legal document ID, DBA name)
+ * - Adding optional data like address and metadata
+ *
+ * @param client - The Midaz SDK client instance
+ * @returns The created organization object from the API
  */
-async function setupOrganization(client: MidazClient): Promise<Organization> {
-  console.log('Creating organization with Midaz SDK...');
-
-  // Use the new method chaining builder pattern
+async function setupOrganization(client: MidazClient) {
   const organization = createOrganizationBuilder('Example Corporation', '123456789', 'Example Inc.')
     .withAddress({
       line1: '123 Main Street',
@@ -274,19 +359,22 @@ async function setupOrganization(client: MidazClient): Promise<Organization> {
 /**
  * Creates operating and investment ledgers for the organization
  *
- * This function demonstrates:
- * - Creating multiple ledgers for different purposes
- * - Using the ledger creation helper functions
- * - Adding descriptive metadata to ledgers
+ * Ledgers are the primary accounting structure within an organization.
+ * Each ledger acts as a separate set of books, allowing clear separation
+ * between different types of financial activities.
  *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @returns A Promise resolving to an object containing both created ledgers
+ * This function creates two ledgers with different purposes:
+ * 1. Operating Ledger - For day-to-day financial operations
+ * 2. Investment Ledger - For long-term investments and portfolios
+ *
+ * Ledgers can have different settings, compliance rules, and reporting
+ * requirements, making this separation important for financial organizations.
+ *
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - ID of the parent organization
+ * @returns Object containing both created ledger entities
  */
-async function setupLedgers(
-  client: MidazClient,
-  organizationId: string
-): Promise<{ operatingLedger: Ledger; investmentLedger: Ledger }> {
+async function setupLedgers(client: MidazClient, organizationId: string) {
   const operatingLedger = await createLedger(
     client,
     organizationId,
@@ -298,7 +386,7 @@ async function setupLedgers(
     client,
     organizationId,
     'Investment Ledger',
-    'Ledger for tracking investments'
+    'Ledger for long-term investments and portfolios'
   );
 
   return { operatingLedger, investmentLedger };
@@ -306,31 +394,37 @@ async function setupLedgers(
 
 /**
  * Type definition for asset and account information
- * Used to track created entities throughout the workflow
+ *
+ * This interface is used to track created entities throughout the workflow.
+ * It combines the necessary information about accounts and their assets
+ * to simplify operations that need both pieces of information.
+ *
+ * In a real application, you might store this information in a database
+ * or retrieve it from the API as needed, but for this example we track
+ * it in memory to demonstrate the workflow more clearly.
  */
 interface AccountInfo {
+  /** Unique identifier for the account */
   id: string;
+
+  /** Display name of the account */
   name: string;
+
+  /** Asset code (currency code) for the account (e.g., USD, EUR, BTC) */
   assetCode: string;
+
+  /** ID of the ledger this account belongs to */
   ledgerId: string;
+
+  /** Display name of the ledger (Operating or Investment) */
   ledgerName: string;
+
+  /** Number of decimal places for this asset (e.g., 2 for USD, 8 for BTC) */
   decimalPlaces: number;
 }
 
 /**
  * Sets up assets in both operating and investment ledgers
- *
- * This function demonstrates:
- * - Creating different types of assets (currency, crypto)
- * - Adding assets to multiple ledgers
- * - Using asset creation helper functions
- * - Adding metadata with asset-specific properties
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param operatingLedgerId - The ID of the operating ledger
- * @param investmentLedgerId - The ID of the investment ledger
- * @returns A Promise resolving to an array of created assets
  */
 async function setupAssets(
   client: MidazClient,
@@ -338,7 +432,7 @@ async function setupAssets(
   operatingLedgerId: string,
   investmentLedgerId: string
 ): Promise<AccountInfo[]> {
-  // Define asset configurations - simplified to 3 assets
+  // Define asset configurations for all supported asset types
   const assetConfigs = [
     { name: 'US Dollar', code: 'USD', type: 'currency', symbol: '$', decimalPlaces: 2 },
     { name: 'Euro', code: 'EUR', type: 'currency', symbol: '€', decimalPlaces: 2 },
@@ -347,7 +441,7 @@ async function setupAssets(
 
   const createdAssets: AccountInfo[] = [];
 
-  // Create assets in Operating Ledger
+  // Create assets in Operating Ledger (all assets)
   for (const assetConfig of assetConfigs) {
     const asset = await createAsset(
       client,
@@ -370,8 +464,12 @@ async function setupAssets(
     });
   }
 
-  // Create assets in Investment Ledger - only USD and BTC for simplicity
-  for (const assetConfig of assetConfigs.filter((a) => a.code === 'USD' || a.code === 'BTC')) {
+  // Create only USD and BTC in the Investment Ledger
+  const investmentAssetConfigs = assetConfigs.filter(
+    (asset) => asset.code === 'USD' || asset.code === 'BTC'
+  );
+
+  for (const assetConfig of investmentAssetConfigs) {
     const asset = await createAsset(
       client,
       organizationId,
@@ -398,17 +496,6 @@ async function setupAssets(
 
 /**
  * Sets up accounts for each asset across both ledgers
- *
- * This function demonstrates:
- * - Creating multiple account types (deposit, savings, loans)
- * - Associating accounts with specific assets
- * - Using account creation helper functions
- * - Adding descriptive metadata to accounts
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param createdAssets - Array of assets to create accounts for
- * @returns A Promise resolving to an array of created accounts
  */
 async function setupAccounts(
   client: MidazClient,
@@ -416,15 +503,15 @@ async function setupAccounts(
   createdAssets: AccountInfo[]
 ): Promise<AccountInfo[]> {
   // Account types
-  const accountTypes = ['deposit', 'savings', 'loans'];
+  const accountTypes = ['deposit', 'savings'];
 
   const createdAccounts: AccountInfo[] = [];
 
   // Create accounts for each asset - simplified to create fewer accounts
   for (const asset of createdAssets) {
-    // Create 3 accounts per asset
-    for (let i = 1; i <= 3; i++) {
-      const accountType = accountTypes[i % accountTypes.length] as 'deposit' | 'savings' | 'loans';
+    // Create 2 accounts per asset
+    for (let i = 1; i <= 2; i++) {
+      const accountType = accountTypes[i % accountTypes.length] as 'deposit' | 'savings';
       const accountName = `${asset.name} ${accountType} Account ${i}`;
 
       const account = await createAccount(
@@ -451,124 +538,547 @@ async function setupAccounts(
   return createdAccounts;
 }
 
-// -------------------------------------------------------------------------
-// TRANSACTION FUNCTIONS
-// -------------------------------------------------------------------------
-
 /**
- * Creates deposit and transfer transactions for accounts in a ledger
+ * Creates initial deposits for accounts using batch processing
  *
- * This function demonstrates:
- * - Creating both deposit and transfer transactions
- * - Using transaction builder helper functions
- * - Using the executeTransaction utility for enhanced error handling
- * - Grouping accounts by asset for efficient transaction processing
+ * This function demonstrates several advanced SDK capabilities:
  *
- * @param client - The initialized Midaz client
- * @param transactionType - Type of transaction to create ('deposit' or 'transfer')
- * @param organizationId - The ID of the parent organization
- * @param ledgerId - The ID of the ledger to create transactions in
- * @param accounts - Array of accounts to use for transactions
- * @returns A Promise resolving to the number of successful transactions
+ * 1. Batch processing - Multiple operations grouped and executed concurrently
+ *    This is essential for high-volume financial systems to maintain performance
+ *
+ * 2. Enhanced error recovery - Operations with automatic retries and verification
+ *    The withEnhancedRecovery utility adds resilience to API operations
+ *
+ * 3. Data organization - Account grouping by ledger and asset for processing
+ *    Shows how to handle complex data structures in financial applications
+ *
+ * 4. Transaction creation patterns - Using the deposit transaction builder
+ *    Demonstrates how to use transaction builders for common financial operations
+ *
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - The ID of the organization to operate on
+ * @param accounts - List of account information objects
+ * @returns The number of successful deposit transactions created
  */
-async function createTransactions(
+async function createInitialDeposits(
   client: MidazClient,
-  transactionType: 'deposit' | 'transfer',
   organizationId: string,
-  ledgerId: string,
   accounts: AccountInfo[]
 ): Promise<number> {
   let successCount = 0;
-  const _duplicateCount = 0;
 
-  // Use SDK helper to group accounts by asset code with ledger filter
-  const accountsByAsset = groupAccountsByAsset(accounts, { ledgerId });
+  // Group accounts by ledger and asset for more organized processing
+  const accountsByLedger: Record<string, Record<string, AccountInfo[]>> = {};
 
-  for (const assetCode in accountsByAsset) {
-    const assetAccounts = accountsByAsset[assetCode];
+  for (const account of accounts) {
+    if (!accountsByLedger[account.ledgerId]) {
+      accountsByLedger[account.ledgerId] = {};
+    }
 
-    if (transactionType === 'deposit') {
-      // Create deposit transactions for each account
-      for (const account of assetAccounts) {
-        // Use a larger deposit amount to ensure accounts have sufficient funds
-        const depositAmount = 1000;
+    if (!accountsByLedger[account.ledgerId][account.assetCode]) {
+      accountsByLedger[account.ledgerId][account.assetCode] = [];
+    }
 
-        // Use transaction builder for deposit with correct external account pattern
+    accountsByLedger[account.ledgerId][account.assetCode].push(account);
+  }
+
+  // Process deposits by ledger and asset using batch processing
+  for (const ledgerId in accountsByLedger) {
+    for (const assetCode in accountsByLedger[ledgerId]) {
+      const ledgerAssetAccounts = accountsByLedger[ledgerId][assetCode];
+
+      console.log(
+        `  Processing ${ledgerAssetAccounts.length} ${assetCode} accounts in ledger ${ledgerId}...`
+      );
+
+      // Create a batch for processing deposits
+      const batch = createBatch({
+        concurrency: 3,
+        delayBetweenTransactions: 50,
+      });
+
+      // Add deposit transactions to the batch
+      for (const account of ledgerAssetAccounts) {
+        // Create deposit transaction (from external account to user account)
+        const depositAmount = account.assetCode === 'BTC' ? 0.5 : 1000; // Different amounts based on asset
         const depositTx = createDepositTransaction(
           `external/${account.assetCode}`,
           account.id,
           depositAmount,
           account.assetCode,
-          0,
-          `Deposit into ${account.name}`,
-          { createdBy: 'workflow-script' }
-        );
-
-        // Execute transaction with automatic error handling
-        const { status } = await executeTransaction(
-          () => client.entities.transactions.createTransaction(organizationId, ledgerId, depositTx),
+          account.decimalPlaces,
+          `Initial deposit to ${account.name}`,
           {
-            maxRetries: 2,
+            batchId: `initial-deposits-${Date.now()}`,
+            createdBy: 'workflow-script',
           }
         );
 
-        if (status === 'success' || status === 'duplicate') {
-          successCount++;
-        }
+        // Add the transaction to the batch - we use a closure to capture the context
+        batch.add(async () => {
+          try {
+            // Use enhanced error recovery wrapped around pagination
+            const result = await withEnhancedRecovery(
+              () =>
+                client.entities.transactions.createTransaction(organizationId, ledgerId, depositTx),
+              {
+                maxRetries: 2,
+                fallbackAttempts: 1,
+                verifyOperation: async () => {
+                  // Verify the transaction was created (this is a simplified check)
+                  const transactions = await client.entities.transactions.listTransactions(
+                    organizationId,
+                    ledgerId,
+                    { limit: 100 }
+                  );
 
-        // Add a small delay to ensure transactions are processed
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-    } else if (transactionType === 'transfer') {
-      // Create transfer transactions between pairs of accounts in the same asset group
-      if (assetAccounts.length < 2) {
-        console.log(`Skipping transfers for ${assetCode}: Need at least 2 accounts`);
-        continue;
-      }
+                  const items = extractItems(transactions);
+                  // Check if there's a transaction with matching description
+                  return items.some((tx: any) => tx.description === depositTx.description);
+                },
+              }
+            );
 
-      // Shuffling the accounts to get different transfer pairs each time
-      const shuffledAccounts = [...assetAccounts].sort(() => Math.random() - 0.5);
-      const accountsToUse = shuffledAccounts.slice(0, Math.min(4, shuffledAccounts.length));
-
-      // Create pairs for transfers
-      for (let i = 0; i < accountsToUse.length - 1; i += 2) {
-        const sourceAccount = accountsToUse[i];
-        const destinationAccount = accountsToUse[i + 1];
-
-        // Use a small transfer amount to avoid insufficient funds errors
-        const transferAmount = 10;
-
-        // Use transaction builder for transfer
-        const transferTx = createTransferTransaction(
-          sourceAccount.id,
-          destinationAccount.id,
-          transferAmount,
-          sourceAccount.assetCode,
-          0,
-          `Transfer from ${sourceAccount.name} to ${destinationAccount.name}`,
-          { createdBy: 'workflow-script' }
-        );
-
-        // Execute transaction with automatic error handling
-        const { status } = await executeTransaction(
-          () =>
-            client.entities.transactions.createTransaction(organizationId, ledgerId, transferTx),
-          {
-            maxRetries: 1,
+            return result;
+          } catch (error) {
+            console.error(`  Error creating deposit for ${account.id}: ${error}`);
+            throw error;
           }
-        );
+        });
+      }
 
-        if (status === 'success' || status === 'duplicate') {
+      // Execute the batch
+      const results = await executeBatch(batch);
+
+      // Count successful transactions
+      for (const result of results) {
+        if (result.status === 'success' || result.status === 'duplicate') {
           successCount++;
         }
-
-        // Add a small delay between transfers
-        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
   }
 
   return successCount;
+}
+
+/**
+ * Creates additional credit and debit transactions for each account
+ * This demonstrates the transaction pair utilities
+ */
+async function createAdditionalTransactions(
+  client: MidazClient,
+  organizationId: string,
+  ledgerId: string,
+  accounts: AccountInfo[]
+): Promise<number> {
+  // Group accounts by asset
+  const accountsByAsset = groupAccountsByAsset(accounts);
+
+  let successCount = 0;
+
+  // Create transactions by asset
+  for (const assetCode in accountsByAsset) {
+    const assetAccounts = accountsByAsset[assetCode].filter(
+      (account) => account.ledgerId === ledgerId
+    );
+
+    if (assetAccounts.length < 2) {
+      console.log(`  Skipping ${assetCode}: Need at least 2 accounts`);
+      continue;
+    }
+
+    console.log(
+      `  Creating transaction pairs for ${assetAccounts.length} ${assetCode} accounts...`
+    );
+
+    // Create transaction pairs for each account
+    for (const account of assetAccounts) {
+      // Find another account with the same asset for transfers
+      const otherAccounts = assetAccounts.filter((a) => a.id !== account.id);
+
+      if (otherAccounts.length === 0) {
+        console.log(`  Skipping account ${account.id}: No other accounts with same asset`);
+        continue;
+      }
+
+      // Choose a random other account for transfers
+      const otherAccount = otherAccounts[Math.floor(Math.random() * otherAccounts.length)];
+
+      // Create a credit/debit pair using the SDK utility
+      const creditAmount = assetCode === 'BTC' ? 0.05 : 25;
+      const { creditTx, debitTx } = createCreditDebitPair(
+        otherAccount.id,
+        account.id,
+        creditAmount,
+        assetCode,
+        `Transaction between ${otherAccount.name} and ${account.name}`,
+        {
+          pairId: `pair-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          createdBy: 'workflow-script',
+        }
+      );
+
+      // Execute both transactions as a pair with error recovery
+      try {
+        const results = await executeTransactionPair(
+          async () =>
+            client.entities.transactions.createTransaction(organizationId, ledgerId, creditTx),
+          async () =>
+            client.entities.transactions.createTransaction(organizationId, ledgerId, debitTx),
+          {
+            maxRetries: 2,
+            delayBetweenTransactions: 50,
+          }
+        );
+
+        if (results.creditStatus === 'success' || results.creditStatus === 'duplicate') {
+          successCount++;
+        }
+
+        if (results.debitStatus === 'success' || results.debitStatus === 'duplicate') {
+          successCount++;
+        }
+      } catch (error) {
+        console.error(`  Error creating transaction pair: ${error}`);
+      }
+
+      // Add a delay between accounts
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  return successCount / 2; // Count pairs, not individual transactions
+}
+
+/**
+ * Demonstrates advanced transaction patterns and financial workflows
+ *
+ * This function showcases three advanced financial transaction patterns:
+ *
+ * 1. User Transfers - Direct transfers between two accounts
+ *    These represent standard user-initiated transfers in financial applications
+ *
+ * 2. Multi-Account Transfers - Chain of transfers across multiple accounts
+ *    These represent complex settlement flows or multi-step financial processes
+ *    Often used for clearing, settlement, or distributing funds across systems
+ *
+ * 3. Recurring Payments - Subscription-style repeating transactions
+ *    These represent subscription payments, loan repayments, or scheduled transfers
+ *
+ * Each pattern demonstrates how the SDK's transaction utilities can be composed
+ * to build sophisticated financial workflows with proper error handling and metadata.
+ *
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - The ID of the organization to operate on
+ * @param operatingLedgerId - Ledger for day-to-day operations
+ * @param investmentLedgerId - Ledger for investment operations
+ * @param accounts - List of account information objects
+ * @returns The number of successful transaction patterns executed
+ */
+async function demonstrateTransactionPatterns(
+  client: MidazClient,
+  organizationId: string,
+  operatingLedgerId: string,
+  investmentLedgerId: string,
+  accounts: AccountInfo[]
+): Promise<number> {
+  let successCount = 0;
+
+  // Filter accounts by ledger and asset
+  const operatingUsdAccounts = accounts.filter(
+    (account) => account.ledgerId === operatingLedgerId && account.assetCode === 'USD'
+  );
+
+  const _investmentUsdAccounts = accounts.filter(
+    (account) => account.ledgerId === investmentLedgerId && account.assetCode === 'USD'
+  );
+
+  const _operatingBtcAccounts = accounts.filter(
+    (account) => account.ledgerId === operatingLedgerId && account.assetCode === 'BTC'
+  );
+
+  // 1. Create a user transfer between accounts
+  if (operatingUsdAccounts.length >= 2) {
+    console.log('  1. Creating a user transfer between USD accounts...');
+
+    const sourceAccount = operatingUsdAccounts[0];
+    const destinationAccount = operatingUsdAccounts[1];
+
+    try {
+      const result = await createUserTransfer(
+        sourceAccount.id,
+        destinationAccount.id,
+        50, // $50 transfer
+        'USD',
+        {
+          client,
+          organizationId,
+          ledgerId: operatingLedgerId,
+          metadata: {
+            transferType: 'user-initiated',
+            purpose: 'demonstration',
+          },
+          description: `Demo transfer from ${sourceAccount.name} to ${destinationAccount.name}`,
+        }
+      );
+
+      if (result.status === 'success' || result.status === 'duplicate') {
+        console.log(`    ✓ User transfer created successfully`);
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`    ✗ Error creating user transfer: ${error}`);
+    }
+  }
+
+  // 2. Create a multi-account transfer (chain of transfers)
+  if (operatingUsdAccounts.length >= 3) {
+    console.log('  2. Creating a multi-account transfer (chain of transfers)...');
+
+    // Select 3 accounts for the chain
+    const accountChain = operatingUsdAccounts.slice(0, 3).map((acc) => acc.id);
+
+    try {
+      const result = await createMultiAccountTransfer(
+        accountChain,
+        30, // $30 through the chain
+        'USD',
+        {
+          client,
+          organizationId,
+          ledgerId: operatingLedgerId,
+          metadata: {
+            transferType: 'chain',
+            purpose: 'settlement',
+          },
+          description: 'Multi-account chain transfer demonstration',
+        }
+      );
+
+      if (typeof result === 'object' && result.batchId) {
+        console.log(
+          `    ✓ Multi-account transfer created successfully: ${accountChain.length - 1} transfers`
+        );
+        successCount += accountChain.length - 1; // Count the number of transfers in the chain
+      }
+    } catch (error) {
+      console.error(`    ✗ Error creating multi-account transfer: ${error}`);
+    }
+  }
+
+  // 3. Create a recurring payment (subscription)
+  if (operatingUsdAccounts.length >= 2) {
+    console.log('  3. Creating a recurring payment (subscription)...');
+
+    const payer = operatingUsdAccounts[0];
+    const payee = operatingUsdAccounts[1];
+
+    try {
+      const result = await createRecurringPayment(
+        payer.id,
+        payee.id,
+        9.99, // $9.99 subscription fee
+        'USD',
+        'subscription-monthly',
+        {
+          client,
+          organizationId,
+          ledgerId: operatingLedgerId,
+          metadata: {
+            frequency: 'monthly',
+            paymentNumber: 1,
+            subscriptionName: 'Premium Service',
+            nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+          description: 'Monthly subscription payment',
+        }
+      );
+
+      if (result.status === 'success' || result.status === 'duplicate') {
+        console.log(`    ✓ Recurring payment created successfully`);
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`    ✗ Error creating recurring payment: ${error}`);
+    }
+  }
+
+  return successCount;
+}
+
+/**
+ * Displays account balances with enhanced error recovery and pagination
+ *
+ * This function demonstrates several advanced data handling techniques:
+ *
+ * 1. Pagination - Handling large datasets by processing them in pages
+ *    The SDK provides built-in pagination utilities that handle cursors and limits
+ *
+ * 2. Enhanced Error Recovery - Resilient data fetching with automatic retries
+ *    withEnhancedRecovery adds verification and fallback strategies
+ *
+ * 3. Balance Formatting - Presenting financial data in user-friendly formats
+ *    Converting raw balance values to properly formatted currency strings
+ *
+ * 4. Data Organization - Grouping balances by asset for easier processing
+ *    Shows how to organize financial data for presentation or analysis
+ *
+ * 5. Complete Observability Integration - Traces, metrics, and logging
+ *    Each operation is fully instrumented for monitoring and debugging
+ *
+ * This demonstrates a production-ready approach to handling balance queries
+ * with proper error handling, monitoring, and user-friendly output.
+ *
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - The ID of the organization to operate on
+ * @param operatingLedgerId - ID of the operating ledger
+ * @param investmentLedgerId - ID of the investment ledger
+ * @param accounts - List of account information objects for lookup
+ */
+async function displayBalances(
+  client: MidazClient,
+  organizationId: string,
+  operatingLedgerId: string,
+  investmentLedgerId: string,
+  accounts: AccountInfo[]
+): Promise<void> {
+  // Helper function to display balances for a specific ledger with error recovery and pagination
+  async function displayLedgerBalances(ledgerId: string, ledgerName: string) {
+    console.log(`  ${ledgerName} Ledger Balances:`);
+
+    // Create a logger but don't output to console when not needed
+    // We want to create it for demonstration but without console output
+    const logger = new Logger({
+      minLevel: LogLevel.DEBUG,
+      defaultModule: 'balance-display',
+      // Use empty handlers array to disable console output but keep the logger working
+      handlers: [],
+    });
+
+    // Create a span for balance loading operation
+    const span = Observability.startSpan('fetch-balances', {
+      ledgerId,
+      ledgerName,
+      organizationId,
+    });
+
+    try {
+      logger.info(`Fetching balances for ledger ${ledgerName}`, { ledgerId });
+
+      // Use pagination to handle potentially large numbers of balances
+      const paginator = createPaginator<any>({
+        fetchPage: (options) =>
+          client.entities.balances.listBalances(organizationId, ledgerId, options),
+        maxItems: 1000, // Limit total number of items
+        maxPages: 50, // Limit number of pages
+        spanAttributes: {
+          ledgerId,
+          ledgerName,
+        },
+      });
+
+      // Collect all balances across pages
+      const allBalances: any[] = [];
+      let pageCount = 0;
+
+      // Use enhanced error recovery wrapped around pagination
+      await withEnhancedRecovery(
+        async () => {
+          await paginator.forEachPage(async (balances) => {
+            pageCount++;
+            logger.info(`Processing balance page ${pageCount}`, {
+              itemCount: balances.length,
+            });
+            allBalances.push(...balances);
+
+            // Record metrics for each page received
+            Observability.recordMetric('balances.fetched', balances.length, {
+              ledgerId,
+              ledgerName,
+            });
+          });
+          return allBalances;
+        },
+        {
+          maxRetries: 3,
+          usePolledVerification: true,
+          verifyOperation: async () => {
+            try {
+              // Try a simple check to verify API is responsive
+              await client.entities.ledgers.getLedger(organizationId, ledgerId);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+        }
+      );
+
+      // Mark span as successful
+      span.setStatus('ok');
+      const paginationState = paginator.getPaginationState();
+      span.setAttribute('balanceCount', allBalances.length);
+      span.setAttribute('pageCount', pageCount);
+      span.setAttribute('lastFetchTimestamp', paginationState.lastFetchTimestamp || 0);
+
+      logger.info(`Retrieved ${allBalances.length} balances in ${pageCount} pages`, {
+        ledgerId,
+        ledgerName,
+        paginationState,
+      });
+
+      // Group by asset for easier reading
+      const balancesByAsset: Record<string, any[]> = {};
+
+      for (const balance of allBalances) {
+        const assetCode = balance.assetCode || 'Unknown';
+
+        if (!balancesByAsset[assetCode]) {
+          balancesByAsset[assetCode] = [];
+        }
+
+        balancesByAsset[assetCode].push(balance);
+      }
+
+      // Display balances by asset
+      for (const assetCode in balancesByAsset) {
+        console.log(`    ${assetCode} Accounts:`);
+
+        for (const balance of balancesByAsset[assetCode]) {
+          try {
+            // Find account info for this balance
+            const account = accounts.find(
+              (a) => a.id === balance.accountId && a.ledgerId === ledgerId
+            );
+
+            // Format and display the balance
+            const formattedBalance = formatAccountBalance(balance);
+            console.log(
+              `      ${account ? account.name : balance.accountId}: ${formattedBalance.displayString}`
+            );
+          } catch (error) {
+            // Fallback display if formatting fails
+            console.log(`      ${balance.accountId}: Available ${balance.available || '0'}`);
+            logger.warn('Failed to format balance', { error, accountId: balance.accountId });
+          }
+        }
+      }
+    } catch (error) {
+      // Record error in the span
+      span.recordException(error);
+      span.setStatus('error', error instanceof Error ? error.message : String(error));
+      logger.error('Failed to retrieve balances', { error, ledgerId });
+      throw error;
+    } finally {
+      // Always end the span
+      span.end();
+    }
+  }
+
+  // Display balances for both ledgers
+  await displayLedgerBalances(operatingLedgerId, 'Operating');
+  await displayLedgerBalances(investmentLedgerId, 'Investment');
 }
 
 /**
@@ -579,7 +1089,7 @@ async function createLedger(
   organizationId: string,
   name: string,
   description: string
-): Promise<Ledger> {
+) {
   // Use the new method chaining builder pattern
   const ledgerInput = createLedgerBuilder(name)
     .withMetadata({
@@ -605,7 +1115,7 @@ async function createAsset(
   type: string,
   symbol: string,
   decimalPlaces: number
-): Promise<any> {
+) {
   // Create metadata based on asset type
   const metadata: any = {
     symbol: symbol,
@@ -638,7 +1148,7 @@ async function createAccount(
   assetCode: string,
   accountType: 'deposit' | 'savings' | 'loans' | 'marketplace' | 'creditCard' | 'external',
   description: string
-): Promise<any> {
+) {
   // Use the new method chaining builder pattern
   const accountInput = createAccountBuilder(name, assetCode, accountType)
     .withMetadata({
@@ -653,688 +1163,131 @@ async function createAccount(
   return await client.entities.accounts.createAccount(organizationId, ledgerId, accountInput);
 }
 
-// -------------------------------------------------------------------------
-// DISPLAY AND LISTING FUNCTIONS
-// -------------------------------------------------------------------------
-
-/**
- * Lists assets in both ledgers
- *
- * This function demonstrates:
- * - Retrieving and displaying assets from multiple ledgers
- * - Using the extractItems utility for pagination handling
- * - Implementing error handling for each ledger separately
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param operatingLedgerId - The ID of the operating ledger
- * @param investmentLedgerId - The ID of the investment ledger
- * @returns A Promise that resolves when assets are listed
- */
-async function listAssets(
-  client: MidazClient,
-  organizationId: string,
-  operatingLedgerId: string,
-  investmentLedgerId: string
-): Promise<void> {
-  // Helper function to list assets for a single ledger
-  async function listLedgerAssets(ledgerId: string, ledgerName: string): Promise<void> {
-    try {
-      const assetsList = await client.entities.assets.listAssets(organizationId, ledgerId);
-
-      const assetItems = extractItems(assetsList);
-
-      console.log(`  ${ledgerName} Ledger: ${assetItems.length} assets`);
-      assetItems.forEach((asset: any) => {
-        console.log(`    * ${asset.name} (${asset.code})`);
-      });
-    } catch (error: any) {
-      console.error(`  ❌ Error listing ${ledgerName.toLowerCase()} assets: ${error.message}`);
-    }
-  }
-
-  // List assets for each ledger
-  await listLedgerAssets(operatingLedgerId, 'Operating');
-  await listLedgerAssets(investmentLedgerId, 'Investment');
-}
-
-/**
- * Lists accounts in both ledgers with enhanced error handling
- *
- * This function demonstrates:
- * - Retrieving and displaying accounts from multiple ledgers
- * - Creating reusable error handlers with createErrorHandler
- * - Using withErrorRecovery for automatic retries
- * - Categorizing accounts by type (regular vs. system)
- * - Grouping accounts by asset code
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param operatingLedgerId - The ID of the operating ledger
- * @param investmentLedgerId - The ID of the investment ledger
- * @param createdAccounts - Array of accounts created in the workflow
- * @returns A Promise that resolves when accounts are listed
- */
-async function listAccounts(
-  client: MidazClient,
-  organizationId: string,
-  operatingLedgerId: string,
-  investmentLedgerId: string,
-  createdAccounts: AccountInfo[]
-): Promise<void> {
-  // Set up standard error handler for account listing operations
-  const handleAccountsError = createErrorHandler({
-    logErrors: true,
-    rethrow: false,
-    formatMessage: (errorInfo) => `Error listing accounts: ${errorInfo.userMessage}`,
-    defaultReturnValue: { items: [] },
-  });
-
-  // Helper function to display accounts for a single ledger
-  async function listLedgerAccounts(ledgerId: string, ledgerName: string): Promise<void> {
-    try {
-      // Use withErrorRecovery to automatically retry on network errors
-      const accountsList = await withErrorRecovery(
-        () => client.entities.accounts.listAccounts(organizationId, ledgerId),
-        {
-          maxRetries: 2,
-          onRetry: (error, attempt) => {
-            console.log(
-              `Retrying account listing for ${ledgerName} Ledger (attempt ${attempt})...`
-            );
-          },
-        }
-      ).catch(handleAccountsError);
-
-      const accountItems = extractItems(accountsList);
-
-      // Manual categorization for type safety
-      const regularAccounts: any[] = [];
-      const systemAccounts: any[] = [];
-
-      for (const account of accountItems) {
-        const accountObj = account as any;
-        if (
-          accountObj.id &&
-          (accountObj.id.startsWith('@') ||
-            accountObj.id.startsWith('external/') ||
-            accountObj.id.includes('/external/') ||
-            (accountObj.name &&
-              (accountObj.name.includes('External') || accountObj.name.includes('System'))))
-        ) {
-          systemAccounts.push(accountObj);
-        } else {
-          regularAccounts.push(accountObj);
-        }
-      }
-
-      // Filter and manually group created accounts by asset
-      const ledgerAccounts = createdAccounts.filter((a) => a.ledgerId === ledgerId);
-      const accountsByAssetCode: Record<string, number> = {};
-
-      for (const account of ledgerAccounts) {
-        if (account.assetCode) {
-          if (!accountsByAssetCode[account.assetCode]) {
-            accountsByAssetCode[account.assetCode] = 0;
-          }
-          accountsByAssetCode[account.assetCode]++;
-        }
-      }
-
-      // Calculate the total number of accounts we created
-      const totalAccounts = ledgerAccounts.length;
-
-      console.log(`  ${ledgerName} Ledger: ${accountItems.length} accounts total`);
-      console.log(`    Regular accounts: ${regularAccounts.length}`);
-      console.log(`    System accounts: ${systemAccounts.length}`);
-      console.log('    By Asset (regular accounts):');
-
-      Object.entries(accountsByAssetCode).forEach(([asset, count]) => {
-        console.log(`      * ${asset}: ${count} accounts`);
-      });
-
-      // Display all regular accounts
-      console.log('    Regular Accounts:');
-      if (regularAccounts.length === 0) {
-        console.log('      No regular accounts found');
-      } else {
-        regularAccounts.forEach((account) => {
-          console.log(
-            `      * ${account.name} (${account.id}) - Asset: ${
-              account.assetCode || 'Unknown'
-            }, Type: ${account.type || 'Unknown'}`
-          );
-        });
-      }
-
-      // Display all system accounts
-      console.log('    System Accounts:');
-      if (systemAccounts.length === 0) {
-        console.log('      No system accounts found');
-      } else {
-        systemAccounts.forEach((account) => {
-          console.log(
-            `      * ${account.name || 'Unnamed'} (${account.id}) - Asset: ${
-              account.assetCode || 'Unknown'
-            }, Type: ${account.type || 'Unknown'}`
-          );
-        });
-      }
-
-      // Verify that our count matches what we created
-      if (regularAccounts.length !== totalAccounts) {
-        console.log(
-          `    Note: API reports ${regularAccounts.length} regular accounts, our tracking shows ${totalAccounts}`
-        );
-      }
-    } catch (error: any) {
-      // This catch block should rarely be reached since we're using handleAccountsError
-      // But we include it as a fallback
-      const errorInfo = processError(error);
-      console.error(
-        `  ❌ Error listing ${ledgerName.toLowerCase()} accounts: ${errorInfo.userMessage}`
-      );
-    }
-  }
-
-  // List accounts for each ledger
-  await listLedgerAccounts(operatingLedgerId, 'Operating');
-  await listLedgerAccounts(investmentLedgerId, 'Investment');
-}
-
-/**
- * Lists transactions in both ledgers
- *
- * This function demonstrates:
- * - Retrieving and displaying transactions from multiple ledgers
- * - Limiting the number of transactions displayed for readability
- * - Implementing error handling for each ledger separately
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param operatingLedgerId - The ID of the operating ledger
- * @param investmentLedgerId - The ID of the investment ledger
- * @returns A Promise that resolves when transactions are listed
- */
-async function listTransactions(
-  client: MidazClient,
-  organizationId: string,
-  operatingLedgerId: string,
-  investmentLedgerId: string
-): Promise<void> {
-  // Helper function to list transactions for a single ledger
-  async function listLedgerTransactions(ledgerId: string, ledgerName: string): Promise<void> {
-    try {
-      const transactionsList = await client.entities.transactions.listTransactions(
-        organizationId,
-        ledgerId
-      );
-
-      const transactionItems = extractItems(transactionsList);
-
-      console.log(`  ${ledgerName} Ledger (latest 5 of ${transactionItems.length} total):`);
-      transactionItems.slice(0, 5).forEach((tx: any) => {
-        console.log(`    * ${tx.id} - ${tx.description || 'No description'}`);
-      });
-    } catch (error: any) {
-      console.error(
-        `  ❌ Error listing ${ledgerName.toLowerCase()} transactions: ${error.message}`
-      );
-    }
-  }
-
-  // List transactions for each ledger
-  await listLedgerTransactions(operatingLedgerId, 'Operating');
-  await listLedgerTransactions(investmentLedgerId, 'Investment');
-}
-
-/**
- * Displays account balances for both ledgers
- *
- * This function demonstrates:
- * - Retrieving and displaying account balances
- * - Handling different account types (regular, external)
- * - Using balance formatting utilities
- * - Implementing robust error handling
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param operatingLedgerId - The ID of the operating ledger
- * @param investmentLedgerId - The ID of the investment ledger
- * @returns A Promise that resolves when balances are displayed
- */
-async function displayBalances(
-  client: MidazClient,
-  organizationId: string,
-  operatingLedgerId: string,
-  investmentLedgerId: string
-): Promise<void> {
-  // Get list of common asset codes used in our workflow
-  const assetCodes = ['USD', 'EUR', 'BTC'];
-
-  // Helper function to fetch and display balances for a single ledger
-  async function displayLedgerBalances(ledgerId: string, ledgerName: string): Promise<void> {
-    try {
-      console.log(`  ${ledgerName} Ledger:`);
-
-      // Fetch regular balances
-      const balances = await client.entities.balances.listBalances(organizationId, ledgerId);
-
-      const balanceItems = extractItems(balances);
-
-      // Create separate arrays for regular and system accounts
-      const regularAccounts: any[] = [];
-      const systemAccounts: any[] = [];
-
-      // Manual categorization due to typing issues
-      for (const balance of balanceItems) {
-        const balanceObj = balance as any;
-        if (isExternalAccount(balanceObj.accountId)) {
-          systemAccounts.push(balanceObj);
-        } else {
-          regularAccounts.push(balanceObj);
-        }
-      }
-
-      // Display regular accounts
-      console.log('    Regular Accounts:');
-      if (regularAccounts.length === 0) {
-        console.log('      No regular accounts found');
-      } else {
-        regularAccounts.forEach((balance) => {
-          const formattedBalance = formatAccountBalance(balance);
-          console.log(`      * ${formattedBalance.displayString}`);
-        });
-      }
-
-      // Fetch and display external accounts
-      console.log('    External Accounts (Source of Funds):');
-      const externalBalances = [...systemAccounts];
-
-      // Try to fetch external accounts directly by their IDs
-      for (const assetCode of assetCodes) {
-        try {
-          // Try both patterns for external accounts
-          const externalAccountIdPatterns = [`external/${assetCode}`, `@external/${assetCode}`];
-
-          for (const externalAccountId of externalAccountIdPatterns) {
-            try {
-              const accountBalances = await client.entities.balances.listAccountBalances(
-                organizationId,
-                ledgerId,
-                externalAccountId
-              );
-
-              externalBalances.push(...extractItems(accountBalances));
-              break; // If successful, no need to try other patterns
-            } catch (error) {
-              // Try next pattern
-              continue;
-            }
-          }
-        } catch (error) {
-          // Continue silently - some asset codes might not have external accounts
-        }
-      }
-
-      // Manual deduplication due to typing issues
-      const uniqueExternalBalances: any[] = [];
-      const accountIdMap = new Map<string, boolean>();
-
-      for (const balance of externalBalances) {
-        if (balance.accountId && !accountIdMap.has(balance.accountId)) {
-          accountIdMap.set(balance.accountId, true);
-          uniqueExternalBalances.push(balance);
-        }
-      }
-
-      if (uniqueExternalBalances.length === 0) {
-        console.log('      No external accounts found');
-        console.log('      Note: External accounts may exist but have restricted API access');
-      } else {
-        uniqueExternalBalances.forEach((balance) => {
-          const formattedBalance = formatAccountBalance(balance, {
-            accountType: 'External Account',
-          });
-          console.log(`      * ${formattedBalance.displayString}`);
-        });
-      }
-    } catch (error: any) {
-      const errorInfo = processError(error);
-      console.error(
-        `  ❌ Error fetching ${ledgerName.toLowerCase()} balances: ${errorInfo.userMessage}`
-      );
-    }
-  }
-
-  try {
-    // Display balances for each ledger
-    await displayLedgerBalances(operatingLedgerId, 'Operating');
-    await displayLedgerBalances(investmentLedgerId, 'Investment');
-
-    // Add debug info about system accounts for troubleshooting
-    console.log(
-      '\n  Note: If external accounts are not displayed, they may require special API privileges or differ from standard @external/ASSET format'
-    );
-  } catch (error: any) {
-    const errorInfo = processError(error);
-    console.error(`  ❌ Error fetching balances: ${errorInfo.userMessage}`);
-  }
-}
-
-/**
- * Retrieves and displays entity details (organization, ledgers, assets, accounts)
- *
- * This function demonstrates:
- * - Retrieving detailed information for different entity types
- * - Fetching account balances for specific accounts
- * - Retrieving transaction details
- * - Implementing error handling for each retrieval operation
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param operatingLedgerId - The ID of the operating ledger
- * @param investmentLedgerId - The ID of the investment ledger
- * @param createdAssets - Array of assets created in the workflow
- * @param createdAccounts - Array of accounts created in the workflow
- * @returns A Promise that resolves when entity details are retrieved and displayed
- */
-async function getEntityDetails(
-  client: MidazClient,
-  organizationId: string,
-  operatingLedgerId: string,
-  investmentLedgerId: string,
-  createdAssets: AccountInfo[],
-  createdAccounts: AccountInfo[]
-): Promise<void> {
-  // Get organization details
-  try {
-    const organization = await client.entities.organizations.getOrganization(organizationId);
-    console.log(`  Organization: ${organization.legalName} (${organization.id})`);
-  } catch (error: any) {
-    console.error(`  ❌ Error getting organization details: ${error.message}`);
-  }
-
-  // Get ledger details
-  try {
-    const operatingLedger = await client.entities.ledgers.getLedger(
-      organizationId,
-      operatingLedgerId
-    );
-    console.log(`  Operating Ledger: ${operatingLedger.name} (${operatingLedger.id})`);
-  } catch (error: any) {
-    console.error(`  ❌ Error getting ledger details: ${error.message}`);
-  }
-
-  // Get asset details - just one for simplicity
-  if (createdAssets.length > 0) {
-    try {
-      const asset = createdAssets[0];
-      const assetDetails = await client.entities.assets.getAsset(
-        organizationId,
-        asset.ledgerId,
-        asset.id
-      );
-      console.log(
-        `  Asset: ${assetDetails.name} (${assetDetails.code}) in ${asset.ledgerName} Ledger`
-      );
-    } catch (error: any) {
-      console.error(`  ❌ Error getting asset details: ${error.message}`);
-    }
-  }
-
-  // Get account details - just one for simplicity
-  if (createdAccounts.length > 0) {
-    try {
-      const account = createdAccounts[0];
-      const accountDetails = await client.entities.accounts.getAccount(
-        organizationId,
-        account.ledgerId,
-        account.id
-      );
-      console.log(
-        `  Account: ${accountDetails.name} (${accountDetails.id}) in ${account.ledgerName} Ledger`
-      );
-
-      // Get account balance
-      try {
-        const accountBalances = await client.entities.balances.listAccountBalances(
-          organizationId,
-          account.ledgerId,
-          account.id
-        );
-
-        const balanceItems = extractItems(accountBalances);
-
-        if (balanceItems.length > 0) {
-          // Use the SDK's balance formatting utility
-          const formattedBalance = formatAccountBalance(balanceItems[0]);
-          console.log(
-            `    Balance: Available ${formattedBalance.available}, On Hold ${formattedBalance.onHold}`
-          );
-        } else {
-          console.log(`    No balance information available`);
-        }
-      } catch (error: any) {
-        console.error(`    ❌ Error getting account balance: ${error.message}`);
-      }
-    } catch (error: any) {
-      console.error(`  ❌ Error getting account details: ${error.message}`);
-    }
-  }
-
-  // Get transaction details if possible
-  try {
-    // List transactions for the operating ledger with limit 1
-    const operatingTransactions = await client.entities.transactions.listTransactions(
-      organizationId,
-      operatingLedgerId,
-      { limit: 1 }
-    );
-
-    const transactionItems = extractItems(operatingTransactions);
-
-    if (transactionItems.length > 0) {
-      const transaction = transactionItems[0] as any;
-      console.log(
-        `  Transaction: ${transaction.id} - ${transaction.description || 'No description'}`
-      );
-    }
-  } catch (error: any) {
-    console.error(`  ❌ Error getting transaction details: ${error.message}`);
-  }
-}
-
-/**
- * Setup and manage additional entities (asset rates, portfolios, segments)
- */
-async function setupAdditionalEntities(
-  client: MidazClient,
-  organizationId: string,
-  operatingLedgerId: string,
-  investmentLedgerId: string,
-  createdAssets: AccountInfo[],
-  _createdAccounts: AccountInfo[]
-): Promise<void> {
-  console.log('  Creating asset rates...');
-  // Find USD and EUR assets to create an exchange rate between them
-  const usdAsset = createdAssets.find(
-    (asset) => asset.assetCode === 'USD' && asset.ledgerId === operatingLedgerId
-  );
-  const eurAsset = createdAssets.find(
-    (asset) => asset.assetCode === 'EUR' && asset.ledgerId === operatingLedgerId
-  );
-
-  if (usdAsset && eurAsset) {
-    // Create exchange rate from USD to EUR
-    const rateData = await client.entities.assetRates.createOrUpdateAssetRate(
-      organizationId,
-      operatingLedgerId,
-      {
-        fromAsset: 'USD',
-        toAsset: 'EUR',
-        rate: 0.92,
-        effectiveAt: new Date().toISOString(),
-        expirationAt: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-      }
-    );
-    console.log(`    Created exchange rate: 1 USD = ${rateData.rate || '0.92'} EUR`);
-  }
-
-  console.log('  Creating a portfolio...');
-  const portfolio = await client.entities.portfolios.createPortfolio(
-    organizationId,
-    operatingLedgerId,
-    {
-      name: 'Treasury Portfolio',
-      entityId: 'entity_treasury',
-      metadata: {
-        description: 'Portfolio for treasury activities',
-        createdBy: 'workflow-script',
-      },
-    }
-  );
-  console.log(`    Created portfolio: ${portfolio.name} (${portfolio.id})`);
-
-  console.log('  Creating a segment...');
-  const segment = await client.entities.segments.createSegment(organizationId, operatingLedgerId, {
-    name: 'Retail Segment',
-    metadata: {
-      description: 'Segment for retail clients',
-      createdBy: 'workflow-script',
-    },
-  });
-  console.log(`    Created segment: ${segment.name} (${segment.id})`);
-}
-
 /**
  * Handles errors from the Midaz API with enhanced error information
  *
- * This function demonstrates:
- * - Using the getEnhancedErrorInfo utility for detailed error analysis
- * - Logging detailed error information for debugging purposes
- * - Displaying user-friendly error messages with recovery recommendations
- * - Adding contextual information to error logs
+ * This function demonstrates comprehensive error handling with observability:
  *
- * @param error - The error object to handle
+ * 1. Error Processing - Extracts detailed information from any error type
+ *    - Status codes, error types, detailed messages, recovery options
+ *    - Converts generic errors to structured error information
+ *
+ * 2. Error Tracing - Creates spans to track errors in distributed systems
+ *    - Records exceptions with full context
+ *    - Sets error status and attributes for monitoring systems
+ *
+ * 3. Structured Logging - Records errors in a consistent, structured format
+ *    - Includes timestamp, error details, and context
+ *    - Uses proper log levels for error severity
+ *
+ * 4. Error Metrics - Records error occurrences for dashboards and alerts
+ *    - Tags metrics with error type and status code
+ *    - Enables tracking error rates and patterns
+ *
+ * 5. User-Friendly Output - Shows actionable information to end users
+ *    - Provides recovery recommendations when available
+ *    - Lists attempted recovery steps for transparency
+ *
+ * This demonstrates production-quality error handling that balances
+ * user experience, developer debugging, and system monitoring needs.
+ *
+ * @param error - The error to handle (can be any type)
  */
 function handleError(error: any): void {
-  // Get comprehensive error information
-  const errorInfo = processError(error);
-
-  // Log detailed error information for debugging
-  logDetailedError(error, {
-    source: 'workflow-example',
-    timestamp: new Date().toISOString(),
+  // Create logger for error handling
+  const logger = new Logger({
+    minLevel: LogLevel.ERROR,
+    defaultModule: 'error-handler',
   });
 
-  // Display user-friendly error information
-  console.error(`  Error: ${errorInfo.userMessage}`);
+  // Create error span
+  const span = Observability.startSpan('error-handling', {
+    timestamp: new Date().toISOString(),
+    source: 'workflow-example',
+  });
 
-  // Show recovery recommendation if available
-  if (errorInfo.recoveryRecommendation) {
-    console.error(`  Recommendation: ${errorInfo.recoveryRecommendation}`);
-  }
+  try {
+    // Get comprehensive error information
+    const errorInfo = processError(error);
 
-  // Show additional context for transaction errors
-  if (errorInfo.transactionErrorType) {
-    console.error(`  Transaction Error Type: ${errorInfo.transactionErrorType}`);
+    // Add error details to the span
+    span.setAttribute('errorType', errorInfo.type || 'unknown');
+    span.setAttribute('statusCode', errorInfo.statusCode?.toString() || 'none');
+    span.setAttribute('retryable', errorInfo.isRetryable?.toString() || 'false');
+
+    // Record exception in observability
+    span.recordException(error);
+    span.setStatus('error', error instanceof Error ? error.message : String(error));
+
+    // Log detailed error information for debugging
+    logDetailedError(error, {
+      source: 'workflow-example',
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log through observability system
+    logger.error('Workflow error occurred', {
+      error: errorInfo,
+      message: errorInfo.userMessage,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Record error metric
+    Observability.recordMetric('workflow.error', 1, {
+      errorType: errorInfo.type || 'unknown',
+      statusCode: errorInfo.statusCode?.toString() || 'none',
+    });
+
+    // Display user-friendly error information
+    console.error(`  Error: ${errorInfo.userMessage}`);
+
+    // Show recovery recommendation if available
+    if (errorInfo.recoveryRecommendation) {
+      console.error(`  Recommendation: ${errorInfo.recoveryRecommendation}`);
+    }
+
+    // Show recovery steps if available (enhanced error recovery)
+    if (errorInfo.recoverySteps && errorInfo.recoverySteps.length > 0) {
+      console.error('  Recovery steps attempted:');
+      errorInfo.recoverySteps.forEach((step, index) => {
+        console.error(`    ${index + 1}. ${step}`);
+      });
+    }
+  } finally {
+    // Always end the span
+    span.end();
   }
 }
 
-/**
- * Updates entities (organization, ledgers, assets, accounts)
- *
- * This function demonstrates:
- * - Updating different entity types with the SDK
- * - Adding and modifying metadata for entities
- * - Using the SDK's update methods for different entity types
- *
- * @param client - The initialized Midaz client
- * @param organizationId - The ID of the parent organization
- * @param operatingLedgerId - The ID of the operating ledger
- * @param investmentLedgerId - The ID of the investment ledger
- * @param createdAssets - Array of assets created in the workflow
- * @param createdAccounts - Array of accounts created in the workflow
- * @returns A Promise that resolves when updates are complete
- */
-async function updateEntities(
-  client: MidazClient,
-  organizationId: string,
-  operatingLedgerId: string,
-  investmentLedgerId: string,
-  createdAssets: AccountInfo[],
-  createdAccounts: AccountInfo[]
-): Promise<void> {
-  // Update organization
-  const updatedOrganization = await client.entities.organizations.updateOrganization(
-    organizationId,
-    {
-      legalName: 'Example Corporation',
-      metadata: {
-        industry: 'Technology',
-        employeeCount: 300, // Updated from 250
-        yearFounded: 2023,
-        website: 'https://example-updated.com',
-      },
-    }
-  );
-  console.log(`  Updated organization: ${updatedOrganization.legalName}`);
-
-  // Update ledgers - just one for simplicity
-  const updatedOperatingLedger = await client.entities.ledgers.updateLedger(
-    organizationId,
-    operatingLedgerId,
-    {
-      name: 'Operating Ledger',
-      metadata: {
-        description: 'Updated operating ledger metadata',
-        lastUpdated: new Date().toISOString(),
-      },
-    }
-  );
-  console.log(`  Updated operating ledger: ${updatedOperatingLedger.name}`);
-
-  // Update assets - just one for simplicity
-  if (createdAssets.length > 0) {
-    const asset = createdAssets[0];
-    const updatedAsset = await client.entities.assets.updateAsset(
-      organizationId,
-      asset.ledgerId,
-      asset.id,
-      {
-        name: `${asset.name} (Updated)`,
-        metadata: {
-          symbol: asset.assetCode,
-          decimalPlaces: asset.decimalPlaces,
-          lastUpdated: new Date().toISOString(),
-        },
-      }
-    );
-    console.log(`  Updated asset: ${updatedAsset.name}`);
-  }
-
-  // Update accounts - just one for simplicity
-  if (createdAccounts.length > 0) {
-    const account = createdAccounts[0];
-    const updatedAccount = await client.entities.accounts.updateAccount(
-      organizationId,
-      account.ledgerId,
-      account.id,
-      {
-        name: `${account.name} (Updated)`,
-        metadata: {
-          createdBy: 'workflow-example',
-          lastUpdated: new Date().toISOString(),
-        },
-      }
-    );
-    console.log(`  Updated account: ${updatedAccount.name}`);
-  }
-}
-
-// Run the example
+// Run the example workflow with global error handling and cleanup
+// This is the entry point that starts the entire process
 main().catch((error) => {
+  // Handle any unhandled errors that bubble up from the workflow
   console.error('Unhandled error:', error);
-  process.exit(1);
+
+  // Create a dedicated logger for top-level errors
+  // This ensures even catastrophic failures are properly logged
+  const logger = new Logger({
+    minLevel: LogLevel.ERROR,
+    defaultModule: 'main-error-handler',
+  });
+
+  // Log the error with full context
+  logger.error('Unhandled error in main workflow', { error });
+
+  // Record a fatal error metric
+  // This can trigger alerts in monitoring systems
+  Observability.recordMetric('workflow.fatal_error', 1, {
+    errorMessage: error.message || 'Unknown error',
+  });
+
+  // Ensure all telemetry is flushed before exiting
+  // This prevents losing error data in case of crash
+  Observability.getInstance()
+    .shutdown()
+    .finally(() => {
+      // Exit with non-zero code to indicate failure
+      // This is important for CI/CD systems and orchestration tools
+      process.exit(1);
+    });
 });

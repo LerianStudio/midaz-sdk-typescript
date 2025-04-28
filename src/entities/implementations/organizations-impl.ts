@@ -14,27 +14,8 @@ import { Observability } from '../../util/observability/observability';
 import { OrganizationsService } from '../organizations';
 
 /**
- * Implementation of the OrganizationsService interface
- *
- * This class provides the concrete implementation of the OrganizationsService interface,
- * delegating HTTP communication to the provided API client while focusing on business logic.
- * It handles validation, error handling, observability, and pagination.
- *
- * Organizations are the top-level entities in the Midaz system, representing
- * companies, financial institutions, or other business entities. Each organization
- * can contain multiple ledgers, accounts, and other resources.
- *
+ * @inheritdoc
  * @implements {OrganizationsService}
- *
- * @example
- * ```typescript
- * // Creating an instance (typically done through dependency injection)
- * const apiClient = new HttpOrganizationApiClient(httpClient, urlBuilder);
- * const organizationsService = new OrganizationsServiceImpl(apiClient);
- *
- * // Using the service to list organizations
- * const organizations = await organizationsService.listOrganizations();
- * ```
  */
 export class OrganizationsServiceImpl implements OrganizationsService {
   /**
@@ -53,25 +34,11 @@ export class OrganizationsServiceImpl implements OrganizationsService {
     // Initialize observability with service name
     this.observability =
       observability ||
-      new Observability({
-        serviceName: 'midaz-organizations-service',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-          : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-          : false,
-      });
+      Observability.getInstance();
   }
 
   /**
-   * Lists organizations with optional filters
-   *
-   * Retrieves a paginated list of organizations. The results can be
-   * filtered, sorted, and paginated using the options parameter.
-   *
-   * @param opts - List options for pagination, sorting, and filtering
-   * @returns Promise resolving to a paginated list of organizations
+   * @inheritdoc
    */
   public async listOrganizations(opts?: ListOptions): Promise<ListResponse<Organization>> {
     // Create a span for tracing this operation
@@ -132,14 +99,7 @@ export class OrganizationsServiceImpl implements OrganizationsService {
   }
 
   /**
-   * Creates a new organization
-   *
-   * Creates a new organization using the provided details. The organization
-   * will be initialized with the specified properties and assigned a unique
-   * identifier.
-   *
-   * @param input - Organization creation input with required properties
-   * @returns Promise resolving to the created organization
+   * @inheritdoc
    */
   public async createOrganization(input: CreateOrganizationInput): Promise<Organization> {
     // Create a span for tracing this operation
@@ -177,14 +137,7 @@ export class OrganizationsServiceImpl implements OrganizationsService {
   }
 
   /**
-   * Updates an existing organization
-   *
-   * Updates the properties of an existing organization. Only the properties
-   * included in the input will be modified; others will remain unchanged.
-   *
-   * @param id - Organization ID to update
-   * @param input - Organization update input with properties to change
-   * @returns Promise resolving to the updated organization
+   * @inheritdoc
    */
   public async updateOrganization(
     id: string,
@@ -232,15 +185,7 @@ export class OrganizationsServiceImpl implements OrganizationsService {
   }
 
   /**
-   * Deletes an organization
-   *
-   * Deletes an organization. This operation may be restricted if the organization
-   * has associated ledgers, accounts, or other entities. In many cases, organizations
-   * are soft-deleted (marked as deleted but retained in the system) to maintain
-   * audit history.
-   *
-   * @param id - Organization ID to delete
-   * @returns Promise that resolves when the organization is deleted
+   * @inheritdoc
    */
   public async deleteOrganization(id: string): Promise<void> {
     // Create a span for tracing this operation

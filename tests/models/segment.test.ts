@@ -1,12 +1,12 @@
 import {
-    Segment,
     CreateSegmentInput,
-    UpdateSegmentInput,
     newCreateSegmentInput,
     newUpdateSegmentInput,
-    withStatus,
+    Segment,
+    UpdateSegmentInput,
     withMetadata,
-    withName
+    withName,
+    withStatus
 } from '../../src/models/segment';
 import { StatusCode } from '../../src/models/common';
 

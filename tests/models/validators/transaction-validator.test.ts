@@ -1,5 +1,5 @@
 import { validateCreateTransactionInput } from '../../../src/models/validators/transaction-validator';
-import { CreateTransactionInput, OperationInput, AmountInput } from '../../../src/models/transaction';
+import { OperationInput, AmountInput, CreateTransactionInput } from '../../../src/models/transaction';
 
 describe('Transaction Validator', () => {
     // Tests for validateCreateTransactionInput

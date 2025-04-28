@@ -16,7 +16,7 @@ jest.mock('../../../src/util/network/retry-policy', () => {
 
 import { RateLimiter } from '../../../src/util/concurrency/rate-limiter';
 import { HttpClient } from '../../../src/util/network/http-client';
-import { MidazError, ErrorCategory, ErrorCode } from '../../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 import { RetryPolicy } from '../../../src/util/network/retry-policy';
 import { MockObservability, MockSpan } from '../mocks/mock-observability';
 
@@ -25,7 +25,7 @@ describe('Rate Limiting Edge Cases', () => {
   const mockDateNow = jest.spyOn(Date, 'now');
   
   // Store setTimeout callbacks and delays for controlled execution
-  let timeoutCallbacks: Array<{ callback: Function; delay: number | undefined }> = [];
+  let timeoutCallbacks: Array<{ callback: (...args: any[]) => void; delay: number | undefined }> = [];
   
   beforeEach(() => {
     // Reset mocks and state before each test
@@ -36,7 +36,7 @@ describe('Rate Limiting Edge Cases', () => {
     mockDateNow.mockReturnValue(1000);
     
     // Mock setTimeout to store callbacks instead of executing them
-    jest.spyOn(global, 'setTimeout').mockImplementation((callback: Function, delay?: number) => {
+    jest.spyOn(global, 'setTimeout').mockImplementation((callback: (...args: any[]) => void, delay?: number) => {
       timeoutCallbacks.push({ callback, delay });
       return {} as NodeJS.Timeout;
     });
@@ -53,7 +53,7 @@ describe('Rate Limiting Edge Cases', () => {
   });
   
   // Helper function to execute the next queued setTimeout callback
-  const runNextTimeout = () => {
+  const _runNextTimeout = () => {
     if (timeoutCallbacks.length > 0) {
       const { callback } = timeoutCallbacks.shift()!;
       callback();

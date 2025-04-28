@@ -19,8 +19,8 @@ describe('Portfolio Validator', () => {
             expect(result.message || '').toBe('');
         });
 
-        // Test 2: Missing entityId should fail validation
-        it('shouldFailValidationForMissingEntityId', () => {
+        // Test 2: Empty entityId should fail validation
+        it('shouldFailValidationForEmptyEntityId', () => {
             const invalidInput: CreatePortfolioInput = {
                 entityId: '',
                 name: 'Retirement Portfolio'
@@ -30,11 +30,11 @@ describe('Portfolio Validator', () => {
             
             expect(result.valid).toBe(false);
             expect(result.fieldErrors?.entityId).toBeDefined();
-            expect(result.message).toContain('entityId');
+            expect(result.message).toContain('empty');
         });
 
-        // Test 3: Missing name should fail validation
-        it('shouldFailValidationForMissingName', () => {
+        // Test 3: Empty name should fail validation
+        it('shouldFailValidationForEmptyName', () => {
             const invalidInput: CreatePortfolioInput = {
                 entityId: 'client_12345',
                 name: ''
@@ -44,7 +44,7 @@ describe('Portfolio Validator', () => {
             
             expect(result.valid).toBe(false);
             expect(result.fieldErrors?.name).toBeDefined();
-            expect(result.message).toContain('name');
+            expect(result.message).toContain('empty');
         });
 
         // Test 4: Name exceeding maximum length should fail validation

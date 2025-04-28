@@ -279,6 +279,21 @@ export interface EnhancedErrorInfo {
   
   /** Whether to show this error to the end user */
   shouldShowUser: boolean;
+
+  /** Type of operation that was being performed (added for enhanced error recovery) */
+  operationType?: string;
+  
+  /** Number of recovery attempts made (added for enhanced error recovery) */
+  recoveryAttempts?: number;
+  
+  /** Whether this was a network error (added for enhanced error recovery) */
+  isNetworkError?: boolean;
+  
+  /** Detailed diagnostics about the error (added for enhanced error recovery) */
+  diagnostics?: string;
+  
+  /** Steps taken during recovery process (added for enhanced error recovery) */
+  recoverySteps?: string[];
 }
 
 /**

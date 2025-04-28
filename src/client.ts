@@ -3,6 +3,7 @@ import { Entity } from './entities/entity';
 import { HttpClient } from './util/network/http-client';
 import { RetryPolicy } from './util/network/retry-policy';
 import { Observability } from './util/observability/observability';
+import { ConfigService } from './util/config';
 
 /**
  * Configuration options for the Midaz client
@@ -27,6 +28,11 @@ export interface MidazConfig {
    * Custom base URLs for different services
    */
   baseUrls?: Record<string, string>;
+
+  /**
+   * API version to use for requests (default: 'v1')
+   */
+  apiVersion?: string;
 
   /**
    * Request timeout in milliseconds (default: 30000)
@@ -146,6 +152,14 @@ export class MidazClient {
     // Initialize observability
     this.observability = new Observability(this.config.observability);
 
+    // Get ConfigService instance
+    const configService = ConfigService.getInstance();
+    
+    // Get API version from config or ConfigService
+    if (!this.config.apiVersion) {
+      this.config.apiVersion = configService.getApiUrlConfig().apiVersion;
+    }
+    
     // Initialize HTTP client
     this.httpClient =
       this.config.httpClient ||

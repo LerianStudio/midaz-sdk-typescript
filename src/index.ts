@@ -59,7 +59,6 @@ export {
   UpdateLedgerBuilder,
   createLedgerBuilder,
   createUpdateLedgerBuilder,
-  newCreateLedgerInput,
   UpdateLedgerInput,
   withMetadata as withLedgerMetadata,
   withStatus as withLedgerStatus,
@@ -79,8 +78,6 @@ export {
   createAssetBuilderWithType,
   createUpdateAssetBuilder,
   CreateAssetInput,
-  newCreateAssetInput,
-  newCreateAssetInputWithType,
   UpdateAssetInput,
   withMetadata as withAssetMetadata,
   withStatus as withAssetStatus,
@@ -166,6 +163,18 @@ export {
   createTransferTransaction,
   createWithdrawalTransaction,
 } from './models/transaction-builders';
+
+// Transaction pair utilities
+export * from './models/transaction-pairs';
+
+// Transaction batch processing
+export * from './models/transaction-batch';
+
+// Compatibility batch interface
+export * from './models/batch';
+
+// Common transaction patterns
+export * from './models/transaction-patterns';
 
 // ------------------------------
 // Balances

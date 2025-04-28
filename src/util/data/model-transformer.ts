@@ -1,43 +1,29 @@
 /**
- * @file Model transformer utilities
- * @description Utilities for transforming models between different formats
+ * @file Model transformer
+ * @description Utilities for converting between client and API model formats
  */
 
 import { ApiResponse } from '../../models/common';
 
-/**
- * Base interface for model transformers
- * Defines methods for transforming models between client and API formats
- *
- * @template TClient - The client-side model type
- * @template TApi - The API model type
+/** 
+ * Interface for transforming models between client and API formats
+ * 
+ * @template TClient - Client-side model type
+ * @template TApi - API model type
  */
 export interface ModelTransformer<TClient, TApi> {
-  /**
-   * Transforms a client model to an API model
-   *
-   * @param model - The client model to transform
-   * @returns The transformed API model
-   */
+  /** Transforms a client model to an API model */
   toApiModel(model: TClient): TApi;
 
-  /**
-   * Transforms an API model to a client model
-   *
-   * @param model - The API model to transform
-   * @returns The transformed client model
-   */
+  /** Transforms an API model to a client model */
   toClientModel(model: TApi): TClient;
 }
 
-/**
+/** 
  * Creates a model transformer with the given transformation functions
  *
- * @template TClient - The client-side model type
- * @template TApi - The API model type
- * @param toApiModel - Function to transform client model to API model
- * @param toClientModel - Function to transform API model to client model
- * @returns A model transformer
+ * @template TClient - Client-side model type
+ * @template TApi - API model type
  */
 export function createModelTransformer<TClient, TApi>(
   toApiModel: (model: TClient) => TApi,
@@ -49,14 +35,11 @@ export function createModelTransformer<TClient, TApi>(
   };
 }
 
-/**
- * Transforms a single API response or an array of API responses to client models
+/** 
+ * Transforms API responses to client models (single, array, or paginated)
  *
- * @template TClient - The client-side model type
- * @template TApi - The API model type
- * @param transformer - The model transformer to use
- * @param response - The API response to transform (single model, array, or ApiResponse)
- * @returns Transformed client model(s)
+ * @template TClient - Client-side model type
+ * @template TApi - API model type
  */
 export function transformResponse<TClient, TApi>(
   transformer: ModelTransformer<TClient, TApi>,
@@ -90,14 +73,11 @@ export function transformResponse<TClient, TApi>(
   return response as any;
 }
 
-/**
+/** 
  * Transforms a request from client format to API format
  *
- * @template TClient - The client-side model type
- * @template TApi - The API model type
- * @param transformer - The model transformer to use
- * @param request - The client request to transform
- * @returns Transformed API request
+ * @template TClient - Client-side model type
+ * @template TApi - API model type
  */
 export function transformRequest<TClient, TApi>(
   transformer: ModelTransformer<TClient, TApi>,

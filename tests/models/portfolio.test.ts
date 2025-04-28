@@ -1,12 +1,12 @@
 import {
-    Portfolio,
     CreatePortfolioInput,
-    UpdatePortfolioInput,
     newCreatePortfolioInput,
     newUpdatePortfolioInput,
-    withStatus,
+    Portfolio,
+    UpdatePortfolioInput,
     withMetadata,
-    withName
+    withName,
+    withStatus
 } from '../../src/models/portfolio';
 import { StatusCode } from '../../src/models/common';
 

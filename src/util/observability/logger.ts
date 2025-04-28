@@ -4,8 +4,7 @@
  * custom handlers, module-specific loggers, and request tracking
  */
 
-//  const fs = require('fs');
-//   const path = require('path');
+// Import Node.js modules for file system operations
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -505,37 +504,49 @@ export class Logger {
   }
 }
 
+// Already imported at the top of the file
+
+/**
+ * Configuration options for file logging
+ */
+export interface FileLoggerOptions {
+  /**
+   * Minimum log level for file logging
+   * @default LogLevel.INFO
+   */
+  minLevel?: LogLevel;
+
+  /**
+   * Log format for file logging
+   * @default 'json'
+   */
+  format?: 'json' | 'text';
+
+  /**
+   * Whether to append to the file instead of overwriting
+   * @default true
+   */
+  append?: boolean;
+}
+
 /**
  * Creates a logger that writes to a file
  *
- * This function creates a logger with both console and file output.
- * In browser environments, it falls back to console-only logging.
- *
- * Note: This function requires Node.js and the fs module to write to files.
- *
  * @param filePath - Path to the log file
- * @param options - Logger configuration options
- * @returns A configured Logger instance
- *
- * @example
- * ```typescript
- * // Create a file logger
- * const logger = createFileLogger('./logs/app.log', {
- *   minLevel: LogLevel.INFO,
- *   defaultModule: 'app'
- * });
- *
- * logger.info('Application started');
- * // Logs to both console and file: [2023-04-13T08:30:00.000Z] [INFO] [app]: Application started
- * ```
+ * @param options - Additional options for file logging
+ * @returns A logger instance that writes to the specified file
  */
-export function createFileLogger(filePath: string, options: LoggerOptions = {}): Logger {
-  // In a browser environment, fall back to console logging
+export function createFileLogger(
+  filePath: string,
+  options: FileLoggerOptions = {}
+): Logger {
+  // Default options
+  const { minLevel = LogLevel.INFO, ..._rest } = options;
+
+  // Check if running in browser environment
   if (typeof window !== 'undefined') {
-    console.warn(
-      'File logging is not supported in browser environments. Using console logger instead.'
-    );
-    return new Logger(options);
+    console.warn('File logging is not supported in browser environments');
+    return new Logger();
   }
 
   // In Node.js, use the fs module to write to a file
@@ -551,7 +562,7 @@ export function createFileLogger(filePath: string, options: LoggerOptions = {}):
       try {
         // Format the log entry as JSON
         const logLine = JSON.stringify(entry) + '\n';
-
+        
         // Append to the file
         fs.appendFileSync(filePath, logLine);
       } catch (error) {
@@ -560,14 +571,12 @@ export function createFileLogger(filePath: string, options: LoggerOptions = {}):
     };
 
     // Create a logger with both console and file handlers
-    const logger = new Logger({
-      ...options,
-      handlers: [...(options.handlers || []), fileHandler],
+    return new Logger({
+      minLevel: minLevel,
+      handlers: [fileHandler],
     });
-
-    return logger;
   } catch (error) {
     console.error('Error creating file logger:', error);
-    return new Logger(options);
+    return new Logger();
   }
 }

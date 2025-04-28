@@ -36,6 +36,12 @@ ObservabilityTest.error = jest.fn();
 }));
 
 describe('Observability', () => {
+  // Reset the singleton instance before each test
+  beforeEach(() => {
+    // @ts-ignore - Access private static instance for testing
+    Observability.instance = undefined;
+  });
+
   // Save original environment variables
   const originalEnv = { ...process.env };
   
@@ -257,7 +263,8 @@ describe('Observability', () => {
         log: jest.fn()
       }));
       
-      const observability = new Observability({ 
+      // Create a new instance (will become the singleton)
+      const observability = new Observability({
         enableTracing: true,
         // @ts-ignore - provider is not in the type definition but used for testing
         provider: 'opentelemetry'
@@ -284,6 +291,9 @@ describe('Observability', () => {
   describe('provider selection', () => {
     it('should use OpenTelemetry provider when specified', () => {
       // Arrange & Act
+      // Reset OpenTelemetryProvider mock call count
+      (OpenTelemetryProvider as jest.Mock).mockClear();
+      
       const observability = new Observability({
         enableTracing: true,
         // @ts-ignore - provider is not in the type definition but used for testing

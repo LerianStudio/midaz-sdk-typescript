@@ -16,12 +16,18 @@ export class UrlBuilder {
   private readonly baseUrls: Record<string, string>;
 
   /**
+   * API version to use for requests
+   */
+  private readonly apiVersion: string;
+
+  /**
    * Creates a new UrlBuilder instance
    *
    * @param config - The Midaz client configuration
    */
   constructor(config: MidazConfig) {
     this.baseUrls = config.baseUrls || {};
+    this.apiVersion = config.apiVersion || 'v1';
 
     // Use environment variables if available
     if (process.env.MIDAZ_ONBOARDING_URL) {
@@ -33,11 +39,25 @@ export class UrlBuilder {
 
     // Set default base URLs if not provided
     if (!this.baseUrls.onboarding) {
-      this.baseUrls.onboarding = 'http://localhost:3000/v1';
+      this.baseUrls.onboarding = 'http://localhost:3000';
     }
     if (!this.baseUrls.transaction) {
-      this.baseUrls.transaction = 'http://localhost:3001/v1';
+      this.baseUrls.transaction = 'http://localhost:3001';
     }
+
+    // Remove any trailing slashes from base URLs
+    for (const service in this.baseUrls) {
+      this.baseUrls[service] = this.baseUrls[service].replace(/\/+$/, '');
+    }
+  }
+
+  /**
+   * Gets the API version for requests
+   * 
+   * @returns The API version
+   */
+  public getApiVersion(): string {
+    return this.apiVersion;
   }
 
   /**
@@ -51,6 +71,16 @@ export class UrlBuilder {
   }
 
   /**
+   * Builds the versioned API URL
+   * 
+   * @param baseUrl - Base URL for the service
+   * @returns URL with version path
+   */
+  private getVersionedUrl(baseUrl: string): string {
+    return `${baseUrl}/${this.apiVersion}`;
+  }
+
+  /**
    * Builds the URL for organization endpoints
    *
    * @param orgId - Optional organization ID
@@ -58,7 +88,8 @@ export class UrlBuilder {
    */
   public buildOrganizationUrl(orgId?: string): string {
     const baseUrl = this.getBaseUrl('onboarding');
-    let url = `${baseUrl}/organizations`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations`;
 
     if (orgId) {
       url += `/${orgId}`;
@@ -76,7 +107,8 @@ export class UrlBuilder {
    */
   public buildLedgerUrl(orgId: string, ledgerId?: string): string {
     const baseUrl = this.getBaseUrl('onboarding');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers`;
 
     if (ledgerId) {
       url += `/${ledgerId}`;
@@ -95,7 +127,8 @@ export class UrlBuilder {
    */
   public buildAccountUrl(orgId: string, ledgerId: string, accountId?: string): string {
     const baseUrl = this.getBaseUrl('onboarding');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts`;
 
     if (accountId) {
       url += `/${accountId}`;
@@ -120,7 +153,8 @@ export class UrlBuilder {
     isCreate = false
   ): string {
     const baseUrl = this.getBaseUrl('transaction');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/transactions`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/transactions`;
 
     if (transactionId) {
       url += `/${transactionId}`;
@@ -141,7 +175,8 @@ export class UrlBuilder {
    */
   public buildAssetUrl(orgId: string, ledgerId: string, assetId?: string): string {
     const baseUrl = this.getBaseUrl('onboarding');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/assets`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/assets`;
 
     if (assetId) {
       url += `/${assetId}`;
@@ -160,7 +195,8 @@ export class UrlBuilder {
    */
   public buildAssetRateUrl(orgId: string, ledgerId: string, assetId: string): string {
     const baseUrl = this.getBaseUrl('transaction');
-    return `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/assets/${assetId}/rates`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/assets/${assetId}/rates`;
   }
 
   /**
@@ -173,7 +209,8 @@ export class UrlBuilder {
    */
   public buildBalanceUrl(orgId: string, ledgerId: string, accountId?: string): string {
     const baseUrl = this.getBaseUrl('transaction');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/balances`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/balances`;
 
     if (accountId) {
       url += `/${accountId}`;
@@ -192,7 +229,8 @@ export class UrlBuilder {
    */
   public buildOperationUrl(orgId: string, ledgerId: string, operationId?: string): string {
     const baseUrl = this.getBaseUrl('transaction');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/operations`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/operations`;
 
     if (operationId) {
       url += `/${operationId}`;
@@ -211,7 +249,8 @@ export class UrlBuilder {
    */
   public buildPortfolioUrl(orgId: string, ledgerId: string, portfolioId?: string): string {
     const baseUrl = this.getBaseUrl('onboarding');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/portfolios`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/portfolios`;
 
     if (portfolioId) {
       url += `/${portfolioId}`;
@@ -230,7 +269,8 @@ export class UrlBuilder {
    */
   public buildSegmentUrl(orgId: string, ledgerId: string, segmentId?: string): string {
     const baseUrl = this.getBaseUrl('onboarding');
-    let url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/segments`;
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/segments`;
 
     if (segmentId) {
       url += `/${segmentId}`;

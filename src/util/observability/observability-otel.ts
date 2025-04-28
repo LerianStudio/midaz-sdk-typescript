@@ -251,11 +251,20 @@ export class OpenTelemetryProvider {
   private logger?: Logger;
 
   /**
+   * Internal storage for options
+   * @private
+   */
+  private _options: ObservabilityOptions;
+
+  /**
    * Creates a new OpenTelemetry provider
    *
    * @param options - Observability configuration options
    */
   constructor(options: ObservabilityOptions) {
+    // Store options for later use
+    this._options = { ...options };
+
     // Initialize tracing if enabled
     if (options.enableTracing) {
       this.tracer = this.initializeTracing(options);
@@ -282,23 +291,40 @@ export class OpenTelemetryProvider {
   private initializeTracing(options: ObservabilityOptions): Tracer {
     // In a real implementation, this would initialize the OpenTelemetry tracing SDK
     // For demonstration purposes, we're creating a simplified version
+
+    // Check if console exporter is enabled (default to true if not specified)
+    const enableConsole = options.consoleExporter !== false;
+
     return {
       startSpan: (name: string, attributes: Record<string, any> = {}) => {
-        console.debug(`[OpenTelemetry] Starting span: ${name}`, attributes);
+        // Only log to console if console exporter is enabled
+        if (enableConsole) {
+          console.debug(`[OpenTelemetry] Starting span: ${name}`, attributes);
+        }
 
         // Create a simplified span implementation
         const span: OTelSpan = {
           setAttribute: (key: string, value: string | number | boolean) => {
-            console.debug(`[OpenTelemetry] Span attribute: ${key}=${value}`);
+            if (enableConsole) {
+              console.debug(`[OpenTelemetry] Span attribute: ${key}=${value}`);
+            }
           },
           recordException: (error: Error) => {
-            console.debug(`[OpenTelemetry] Span exception: ${error.message}`);
+            if (enableConsole) {
+              console.debug(`[OpenTelemetry] Span exception: ${error.message}`);
+            }
           },
           setStatus: (code: 'ok' | 'error', message?: string) => {
-            console.debug(`[OpenTelemetry] Span status: ${code}${message ? ` - ${message}` : ''}`);
+            if (enableConsole) {
+              console.debug(
+                `[OpenTelemetry] Span status: ${code}${message ? ` - ${message}` : ''}`
+              );
+            }
           },
           end: () => {
-            console.debug(`[OpenTelemetry] Ending span: ${name}`);
+            if (enableConsole) {
+              console.debug(`[OpenTelemetry] Ending span: ${name}`);
+            }
           },
         };
 
@@ -323,22 +349,33 @@ export class OpenTelemetryProvider {
     // In a real implementation, this would initialize the OpenTelemetry metrics SDK
     // For demonstration purposes, we're creating a simplified version
 
+    // Check if console exporter is enabled (default to true if not specified)
+    const enableConsole = options.consoleExporter !== false;
+
     return {
       createCounter: (name: string, options?: any) => {
-        console.debug(`[OpenTelemetry] Creating counter: ${name}`, options);
+        if (enableConsole) {
+          console.debug(`[OpenTelemetry] Creating counter: ${name}`, options);
+        }
 
         return {
           add: (value: number, attributes?: Record<string, any>) => {
-            console.debug(`[OpenTelemetry] Counter ${name} += ${value}`, attributes);
+            if (enableConsole) {
+              console.debug(`[OpenTelemetry] Counter ${name} += ${value}`, attributes);
+            }
           },
         };
       },
       createHistogram: (name: string, options?: any) => {
-        console.debug(`[OpenTelemetry] Creating histogram: ${name}`, options);
+        if (enableConsole) {
+          console.debug(`[OpenTelemetry] Creating histogram: ${name}`, options);
+        }
 
         return {
           record: (value: number, attributes?: Record<string, any>) => {
-            console.debug(`[OpenTelemetry] Histogram ${name} = ${value}`, attributes);
+            if (enableConsole) {
+              console.debug(`[OpenTelemetry] Histogram ${name} = ${value}`, attributes);
+            }
           },
         };
       },
@@ -355,18 +392,30 @@ export class OpenTelemetryProvider {
   private initializeLogging(options: ObservabilityOptions): Logger {
     // In a real implementation, this would initialize the OpenTelemetry logging SDK
     // For demonstration purposes, we're creating a simplified version
+
+    // Check if console exporter is enabled (default to true if not specified)
+    const enableConsole = options.consoleExporter !== false;
+
     return {
       debug: (message: string, attributes?: Record<string, any>) => {
-        console.debug(`[${options.serviceName}] ${message}`, attributes);
+        if (enableConsole) {
+          console.debug(`[${options.serviceName}] ${message}`, attributes);
+        }
       },
       info: (message: string, attributes?: Record<string, any>) => {
-        console.info(`[${options.serviceName}] ${message}`, attributes);
+        if (enableConsole) {
+          console.info(`[${options.serviceName}] ${message}`, attributes);
+        }
       },
       warn: (message: string, attributes?: Record<string, any>) => {
-        console.warn(`[${options.serviceName}] ${message}`, attributes);
+        if (enableConsole) {
+          console.warn(`[${options.serviceName}] ${message}`, attributes);
+        }
       },
       error: (message: string, attributes?: Record<string, any>) => {
-        console.error(`[${options.serviceName}] ${message}`, attributes);
+        if (enableConsole) {
+          console.error(`[${options.serviceName}] ${message}`, attributes);
+        }
       },
     };
   }
@@ -463,10 +512,14 @@ export class OpenTelemetryProvider {
    * @returns Promise that resolves when shutdown is complete
    */
   async shutdown(): Promise<void> {
-    console.debug('[OpenTelemetry] Shutting down');
+    // Check if console exporter is enabled (default to true if not specified)
+    const enableConsole = this._options?.consoleExporter !== false;
+
+    if (enableConsole) {
+      console.debug('[OpenTelemetry] Shutting down');
+    }
 
     // In a real implementation, this would shut down the OpenTelemetry SDKs
-    // For demonstration purposes, we're just logging a message
     return Promise.resolve();
   }
 }

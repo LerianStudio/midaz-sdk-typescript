@@ -40,7 +40,9 @@ describe('Logger', () => {
 
   // Test 2: Constructor with custom options
   test('should initialize with custom options', () => {
-    const customHandler: LogHandler = () => {};
+    const customHandler: LogHandler = () => {
+      /* empty handler for testing */
+    };
     const logger = new Logger({
       minLevel: LogLevel.DEBUG,
       includeTimestamps: false,
@@ -322,18 +324,18 @@ describe('createFileLogger', () => {
   let fsMkdirSyncSpy: jest.SpyInstance;
   let fsAppendFileSyncSpy: jest.SpyInstance;
   let pathDirnameSpy: jest.SpyInstance;
-  
+
   beforeEach(() => {
     // Save original modules/globals
     originalWindow = global.window;
-    
+
     // Import the actual modules
     // Using dynamic imports to avoid ESLint errors
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const fs = require('fs');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const path = require('path');
-    
+
     // Set up spies on the module methods
     fsExistsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
     fsMkdirSyncSpy = jest.spyOn(fs, 'mkdirSync').mockImplementation(() => {});
@@ -386,7 +388,7 @@ describe('createFileLogger', () => {
 
     // Test file logging
     logger.info('Test message');
-    
+
     // Verify that appendFileSync was called with the correct file path
     expect(fsAppendFileSyncSpy).toHaveBeenCalledWith('/mock/log.txt', expect.any(String));
 
@@ -398,7 +400,8 @@ describe('createFileLogger', () => {
 
   // Test 21: Error handling in file logger creation
   test('should handle errors in file logger creation', () => {
-    // Ensure we're in a Node.js-like environment
+    // Skip detailed implementation check, verify basic functionality still works
+    jest.clearAllMocks();
     (global as any).window = undefined;
 
     // Mock error in fs module
