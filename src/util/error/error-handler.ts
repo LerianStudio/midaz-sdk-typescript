@@ -317,8 +317,8 @@ export const safelyExecuteOperation = executeOperation;
  * to provide a more specific type for transaction operations.
  * @typescript-eslint/no-empty-interface
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ExecuteTransactionResult<T> extends OperationResult<T> {}
+// Type alias instead of empty interface to avoid lint errors
+export type ExecuteTransactionResult<T> = OperationResult<T>;
 
 /** 
  * Specialized version of executeOperation for financial transactions

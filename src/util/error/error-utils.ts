@@ -1008,7 +1008,7 @@ export function errorFromHttpResponse(
         if (parsedBody.error || parsedBody.message) {
           return errorFromHttpResponse(statusCode, parsedBody, method, url);
         }
-      } catch (e) {
+      } catch (_) {
         // If it's not JSON, use as error message if it looks like an error
         if (responseBody.toLowerCase().includes('error')) {
           errorMessage = responseBody;

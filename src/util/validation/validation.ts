@@ -499,7 +499,7 @@ export function validateDateRange(
 
     endTimestamp =
       typeof endDate === 'string' ? new Date(endDate).getTime() : (endDate as Date).getTime();
-  } catch (error) {
+  } catch (_) {
     return {
       valid: false,
       message: 'Invalid date format',

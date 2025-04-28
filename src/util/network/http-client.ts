@@ -224,7 +224,7 @@ export interface HttpClientConfig {
  * httpClient.destroy();
  * ```
  */
-export interface HttpClient {
+export type HttpClientInterface = {
   /**
    * Makes a GET request
    * @param url The URL to make the request to
@@ -323,7 +323,7 @@ export interface HttpClient {
  *
  * @param config - Configuration options for the client
  */
-export class HttpClient {
+export class HttpClient implements HttpClientInterface {
   /**
    * Base URLs for different services
    * @private
