@@ -500,15 +500,8 @@ export class OpenTelemetryProvider {
    * @returns Promise that resolves when shutdown is complete
    */
   async shutdown(): Promise<void> {
-    // Check if console exporter is enabled for the instance
-    const enableConsole = (this as any).options?.consoleExporter !== false;
-    
-    if (enableConsole) {
-      console.debug('[OpenTelemetry] Shutting down');
-    }
-
     // In a real implementation, this would shut down the OpenTelemetry SDKs
-    // For demonstration purposes, we're just logging a message
+    // We completely skip the console log message to avoid any output
     return Promise.resolve();
   }
 }

@@ -951,9 +951,14 @@ async function displayBalances(
   // Helper function to display balances for a specific ledger with error recovery and pagination
   async function displayLedgerBalances(ledgerId: string, ledgerName: string) {
     console.log(`  ${ledgerName} Ledger Balances:`);
+    
+    // Create a logger but don't output to console when not needed
+    // We want to create it for demonstration but without console output
     const logger = new Logger({ 
       minLevel: LogLevel.DEBUG, 
-      defaultModule: 'balance-display' 
+      defaultModule: 'balance-display',
+      // Use empty handlers array to disable console output but keep the logger working
+      handlers: []
     });
     
     // Create a span for balance loading operation
