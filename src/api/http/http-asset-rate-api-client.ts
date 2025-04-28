@@ -5,12 +5,12 @@
 
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
 import { validateUpdateAssetRateInput } from '../../models/validators/asset-rate-validator';
-import { 
-  newNetworkError, 
-  newNotFoundError, 
-  ErrorCategory, 
-  ErrorCode, 
-  MidazError 
+import {
+  ErrorCategory,
+  ErrorCode,
+  MidazError,
+  newNetworkError,
+  newNotFoundError,
 } from '../../util/error';
 import { HttpClient } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';

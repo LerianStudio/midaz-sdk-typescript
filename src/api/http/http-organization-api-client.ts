@@ -8,6 +8,7 @@ import {
   validateCreateOrganizationInput,
   validateUpdateOrganizationInput,
 } from '../../models/validators/organization-validator';
+import { MidazError, newNetworkError } from '../../util';
 import { HttpClient } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
@@ -165,9 +166,20 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
       span.setStatus('ok');
       return result;
     } catch (error) {
+      if (error instanceof MidazError) {
+        span.recordException(error);
+        span.setStatus('error', error.message);
+        throw error;
+      }
+
+      const networkError = newNetworkError('Failed to create organization', {
+        operation: 'createOrganization',
+        cause: error instanceof Error ? error : new Error(String(error)),
+      });
+
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);
-      throw error;
+      throw networkError;
     } finally {
       span.end();
     }

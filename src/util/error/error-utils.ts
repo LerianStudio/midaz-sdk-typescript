@@ -1,7 +1,7 @@
 /**
  * @file Error utilities for the Midaz SDK
  * @description Provides all utility functions for working with errors - type guards, factories, classification, etc.
- * 
+ *
  * This file contains:
  * - Type guards (isMidazError, isValidationError, etc.)
  * - Error factories (newValidationError, newNotFoundError, etc.)
@@ -10,12 +10,12 @@
  * - Error processing (processError, errorFromHttpResponse)
  */
 
-import { 
-  ErrorCategory, 
-  ErrorCode, 
-  MidazError, 
-  TransactionErrorCategory, 
-  EnhancedErrorInfo 
+import {
+  EnhancedErrorInfo,
+  ErrorCategory,
+  ErrorCode,
+  MidazError,
+  TransactionErrorCategory,
 } from './error-types';
 
 /**
@@ -208,7 +208,10 @@ export function isInsufficientFundsError(error: unknown): boolean {
 
   // Check for specific MidazError types
   if (isMidazError(error)) {
-    if (error.category === ErrorCategory.UNPROCESSABLE && error.code === ErrorCode.INSUFFICIENT_BALANCE) {
+    if (
+      error.category === ErrorCategory.UNPROCESSABLE &&
+      error.code === ErrorCode.INSUFFICIENT_BALANCE
+    ) {
       return true;
     }
 
@@ -346,8 +349,8 @@ export function categorizeTransactionError(error: unknown, uppercase = false): s
     error instanceof Error
       ? error.message.toLowerCase()
       : typeof error === 'string'
-      ? error.toLowerCase()
-      : '';
+        ? error.toLowerCase()
+        : '';
 
   if (
     message.includes('insufficient') &&
@@ -386,7 +389,7 @@ export function categorizeTransactionError(error: unknown, uppercase = false): s
   if (message.includes('currency') && message.includes('conversion')) {
     return uppercase ? 'CURRENCY_CONVERSION_ERROR' : 'currency_conversion_error';
   }
-  
+
   if (message.includes('currency conversion failed') || message.includes('currency conversion')) {
     return uppercase ? 'CURRENCY_CONVERSION_ERROR' : 'currency_conversion_error';
   }
@@ -403,9 +406,9 @@ export function categorizeTransactionError(error: unknown, uppercase = false): s
  */
 export function getUserFriendlyErrorMessage(error: unknown): string {
   // Process error to determine error type
-  let errorType: string = 'unknown';
-  let errorMessage: string = 'An unexpected error occurred';
-  
+  let errorType = 'unknown';
+  let errorMessage = 'An unexpected error occurred';
+
   if (isMidazError(error)) {
     errorType = error.category;
     errorMessage = error.message;
@@ -483,22 +486,22 @@ export function getErrorRecoveryRecommendation(error: unknown): string {
   // Special handling for specific error messages (needed by tests)
   if (error instanceof Error) {
     const lowerMessage = error.message.toLowerCase();
-    
+
     if (lowerMessage.includes('unauthorized')) {
       return 'Ensure you have the necessary permissions for this transaction.';
     }
-    
+
     if (lowerMessage.includes('account_not_found')) {
       return 'Verify the account IDs are correct and the accounts exist.';
     }
-    
+
     if (lowerMessage.includes('currency conversion failed')) {
       return 'Check that the currency conversion rate is available and valid.';
     }
   }
-  
+
   const transactionErrorType = categorizeTransactionError(error);
-  
+
   switch (transactionErrorType) {
     case TransactionErrorCategory.INSUFFICIENT_FUNDS:
       return 'Ensure the source account has sufficient funds before retrying the transaction.';
@@ -854,9 +857,8 @@ export function processError(error: unknown): EnhancedErrorInfo {
     userMessage: 'An unexpected error occurred. Please try again or contact support.',
     technicalDetails: 'Unknown error',
     isRetryable: false,
-    shouldShowUser: true
+    shouldShowUser: true,
   };
-  
 
   // Process MidazError directly
   if (isMidazError(error)) {
@@ -870,7 +872,7 @@ export function processError(error: unknown): EnhancedErrorInfo {
     processed.technicalDetails = `[${error.category}/${error.code}] ${error.message}`;
     // Set user message explicitly for the test case
     processed.userMessage = error.message;
-    
+
     if (error.resource) {
       processed.technicalDetails += ` (Resource: ${error.resource}${
         error.resourceId ? `/${error.resourceId}` : ''
@@ -901,7 +903,7 @@ export function processError(error: unknown): EnhancedErrorInfo {
         processed.message = 'Rate limit exceeded. Please try again later';
         break;
     }
-  } 
+  }
   // Process standard Error object
   else if (error instanceof Error) {
     processed.message = error.message;
@@ -913,17 +915,17 @@ export function processError(error: unknown): EnhancedErrorInfo {
     if (anyError.statusCode) processed.statusCode = anyError.statusCode;
     if (anyError.status) processed.statusCode = anyError.status;
     if (anyError.code) processed.code = anyError.code;
-    
+
     // Include stack trace in technical details if available
     if (error.stack) {
       processed.technicalDetails = error.stack;
     }
-  } 
+  }
   // Process string error
   else if (typeof error === 'string') {
     processed.message = error;
     processed.technicalDetails = error;
-  } 
+  }
   // Process object error
   else if (error && typeof error === 'object') {
     const anyError = error as any;
@@ -943,13 +945,13 @@ export function processError(error: unknown): EnhancedErrorInfo {
   processed.transactionErrorType = errorType as TransactionErrorCategory;
   processed.recoveryRecommendation = getErrorRecoveryRecommendation(error);
   processed.isRetryable = isRetryableError(error);
-  
+
   // Keep the existing user message for MidazError objects,
   // otherwise get the user-friendly message
   if (!isMidazError(error)) {
     processed.userMessage = getUserFriendlyErrorMessage(error);
   }
-  
+
   // Update technical details with status code if available
   if (processed.statusCode && !processed.technicalDetails.includes(`[${processed.statusCode}]`)) {
     processed.technicalDetails = `[${processed.statusCode}] ${processed.technicalDetails}`;
@@ -957,7 +959,8 @@ export function processError(error: unknown): EnhancedErrorInfo {
 
   // Determine if error should be shown to user
   // Hide duplicate transaction errors since they're not actual errors from a business perspective
-  processed.shouldShowUser = processed.transactionErrorType !== TransactionErrorCategory.DUPLICATE_TRANSACTION;
+  processed.shouldShowUser =
+    processed.transactionErrorType !== TransactionErrorCategory.DUPLICATE_TRANSACTION;
 
   return processed;
 }
@@ -1164,23 +1167,23 @@ export function getErrorDetails(error: unknown): Record<string, any> {
       resourceId: error.resourceId,
       statusCode: error.statusCode,
       requestId: error.requestId,
-      stack: error.stack
+      stack: error.stack,
     };
   } else if (error instanceof Error) {
     return {
       message: error.message,
       name: error.name,
-      stack: error.stack
+      stack: error.stack,
     };
   } else if (error && typeof error === 'object' && 'message' in error) {
     const { message, ...rest } = error as any;
     return {
       message,
-      ...rest
+      ...rest,
     };
   } else {
     return {
-      message: String(error)
+      message: String(error),
     };
   }
 }
@@ -1281,7 +1284,7 @@ export function formatTransactionError(
 // Compatibility aliases with proper type handling
 export function processApiError(error: unknown): EnhancedErrorInfo {
   const result = processError(error);
-  
+
   // For MidazError, use the category as the type (not the code)
   if (isMidazError(error)) {
     result.type = error.category;
@@ -1290,7 +1293,7 @@ export function processApiError(error: unknown): EnhancedErrorInfo {
   else if (error instanceof Error && (error as any).code) {
     result.type = (error as any).code;
   }
-  
+
   return result;
 }
 export const getEnhancedErrorInfo = processError;

@@ -4,7 +4,7 @@
  */
 
 import { Status, StatusCode } from './common';
-import { BuildableModel, Builder, ModelBuilder } from './common-helpers';
+import { Builder, ModelBuilder } from './common-helpers';
 
 /**
  * Valid account types in the system
@@ -540,7 +540,5 @@ export function newCreateAccountInputWithAlias(
   type: AccountType,
   alias: string
 ): CreateAccountInput {
-  return createAccountBuilder(name, assetCode, type)
-    .withAlias(alias)
-    .build();
+  return createAccountBuilder(name, assetCode, type).withAlias(alias).build();
 }
