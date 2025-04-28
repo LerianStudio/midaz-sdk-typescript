@@ -46,7 +46,7 @@
     "ts-node": "^10.9.2",
     "typedoc": "^0.28.3",
     "typescript": "^5.0.3",
-    "typescript-eslint": "^8.31.0",
+    "typescript-eslint": "^8.31.1",
     "uuid": "^11.1.0"
   },
   "dependencies": {
