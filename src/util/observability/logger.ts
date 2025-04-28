@@ -540,6 +540,12 @@ export function createFileLogger(
   // Default options
   const { level = LogLevel.INFO, ..._rest } = options;
 
+  // Check if running in browser environment
+  if (typeof window !== 'undefined') {
+    console.warn('File logging is not supported in browser environments');
+    return new Logger();
+  }
+
   // In Node.js, use the fs module to write to a file
   try {
     // Ensure the directory exists
@@ -549,13 +555,13 @@ export function createFileLogger(
     }
 
     // Create a file log handler
-    const fileHandler: LogHandler = async (entry: LogEntry) => {
+    const fileHandler: LogHandler = (entry: LogEntry) => {
       try {
         // Format the log entry as JSON
         const logLine = JSON.stringify(entry) + '\n';
         
         // Append to the file
-        await fs.promises.appendFile(filePath, logLine);
+        fs.appendFileSync(filePath, logLine);
       } catch (error) {
         console.error('Error writing to log file:', error);
       }

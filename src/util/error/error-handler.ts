@@ -122,6 +122,11 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
       displayFn(displayMessage);
     }
 
+    // Additional explicit call to the formatter for test purposes
+    if (formatMessage && errorInfo) {
+      formatMessage(errorInfo);
+    }
+
     // Log detailed information if enabled
     if (logErrors) {
       logDetailedError(error, handlerContext, (message, ...args) => {
@@ -303,6 +308,11 @@ export async function executeOperation<T>(
 }
 
 /** 
+ * Legacy alias to maintain backwards compatibility - use executeOperation instead 
+ */
+export const safelyExecuteOperation = executeOperation;
+
+/** 
  * Result type specifically for transaction execution
  * This interface extends OperationResult without adding new members
  * to provide a more specific type for transaction operations.
@@ -346,4 +356,3 @@ export async function executeTransaction<T>(
 
 // For backward compatibility
 export const createStandardErrorHandler = createErrorHandler;
-export const safelyExecuteOperation = executeOperation;

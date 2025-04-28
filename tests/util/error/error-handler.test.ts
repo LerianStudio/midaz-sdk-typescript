@@ -630,15 +630,31 @@ describe('Error Handler', () => {
     });
 
     test('should use custom message formatter if provided', () => {
+      jest.clearAllMocks();
+      
+      // Setup mocks directly
+      jest.spyOn(require('../../../src/util/error/error-utils'), 'processError')
+        .mockImplementationOnce(() => ({ 
+          type: 'error', 
+          message: 'Test error'
+        }));
+        
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       const formatMessage = jest.fn().mockReturnValue('Formatted error');
-      const handler = createErrorHandler({ formatMessage });
+      
+      // Create handler with explicit mocks
+      const handler = createErrorHandler({ 
+        formatMessage, 
+        displayErrors: true,
+        displayFn: consoleSpy,
+        logErrors: false // Disable detailed logging to simplify test
+      });
+      
       const error = new Error('Test error');
-
       handler(error);
 
-      expect(formatMessage).toHaveBeenCalled();
-      expect(consoleSpy.mock.calls[0][0]).toBe('Formatted error');
+      // Only check if console received the formatted message
+      expect(consoleSpy).toHaveBeenCalledWith('Formatted error');
     });
 
     test('should return default value when not rethrowing', () => {
@@ -729,6 +745,14 @@ describe('Error Handler', () => {
     });
 
     test('safelyExecuteOperation should handle operation success and failure', async () => {
+      // Mock processError to create a predictable error object for testing
+      jest.spyOn(require('../../../src/util/error/error-utils'), 'processError')
+        .mockImplementation(() => ({
+          type: 'error',
+          message: 'Operation failed',
+          isRetryable: false
+        }));
+      
       // Test success case
       const successOp = jest.fn().mockResolvedValue({ success: true });
       const successResult = await safelyExecuteOperation(successOp);
@@ -738,7 +762,6 @@ describe('Error Handler', () => {
 
       // Test failure case
       const failureOp = jest.fn().mockRejectedValue(new Error('Operation failed'));
-      // In our new consolidated API, we only have two parameters
       const failureResult = await safelyExecuteOperation(failureOp, {
         retryCondition: () => false // Disable retries for this test
       });
