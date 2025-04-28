@@ -250,11 +250,20 @@ export class OpenTelemetryProvider {
   private logger?: Logger;
 
   /**
+   * Internal storage for options
+   * @private
+   */
+  private _options: ObservabilityOptions;
+
+  /**
    * Creates a new OpenTelemetry provider
    *
    * @param options - Observability configuration options
    */
   constructor(options: ObservabilityOptions) {
+    // Store options for later use
+    this._options = { ...options };
+    
     // Initialize tracing if enabled
     if (options.enableTracing) {
       this.tracer = this.initializeTracing(options);
@@ -500,8 +509,14 @@ export class OpenTelemetryProvider {
    * @returns Promise that resolves when shutdown is complete
    */
   async shutdown(): Promise<void> {
+    // Check if console exporter is enabled (default to true if not specified)
+    const enableConsole = this._options?.consoleExporter !== false;
+    
+    if (enableConsole) {
+      console.debug('[OpenTelemetry] Shutting down');
+    }
+
     // In a real implementation, this would shut down the OpenTelemetry SDKs
-    // We completely skip the console log message to avoid any output
     return Promise.resolve();
   }
 }
