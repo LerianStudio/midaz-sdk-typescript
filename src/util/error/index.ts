@@ -3,25 +3,24 @@
  * @description Exports all error-related utilities from consolidated error handling system
  */
 
+// Export all error handler functions
+export * from './error-handler';
+
 // Export all error types and interfaces
 export * from './error-types';
 
 // Export all error utility functions  
 export * from './error-utils';
 
-// Export all error handler functions
-export * from './error-handler';
+// Export compatibility functions for workflow example
+export * from './enhanced-recovery-exports';
 
 // Export enhanced error recovery
 export * from './enhanced-error-recovery';
 
-// Export compatibility functions for workflow example
-export * from './enhanced-recovery-exports';
-
 // Import necessary types for the additional functions
 import { ErrorCategory, ErrorCode, MidazError } from './error-types';
 import { 
-  newValidationError,
   isMidazError
 } from './error-utils';
 

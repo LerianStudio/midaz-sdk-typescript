@@ -3,8 +3,8 @@
  * @description Provides compatibility exports for the workflow example
  */
 
-import { executeTransaction } from './error-handler';
 import { createTransactionVerification, withEnhancedRecovery } from './enhanced-error-recovery';
+import { executeTransaction } from './error-handler';
 
 /**
  * Executes a transaction with retry

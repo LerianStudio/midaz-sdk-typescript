@@ -65,12 +65,6 @@ export interface TransactionBatchOptions {
    * @default 0
    */
   delayBetweenTransactions?: number;
-  
-  /**
-   * Maximum number of concurrent transactions (alias for concurrency)
-   * @deprecated Use concurrency instead
-   */
-  maxConcurrency?: number;
 }
 
 /**
@@ -174,7 +168,7 @@ export async function createTransactionBatch(
   
   // Merge options with defaults
   const mergedOptions: Required<TransactionBatchOptions> = {
-    concurrency: options.maxConcurrency ?? options.concurrency ?? 3,
+    concurrency: options.concurrency ?? 3,
     useEnhancedRecovery: options.useEnhancedRecovery ?? true,
     maxRetries: options.maxRetries ?? 2,
     stopOnError: options.stopOnError ?? false,
@@ -185,8 +179,7 @@ export async function createTransactionBatch(
       createdAt: new Date().toISOString(),
       ...options.batchMetadata
     },
-    delayBetweenTransactions: options.delayBetweenTransactions ?? 0,
-    maxConcurrency: options.maxConcurrency ?? options.concurrency ?? 3
+    delayBetweenTransactions: options.delayBetweenTransactions ?? 0
   };
   
   // Initialize result
@@ -323,7 +316,7 @@ export async function createDepositBatch(
     operations: [
       {
         accountId: sourceAccountId.startsWith('@') ? sourceAccountId : `@external/${assetCode}`,
-        type: "DEBIT" as "DEBIT", // Type assertion to match OperationInput
+        type: "DEBIT" as const, // Type assertion using as const
         amount: {
           value: amount,
           assetCode,
@@ -332,7 +325,7 @@ export async function createDepositBatch(
       },
       {
         accountId: destinationId,
-        type: "CREDIT" as "CREDIT", // Type assertion to match OperationInput
+        type: "CREDIT" as const, // Type assertion using as const
         amount: {
           value: amount,
           assetCode,
@@ -409,7 +402,7 @@ export async function createTransferBatch(
     operations: [
       {
         accountId: pair.source,
-        type: "DEBIT" as "DEBIT", // Type assertion to match OperationInput
+        type: "DEBIT" as const, // Type assertion using as const
         amount: {
           value: amounts[index],
           assetCode,
@@ -418,7 +411,7 @@ export async function createTransferBatch(
       },
       {
         accountId: pair.destination,
-        type: "CREDIT" as "CREDIT", // Type assertion to match OperationInput
+        type: "CREDIT" as const, // Type assertion using as const
         amount: {
           value: amounts[index],
           assetCode,

@@ -6,7 +6,6 @@
 import { TransactionPaginatorImpl, TransactionsServiceImpl } from '../../../src/entities/implementations/transactions-impl';
 import { MidazConfig } from '../../../src/client';
 import { 
-  toLibTransaction,
   CreateTransactionInput,
   Operation,
   Transaction

@@ -291,7 +291,11 @@ export async function executeOperation<T>(
 
 /** 
  * Result type specifically for transaction execution
+ * This interface extends OperationResult without adding new members
+ * to provide a more specific type for transaction operations.
+ * @typescript-eslint/no-empty-interface
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ExecuteTransactionResult<T> extends OperationResult<T> {}
 
 /** 

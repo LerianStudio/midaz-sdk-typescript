@@ -3,7 +3,7 @@
  * @description Defines the organization data structures and helper functions for managing organizations in the Midaz ledger system
  */
 
-import { Address, Status, StatusCode } from './common';
+import { Address, Status } from './common';
 import { BuildableModel, Builder, ModelBuilder } from './common-helpers';
 
 /**
@@ -237,7 +237,6 @@ export class UpdateOrganizationBuilderImpl
  * const updateRequest = createUpdateOrganizationBuilder()
  *   .withLegalName("Acme Global Corporation")
  *   .withDoingBusinessAs("Acme Global")
- *   .withStatus(StatusCode.ACTIVE)
  *   .withAddress({
  *     line1: "456 Market Street",
  *     city: "San Francisco",
@@ -255,99 +254,4 @@ export class UpdateOrganizationBuilderImpl
  */
 export function createUpdateOrganizationBuilder(): UpdateOrganizationBuilder {
   return new UpdateOrganizationBuilderImpl({});
-}
-
-// Compatibility functions for backward compatibility
-/**
- * Creates a new organization input object
- * @deprecated Use createOrganizationBuilder instead
- */
-export function newCreateOrganizationInput(
-  legalName: string,
-  legalDocument: string,
-  doingBusinessAs: string,
-  address?: Address
-): CreateOrganizationInput {
-  // Return a compatible format with the tests
-  const result: CreateOrganizationInput = {
-    legalName,
-    legalDocument,
-    doingBusinessAs,
-    address: address || {
-      line1: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: ''
-    }
-  };
-  return result;
-}
-
-/**
- * Creates a new organization update input object
- * @deprecated Use createUpdateOrganizationBuilder instead
- */
-export function newUpdateOrganizationInput(): UpdateOrganizationInput {
-  return createUpdateOrganizationBuilder().build();
-}
-
-/**
- * Sets the status for an organization update
- * @deprecated Use createUpdateOrganizationBuilder().withStatus() instead
- */
-export function withStatus(input: UpdateOrganizationInput, status: StatusCode): UpdateOrganizationInput {
-  // Directly modify the input object (mutate)
-  input.status = status;
-  return input;
-}
-
-/**
- * Sets the address for an organization update
- * @deprecated Use createUpdateOrganizationBuilder().withAddress() instead
- */
-export function withAddress(input: UpdateOrganizationInput, address: Address): UpdateOrganizationInput {
-  // Directly modify the input object (mutate)
-  input.address = address;
-  return input;
-}
-
-/**
- * Sets the metadata for an organization update
- * @deprecated Use createUpdateOrganizationBuilder().withMetadata() instead
- */
-export function withMetadata(input: UpdateOrganizationInput, metadata: Record<string, any>): UpdateOrganizationInput {
-  // Directly modify the input object (mutate)
-  input.metadata = metadata;
-  return input;
-}
-
-/**
- * Sets the parent organization ID for an organization update
- * @deprecated Use createUpdateOrganizationBuilder().withParentOrganizationId() instead
- */
-export function withParentOrganizationId(input: UpdateOrganizationInput, parentId: string): UpdateOrganizationInput {
-  // Directly modify the input object (mutate)
-  input.parentOrganizationId = parentId;
-  return input;
-}
-
-/**
- * Sets the legal name for an organization update
- * @deprecated Use createUpdateOrganizationBuilder().withLegalName() instead
- */
-export function withLegalName(input: UpdateOrganizationInput, legalName: string): UpdateOrganizationInput {
-  // Directly modify the input object (mutate)
-  input.legalName = legalName;
-  return input;
-}
-
-/**
- * Sets the doing business as name for an organization update
- * @deprecated Use createUpdateOrganizationBuilder().withDoingBusinessAs() instead
- */
-export function withDoingBusinessAs(input: UpdateOrganizationInput, doingBusinessAs: string): UpdateOrganizationInput {
-  // Directly modify the input object (mutate)
-  input.doingBusinessAs = doingBusinessAs;
-  return input;
 }

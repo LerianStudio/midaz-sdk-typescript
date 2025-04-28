@@ -166,26 +166,6 @@ export function createUpdateAssetBuilder(): UpdateAssetBuilder {
 }
 
 /**
- * Creates a new CreateAssetInput with required fields
- * @deprecated Use createAssetBuilder instead
- */
-export function newCreateAssetInput(name: string, code: string): CreateAssetInput {
-  return { name, code };
-}
-
-/**
- * Creates a new asset input with name, code and type
- * @deprecated Use createAssetBuilderWithType instead
- */
-export function newCreateAssetInputWithType(
-  name: string,
-  code: string,
-  assetType: string
-): CreateAssetInput {
-  return { name, code, type: assetType };
-}
-
-/**
  * Sets the status on a CreateAssetInput
  */
 export function withStatus<T extends { status?: StatusCode }>(

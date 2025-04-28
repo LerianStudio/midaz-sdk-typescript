@@ -3,19 +3,17 @@
  * @description Advanced error recovery mechanisms with intelligent retry strategies
  */
 
+import { executeOperation } from './error-handler';
 import {
-  EnhancedErrorInfo,
   ErrorRecoveryOptions,
   OperationResult,
   TransactionErrorCategory
 } from './error-types';
 import {
   categorizeTransactionError,
-  isDuplicateTransactionError,
   isRetryableError,
   processError
 } from './error-utils';
-import { executeOperation } from './error-handler';
 
 /**
  * Extended options for enhanced error recovery
@@ -166,8 +164,12 @@ export async function withEnhancedRecovery<T>(
     verifyOperation: options?.verifyOperation ?? (() => Promise.resolve(false)),
     maxVerificationAttempts: options?.maxVerificationAttempts ?? 3,
     verificationDelay: options?.verificationDelay ?? 1000,
-    onRetry: options?.onRetry ?? ((error: unknown, attempt: number) => {}),
-    onExhausted: options?.onExhausted ?? ((error: unknown, attempts: number) => {}),
+    onRetry: options?.onRetry ?? ((_error: unknown, _attempt: number) => {
+      // Default no-op retry handler
+    }),
+    onExhausted: options?.onExhausted ?? ((_error: unknown, _attempts: number) => {
+      // Default no-op exhaustion handler
+    }),
     backoffStrategy: options?.backoffStrategy ?? ((attempt: number, initialDelay: number, opts: ErrorRecoveryOptions) => {
       return Math.min(initialDelay * Math.pow(opts.backoffFactor || 2, attempt), opts.maxDelay || 10000);
     })

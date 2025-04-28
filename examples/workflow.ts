@@ -10,45 +10,34 @@ import {
   ConfigService,
   createAccountBuilder,
   createAssetBuilderWithType,
+  // Batch utilities
+  createBatch,
+  // Transaction pattern utilities
+  createCreditDebitPair,
   createDepositTransaction,
   createLedgerBuilder,
+  createMultiAccountTransfer,
   createOrganizationBuilder,
-  createTransferTransaction,
+  createRecurringPayment,
+  createUserTransfer,
+  executeBatch,
+  executeTransactionPair,
   extractItems,
   formatAccountBalance,
   groupAccountsByAsset,
   logDetailedError,
+  Logger,
+  LogLevel,
   MidazClient,
-  processError,
-  // Transaction pairs utilities
-  createTransactionPair,
-  executeTransactionPair,
-  // Transaction pattern utilities
-  createCreditDebitPair,
-  createUserTransfer,
-  createMultiAccountTransfer,
-  createRecurringPayment,
-  // Enhanced error recovery utilities
-  executeWithRetry,
-  executeWithVerification,
-  executeWithEnhancedRecovery,
-  // Batch utilities
-  createBatch,
-  executeBatch,
-  TransactionBatch,
   // Observability utilities
   Observability,
-  LogLevel,
-  Logger,
+  processError,
+  withEnhancedRecovery
 } from '../src';
 
 // Import pagination utilities directly from the module
-import { 
-  createPaginator, 
-  paginateItems, 
-  fetchAllItems, 
-  StandardPaginator as Paginator,
-  PaginatorConfig
+import {
+  createPaginator
 } from '../src/util/data/pagination-abstraction';
 
 /**
@@ -260,7 +249,7 @@ async function main() {
     } catch (error) {
       // Record the current step where the error occurred
       // Get the current step value directly instead of using getAttribute
-      const currentStep = workflowSpan.hasOwnProperty('_attributes') ? 
+      const currentStep = Object.prototype.hasOwnProperty.call(workflowSpan, '_attributes') ? 
         (workflowSpan as any)._attributes?.currentStep || 'unknown' : 'unknown';
       workflowSpan.setAttribute('failedStep', currentStep);
       workflowSpan.recordException(error);
@@ -496,7 +485,7 @@ async function createInitialDeposits(
       
       // Create a batch for processing deposits
       const batch = createBatch({
-        maxConcurrency: 3,
+        concurrency: 3,
         delayBetweenTransactions: 50,
       });
       
@@ -520,8 +509,8 @@ async function createInitialDeposits(
         // Add the transaction to the batch - we use a closure to capture the context
         batch.add(async () => {
           try {
-            // Use enhanced error recovery for better reliability
-            const result = await executeWithEnhancedRecovery(
+            // Use enhanced error recovery wrapped around pagination
+            const result = await withEnhancedRecovery(
               () => client.entities.transactions.createTransaction(
                 organizationId, 
                 ledgerId, 
@@ -673,11 +662,11 @@ async function demonstrateTransactionPatterns(
     account => account.ledgerId === operatingLedgerId && account.assetCode === 'USD'
   );
   
-  const investmentUsdAccounts = accounts.filter(
+  const _investmentUsdAccounts = accounts.filter(
     account => account.ledgerId === investmentLedgerId && account.assetCode === 'USD'
   );
   
-  const operatingBtcAccounts = accounts.filter(
+  const _operatingBtcAccounts = accounts.filter(
     account => account.ledgerId === operatingLedgerId && account.assetCode === 'BTC'
   );
   
@@ -836,7 +825,7 @@ async function displayBalances(
       let pageCount = 0;
       
       // Use enhanced error recovery wrapped around pagination
-      await executeWithEnhancedRecovery(
+      await withEnhancedRecovery(
         async () => {
           await paginator.forEachPage(async (balances) => {
             pageCount++;
