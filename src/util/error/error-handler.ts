@@ -6,15 +6,14 @@
 import type { LogLevel } from '../observability/logger';
 import { 
   EnhancedErrorInfo, 
-  ErrorHandlerOptions, 
-  ErrorRecoveryOptions, 
-  OperationResult, 
-  TransactionErrorCategory
-} from './error-types';
-import { 
   ErrorCategory, 
   ErrorCode, 
+  ErrorHandlerOptions, 
+  ErrorRecoveryOptions
+, 
   MidazError, 
+  OperationResult, 
+  TransactionErrorCategory, 
   TransactionErrorType 
 } from './error-types';
 import { 

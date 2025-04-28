@@ -4,7 +4,7 @@
  */
 
 import { MidazClient } from '../client';
-import { ExecuteTransactionResult, executeTransaction } from '../util/error/error-handler';
+import { executeTransaction, ExecuteTransactionResult } from '../util/error/error-handler';
 import { createTransferTransaction } from './transaction-builders';
 
 /**

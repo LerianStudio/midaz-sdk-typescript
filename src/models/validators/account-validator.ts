@@ -3,9 +3,9 @@
  */
 
 import {
+  combineValidationResults,
   validateNotEmpty,
   validatePattern,
-  combineValidationResults,
   validateRequired,
   ValidationResult,
 } from '../../util/validation/validation';

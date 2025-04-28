@@ -16,9 +16,9 @@ import { Cache } from '../cache/cache';
 import {
   ErrorCategory,
   ErrorCode,
+  errorFromHttpResponse,
   MidazError,
-  newNetworkError,
-  errorFromHttpResponse
+  newNetworkError
 } from '../error';
 import { Observability, Span } from '../observability/observability';
 
