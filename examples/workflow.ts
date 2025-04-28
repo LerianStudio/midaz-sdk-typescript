@@ -1,9 +1,27 @@
 /**
- * Midaz SDK - Financial Workflow Example
+ * Midaz SDK - Comprehensive Financial Workflow Example
  * 
- * This example demonstrates a complete financial workflow using the Midaz SDK,
- * including advanced features such as transaction pairs, batch processing,
- * error recovery mechanisms, pagination, and observability.
+ * This example demonstrates a complete end-to-end financial system workflow using the Midaz SDK.
+ * It shows how to set up and manage all main components of a financial platform:
+ * - Organizations, ledgers, assets, and accounts
+ * - Transactions, deposits, transfers, and complex transaction patterns
+ * - Error handling, recovery mechanisms, and data validation
+ * - Batch processing for high-throughput operations
+ * - Pagination for large datasets
+ * - Observability with complete OpenTelemetry integration (tracing, metrics, logging)
+ * 
+ * The workflow steps through the entire lifecycle:
+ * 1. Create organization structure
+ * 2. Set up ledgers (operating and investment accounts)
+ * 3. Define assets (currency types, values, properties)
+ * 4. Create accounts for each asset
+ * 5. Fund accounts with initial deposits (using batch processing)
+ * 6. Perform transactions between accounts (using transaction pairs)
+ * 7. Demonstrate advanced financial patterns (multi-account transfers, recurring payments)
+ * 8. Display account balances with error recovery and pagination
+ * 
+ * Each section is well-documented with detailed comments to help understand the code.
+ * This can be used as both a learning resource and a reference implementation.
  */
 
 import {
@@ -74,13 +92,21 @@ async function main() {
     });
     
     // Initialize global observability
+    // This sets up OpenTelemetry with tracing, metrics, and logging
+    // The configuration is shared across the entire SDK
     Observability.configure({
-      enableTracing: true,
-      enableMetrics: true,
-      enableLogging: true,
+      enableTracing: true,  // Enable distributed tracing
+      enableMetrics: true,  // Enable metrics collection 
+      enableLogging: true,  // Enable structured logging
       serviceName: 'midaz-workflow-example',
+      // Disable console output for telemetry data while keeping the telemetry working
+      // This is useful for examples and production environments where you don't want
+      // to pollute the console but still want to send telemetry to backends
+      consoleExporter: false 
     });
     
+    // Log the start of our workflow - this demonstrates structured logging
+    // The SDK supports rich context with every log message
     logger.info('Starting workflow example', { timestamp: new Date().toISOString() });
     
     // Initialize client using the centralized configuration
@@ -90,40 +116,64 @@ async function main() {
     });
 
     // Create a workflow span to track the entire process
+    // This span will be the parent for all child spans in the workflow
+    // OpenTelemetry spans allow tracking detailed timing and context for operations
     const workflowSpan = Observability.startSpan('complete-workflow', {
       startTime: Date.now()
     });
     
     try {
-      // Create organization
+      // STEP 1: CREATE ORGANIZATION
+      // Organizations are the top-level entities that group ledgers, accounts, etc.
       console.log('\n[1/8] CREATING ORGANIZATION...');
+      
+      // Track the current step in the workflow span
+      // This allows monitoring systems to see workflow progress
       workflowSpan.setAttribute('currentStep', 'create-organization');
+      
+      // Create a child span specifically for organization creation
+      // This creates a hierarchical trace for detailed performance analysis
       const organizationSpan = Observability.startSpan('create-organization');
       
+      // Call the helper function to create an organization with the SDK client
+      // See the setupOrganization function below for implementation details
       const organization = await setupOrganization(client);
       console.log(`✓ Organization "${organization.legalName}" created with ID: ${organization.id}`);
       
+      // Add important context to the span for later analysis
       organizationSpan.setAttribute('organizationId', organization.id);
       organizationSpan.setStatus('ok');
-      organizationSpan.end();
+      organizationSpan.end();  // Always end spans when operations complete
       
-      // Record success metric
+      // Record a success metric for this step
+      // Metrics can be used for dashboards, alerts, and performance tracking
       Observability.recordMetric('workflow.step.success', 1, { step: 'create-organization' });
 
-      // Create ledgers
+      // STEP 2: CREATE LEDGERS
+      // Ledgers organize financial records within an organization
+      // We'll create two separate ledgers for different purposes:
+      // 1. Operating ledger - for day-to-day transactions
+      // 2. Investment ledger - for long-term investments
       console.log('\n[2/8] CREATING LEDGERS...');
+      
+      // Update the workflow span context
       workflowSpan.setAttribute('currentStep', 'create-ledgers');
+      
+      // Create a span specifically for ledger creation operations
       const ledgerSpan = Observability.startSpan('create-ledgers');
       
+      // Create both ledgers in a single helper function
+      // See the setupLedgers function below for implementation details 
       const { operatingLedger, investmentLedger } = await setupLedgers(client, organization.id);
       console.log(`✓ Created ledgers: "${operatingLedger.name}" and "${investmentLedger.name}"`);
       
+      // Add ledger IDs to the span for context and correlation
       ledgerSpan.setAttribute('operatingLedgerId', operatingLedger.id);
       ledgerSpan.setAttribute('investmentLedgerId', investmentLedger.id);
       ledgerSpan.setStatus('ok');
       ledgerSpan.end();
       
-      // Record success metric
+      // Record metric for ledger creation success
       Observability.recordMetric('workflow.step.success', 1, { step: 'create-ledgers' });
 
       // Create assets
@@ -279,6 +329,19 @@ async function main() {
 
 /**
  * Creates an organization with required fields and metadata
+ * 
+ * Organizations are the top-level entities in the Midaz financial system.
+ * Each organization can have multiple ledgers, and each ledger can have
+ * multiple assets and accounts. Organizations typically represent a company,
+ * financial institution, or other entity operating a financial system.
+ * 
+ * This function demonstrates:
+ * - Using the builder pattern to create complex objects
+ * - Setting required fields (legal name, legal document ID, DBA name)
+ * - Adding optional data like address and metadata
+ * 
+ * @param client - The Midaz SDK client instance 
+ * @returns The created organization object from the API
  */
 async function setupOrganization(client: MidazClient) {
   const organization = createOrganizationBuilder('Example Corporation', '123456789', 'Example Inc.')
@@ -300,6 +363,21 @@ async function setupOrganization(client: MidazClient) {
 
 /**
  * Creates operating and investment ledgers for the organization
+ * 
+ * Ledgers are the primary accounting structure within an organization.
+ * Each ledger acts as a separate set of books, allowing clear separation 
+ * between different types of financial activities.
+ * 
+ * This function creates two ledgers with different purposes:
+ * 1. Operating Ledger - For day-to-day financial operations
+ * 2. Investment Ledger - For long-term investments and portfolios
+ * 
+ * Ledgers can have different settings, compliance rules, and reporting
+ * requirements, making this separation important for financial organizations.
+ * 
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - ID of the parent organization
+ * @returns Object containing both created ledger entities
  */
 async function setupLedgers(
   client: MidazClient,
@@ -324,14 +402,32 @@ async function setupLedgers(
 
 /**
  * Type definition for asset and account information
- * Used to track created entities throughout the workflow
+ * 
+ * This interface is used to track created entities throughout the workflow.
+ * It combines the necessary information about accounts and their assets
+ * to simplify operations that need both pieces of information.
+ * 
+ * In a real application, you might store this information in a database
+ * or retrieve it from the API as needed, but for this example we track
+ * it in memory to demonstrate the workflow more clearly.
  */
 interface AccountInfo {
+  /** Unique identifier for the account */
   id: string;
+  
+  /** Display name of the account */
   name: string;
+  
+  /** Asset code (currency code) for the account (e.g., USD, EUR, BTC) */
   assetCode: string;
+  
+  /** ID of the ledger this account belongs to */
   ledgerId: string;
+  
+  /** Display name of the ledger (Operating or Investment) */
   ledgerName: string;
+  
+  /** Number of decimal places for this asset (e.g., 2 for USD, 8 for BTC) */
   decimalPlaces: number;
 }
 
@@ -452,7 +548,25 @@ async function setupAccounts(
 
 /**
  * Creates initial deposits for accounts using batch processing
- * This demonstrates the batch processing capabilities of the SDK
+ * 
+ * This function demonstrates several advanced SDK capabilities:
+ * 
+ * 1. Batch processing - Multiple operations grouped and executed concurrently
+ *    This is essential for high-volume financial systems to maintain performance
+ * 
+ * 2. Enhanced error recovery - Operations with automatic retries and verification
+ *    The withEnhancedRecovery utility adds resilience to API operations
+ * 
+ * 3. Data organization - Account grouping by ledger and asset for processing
+ *    Shows how to handle complex data structures in financial applications
+ * 
+ * 4. Transaction creation patterns - Using the deposit transaction builder
+ *    Demonstrates how to use transaction builders for common financial operations
+ * 
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - The ID of the organization to operate on
+ * @param accounts - List of account information objects
+ * @returns The number of successful deposit transactions created
  */
 async function createInitialDeposits(
   client: MidazClient,
@@ -645,8 +759,29 @@ async function createAdditionalTransactions(
 }
 
 /**
- * Demonstrates advanced transaction patterns
- * This showcases various transaction pattern utilities from the SDK
+ * Demonstrates advanced transaction patterns and financial workflows
+ * 
+ * This function showcases three advanced financial transaction patterns:
+ * 
+ * 1. User Transfers - Direct transfers between two accounts
+ *    These represent standard user-initiated transfers in financial applications
+ * 
+ * 2. Multi-Account Transfers - Chain of transfers across multiple accounts
+ *    These represent complex settlement flows or multi-step financial processes
+ *    Often used for clearing, settlement, or distributing funds across systems
+ * 
+ * 3. Recurring Payments - Subscription-style repeating transactions
+ *    These represent subscription payments, loan repayments, or scheduled transfers
+ * 
+ * Each pattern demonstrates how the SDK's transaction utilities can be composed
+ * to build sophisticated financial workflows with proper error handling and metadata.
+ * 
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - The ID of the organization to operate on
+ * @param operatingLedgerId - Ledger for day-to-day operations
+ * @param investmentLedgerId - Ledger for investment operations
+ * @param accounts - List of account information objects
+ * @returns The number of successful transaction patterns executed
  */
 async function demonstrateTransactionPatterns(
   client: MidazClient,
@@ -778,7 +913,33 @@ async function demonstrateTransactionPatterns(
 }
 
 /**
- * Displays account balances with enhanced error recovery
+ * Displays account balances with enhanced error recovery and pagination
+ * 
+ * This function demonstrates several advanced data handling techniques:
+ * 
+ * 1. Pagination - Handling large datasets by processing them in pages
+ *    The SDK provides built-in pagination utilities that handle cursors and limits
+ * 
+ * 2. Enhanced Error Recovery - Resilient data fetching with automatic retries
+ *    withEnhancedRecovery adds verification and fallback strategies
+ * 
+ * 3. Balance Formatting - Presenting financial data in user-friendly formats
+ *    Converting raw balance values to properly formatted currency strings
+ * 
+ * 4. Data Organization - Grouping balances by asset for easier processing
+ *    Shows how to organize financial data for presentation or analysis
+ * 
+ * 5. Complete Observability Integration - Traces, metrics, and logging
+ *    Each operation is fully instrumented for monitoring and debugging
+ * 
+ * This demonstrates a production-ready approach to handling balance queries
+ * with proper error handling, monitoring, and user-friendly output.
+ * 
+ * @param client - The Midaz SDK client instance
+ * @param organizationId - The ID of the organization to operate on
+ * @param operatingLedgerId - ID of the operating ledger
+ * @param investmentLedgerId - ID of the investment ledger
+ * @param accounts - List of account information objects for lookup
  */
 async function displayBalances(
   client: MidazClient,
@@ -1005,7 +1166,33 @@ async function createAccount(
 
 /**
  * Handles errors from the Midaz API with enhanced error information
- * and integrates with observability framework
+ * 
+ * This function demonstrates comprehensive error handling with observability:
+ * 
+ * 1. Error Processing - Extracts detailed information from any error type
+ *    - Status codes, error types, detailed messages, recovery options
+ *    - Converts generic errors to structured error information
+ * 
+ * 2. Error Tracing - Creates spans to track errors in distributed systems
+ *    - Records exceptions with full context
+ *    - Sets error status and attributes for monitoring systems
+ * 
+ * 3. Structured Logging - Records errors in a consistent, structured format
+ *    - Includes timestamp, error details, and context
+ *    - Uses proper log levels for error severity
+ * 
+ * 4. Error Metrics - Records error occurrences for dashboards and alerts
+ *    - Tags metrics with error type and status code
+ *    - Enables tracking error rates and patterns
+ * 
+ * 5. User-Friendly Output - Shows actionable information to end users
+ *    - Provides recovery recommendations when available
+ *    - Lists attempted recovery steps for transparency
+ * 
+ * This demonstrates production-quality error handling that balances
+ * user experience, developer debugging, and system monitoring needs.
+ * 
+ * @param error - The error to handle (can be any type)
  */
 function handleError(error: any): void {
   // Create logger for error handling
@@ -1073,26 +1260,34 @@ function handleError(error: any): void {
   }
 }
 
-// Run the example with cleanup
+// Run the example workflow with global error handling and cleanup
+// This is the entry point that starts the entire process
 main().catch((error) => {
+  // Handle any unhandled errors that bubble up from the workflow
   console.error('Unhandled error:', error);
   
-  // Create an error handler logger
+  // Create a dedicated logger for top-level errors
+  // This ensures even catastrophic failures are properly logged
   const logger = new Logger({ 
     minLevel: LogLevel.ERROR,
     defaultModule: 'main-error-handler'
   });
   
+  // Log the error with full context
   logger.error('Unhandled error in main workflow', { error });
   
-  // Record fatal error metric
+  // Record a fatal error metric 
+  // This can trigger alerts in monitoring systems
   Observability.recordMetric('workflow.fatal_error', 1, {
     errorMessage: error.message || 'Unknown error'
   });
   
-  // Shutdown observability to flush telemetry
+  // Ensure all telemetry is flushed before exiting
+  // This prevents losing error data in case of crash
   Observability.getInstance().shutdown()
     .finally(() => {
+      // Exit with non-zero code to indicate failure
+      // This is important for CI/CD systems and orchestration tools
       process.exit(1);
     });
 });

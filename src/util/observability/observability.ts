@@ -19,6 +19,9 @@ export interface ObservabilityOptions {
 
   /** OpenTelemetry collector endpoint URL */
   collectorEndpoint?: string;
+  
+  /** Enable/disable console output for telemetry data @default true */
+  consoleExporter?: boolean;
 }
 
 // Import ConfigService
@@ -38,6 +41,7 @@ function getDefaultObservabilityOptions(): ObservabilityOptions {
     enableLogging: observabilityConfig.enableLogging,
     serviceName: observabilityConfig.serviceName,
     collectorEndpoint: observabilityConfig.collectorEndpoint,
+    consoleExporter: true, // By default, enable console export of telemetry
   };
 }
 
