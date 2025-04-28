@@ -2,19 +2,9 @@
 
 The Midaz SDK implements sophisticated error handling with recovery mechanisms to ensure resilient applications. This document outlines the error handling strategies available in the SDK.
 
-## Error Handling Approach
-
-The SDK provides several layers of error handling:
-
-1. **Basic Error Handling**: Standard try-catch patterns with typed errors
-2. **Error Classification**: Errors are categorized by type (network, validation, etc.)
-3. **Retry Policies**: Configurable retry policies for transient errors
-4. **Enhanced Recovery**: Advanced recovery with fallback strategies and verification
-5. **Circuit Breaking**: Prevents cascading failures in high-load scenarios
-
 ## Basic Error Handling
 
-All SDK operations can throw errors that are properly categorized and include useful context:
+The SDK provides standardized error handling throughout its operations. Errors are caught, logged, and categorized by type:
 
 ```typescript
 try {
@@ -30,6 +20,19 @@ try {
   }
 }
 ```
+
+## Error Classification
+
+Errors in the SDK are classified into different types:
+
+- **Network Errors**: Communication issues with the API
+- **Validation Errors**: Input data doesn't meet requirements
+- **Authentication Errors**: API key or credentials are invalid
+- **Authorization Errors**: Insufficient permissions for the operation
+- **Not Found Errors**: Requested resource doesn't exist
+- **Rate Limit Errors**: API rate limits have been exceeded
+- **Server Errors**: Backend server issues
+- **Client Errors**: Issues in the SDK client
 
 ## Enhanced Recovery
 
@@ -67,53 +70,32 @@ if (result.success) {
 }
 ```
 
-## Recovery Options
+## Retry Policies
 
-The `withEnhancedRecovery` function accepts the following options:
+The SDK supports configurable retry policies for transient errors:
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `retries` | number | Maximum number of retry attempts |
-| `retryDelay` | number | Base delay between retries in milliseconds |
-| `exponentialBackoff` | boolean | Whether to use exponential backoff for retries |
-| `retryableErrors` | string[] | Array of error codes that should trigger retries |
-| `fallback` | function | Alternative operation to run if retries fail |
-| `verification` | function | Function to verify the operation result |
-| `timeout` | number | Overall timeout for the operation including retries |
-
-## Error Classification
-
-Errors are classified into the following categories:
-
-- **Network Errors**: Communication issues with the API
-- **Validation Errors**: Input data doesn't meet requirements
-- **Authentication Errors**: API key or credentials are invalid
-- **Authorization Errors**: Insufficient permissions for the operation
-- **Not Found Errors**: Requested resource doesn't exist
-- **Rate Limit Errors**: API rate limits have been exceeded
-- **Server Errors**: Backend server issues
-- **Client Errors**: Issues in the SDK client
-
-Each error includes:
-- `code`: Error code identifier
-- `message`: Human-readable error message
-- `details`: Additional error context
-- `httpStatus`: HTTP status code (for API errors)
-- `retryable`: Whether the error is potentially recoverable with a retry
+```typescript
+// Configure retry behavior in HTTP client
+const httpClient = new HttpClient({
+  retries: 3,
+  retryDelay: 500,
+  exponentialBackoff: true,
+  retryableStatusCodes: [429, 500, 502, 503, 504]
+});
+```
 
 ## Circuit Breaking
 
-For high-load scenarios, the SDK includes circuit breaking capabilities:
+For high-load scenarios, the SDK includes circuit breaking capabilities to prevent cascading failures:
 
 ```typescript
-import { createCircuitBreaker } from 'midaz-sdk/util';
-
+// Create a circuit breaker
 const circuitBreaker = createCircuitBreaker({
   failureThreshold: 5,           // Number of failures before opening circuit
   resetTimeout: 30000,           // Time (ms) before trying to close circuit
-  fallback: () => defaultValue,  // Function to call when circuit is open
 });
 
+// Execute operation with circuit breaker
 const result = await circuitBreaker.execute(
   () => client.entities.assets.getAsset(orgId, ledgerId, assetId)
 );
@@ -121,33 +103,39 @@ const result = await circuitBreaker.execute(
 
 ## Best Practices
 
-1. **Always use `withEnhancedRecovery` for critical operations**:
+1. **Use Enhanced Recovery for Critical Operations**
+
+   Always wrap critical operations with enhanced recovery:
+
    ```typescript
    const result = await withEnhancedRecovery(
      () => client.entities.transactions.createTransaction(orgId, ledgerId, transaction)
    );
    ```
 
-2. **Check for specific error codes to provide better user feedback**:
+2. **Implement Appropriate Retry Policies**
+
+   Configure retry policies based on the operation type:
+
    ```typescript
-   try {
-     // Operation...
-   } catch (error) {
-     if (error.code === 'RATE_LIMIT_EXCEEDED') {
-       console.log('Rate limit reached. Try again later.');
-     }
-   }
+   // For less critical operations
+   const lightRecovery = {
+     retries: 2,
+     retryDelay: 250
+   };
+
+   // For critical operations
+   const robustRecovery = {
+     retries: 5,
+     retryDelay: 500,
+     exponentialBackoff: true
+   };
    ```
 
-3. **Implement appropriate fallback strategies**:
-   ```typescript
-   const result = await withEnhancedRecovery(
-     primaryOperation,
-     { fallback: alternativeOperation }
-   );
-   ```
+3. **Use Verification for Critical Operations**
 
-4. **Use verification for critical operations**:
+   Add verification to ensure operations complete successfully:
+
    ```typescript
    const result = await withEnhancedRecovery(
      operation,
@@ -160,5 +148,27 @@ const result = await circuitBreaker.execute(
    );
    ```
 
-5. **Consider circuit breaking for high-volume scenarios**:
-   This prevents cascading failures when the backend is experiencing issues.
+4. **Handle Specific Error Types**
+
+   Check for specific error codes to provide better user feedback:
+
+   ```typescript
+   try {
+     // Operation...
+   } catch (error) {
+     if (error.code === 'RATE_LIMIT_EXCEEDED') {
+       console.log('Rate limit reached. Try again later.');
+     }
+   }
+   ```
+
+5. **Implement Fallback Strategies**
+
+   Provide fallback operations for critical functionality:
+
+   ```typescript
+   const result = await withEnhancedRecovery(
+     primaryOperation,
+     { fallback: alternativeOperation }
+   );
+   ```

@@ -2,10 +2,6 @@
 
 This guide explains how to work with organizations using the Midaz SDK.
 
-## What is an Organization?
-
-In the Midaz financial platform, an organization represents a business entity that owns and manages ledgers, accounts, assets, and transactions. Organizations provide a top-level structure for segregating financial data.
-
 ## Organization Model
 
 The Organization model has the following structure:
@@ -34,8 +30,7 @@ import { createOrganizationBuilder } from 'midaz-sdk';
 const organizationInput = createOrganizationBuilder('Acme Corporation')
   .withMetadata({ 
     industry: 'Technology',
-    country: 'United States',
-    taxId: '123-45-6789'
+    country: 'United States'
   })
   .build();
 
@@ -48,6 +43,7 @@ const organization = await client.entities.organizations.createOrganization(
 Note that:
 - The `createOrganizationBuilder` function requires the `name` parameter as this is a required field
 - The `status` field is set in the model but not included in the output of the builder
+- Validation happens at runtime rather than during build
 - Additional properties can be set using the chainable `with*` methods
 
 ## Retrieving Organizations
@@ -75,17 +71,6 @@ console.log(`Total organizations: ${organizationList.total}`);
 for (const org of organizationList.data) {
   console.log(`- ${org.name} (${org.id})`);
 }
-```
-
-To handle pagination for large lists, use:
-
-```typescript
-import { processPaginatedResults } from 'midaz-sdk/util/data';
-
-// Get all organizations across pages
-const allOrganizations = await processPaginatedResults(
-  (options) => client.entities.organizations.listOrganizations(options)
-);
 ```
 
 ## Updating Organizations
@@ -162,23 +147,6 @@ if (result.success) {
   console.error(`Failed to create organization: ${result.error.message}`);
 }
 ```
-
-## Best Practices
-
-1. **Use the Builder Pattern**
-   Always use the `createOrganizationBuilder` function to create organization inputs, as it ensures all required fields are provided and validation can occur.
-
-2. **Include Meaningful Metadata**
-   The metadata field is useful for storing application-specific information about organizations, such as industry, tax information, or contact details.
-
-3. **Organize Ledgers Logically**
-   Create a logical structure of ledgers within your organization to properly segregate financial activities.
-
-4. **Handle Pagination for Large Lists**
-   When listing organizations or their ledgers, always account for pagination, especially if you expect a large number of items.
-
-5. **Use Error Recovery**
-   For critical operations, use the enhanced recovery mechanism to handle transient errors automatically.
 
 ## Example: Complete Organization Management
 

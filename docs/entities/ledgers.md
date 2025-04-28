@@ -2,10 +2,6 @@
 
 This guide explains how to work with ledgers using the Midaz SDK.
 
-## What is a Ledger?
-
-In the Midaz financial platform, a ledger represents a financial record-keeping system that contains accounts, assets, and transactions. Ledgers are owned by organizations and provide a way to logically separate different financial activities.
-
 ## Ledger Model
 
 The Ledger model has the following structure:
@@ -49,33 +45,8 @@ const ledger = await client.entities.organizations.createLedger(
 Note that:
 - The `createLedgerBuilder` function requires the `name` parameter as this is a required field
 - The `status` field is set in the model but not included in the output of the builder
+- Validation happens at runtime rather than during build
 - Additional properties can be set using the chainable `with*` methods
-
-### Creating Multiple Ledgers
-
-To create multiple ledgers efficiently:
-
-```typescript
-// Create multiple ledgers
-const ledgerInputs = [
-  createLedgerBuilder('USD Ledger')
-    .withMetadata({ baseCurrency: 'USD' })
-    .build(),
-  createLedgerBuilder('EUR Ledger')
-    .withMetadata({ baseCurrency: 'EUR' })
-    .build(),
-  createLedgerBuilder('GBP Ledger')
-    .withMetadata({ baseCurrency: 'GBP' })
-    .build()
-];
-
-// Create ledgers in parallel
-const ledgers = await Promise.all(
-  ledgerInputs.map(input => 
-    client.entities.organizations.createLedger(organizationId, input)
-  )
-);
-```
 
 ## Retrieving Ledgers
 
@@ -94,7 +65,7 @@ console.log(`Ledger: ${ledger.name} (${ledger.id})`);
 ### List Ledgers
 
 ```typescript
-// List ledgers with pagination
+// List ledgers for an organization
 const ledgerList = await client.entities.organizations.listLedgers(
   organizationId,
   { limit: 50, offset: 0 }
@@ -106,17 +77,6 @@ for (const ledger of ledgerList.data) {
 }
 ```
 
-To handle pagination for large lists, use:
-
-```typescript
-import { processPaginatedResults } from 'midaz-sdk/util/data';
-
-// Get all ledgers across pages
-const allLedgers = await processPaginatedResults(
-  (options) => client.entities.organizations.listLedgers(organizationId, options)
-);
-```
-
 ## Updating Ledgers
 
 ```typescript
@@ -125,11 +85,11 @@ const updatedLedger = await client.entities.ledgers.updateLedger(
   organizationId,
   ledgerId,
   {
-    name: 'Updated Main Ledger',
+    name: 'Main Finance Ledger',
     metadata: {
       ...ledger.metadata,
-      description: 'Updated primary ledger description',
-      lastReviewDate: new Date().toISOString()
+      description: 'Updated primary finance ledger',
+      lastAuditedAt: new Date().toISOString()
     }
   }
 );
@@ -137,37 +97,89 @@ const updatedLedger = await client.entities.ledgers.updateLedger(
 
 ## Working with Ledger Assets
 
-Ledgers contain assets that can be used in accounts and transactions:
+### List Assets in a Ledger
 
 ```typescript
 // List assets in a ledger
-const assets = await client.entities.assets.listAssets(
+const assetList = await client.entities.assets.listAssets(
   organizationId,
   ledgerId,
-  { limit: 50, offset: 0 }
+  { limit: 100 }
 );
 
-console.log(`Assets in ledger ${ledgerId}:`);
-for (const asset of assets.data) {
+console.log(`Total assets in ledger: ${assetList.total}`);
+for (const asset of assetList.data) {
   console.log(`- ${asset.name} (${asset.code})`);
+}
+```
+
+### Add Assets to a Ledger
+
+```typescript
+// Create a new asset in the ledger
+const assetInput = createAssetBuilder('Euro', 'EUR')
+  .withType('currency')
+  .withMetadata({ 
+    precision: 2,
+    symbol: '€'
+  })
+  .build();
+
+const asset = await client.entities.assets.createAsset(
+  organizationId,
+  ledgerId,
+  assetInput
+);
+```
+
+## Working with Ledger Accounts
+
+```typescript
+// Create an account in the ledger
+const accountInput = createAccountBuilder('Corporate Treasury', ledgerId)
+  .withAssetIds(['asset1', 'asset2'])
+  .withMetadata({ 
+    accountType: 'treasury',
+    department: 'Finance'
+  })
+  .build();
+
+const account = await client.entities.accounts.createAccount(
+  organizationId,
+  accountInput
+);
+
+// List accounts in a ledger
+const accountList = await client.entities.accounts.listAccounts(
+  organizationId,
+  ledgerId,
+  { limit: 100 }
+);
+
+console.log(`Total accounts in ledger: ${accountList.total}`);
+for (const acct of accountList.data) {
+  console.log(`- ${acct.name} (${acct.id})`);
 }
 ```
 
 ## Working with Ledger Transactions
 
-Transactions are also associated with ledgers:
-
 ```typescript
 // List transactions in a ledger
-const transactions = await client.entities.transactions.listTransactions(
+const transactionList = await client.entities.transactions.listTransactions(
   organizationId,
   ledgerId,
-  { limit: 50, offset: 0 }
+  { 
+    limit: 50, 
+    offset: 0,
+    fromDate: '2023-01-01T00:00:00Z',
+    toDate: '2023-12-31T23:59:59Z'
+  }
 );
 
-console.log(`Transactions in ledger ${ledgerId}:`);
-for (const transaction of transactions.data) {
-  console.log(`- Transaction ${transaction.id} (${transaction.status})`);
+console.log(`Total transactions in ledger: ${transactionList.total}`);
+for (const tx of transactionList.data) {
+  console.log(`- ${tx.id} (${tx.type}): ${tx.status}`);
 }
 ```
 
@@ -194,23 +206,6 @@ if (result.success) {
 }
 ```
 
-## Best Practices
-
-1. **Use the Builder Pattern**
-   Always use the `createLedgerBuilder` function to create ledger inputs, as it ensures all required fields are provided and validation can occur.
-
-2. **Include Meaningful Metadata**
-   The metadata field is useful for storing application-specific information about ledgers, such as the base currency, description, or other contextual information.
-
-3. **Organize Assets by Ledger**
-   Group related assets within the same ledger to maintain logical separation of financial activities.
-
-4. **Handle Pagination for Large Lists**
-   When listing ledgers or items within ledgers, always account for pagination, especially if you expect a large number of items.
-
-5. **Use Error Recovery**
-   For critical operations, use the enhanced recovery mechanism to handle transient errors automatically.
-
 ## Example: Complete Ledger Management
 
 ```typescript
@@ -218,11 +213,11 @@ if (result.success) {
 async function manageLedgers(client, organizationId) {
   try {
     // Create a new ledger
-    const ledgerInput = createLedgerBuilder('Global Operations')
+    const ledgerInput = createLedgerBuilder('Finance Department')
       .withMetadata({ 
-        description: 'Global operations ledger',
+        description: 'Main finance department ledger',
         baseCurrency: 'USD',
-        regionCode: 'GLOBAL'
+        fiscalYear: '2023'
       })
       .build();
 
@@ -239,10 +234,13 @@ async function manageLedgers(client, organizationId) {
     );
     console.log(`Retrieved ledger: ${retrievedLedger.name}`);
 
-    // Create an asset in the ledger
+    // Create assets in the ledger
     const assetInput = createAssetBuilder('US Dollar', 'USD')
       .withType('currency')
-      .withMetadata({ precision: 2, symbol: '$' })
+      .withMetadata({ 
+        precision: 2,
+        symbol: '$'
+      })
       .build();
 
     const asset = await client.entities.assets.createAsset(
@@ -250,24 +248,39 @@ async function manageLedgers(client, organizationId) {
       ledger.id,
       assetInput
     );
-    console.log(`Created asset in ledger: ${asset.name} (${asset.id})`);
+    console.log(`Created asset: ${asset.name} (${asset.id})`);
+
+    // Create an account in the ledger
+    const accountInput = createAccountBuilder('Operating Account', ledger.id)
+      .withAssetIds([asset.id])
+      .withMetadata({ 
+        accountType: 'operating',
+        department: 'Finance'
+      })
+      .build();
+
+    const account = await client.entities.accounts.createAccount(
+      organizationId,
+      accountInput
+    );
+    console.log(`Created account: ${account.name} (${account.id})`);
 
     // Update the ledger
     const updatedLedger = await client.entities.ledgers.updateLedger(
       organizationId,
       ledger.id,
       {
-        name: 'Global Financial Operations',
+        name: 'Finance Department - 2023',
         metadata: {
           ...ledger.metadata,
-          lastUpdated: new Date().toISOString(),
-          version: '2.0'
+          lastUpdatedBy: 'Finance Manager',
+          lastUpdatedAt: new Date().toISOString()
         }
       }
     );
     console.log(`Updated ledger: ${updatedLedger.name}`);
 
-    // List all ledgers
+    // List all ledgers for the organization
     const ledgers = await client.entities.organizations.listLedgers(
       organizationId,
       { limit: 10 }
@@ -278,6 +291,7 @@ async function manageLedgers(client, organizationId) {
       created: ledger,
       updated: updatedLedger,
       asset: asset,
+      account: account,
       ledgers: ledgers.data
     };
   } catch (error) {

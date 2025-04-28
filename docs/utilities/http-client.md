@@ -1,372 +1,224 @@
-# HTTP Client Utility
+# HTTP Client
 
-The HTTP Client utility in the Midaz SDK provides a robust and consistent way to make HTTP requests to the Midaz API, with built-in error handling, retries, and observability integration.
+The Midaz SDK provides a robust HTTP client for communication with the Midaz API. This document explains how to use and configure the HTTP client for optimal performance and reliability.
 
 ## Overview
 
-The HTTP client wraps the underlying Axios library and adds the following features:
+The `HttpClient` class encapsulates HTTP communication details and provides features like:
 
-1. **Automatic Retries**: Retry failed requests with configurable backoff strategies
-2. **Error Standardization**: Convert HTTP errors into consistent SDK error objects
-3. **Request/Response Interceptors**: Add logging, authentication, and other cross-cutting concerns
-4. **Observability Integration**: Automatic tracing and metrics for all HTTP requests
-5. **Request Cancellation**: Support for cancelling in-flight requests
+- Automatic retry for transient failures
+- Request/response logging
+- Error handling and categorization
+- Authentication
+- Observability integration
 
 ## Basic Usage
 
-The HTTP client is usually instantiated by the SDK automatically, but you can also create and configure it directly:
+The HTTP client is typically used internally by the SDK's services, but you can access it directly if needed:
 
 ```typescript
-import { HttpClient } from 'midaz-sdk/util/network';
+// Access the HTTP client from the MidazClient instance
+const httpClient = client.getHttpClient();
 
-const httpClient = new HttpClient({
-  baseUrl: 'https://api.midaz.io',
-  timeout: 10000,
-  headers: {
-    'Api-Key': 'your-api-key',
-    'Content-Type': 'application/json'
-  },
-  retries: 3,
-  retryDelay: 500
-});
-
-// Make GET request
-const response = await httpClient.get('/resources/123');
-
-// Make POST request
-const result = await httpClient.post('/resources', { name: 'New Resource' });
-
-// Make PUT request
-const updated = await httpClient.put('/resources/123', { name: 'Updated Resource' });
-
-// Make DELETE request
-await httpClient.delete('/resources/123');
-```
-
-## Configuration Options
-
-The HTTP client accepts the following configuration options:
-
-```typescript
-interface HttpClientOptions {
-  // Base URL for all requests
-  baseUrl?: string;
-  
-  // Default request timeout in milliseconds
-  timeout?: number;
-  
-  // Default headers to include with every request
-  headers?: Record<string, string>;
-  
-  // Number of times to retry failed requests
-  retries?: number;
-  
-  // Base delay between retries in milliseconds
-  retryDelay?: number;
-  
-  // Whether to use exponential backoff for retries
-  exponentialBackoff?: boolean;
-  
-  // HTTP status codes that should trigger retries
-  retryableStatusCodes?: number[];
-  
-  // Observability instance for tracing and metrics
-  observability?: Observability;
-}
-```
-
-## Making Requests with Options
-
-You can provide additional options for individual requests:
-
-```typescript
-// GET request with query parameters
-const users = await httpClient.get('/users', { 
-  params: { 
-    limit: 10, 
-    offset: 0 
-  }
-});
-
-// POST request with specific headers
-const resource = await httpClient.post('/resources', 
-  { name: 'New Resource' },
-  { 
-    headers: { 
-      'Idempotency-Key': 'unique-key-123' 
-    } 
-  }
+// Make a GET request
+const response = await httpClient.get<AssetResponse>(
+  'https://api.midaz.io/v1/organizations/org123/assets/asset456'
 );
 
-// Request with custom timeout
-const result = await httpClient.get('/slow-resource', { 
-  timeout: 30000 
-});
+// Make a POST request
+const createdAsset = await httpClient.post<AssetResponse>(
+  'https://api.midaz.io/v1/organizations/org123/assets',
+  { name: 'USD', code: 'USD', type: 'currency' }
+);
+```
 
-// Request with signal for cancellation
-const controller = new AbortController();
-const resource = await httpClient.get('/resources/123', { 
-  signal: controller.signal 
-});
+## Configuration
 
-// Cancel the request
-controller.abort();
+When initializing the SDK, you can configure the HTTP client behavior:
+
+```typescript
+import { MidazClient, ClientConfigBuilder } from 'midaz-sdk';
+
+const client = new MidazClient(
+  new ClientConfigBuilder()
+    .withApiKey('your-api-key')
+    .withEnvironment('sandbox')
+    .withHttpClientConfig({
+      baseUrl: 'https://api.custom-domain.com/v1',
+      timeout: 10000,
+      retries: 3,
+      retryDelay: 500,
+      exponentialBackoff: true,
+      headers: {
+        'Custom-Header': 'custom-value'
+      }
+    })
+    .build()
+);
+```
+
+## Available Methods
+
+The HTTP client provides the following methods:
+
+```typescript
+// GET request
+httpClient.get<T>(url, config?): Promise<T>
+
+// POST request
+httpClient.post<T>(url, data?, config?): Promise<T>
+
+// PUT request
+httpClient.put<T>(url, data?, config?): Promise<T>
+
+// PATCH request
+httpClient.patch<T>(url, data?, config?): Promise<T>
+
+// DELETE request
+httpClient.delete<T>(url, config?): Promise<T>
 ```
 
 ## Error Handling
 
-The HTTP client converts Axios errors into standardized SDK error objects:
+The HTTP client automatically categorizes errors based on their HTTP status codes:
 
 ```typescript
 try {
-  const resource = await httpClient.get('/resources/123');
+  const response = await httpClient.get('/some-resource');
 } catch (error) {
-  console.error(`Error code: ${error.code}`);
-  console.error(`HTTP status: ${error.httpStatus}`);
-  console.error(`Message: ${error.message}`);
-  console.error(`Details: ${JSON.stringify(error.details)}`);
-  
-  // Handle specific error types
-  if (error.httpStatus === 404) {
-    console.log('Resource not found');
-  } else if (error.httpStatus === 429) {
-    console.log('Rate limit exceeded');
+  if (error.isNetworkError) {
+    // Handle network connectivity issues
+  } else if (error.status === 404) {
+    // Handle not found
+  } else if (error.status === 401 || error.status === 403) {
+    // Handle authentication/authorization issues
+  } else if (error.status >= 500) {
+    // Handle server errors
   }
 }
 ```
 
-## Automatic Retries
+## Retry Configuration
 
-The HTTP client automatically retries failed requests based on the configured retry policy:
+The HTTP client can automatically retry failed requests:
 
 ```typescript
-// Configure with retry options
 const httpClient = new HttpClient({
-  baseUrl: 'https://api.midaz.io',
-  retries: 3,                    // Number of retry attempts
-  retryDelay: 500,               // Base delay in milliseconds
-  exponentialBackoff: true,      // Use exponential backoff
+  retries: 3,                     // Number of retry attempts
+  retryDelay: 500,                // Base delay in milliseconds
+  exponentialBackoff: true,       // Use exponential backoff
   retryableStatusCodes: [
-    429,                         // Too many requests
+    429,                         // Too Many Requests
     500, 502, 503, 504           // Server errors
-  ]
+  ],
+  retryableNetworkErrors: true    // Retry on network errors
 });
-
-// The client will automatically retry failed requests
-try {
-  const result = await httpClient.get('/occasionally-failing-endpoint');
-} catch (error) {
-  // This error will only be thrown after all retry attempts have failed
-  console.error(`Failed after ${error.retryAttempts} retry attempts`);
-}
 ```
 
-## Interceptors
+## Custom Headers
 
-You can add request and response interceptors to the HTTP client:
+You can set custom headers for all requests:
 
 ```typescript
-// Add request interceptor
-httpClient.addRequestInterceptor((config) => {
-  // Add timestamp to all requests
-  config.headers['Request-Time'] = Date.now().toString();
-  
-  // Log outgoing requests
-  console.log(`Making ${config.method} request to ${config.url}`);
-  
-  return config;
-});
-
-// Add response interceptor
-httpClient.addResponseInterceptor(
-  // Success handler
-  (response) => {
-    // Process successful response
-    console.log(`Received response with status ${response.status}`);
-    return response;
-  },
-  // Error handler
-  (error) => {
-    // Process error response
-    console.error(`Request failed with status ${error.response?.status}`);
-    return Promise.reject(error);
+const httpClient = new HttpClient({
+  headers: {
+    'Custom-Header': 'value',
+    'Idempotency-Key': 'unique-key-123'
   }
-);
+});
 ```
 
-## Integration with Observability
-
-The HTTP client integrates with the SDK's observability utilities for tracing and metrics:
+Or for individual requests:
 
 ```typescript
-import { Observability } from 'midaz-sdk/util/observability';
-import { HttpClient } from 'midaz-sdk/util/network';
-
-// Create observability instance
-const observability = new Observability({
-  serviceName: 'my-financial-app'
-});
-
-// Create HTTP client with observability
-const httpClient = new HttpClient({
-  baseUrl: 'https://api.midaz.io',
-  observability: observability
-});
-
-// Make a request (automatically traced)
-const result = await httpClient.get('/resources/123');
-
-// The request will:
-// 1. Create a span for the HTTP request
-// 2. Add attributes for URL, method, status code
-// 3. Record metrics for request duration and result
-// 4. Record error information if the request fails
-```
-
-## Combining with Enhanced Recovery
-
-For critical operations, you can combine the HTTP client with the enhanced recovery utility:
-
-```typescript
-import { withEnhancedRecovery } from 'midaz-sdk/util';
-import { HttpClient } from 'midaz-sdk/util/network';
-
-const httpClient = new HttpClient({
-  baseUrl: 'https://api.midaz.io'
-});
-
-// Make a request with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => httpClient.post('/critical-endpoint', criticalData),
+const response = await httpClient.post(
+  url,
+  data,
   {
-    retries: 5,
-    exponentialBackoff: true,
-    verification: async (response) => {
-      // Verify the response
-      return response && response.data && response.data.status === 'success';
+    headers: {
+      'Idempotency-Key': 'unique-key-456'
     }
   }
 );
+```
 
-if (result.success) {
-  console.log('Request succeeded:', result.data);
-} else {
-  console.error('Request failed:', result.error);
-}
+## Observability Integration
+
+The HTTP client integrates with the SDK's observability system:
+
+```typescript
+// The HttpClient automatically creates spans for requests
+const httpClient = new HttpClient({
+  observability: observabilityInstance
+});
+
+// The span will include:
+// - HTTP method
+// - URL (sanitized)
+// - Status code
+// - Error information (if applicable)
+// - Response time
 ```
 
 ## Best Practices
 
-### Request Timeouts
+1. **Use Idempotency Keys for Mutations**
 
-Set appropriate timeouts based on the expected response time:
+   Always include idempotency keys for non-idempotent operations:
 
-```typescript
-// Global timeout for all requests
-const httpClient = new HttpClient({
-  baseUrl: 'https://api.midaz.io',
-  timeout: 10000  // 10 seconds
-});
+   ```typescript
+   const response = await httpClient.post(
+     '/transactions',
+     transactionData,
+     {
+       headers: {
+         'Idempotency-Key': `tx-${uuidv4()}`
+       }
+     }
+   );
+   ```
 
-// Custom timeout for a specific long-running request
-const result = await httpClient.get('/long-running-operation', {
-  timeout: 60000  // 1 minute
-});
-```
+2. **Configure Appropriate Timeouts**
 
-### Idempotency
+   Set reasonable timeouts based on expected operation duration:
 
-For non-idempotent operations like POST requests, use idempotency keys:
+   ```typescript
+   // For quick operations
+   const quickConfig = { timeout: 5000 };
 
-```typescript
-// Generate a unique idempotency key
-const idempotencyKey = `idempotent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+   // For operations that might take longer
+   const longRunningConfig = { timeout: 30000 };
+   ```
 
-// Make a POST request with the idempotency key
-const result = await httpClient.post('/transactions', 
-  transactionData,
-  {
-    headers: {
-      'Idempotency-Key': idempotencyKey
-    }
-  }
-);
-```
+3. **Handle Rate Limiting**
 
-### Cancellation
+   Implement backoff when encountering rate limits:
 
-For long-running requests that might need cancellation:
+   ```typescript
+   try {
+     return await httpClient.get(url);
+   } catch (error) {
+     if (error.status === 429) {
+       const retryAfter = error.headers['retry-after'] || 1;
+       await sleep(retryAfter * 1000);
+       return httpClient.get(url);
+     }
+     throw error;
+   }
+   ```
 
-```typescript
-// Create an abort controller
-const controller = new AbortController();
+4. **Use Enhanced Recovery for Critical Operations**
 
-// Start a long-running request
-const requestPromise = httpClient.get('/long-running-operation', {
-  signal: controller.signal
-});
+   Combine the HTTP client with enhanced recovery for critical operations:
 
-// Set up a timeout to cancel the request after 30 seconds
-const timeoutId = setTimeout(() => {
-  console.log('Request taking too long, cancelling...');
-  controller.abort();
-}, 30000);
+   ```typescript
+   import { withEnhancedRecovery } from 'midaz-sdk/util';
 
-try {
-  const result = await requestPromise;
-  clearTimeout(timeoutId);
-  console.log('Request completed successfully');
-  return result;
-} catch (error) {
-  clearTimeout(timeoutId);
-  if (error.name === 'AbortError' || error.code === 'CANCELLED') {
-    console.log('Request was cancelled');
-  } else {
-    console.error('Request failed with error:', error);
-  }
-  throw error;
-}
-```
-
-### Batch Requests
-
-For making multiple requests efficiently:
-
-```typescript
-// Sequential requests (when order matters)
-async function fetchSequentially(ids) {
-  const results = [];
-  for (const id of ids) {
-    const result = await httpClient.get(`/resources/${id}`);
-    results.push(result);
-  }
-  return results;
-}
-
-// Parallel requests (when order doesn't matter)
-async function fetchInParallel(ids) {
-  const promises = ids.map(id => httpClient.get(`/resources/${id}`));
-  return Promise.all(promises);
-}
-
-// Controlled concurrency (limit to 5 concurrent requests)
-async function fetchWithConcurrency(ids, concurrency = 5) {
-  const results = [];
-  const chunks = [];
-  
-  // Split into chunks
-  for (let i = 0; i < ids.length; i += concurrency) {
-    chunks.push(ids.slice(i, i + concurrency));
-  }
-  
-  // Process chunks sequentially, but requests within a chunk in parallel
-  for (const chunk of chunks) {
-    const chunkResults = await Promise.all(
-      chunk.map(id => httpClient.get(`/resources/${id}`))
-    );
-    results.push(...chunkResults);
-  }
-  
-  return results;
-}
-```
+   const result = await withEnhancedRecovery(
+     () => httpClient.post('/critical-endpoint', data),
+     {
+       retries: 5,
+       exponentialBackoff: true
+     }
+   );
+   ```

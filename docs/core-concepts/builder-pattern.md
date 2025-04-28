@@ -4,87 +4,23 @@ The Midaz SDK extensively uses the builder pattern to create complex objects wit
 
 ## Understanding the Builder Pattern
 
-The builder pattern is a creational design pattern that lets you construct complex objects step by step. It separates the construction of a complex object from its representation, allowing the same construction process to create different representations.
-
-In the Midaz SDK, builders provide:
+The builder pattern is a creational design pattern that lets you construct complex objects step by step. In the Midaz SDK, builders provide:
 
 1. **Fluent Interface**: Chainable methods for a natural coding style
-2. **Validation**: Runtime validation when building objects
-3. **Encapsulation**: Internal details are hidden from users
-4. **Type Safety**: TypeScript ensures correct method calls
+2. **Encapsulation**: Internal details are hidden from users
+3. **Type Safety**: TypeScript ensures correct method calls
 
-## Builder Usage in Midaz SDK
+## Implementation in Midaz SDK
 
-The SDK provides builder functions for creating complex objects:
-
-- `createAssetBuilder`
-- `createAccountBuilder`
-- `createOrganizationBuilder`
-- `createClientConfig`
-- And other entity builders
-
-## Example Usage
-
-### Creating Assets
+The SDK implements the builder pattern through a common base interface:
 
 ```typescript
-import { createAssetBuilder } from 'midaz-sdk';
-
-// Create an asset using the builder
-const assetInput = createAssetBuilder('USD Currency', 'USD')
-  .withType('currency')
-  .withMetadata({ precision: 2, symbol: '$' })
-  .build();
-
-// Use the asset input to create an asset
-const asset = await client.entities.assets.createAsset(
-  organizationId,
-  ledgerId,
-  assetInput
-);
+export interface Builder<T, B extends Builder<T, B>> {
+  build(): T;
+}
 ```
 
-### Creating Accounts
-
-```typescript
-import { createAccountBuilder } from 'midaz-sdk';
-
-// Create an account using the builder
-const accountInput = createAccountBuilder('Savings Account', ledgerId)
-  .withAssetIds(['asset1', 'asset2'])
-  .withMetadata({ accountType: 'savings' })
-  .build();
-
-// Use the account input to create an account
-const account = await client.entities.accounts.createAccount(
-  organizationId,
-  accountInput
-);
-```
-
-### Creating Organizations
-
-```typescript
-import { createOrganizationBuilder } from 'midaz-sdk';
-
-// Create an organization using the builder
-const organizationInput = createOrganizationBuilder('Acme Corp')
-  .withMetadata({ industry: 'Technology' })
-  .build();
-
-// Use the organization input to create an organization
-const organization = await client.entities.organizations.createOrganization(
-  organizationInput
-);
-```
-
-## Builder Implementation
-
-Under the hood, builders implement the `Builder<T, B>` interface, where:
-- `T` is the model being built (e.g., `CreateAssetInput`)
-- `B` is the builder type itself (e.g., `AssetBuilder`)
-
-A typical builder interface looks like:
+Specific builder implementations extend this interface:
 
 ```typescript
 export interface AssetBuilder extends Builder<CreateAssetInput, AssetBuilder> {
@@ -94,33 +30,120 @@ export interface AssetBuilder extends Builder<CreateAssetInput, AssetBuilder> {
 }
 ```
 
-And the builder function creates a new instance:
+These are implemented in classes like `ModelBuilder`:
 
 ```typescript
+export class ModelBuilder<T extends BuildableModel, B extends Builder<T, B>>
+  implements Builder<T, B> {
+  protected model: T;
+
+  constructor(model: T) {
+    this.model = model;
+  }
+
+  build(): T {
+    return this.model;
+  }
+
+  withMetadata(metadata: Record<string, MetadataValue>): B {
+    this.model.metadata = metadata;
+    return this as unknown as B;
+  }
+  
+  // Other builder methods...
+}
+```
+
+## Builder Functions
+
+The SDK provides factory functions that return builder instances:
+
+```typescript
+// Create an asset builder
 export function createAssetBuilder(name: string, code: string): AssetBuilder {
   const model: CreateAssetInput = { name, code };
   return new AssetBuilderImpl(model);
 }
+
+// Create an account builder
+export function createAccountBuilder(name: string, ledgerId: string): AccountBuilder {
+  const model: CreateAccountInput = { name, ledgerId };
+  return new AccountBuilderImpl(model);
+}
+
+// Create an organization builder
+export function createOrganizationBuilder(name: string): OrganizationBuilder {
+  const model: CreateOrganizationInput = { name };
+  return new OrganizationBuilderImpl(model);
+}
 ```
 
-## Important Notes
+## Key Characteristics
 
-1. **Required vs. Optional Fields**: 
-   - Required fields are typically provided as parameters to the builder function
-   - Optional fields are set via `with*` methods
+1. **Required Parameters**: Builder functions require specific parameters for object creation
+   - `createAssetBuilder` requires `name` and `code`
+   - `createAccountBuilder` requires `name` and `ledgerId`
+   - `createOrganizationBuilder` requires `name`
 
-2. **Status Field Handling**:
-   - The status field is set in the model but not included in the output of the builder
-   - It's managed internally by the SDK
+2. **Status Field Handling**: The status field is set in the model but not included in the output of the builder
 
-3. **Validation**:
-   - Validation happens at runtime rather than during build
-   - This ensures the created objects meet all required constraints
+3. **Runtime Validation**: Validation happens at runtime rather than during build
 
-4. **Builder vs. Direct Construction**:
-   - Always use the provided builders instead of directly constructing objects
-   - Builders ensure proper initialization and validation
+4. **Deprecated Methods**: Functions like `newCreateAssetInput`, `newCreateAssetInputWithType`, and `toLibTransaction` have been removed in favor of the builder pattern
 
-5. **Deprecated Functions**:
-   - Functions like `newCreateAssetInput`, `newCreateAssetInputWithType`, and `toLibTransaction` have been removed
-   - Always use the current builder functions
+## Usage Examples
+
+### Creating an Asset
+
+```typescript
+import { createAssetBuilder } from 'midaz-sdk';
+
+const assetInput = createAssetBuilder('USD Currency', 'USD')
+  .withType('currency')
+  .withMetadata({ precision: 2, symbol: '$' })
+  .build();
+
+const asset = await client.entities.assets.createAsset(
+  organizationId,
+  ledgerId,
+  assetInput
+);
+```
+
+### Creating an Account
+
+```typescript
+import { createAccountBuilder } from 'midaz-sdk';
+
+const accountInput = createAccountBuilder('Savings Account', ledgerId)
+  .withAssetIds(['asset1', 'asset2'])
+  .withMetadata({ accountType: 'savings' })
+  .build();
+
+const account = await client.entities.accounts.createAccount(
+  organizationId,
+  accountInput
+);
+```
+
+### Creating an Organization
+
+```typescript
+import { createOrganizationBuilder } from 'midaz-sdk';
+
+const organizationInput = createOrganizationBuilder('Acme Corp')
+  .withMetadata({ industry: 'Technology' })
+  .build();
+
+const organization = await client.entities.organizations.createOrganization(
+  organizationInput
+);
+```
+
+## Best Practices
+
+1. **Always use builder functions**: Instead of creating objects directly, use the appropriate builder function
+2. **Provide all required parameters**: Each builder function requires specific parameters
+3. **Use method chaining**: Take advantage of the fluent interface with method chaining
+4. **Set optional properties with methods**: Use the `with*` methods to set optional properties
+5. **Validate after build**: Remember that validation happens at runtime after building the object

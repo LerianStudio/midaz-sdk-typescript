@@ -16,94 +16,106 @@ This SDK follows a layered architecture with clear separation of concerns and em
 
 ## Documentation Structure
 
-### Architecture
-- [System Overview](./architecture/overview.md) - Core components and layers
-- [Design Patterns](./architecture/patterns.md) - Key patterns used in the SDK
-
-### Getting Started
-- [Installation](./getting-started/installation.md) - How to install the SDK
-- [Configuration](./getting-started/configuration.md) - Configuring the SDK
-- [Quick Start](./getting-started/quick-start.md) - Simple examples to get started
-
 ### Core Concepts
-- [Client](./core-concepts/client.md) - Main entry point
-- [Builder Pattern](./core-concepts/builder-pattern.md) - How to use builders
-- [Error Handling](./core-concepts/error-handling.md) - Error handling strategies
+- [Builder Pattern](./core-concepts/builder-pattern.md) - How to use builders for creating complex objects
+- [Error Handling](./core-concepts/error-handling.md) - Error handling and recovery strategies
 
 ### Entities
-- [Assets](./entities/assets.md) - Working with assets
+- [Assets](./entities/assets.md) - Working with assets (currencies, commodities, etc.)
 - [Accounts](./entities/accounts.md) - Working with accounts
-- [Transactions](./entities/transactions.md) - Working with transactions
+- [Transactions](./entities/transactions.md) - Creating and managing transactions
 - [Organizations](./entities/organizations.md) - Working with organizations
+- [Ledgers](./entities/ledgers.md) - Managing ledgers
 
 ### Utilities
-- [Observability](./utilities/observability.md) - Tracing, metrics, and logging
-- [Enhanced Recovery](./utilities/enhanced-recovery.md) - Advanced error recovery
 - [HTTP Client](./utilities/http-client.md) - Network communication utilities
+- [Observability](./utilities/observability.md) - Tracing, metrics, and logging
+- [Pagination](./utilities/pagination.md) - Handling paginated responses
 
 ## Basic Usage
 
 ```typescript
 // Create a client
-import { MidazClient, createClientConfig } from 'midaz-sdk';
+import { MidazClient, ClientConfigBuilder } from 'midaz-sdk';
 
-const config = createClientConfig()
-  .withApiKey('your-api-key')
-  .withEnvironment('sandbox')
-  .build();
-
-const client = new MidazClient(config);
-
-// Create an asset using the builder pattern
-const asset = await client.entities.assets.createAsset(
-  organizationId,
-  ledgerId,
-  createAssetBuilder('USD Currency', 'USD')
-    .withType('currency')
-    .withMetadata({ precision: 2, symbol: '$' })
+const client = new MidazClient(
+  new ClientConfigBuilder()
+    .withApiKey('your-api-key')
+    .withEnvironment('sandbox')
     .build()
 );
 
-// List accounts with pagination
-const accounts = await client.entities.accounts.listAccounts(
+// Create an asset
+import { createAssetBuilder } from 'midaz-sdk';
+
+const assetInput = createAssetBuilder('US Dollar', 'USD')
+  .withType('currency')
+  .withMetadata({ precision: 2, symbol: '$' })
+  .build();
+
+const asset = await client.entities.assets.createAsset(
   organizationId,
   ledgerId,
-  { limit: 50, offset: 0 }
+  assetInput
 );
 
-// Use enhanced error recovery
-import { withEnhancedRecovery } from 'midaz-sdk/util';
+// Create an account
+import { createAccountBuilder } from 'midaz-sdk';
 
-const result = await withEnhancedRecovery(
-  () => client.entities.transactions.createTransaction(organizationId, ledgerId, transaction)
-);
-```
-
-## Architecture Overview
-
-The Midaz SDK follows a layered architecture:
-
-1. **Client Layer**: Main entry point that bootstraps all services
-2. **Entity Layer**: Service interfaces and implementations that encapsulate business logic
-3. **API Layer**: Handles direct communication with backend services
-4. **Model Layer**: Defines data structures with builders and validators
-5. **Utility Layer**: Provides cross-cutting functionality like error handling and observability
-
-## Builder Pattern
-
-The SDK uses a builder pattern for creating complex objects with clear, chainable methods. This provides a fluent interface while hiding implementation details:
-
-```typescript
-// Create an account using the builder pattern
-const account = createAccountBuilder('Savings Account', ledgerId)
-  .withAssetIds(['asset1', 'asset2'])
+const accountInput = createAccountBuilder('Savings Account', ledgerId)
+  .withAssetIds([asset.id])
   .withMetadata({ accountType: 'savings' })
   .build();
 
-// Create an organization using the builder pattern
-const organization = createOrganizationBuilder('Acme Corp')
-  .withMetadata({ industry: 'Technology' })
-  .build();
+const account = await client.entities.accounts.createAccount(
+  organizationId,
+  accountInput
+);
+
+// Create a transaction
+import { createTransferTransaction } from 'midaz-sdk';
+
+const transaction = createTransferTransaction(
+  sourceAccountId,
+  destinationAccountId,
+  '100.00',
+  assetId,
+  { idempotencyKey: 'unique-tx-id-123' }
+);
+
+await client.entities.transactions.createTransaction(
+  organizationId,
+  ledgerId,
+  transaction
+);
 ```
 
-For more details on specific components and usage patterns, refer to the relevant documentation pages linked above.
+## Advanced Features
+
+For critical operations, use enhanced recovery:
+
+```typescript
+import { withEnhancedRecovery } from 'midaz-sdk/util';
+
+const result = await withEnhancedRecovery(
+  () => client.entities.transactions.createTransaction(
+    organizationId,
+    ledgerId,
+    transaction
+  ),
+  { 
+    retries: 3,
+    verification: async (tx) => {
+      const verifiedTx = await client.entities.transactions.getTransaction(
+        organizationId,
+        ledgerId,
+        tx.id
+      );
+      return verifiedTx.status === 'completed';
+    }
+  }
+);
+
+if (result.success) {
+  console.log(`Transaction created: ${result.data.id}`);
+}

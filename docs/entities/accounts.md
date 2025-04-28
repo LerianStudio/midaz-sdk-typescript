@@ -2,10 +2,6 @@
 
 This guide explains how to work with accounts using the Midaz SDK.
 
-## What is an Account?
-
-In the Midaz financial platform, an account is a holder of assets. Accounts are associated with a ledger and can hold one or more assets. They're used to track balances and participate in transactions.
-
 ## Account Model
 
 The Account model has the following structure:
@@ -49,33 +45,8 @@ const account = await client.entities.accounts.createAccount(
 Note that:
 - The `createAccountBuilder` function requires the `name` and `ledgerId` parameters as these are required fields
 - The `status` field is set in the model but not included in the output of the builder
+- Validation happens at runtime rather than during build
 - Additional properties can be set using the chainable `with*` methods
-
-### Creating Multiple Accounts
-
-To create multiple accounts efficiently:
-
-```typescript
-// Create multiple accounts
-const accountInputs = [
-  createAccountBuilder('Checking Account', ledgerId)
-    .withAssetIds(['usd'])
-    .build(),
-  createAccountBuilder('Savings Account', ledgerId)
-    .withAssetIds(['usd', 'eur'])
-    .build(),
-  createAccountBuilder('Investment Account', ledgerId)
-    .withAssetIds(['usd', 'eur', 'btc'])
-    .build()
-];
-
-// Create accounts in parallel
-const accounts = await Promise.all(
-  accountInputs.map(input => 
-    client.entities.accounts.createAccount(organizationId, input)
-  )
-);
-```
 
 ## Retrieving Accounts
 
@@ -107,17 +78,6 @@ for (const account of accountList.data) {
   console.log(`- ${account.name} (${account.id})`);
   console.log(`  Assets: ${account.assetIds.join(', ')}`);
 }
-```
-
-To handle pagination for large lists, use:
-
-```typescript
-import { processPaginatedResults } from 'midaz-sdk/util/data';
-
-// Get all accounts across pages
-const allAccounts = await processPaginatedResults(
-  (options) => client.entities.accounts.listAccounts(organizationId, ledgerId, options)
-);
 ```
 
 ## Updating Accounts
@@ -175,23 +135,6 @@ if (result.success) {
   console.error(`Failed to create account: ${result.error.message}`);
 }
 ```
-
-## Best Practices
-
-1. **Use the Builder Pattern**
-   Always use the `createAccountBuilder` function to create account inputs, as it ensures all required fields are provided and validation can occur.
-
-2. **Include Meaningful Metadata**
-   The metadata field is useful for storing application-specific information about accounts, such as account types, interest rates, or customer information.
-
-3. **Carefully Manage Asset Associations**
-   When adding or removing assets from an account, make sure to retrieve the current list first to avoid accidentally removing existing assets.
-
-4. **Handle Pagination for Large Lists**
-   When listing accounts, always account for pagination, especially if you expect a large number of accounts.
-
-5. **Use Error Recovery**
-   For critical operations, use the enhanced recovery mechanism to handle transient errors automatically.
 
 ## Example: Complete Account Management
 

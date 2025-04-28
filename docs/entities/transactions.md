@@ -2,10 +2,6 @@
 
 This guide explains how to work with transactions using the Midaz SDK.
 
-## What is a Transaction?
-
-In the Midaz financial platform, a transaction represents a financial activity involving one or more accounts. Transactions consist of entries that represent debits and credits across accounts, ensuring that the total balance across all entries sums to zero (double-entry accounting).
-
 ## Transaction Model
 
 The Transaction model has the following structure:
@@ -13,49 +9,51 @@ The Transaction model has the following structure:
 ```typescript
 interface Transaction {
   id: string;
+  orgId: string;
   ledgerId: string;
-  organizationId: string;
+  type: TransactionType;
   status: TransactionStatus;
   entries: TransactionEntry[];
+  idempotencyKey?: string;
+  metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
-  metadata?: Record<string, any>;
 }
 
 interface TransactionEntry {
   accountId: string;
   assetId: string;
-  amount: number;
-  type: 'credit' | 'debit';
+  amount: string;
+  direction: 'credit' | 'debit';
 }
 ```
 
 ## Creating Transactions
 
-### Using the Builder Pattern
-
-The recommended way to create transactions is using the builder pattern through the `createTransactionBuilder` function:
+### Using the Transaction Builder
 
 ```typescript
 import { createTransactionBuilder } from 'midaz-sdk';
 
-// Create a transaction input using the builder
+// Create a transaction using the builder
 const transactionInput = createTransactionBuilder()
-  .withEntries([
-    {
-      accountId: sourceAccountId,
-      assetId: assetId,
-      amount: -100,  // Negative for debit
-      type: 'debit'
-    },
-    {
-      accountId: destinationAccountId,
-      assetId: assetId,
-      amount: 100,   // Positive for credit
-      type: 'credit'
-    }
-  ])
-  .withMetadata({ reference: 'Transfer #12345', initiatedBy: 'user123' })
+  .withEntry({
+    accountId: 'account1',
+    assetId: 'asset1',
+    amount: '100.00',
+    direction: 'credit'
+  })
+  .withEntry({
+    accountId: 'account2',
+    assetId: 'asset1',
+    amount: '100.00',
+    direction: 'debit'
+  })
+  .withIdempotencyKey('unique-transaction-key-123')
+  .withMetadata({ 
+    purpose: 'Monthly transfer',
+    category: 'Recurring'
+  })
   .build();
 
 // Create the transaction
@@ -66,106 +64,49 @@ const transaction = await client.entities.transactions.createTransaction(
 );
 ```
 
-Note that:
-- The transaction entries must balance (sum to zero) across all accounts for a given asset
-- The `status` field is set in the model but not included in the output of the builder
-- Additional properties can be set using the chainable `with*` methods
-
 ### Common Transaction Types
 
-#### Transfer Between Accounts
+The SDK provides specialized creator functions for common transaction types:
 
 ```typescript
-const transferTransaction = createTransactionBuilder()
-  .withEntries([
-    {
-      accountId: sourceAccountId,
-      assetId: assetId,
-      amount: -amount,
-      type: 'debit'
-    },
-    {
-      accountId: destinationAccountId,
-      assetId: assetId,
-      amount: amount,
-      type: 'credit'
-    }
-  ])
-  .withMetadata({ transactionType: 'transfer', reference: reference })
-  .build();
-```
+// Create a deposit transaction
+import { createDepositTransaction } from 'midaz-sdk';
 
-#### Deposit to Account
+const depositTx = createDepositTransaction(
+  accountId,
+  '500.00',
+  assetId,
+  { 
+    idempotencyKey: 'deposit-123',
+    metadata: { source: 'Bank transfer' }
+  }
+);
 
-```typescript
-const depositTransaction = createTransactionBuilder()
-  .withEntries([
-    {
-      accountId: externalAccountId,
-      assetId: assetId,
-      amount: -amount,
-      type: 'debit'
-    },
-    {
-      accountId: destinationAccountId,
-      assetId: assetId,
-      amount: amount,
-      type: 'credit'
-    }
-  ])
-  .withMetadata({ transactionType: 'deposit', reference: reference })
-  .build();
-```
+// Create a transfer transaction
+import { createTransferTransaction } from 'midaz-sdk';
 
-#### Withdrawal from Account
+const transferTx = createTransferTransaction(
+  sourceAccountId,
+  destinationAccountId,
+  '250.00',
+  assetId,
+  { 
+    idempotencyKey: 'transfer-123',
+    metadata: { purpose: 'Loan repayment' }
+  }
+);
 
-```typescript
-const withdrawalTransaction = createTransactionBuilder()
-  .withEntries([
-    {
-      accountId: sourceAccountId,
-      assetId: assetId,
-      amount: -amount,
-      type: 'debit'
-    },
-    {
-      accountId: externalAccountId,
-      assetId: assetId,
-      amount: amount,
-      type: 'credit'
-    }
-  ])
-  .withMetadata({ transactionType: 'withdrawal', reference: reference })
-  .build();
-```
+// Create a withdrawal transaction
+import { createWithdrawalTransaction } from 'midaz-sdk';
 
-### Batch Transactions
-
-For creating multiple transactions in a single API call:
-
-```typescript
-import { createBatchBuilder } from 'midaz-sdk';
-
-// Create multiple transaction inputs
-const transaction1 = createTransactionBuilder()
-  .withEntries([/* entries */])
-  .build();
-
-const transaction2 = createTransactionBuilder()
-  .withEntries([/* entries */])
-  .build();
-
-// Create a batch of transactions
-const batchInput = createBatchBuilder()
-  .withTransactions([transaction1, transaction2])
-  .withMetadata({ batchReference: 'batch-123' })
-  .build();
-
-// Execute the batch
-const batchResult = await client.entities.transactions.createBatchTransactions(
-  organizationId,
-  ledgerId,
-  batchInput
+const withdrawalTx = createWithdrawalTransaction(
+  accountId,
+  '100.00',
+  assetId,
+  { 
+    idempotencyKey: 'withdrawal-123',
+    metadata: { destination: 'External account' }
+  }
 );
 ```
 
@@ -183,44 +124,51 @@ const transaction = await client.entities.transactions.getTransaction(
 
 console.log(`Transaction: ${transaction.id}`);
 console.log(`Status: ${transaction.status}`);
-for (const entry of transaction.entries) {
-  console.log(`Entry: Account ${entry.accountId}, ${entry.type}, Amount: ${entry.amount}`);
-}
+console.log(`Entries: ${transaction.entries.length}`);
 ```
 
 ### List Transactions
 
 ```typescript
-// List transactions with pagination
+// List transactions with filtering and pagination
 const transactionList = await client.entities.transactions.listTransactions(
   organizationId,
   ledgerId,
-  { limit: 50, offset: 0 }
+  { 
+    limit: 50, 
+    offset: 0,
+    status: 'completed',
+    fromDate: '2023-01-01T00:00:00Z',
+    toDate: '2023-12-31T23:59:59Z'
+  }
 );
 
 console.log(`Total transactions: ${transactionList.total}`);
-for (const transaction of transactionList.data) {
-  console.log(`- Transaction ${transaction.id} (${transaction.status})`);
+for (const tx of transactionList.data) {
+  console.log(`- ${tx.id} (${tx.type}): ${tx.status}`);
 }
 ```
 
-### List Transactions for an Account
+### Get Transaction by Idempotency Key
 
 ```typescript
-// List transactions for a specific account
-const accountTransactions = await client.entities.transactions.listAccountTransactions(
+// Get a transaction by idempotency key
+const transaction = await client.entities.transactions.getTransactionByIdempotencyKey(
   organizationId,
   ledgerId,
-  accountId,
-  { limit: 50, offset: 0 }
+  'unique-transaction-key-123'
 );
 
-console.log(`Transactions for account ${accountId}: ${accountTransactions.total}`);
+if (transaction) {
+  console.log(`Found transaction: ${transaction.id}`);
+} else {
+  console.log('No transaction found with that idempotency key');
+}
 ```
 
-## Error Handling
+## Error Handling with Transactions
 
-Use enhanced recovery for critical operations:
+Transactions are critical operations, so enhanced recovery is particularly important:
 
 ```typescript
 import { withEnhancedRecovery } from 'midaz-sdk/util';
@@ -231,7 +179,24 @@ const result = await withEnhancedRecovery(
     organizationId,
     ledgerId,
     transactionInput
-  )
+  ),
+  {
+    retries: 3,
+    retryDelay: 500,
+    verification: async (tx) => {
+      // Verify transaction was created and recorded
+      try {
+        const verifiedTx = await client.entities.transactions.getTransaction(
+          organizationId,
+          ledgerId,
+          tx.id
+        );
+        return verifiedTx.status !== 'failed';
+      } catch (e) {
+        return false;
+      }
+    }
+  }
 );
 
 if (result.success) {
@@ -242,80 +207,92 @@ if (result.success) {
 }
 ```
 
-## Best Practices
+## Batch Processing Transactions
 
-1. **Use the Builder Pattern**
-   Always use the `createTransactionBuilder` function to create transaction inputs, as it ensures proper structure and validation.
+For processing multiple transactions efficiently, use the batch processing utility:
 
-2. **Ensure Balanced Entries**
-   Make sure that transaction entries balance (sum to zero) for each asset involved in the transaction.
+```typescript
+import { createBatch, executeBatch } from 'midaz-sdk/util';
 
-3. **Include Meaningful Metadata**
-   The metadata field is useful for storing application-specific information about the transaction, such as references, user IDs, or transaction types.
+// Create multiple transactions
+const transactions = [
+  createDepositTransaction(account1Id, '100.00', assetId),
+  createTransferTransaction(account1Id, account2Id, '50.00', assetId),
+  createWithdrawalTransaction(account2Id, '25.00', assetId)
+];
 
-4. **Use Batch Operations for Multiple Transactions**
-   When creating multiple related transactions, use batch operations to ensure atomic execution.
+// Create and execute a batch
+const batch = createBatch(transactions);
+const results = await executeBatch(
+  client.entities.transactions,
+  organizationId,
+  ledgerId,
+  batch
+);
 
-5. **Use Error Recovery**
-   For critical operations, use the enhanced recovery mechanism to handle transient errors automatically.
-
-6. **Check Transaction Status**
-   Always check the status of a transaction to ensure it was processed successfully, especially in async processing workflows.
+// Process results
+for (const result of results) {
+  if (result.success) {
+    console.log(`Transaction ${result.data.id} completed successfully`);
+  } else {
+    console.error(`Transaction failed: ${result.error.message}`);
+  }
+}
+```
 
 ## Example: Complete Transaction Management
 
 ```typescript
 // Transaction management example
-async function manageTransactions(client, organizationId, ledgerId, sourceAccountId, destinationAccountId, assetId) {
+async function manageTransactions(client, organizationId, ledgerId, accounts, assets) {
   try {
-    // Create a transfer transaction
-    const transactionInput = createTransactionBuilder()
-      .withEntries([
-        {
-          accountId: sourceAccountId,
-          assetId: assetId,
-          amount: -100,
-          type: 'debit'
-        },
-        {
-          accountId: destinationAccountId,
-          assetId: assetId,
-          amount: 100,
-          type: 'credit'
-        }
-      ])
-      .withMetadata({ 
-        transactionType: 'transfer',
-        reference: `TR-${Date.now()}`,
-        description: 'Funds transfer'
-      })
-      .build();
-
-    // Use enhanced recovery for critical operations
-    const result = await withEnhancedRecovery(
-      () => client.entities.transactions.createTransaction(
-        organizationId,
-        ledgerId,
-        transactionInput
-      )
+    // Create a deposit transaction
+    const depositTx = createDepositTransaction(
+      accounts[0].id,
+      '1000.00',
+      assets[0].id,
+      { 
+        idempotencyKey: `deposit-${Date.now()}`,
+        metadata: { source: 'Initial funding' }
+      }
     );
-
-    if (!result.success) {
-      throw new Error(`Transaction failed: ${result.error.message}`);
-    }
-
-    const transaction = result.data;
-    console.log(`Created transaction: ${transaction.id}`);
-
-    // Get the transaction details
-    const retrievedTransaction = await client.entities.transactions.getTransaction(
+    
+    const deposit = await client.entities.transactions.createTransaction(
       organizationId,
       ledgerId,
-      transaction.id
+      depositTx
     );
-    console.log(`Retrieved transaction: ${retrievedTransaction.id}, Status: ${retrievedTransaction.status}`);
+    console.log(`Created deposit transaction: ${deposit.id}`);
 
-    // List recent transactions
+    // Create a transfer transaction
+    const transferTx = createTransferTransaction(
+      accounts[0].id,
+      accounts[1].id,
+      '500.00',
+      assets[0].id,
+      { 
+        idempotencyKey: `transfer-${Date.now()}`,
+        metadata: { purpose: 'Allocation to secondary account' }
+      }
+    );
+    
+    const transfer = await client.entities.transactions.createTransaction(
+      organizationId,
+      ledgerId,
+      transferTx
+    );
+    console.log(`Created transfer transaction: ${transfer.id}`);
+
+    // Get transaction details
+    const retrievedTx = await client.entities.transactions.getTransaction(
+      organizationId,
+      ledgerId,
+      transfer.id
+    );
+    console.log(`Retrieved transaction: ${retrievedTx.id}`);
+    console.log(`Status: ${retrievedTx.status}`);
+    
+    // List transactions
     const transactions = await client.entities.transactions.listTransactions(
       organizationId,
       ledgerId,
@@ -323,19 +300,30 @@ async function manageTransactions(client, organizationId, ledgerId, sourceAccoun
     );
     console.log(`Listed ${transactions.data.length} transactions`);
 
-    // List transactions for the source account
-    const accountTransactions = await client.entities.transactions.listAccountTransactions(
+    // Create and execute a batch of transactions
+    const batchTransactions = [
+      createDepositTransaction(accounts[1].id, '200.00', assets[0].id),
+      createWithdrawalTransaction(accounts[0].id, '100.00', assets[0].id)
+    ];
+    
+    const batch = createBatch(batchTransactions);
+    const batchResults = await executeBatch(
+      client.entities.transactions,
       organizationId,
       ledgerId,
-      sourceAccountId,
-      { limit: 10 }
+      batch
     );
-    console.log(`Listed ${accountTransactions.data.length} transactions for account ${sourceAccountId}`);
+    
+    console.log(`Executed batch with ${batchResults.length} transactions`);
+    const successfulBatchTxs = batchResults.filter(r => r.success).length;
+    console.log(`${successfulBatchTxs} successful, ${batchResults.length - successfulBatchTxs} failed`);
 
     return {
-      created: transaction,
+      deposit,
+      transfer,
+      retrieved: retrievedTx,
       list: transactions.data,
-      accountTransactions: accountTransactions.data
+      batchResults
     };
   } catch (error) {
     console.error(`Transaction management error: ${error.message}`);
