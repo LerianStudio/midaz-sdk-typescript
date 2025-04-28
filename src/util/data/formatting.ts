@@ -233,21 +233,45 @@ export function formatAccountBalance(
   onHold: string;
   displayString: string;
 } {
+  // Safety check for undefined or null balance
+  if (!balance) {
+    return {
+      assetCode: 'Unknown',
+      accountId: 'Unknown',
+      accountType: options?.accountType || 'Account',
+      available: '0.00',
+      onHold: '0.00',
+      displayString: 'Unknown (Account Unknown): Unable to display balance',
+    };
+  }
+
   const accountType = options?.accountType || 'Account';
 
   try {
-    const availableFormatted = formatBalanceSafely(balance.available, balance.scale, {
-      locale: options?.locale,
-    });
+    // Use hasOwnProperty to check if properties exist
+    const hasAvailable = Object.prototype.hasOwnProperty.call(balance, 'available');
+    const hasScale = Object.prototype.hasOwnProperty.call(balance, 'scale');
+    const hasOnHold = Object.prototype.hasOwnProperty.call(balance, 'onHold');
+    
+    const availableFormatted = formatBalanceSafely(
+      hasAvailable ? balance.available : 0, 
+      hasScale ? balance.scale : 100, 
+      { locale: options?.locale }
+    );
 
-    const onHoldFormatted = formatBalanceSafely(balance.onHold, balance.scale, {
-      locale: options?.locale,
-    });
+    const onHoldFormatted = formatBalanceSafely(
+      hasOnHold ? balance.onHold : 0, 
+      hasScale ? balance.scale : 100, 
+      { locale: options?.locale }
+    );
 
     // Extract asset code from accountId if not present
     let assetCode = balance.assetCode;
-    if (!assetCode && balance.accountId && balance.accountId.includes('/')) {
-      assetCode = balance.accountId.split('/')[1];
+    if (!assetCode && balance.accountId && balance.accountId.includes && balance.accountId.includes('/')) {
+      const parts = balance.accountId.split('/');
+      if (parts.length > 1) {
+        assetCode = parts[1];
+      }
     }
 
     const result = {
@@ -257,22 +281,35 @@ export function formatAccountBalance(
       available: availableFormatted,
       onHold: onHoldFormatted,
       displayString: `${assetCode || 'Unknown'} (${accountType} ${
-        balance.accountId
+        balance.accountId || 'Unknown'
       }): Available ${availableFormatted}, On Hold ${onHoldFormatted}`,
     };
 
     return result;
   } catch (err) {
     // Return a fallback format if something goes wrong
+    let accountId = 'Unknown';
+    let assetCodeFromId = 'Unknown';
+    
+    try {
+      accountId = balance.accountId || 'Unknown';
+      if (accountId && accountId.includes && accountId.includes('/')) {
+        const parts = accountId.split('/');
+        if (parts.length > 1) {
+          assetCodeFromId = parts[1];
+        }
+      }
+    } catch (e) {
+      // Ignore errors in error handler
+    }
+    
     return {
-      assetCode: balance.accountId?.split('/')[1] || 'Unknown',
-      accountId: balance.accountId || 'Unknown',
+      assetCode: assetCodeFromId,
+      accountId: accountId,
       accountType,
       available: '0.00',
       onHold: '0.00',
-      displayString: `${balance.accountId?.split('/')[1] || 'Unknown'} (${accountType} ${
-        balance.accountId || 'Unknown'
-      }): Unable to display balance`,
+      displayString: `${assetCodeFromId} (${accountType} ${accountId}): Unable to display balance`,
     };
   }
 }
