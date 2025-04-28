@@ -9,7 +9,7 @@ import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpAssetApiClient } from '../../../src/api/http/http-asset-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
-import { MidazError, ErrorCategory, ErrorCode } from '../../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/asset-validator');

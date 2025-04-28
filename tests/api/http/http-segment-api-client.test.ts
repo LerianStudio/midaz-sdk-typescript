@@ -310,7 +310,7 @@ describe('HttpSegmentApiClient', () => {
       const updatedSegment = {
         ...mockSegment,
         name: updateInput.name,
-        status: { code: updateInput.status!, timestamp: new Date().toISOString() },
+        status: { code: updateInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() },
         metadata: updateInput.metadata
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedSegment);
@@ -363,7 +363,7 @@ describe('HttpSegmentApiClient', () => {
       const partialInput: UpdateSegmentInput = { status: StatusCode.INACTIVE };
       const updatedSegment = { 
         ...mockSegment, 
-        status: { code: partialInput.status!, timestamp: new Date().toISOString() } 
+        status: { code: partialInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() } 
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedSegment);
 

@@ -62,10 +62,10 @@ export interface Span {
  * @internal
  */
 class NoopSpan implements Span {
-  setAttribute(): void {}
-  recordException(error: unknown): void {}
-  setStatus(): void {}
-  end(): void {}
+  setAttribute(): void { /* empty setAttribute */ }
+  recordException(_error: unknown): void { /* empty recordException */ }
+  setStatus(): void { /* empty setStatus */ }
+  end(): void { /* empty end */ }
 }
 
 // Import the OpenTelemetry provider

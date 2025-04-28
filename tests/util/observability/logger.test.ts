@@ -1,4 +1,4 @@
-import { LogLevel, Logger, LogEntry, LogHandler, createFileLogger } from '../../../src/util/observability/logger';
+import { LogEntry, createFileLogger, Logger, LogHandler, LogLevel } from '../../../src/util/observability/logger';
 
 describe('Logger', () => {
   // Spy on console methods
@@ -34,7 +34,7 @@ describe('Logger', () => {
 
   // Test 2: Constructor with custom options
   test('should initialize with custom options', () => {
-    const customHandler: LogHandler = () => {};
+    const customHandler: LogHandler = () => { /* empty handler for testing */ };
     const logger = new Logger({
       minLevel: LogLevel.DEBUG,
       includeTimestamps: false,
@@ -311,8 +311,8 @@ describe('Logger', () => {
 
 // Tests for createFileLogger function
 describe('createFileLogger', () => {
-  let originalFs: any;
-  let originalPath: any;
+  let _originalFs: any;
+  let _originalPath: any;
   let originalWindow: any;
   let mockFs: any;
   let mockPath: any;

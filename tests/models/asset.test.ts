@@ -1,13 +1,13 @@
 import {
-    Asset,
     CreateAssetInput,
     UpdateAssetInput,
+    Asset,
     newCreateAssetInput,
     newCreateAssetInputWithType,
-    withStatus,
-    withMetadata,
     newUpdateAssetInput,
-    withName
+    withMetadata,
+    withName,
+    withStatus
 } from '../../src/models/asset';
 import { StatusCode } from '../../src/models/common';
 

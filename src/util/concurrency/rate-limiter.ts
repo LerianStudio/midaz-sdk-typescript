@@ -216,7 +216,11 @@ export class RateLimiter {
 
     // Process the next request if we're under the limit
     if (this.requestTimestamps.length < this.maxRequests && this.requestQueue.length > 0) {
-      const { fn, resolve, reject } = this.requestQueue.shift()!;
+      // Queue is guaranteed to have items due to the length check above
+      const queueItem = this.requestQueue.shift();
+      if (!queueItem) return; // Should never happen, but satisfies TypeScript
+      
+      const { fn, resolve, reject } = queueItem;
 
       try {
         // Add timestamp for this request

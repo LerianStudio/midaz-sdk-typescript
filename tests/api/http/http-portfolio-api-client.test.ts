@@ -9,7 +9,7 @@ import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpPortfolioApiClient } from '../../../src/api/http/http-portfolio-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
-import { MidazError, ErrorCategory, ErrorCode } from '../../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/portfolio-validator');
@@ -29,7 +29,7 @@ describe('HttpPortfolioApiClient', () => {
   const portfolioId = 'pfl-789';
   const entityId = 'entity-123';
   const apiVersion = 'v1';
-  const serviceName = 'midaz-portfolio-api-client';
+  const _serviceName = 'midaz-portfolio-api-client';
 
   // Mock portfolio data
   const mockPortfolio: Portfolio = {
@@ -310,7 +310,7 @@ describe('HttpPortfolioApiClient', () => {
       const updatedPortfolio = { 
         ...mockPortfolio, 
         name: updateInput.name, 
-        status: { code: updateInput.status!, timestamp: new Date().toISOString() } 
+        status: { code: updateInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() } 
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedPortfolio);
       (validateUpdatePortfolioInput as jest.Mock).mockReturnValueOnce({ valid: true });

@@ -2,7 +2,7 @@
  * @file Tests for HTTP client utilities
  */
 import { HttpClient, HttpClientConfig, RequestOptions } from '../../src/util/network/http-client';
-import { MidazError, ErrorCode, ErrorCategory } from '../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../src/util/error';
 import { RetryPolicy } from '../../src/util/network/retry-policy';
 import { Cache } from '../../src/util/cache/cache';
 import { Observability } from '../../src/util/observability/observability';
@@ -84,7 +84,8 @@ beforeEach(() => {
   global.fetch = mockFetch;
   
   // Mock crypto
-  jest.spyOn(require('crypto'), 'createHash').mockImplementation(mockCreateHash);
+  // Use the already imported crypto module
+jest.spyOn(crypto, 'createHash').mockImplementation(mockCreateHash);
   
   // Reset environment variables
   delete process.env.MIDAZ_HTTP_TIMEOUT;
@@ -108,14 +109,14 @@ describe('HTTP Client Utilities', () => {
       jest.clearAllMocks();
       
       // Setup
-      const options = {
+      const _options = {
         maxRetries: 5,
         initialDelay: 200,
         maxDelay: 2000
       };
       
       // Create client with options
-      const client = new HttpClient({
+      const _client = new HttpClient({
         authToken: 'test-token'
       });
       
@@ -141,7 +142,7 @@ describe('HTTP Client Utilities', () => {
         process.env.MIDAZ_MAX_DELAY = '3000';
         
         // Create client without retry options
-        const client = new HttpClient({
+        const _client = new HttpClient({
           authToken: 'test-token'
         });
         
@@ -160,7 +161,7 @@ describe('HTTP Client Utilities', () => {
       jest.clearAllMocks();
       
       // Create client with minimal config
-      const client = new HttpClient({
+      const _client = new HttpClient({
         authToken: 'test-token'
       });
       
@@ -177,7 +178,7 @@ describe('HTTP Client Utilities', () => {
 
       // Act
       // Create client
-      const client = new HttpClient({
+      const _client = new HttpClient({
         baseUrls: {
           api: 'https://api.midaz.io/v1'
         },
@@ -474,10 +475,10 @@ describe('HTTP Client Utilities', () => {
     
     it('should make a DELETE request with correct parameters', async () => {
       // Setup mock response
-      const mockResponse = { success: true };
+      const _mockResponse = { success: true };
       
       // Mock fetch to return a response
-      mockFetch.mockImplementation((url, options) => {
+      mockFetch.mockImplementation((_url, _options) => {
         // Return a mock response that matches the expected URL
         return Promise.resolve({
           ok: true,
@@ -494,7 +495,7 @@ describe('HTTP Client Utilities', () => {
       });
       
       // Make DELETE request
-      const result = await client.delete('https://api.midaz.io/v1/resources/123');
+      const _result = await client.delete('https://api.midaz.io/v1/resources/123');
       
       // Verify fetch was called with the correct method
       expect(mockFetch).toHaveBeenCalled();

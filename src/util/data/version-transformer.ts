@@ -12,7 +12,7 @@ import { ModelTransformer } from './model-transformer';
  * @template TApiV1 - API model type for v1
  * @template TApiV2 - API model type for v2
  */
-export interface VersionTransformerFactory<TClient, TApiV1 = TClient, TApiV2 = TClient> {
+export interface VersionTransformerFactory<TClient, _TApiV1 = TClient, _TApiV2 = TClient> {
   /**
    * Get a model transformer for the specified API version
    * 

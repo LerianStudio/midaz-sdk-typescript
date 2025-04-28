@@ -39,6 +39,34 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      // Allow non-null assertions, ts-ignore comments, and require statements in test files
+      files: ["**/*.test.ts"],
+      rules: {
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/no-var-requires": "off",
+        "sort-imports": "off",
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    },
+    {
+      // Allow unused variables in mock files
+      files: ["**/mock-*.ts"],
+      rules: {
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    },
+    {
+      // Temporarily allow unused variables and import sorting in source files until they can be properly refactored
+      files: ["src/**/*.ts"],
+      rules: {
+        "@typescript-eslint/no-unused-vars": "warn",
+        "sort-imports": "warn"
+      }
+    }
+  ],
   settings: {
     'import/resolver': {
       node: {

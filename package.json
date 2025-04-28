@@ -7,8 +7,8 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint src --ext .ts && eslint tests --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix && eslint tests --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\" \"examples/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"examples/**/*.ts\"",
     "prepare": "npm run build",

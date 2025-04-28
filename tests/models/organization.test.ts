@@ -1,15 +1,15 @@
 import {
-    Organization,
     CreateOrganizationInput,
-    UpdateOrganizationInput,
     newCreateOrganizationInput,
     newUpdateOrganizationInput,
-    withStatus,
+    Organization,
+    UpdateOrganizationInput,
     withAddress,
+    withDoingBusinessAs,
+    withLegalName,
     withMetadata,
     withParentOrganizationId,
-    withLegalName,
-    withDoingBusinessAs
+    withStatus
 } from '../../src/models/organization';
 import { Address, StatusCode } from '../../src/models/common';
 

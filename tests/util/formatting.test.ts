@@ -2,9 +2,9 @@
  * @file Tests for formatting utilities
  */
 import {
+  formatAmountWithAsset,
   formatBalance,
-  getDecimalPlacesFromScale,
-  formatAmountWithAsset
+  getDecimalPlacesFromScale
 } from '../../src/util/data/formatting';
 
 describe('Formatting Utilities', () => {

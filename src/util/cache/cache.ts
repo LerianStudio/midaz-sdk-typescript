@@ -270,7 +270,8 @@ export class Cache<T = any> {
   private evict(): void {
     // If LRU is enabled, evict the least recently used entry
     if (this.useLRU && this.lruList.length > 0) {
-      const lruKey = this.lruList.shift()!;
+      // LRU list is guaranteed to have items due to the length check above
+      const lruKey = this.lruList.shift() || '';
       this.cache.delete(lruKey);
     } else {
       // Otherwise, evict a random entry

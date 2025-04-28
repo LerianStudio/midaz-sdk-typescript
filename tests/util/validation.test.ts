@@ -4,25 +4,25 @@
  */
 
 import {
-  ValidationError,
-  ValidationResult,
-  validateRequired,
+  DEFAULT_VALIDATION_CONFIG,
+  PATTERNS,
+  combineValidationResults,
+  getExternalAccountReference,
+  validate,
+  validateAccountAlias,
+  validateAccountReference,
+  validateAddress,
+  validateAssetCode,
+  validateDateRange,
+  validateMetadata,
   validateNotEmpty,
+  validateNumber,
   validatePattern,
   validateRange,
-  validateNumber,
-  validateAssetCode,
-  validateAccountAlias,
+  validateRequired,
   validateTransactionCode,
-  validateMetadata,
-  validateDateRange,
-  validateAccountReference,
-  getExternalAccountReference,
-  validateAddress,
-  combineValidationResults,
-  validate,
-  DEFAULT_VALIDATION_CONFIG,
-  PATTERNS
+  ValidationError,
+  ValidationResult
 } from '../../src/util/validation';
 
 describe('Validation Utilities', () => {
@@ -708,13 +708,13 @@ describe('Validation Utilities', () => {
   // Test 16: validate function
   describe('validate', () => {
     it('should not throw error for valid input', () => {
-      const validator = (input: string): ValidationResult => ({ valid: true });
+      const validator = (_input: string): ValidationResult => ({ valid: true });
       
       expect(() => validate('test', validator)).not.toThrow();
     });
     
     it('should throw ValidationError for invalid input', () => {
-      const validator = (input: string): ValidationResult => ({
+      const validator = (_input: string): ValidationResult => ({
         valid: false,
         message: 'Input is invalid',
         fieldErrors: { input: ['Input is invalid'] }
@@ -733,7 +733,7 @@ describe('Validation Utilities', () => {
     });
     
     it('should use default message when no message is provided', () => {
-      const validator = (input: string): ValidationResult => ({
+      const validator = (_input: string): ValidationResult => ({
         valid: false,
         fieldErrors: { input: ['Input is invalid'] }
       });

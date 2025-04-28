@@ -3,13 +3,13 @@
  * This file tests how the system handles various error conditions
  */
 import { 
-  withErrorRecovery, 
-  executeTransaction,
-  isRetryableError,
-  MidazError, 
   ErrorCategory, 
   ErrorCode,
-  TransactionErrorCategory
+  executeTransaction,
+  isRetryableError, 
+  MidazError, 
+  TransactionErrorCategory,
+  withErrorRecovery
 } from '../../../src/util/error';
 import { standardErrors } from '../../../src/util/error/error-types';
 

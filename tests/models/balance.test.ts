@@ -1,9 +1,9 @@
 import {
     Balance,
-    UpdateBalanceInput,
     newUpdateBalanceInput,
-    withAllowSending,
-    withAllowReceiving
+    UpdateBalanceInput,
+    withAllowReceiving,
+    withAllowSending
 } from '../../src/models/balance';
 
 describe('Balance Model and Helper Functions', () => {

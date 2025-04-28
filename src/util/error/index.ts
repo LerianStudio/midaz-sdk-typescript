@@ -15,8 +15,8 @@ export * from './error-handler';
 // Import necessary types for the additional functions
 import { ErrorCategory, ErrorCode, MidazError } from './error-types';
 import { 
-  isMidazError, 
-  newValidationError 
+  newValidationError,
+  isMidazError
 } from './error-utils';
 
 /**

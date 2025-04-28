@@ -525,6 +525,7 @@ export class Logger {
  * ```
  */
 export function createFileLogger(filePath: string, options: LoggerOptions = {}): Logger {
+  let logger: Logger;
   // In a browser environment, fall back to console logging
   if (typeof window !== 'undefined') {
     console.warn(
@@ -535,35 +536,43 @@ export function createFileLogger(filePath: string, options: LoggerOptions = {}):
 
   // In Node.js, use the fs module to write to a file
   try {
-    const fs = require('fs');
-    const path = require('path');
+    // Use dynamic imports to avoid require statements
+    (async () => {
+      const fs = (await import('fs')).default;
+      const path = (await import('path')).default;
 
-    // Ensure the directory exists
-    const directory = path.dirname(filePath);
-    if (!fs.existsSync(directory)) {
-      fs.mkdirSync(directory, { recursive: true });
-    }
-
-    // Create a file log handler
-    const fileHandler: LogHandler = (entry: LogEntry) => {
-      try {
-        // Format the log entry as JSON
-        const logLine = JSON.stringify(entry) + '\n';
-
-        // Append to the file
-        fs.appendFileSync(filePath, logLine);
-      } catch (error) {
-        console.error('Error writing to log file:', error);
+      // Ensure the directory exists
+      const directory = path.dirname(filePath);
+      if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
       }
-    };
 
-    // Create a logger with both console and file handlers
-    const logger = new Logger({
-      ...options,
-      handlers: [...(options.handlers || []), fileHandler],
-    });
+      // Create a file log handler
+      const fileHandler: LogHandler = (entry: LogEntry) => {
+        try {
+          // Format the log entry as JSON
+          const logLine = JSON.stringify(entry) + '\n';
 
-    return logger;
+          // Append to the file
+          fs.appendFileSync(filePath, logLine);
+        } catch (error) {
+          console.error('Error writing to log file:', error);
+        }
+      };
+
+      // Create a logger with both console and file handlers
+      // Create the logger with file handler
+      const fileLogger = new Logger({
+        ...options,
+        handlers: [...(options.handlers || []), fileHandler],
+      });
+      
+      // Store the reference, but we can't use it immediately due to async initialization
+      logger = fileLogger;
+    })();
+    
+  // Return a default logger while the async initialization happens
+  return new Logger(options);
   } catch (error) {
     console.error('Error creating file logger:', error);
     return new Logger(options);

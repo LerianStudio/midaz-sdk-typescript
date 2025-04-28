@@ -1,5 +1,5 @@
 import { validateCreateAccountInput, validateUpdateAccountInput } from '../../../src/models/validators/account-validator';
-import { CreateAccountInput, UpdateAccountInput, AccountType } from '../../../src/models/account';
+import { AccountType, CreateAccountInput, UpdateAccountInput } from '../../../src/models/account';
 import { StatusCode } from '../../../src/models/common';
 
 describe('Account Validator', () => {

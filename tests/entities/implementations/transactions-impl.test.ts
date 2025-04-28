@@ -3,13 +3,13 @@
  * @description Unit tests for the TransactionsService implementation and TransactionPaginator
  */
 
-import { TransactionsServiceImpl, TransactionPaginatorImpl } from '../../../src/entities/implementations/transactions-impl';
+import { TransactionPaginatorImpl, TransactionsServiceImpl } from '../../../src/entities/implementations/transactions-impl';
 import { MidazConfig } from '../../../src/client';
 import { 
-  Transaction,
+  toLibTransaction,
   CreateTransactionInput,
   Operation,
-  toLibTransaction
+  Transaction
 } from '../../../src/models/transaction';
 import { ListResponse } from '../../../src/models/common';
 import { Observability } from '../../../src/util/observability';

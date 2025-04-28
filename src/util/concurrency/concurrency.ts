@@ -182,21 +182,22 @@ export async function processWithThrottling<T, R>(
     }
 
     const itemIndex = items.length - itemsQueue.length;
-    const item = itemsQueue.shift()!;
+    // Queue is guaranteed to have items due to the length check above
+    const item = itemsQueue.shift() || null;
 
-    try {
-      const result = await workerFn(item, itemIndex);
-      resultsMap.set(itemIndex, result);
+    // Type assertion to handle the item being passed to the worker function
+    const result = await workerFn(item as T, itemIndex);
+    resultsMap.set(itemIndex, result);
 
-      // Check if we can add results to the final array
-      while (resultsMap.has(nextResultIndex)) {
-        results.push(resultsMap.get(nextResultIndex)!);
-        resultsMap.delete(nextResultIndex);
-        nextResultIndex++;
+    // Check if we can add results to the final array
+    while (resultsMap.has(nextResultIndex)) {
+      const result = resultsMap.get(nextResultIndex);
+      // Result must exist since we've checked with resultsMap.has()
+      if (result !== undefined) {
+        results.push(result);
       }
-    } catch (error) {
-      // Re-throw the error to be caught by the Promise.all
-      throw error;
+      resultsMap.delete(nextResultIndex);
+      nextResultIndex++;
     }
 
     // Process the next item

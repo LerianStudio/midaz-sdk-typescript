@@ -3,7 +3,7 @@
  */
 
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import { CreateTransactionInput, Transaction, Operation } from '../../../src/models/transaction';
+import { CreateTransactionInput, Operation, Transaction } from '../../../src/models/transaction';
 import { validateCreateTransactionInput } from '../../../src/models/validators/transaction-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
@@ -332,7 +332,7 @@ describe('HttpTransactionApiClient', () => {
       // Assert
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'transactions.amount',
-        createInput.amount!,
+        createInput.amount || 0,
         expect.objectContaining({
           orgId,
           ledgerId,

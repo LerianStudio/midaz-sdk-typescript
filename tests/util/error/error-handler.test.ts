@@ -2,12 +2,12 @@ import {
   isRetryableError, 
   categorizeTransactionError as getTransactionErrorType,
   TransactionErrorCategory,
-  TransactionErrorCategory as TransactionErrorType,
+  TransactionErrorCategory as _TransactionErrorType,
   getErrorRecoveryRecommendation,
   createErrorHandler,
   logDetailedError,
   processError as getEnhancedErrorInfo,
-  errorFromHttpResponse as processApiError,
+  errorFromHttpResponse as _processApiError,
   withErrorRecovery,
   executeTransaction,
   MidazError, 
@@ -22,7 +22,7 @@ import {
 // Mock the dependencies
 jest.mock('../../../src/util/error/error-utils', () => {
   const originalModule = jest.requireActual('../../../src/util/error/error-utils');
-  const errorHandlerModule = jest.requireActual('../../../src/util/error/error-handler');
+  const _errorHandlerModule = jest.requireActual('../../../src/util/error/error-handler');
   return {
     ...originalModule,
     isMidazError: jest.fn().mockImplementation((error: unknown) => error instanceof MidazError),

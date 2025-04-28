@@ -11,11 +11,11 @@
  */
 
 import { 
+  EnhancedErrorInfo,
   ErrorCategory, 
   ErrorCode, 
   MidazError, 
-  TransactionErrorCategory, 
-  EnhancedErrorInfo 
+  TransactionErrorCategory
 } from './error-types';
 
 /**
@@ -403,8 +403,8 @@ export function categorizeTransactionError(error: unknown, uppercase = false): s
  */
 export function getUserFriendlyErrorMessage(error: unknown): string {
   // Process error to determine error type
-  let errorType: string = 'unknown';
-  let errorMessage: string = 'An unexpected error occurred';
+  let errorType = 'unknown';
+  let errorMessage = 'An unexpected error occurred';
   
   if (isMidazError(error)) {
     errorType = error.category;

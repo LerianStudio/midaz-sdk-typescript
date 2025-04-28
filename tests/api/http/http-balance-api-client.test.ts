@@ -9,7 +9,7 @@ import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpBalanceApiClient } from '../../../src/api/http/http-balance-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
-import { MidazError, ErrorCategory, ErrorCode } from '../../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/balance-validator');
@@ -29,7 +29,7 @@ describe('HttpBalanceApiClient', () => {
   const accountId = 'acc-789';
   const balanceId = 'bal-101';
   const apiVersion = 'v1';
-  const serviceName = 'midaz-balance-api-client';
+  const _serviceName = 'midaz-balance-api-client';
 
   // Mock balance data
   const mockBalance: Balance = {

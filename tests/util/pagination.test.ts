@@ -2,10 +2,10 @@
  * @file Tests for pagination utilities
  */
 import {
-  Paginator,
-  paginateItems,
+  fetchAllPages,
   fetchAllItems,
-  fetchAllPages
+  paginateItems,
+  Paginator
 } from '../../src/util/data/pagination';
 import { ListOptions, ListResponse } from '../../src/models/common';
 

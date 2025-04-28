@@ -9,7 +9,7 @@ import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpAccountApiClient } from '../../../src/api/http/http-account-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
-import { MidazError, ErrorCategory, ErrorCode } from '../../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/account-validator');
@@ -252,7 +252,7 @@ describe('HttpAccountApiClient', () => {
 
     it('should throw error when validation fails', async () => {
       // Arrange
-      const validationError = { 
+      const _validationError = { 
         valid: false, 
         message: 'Validation error', 
         fieldErrors: { name: ['Name is required'] }
@@ -316,7 +316,7 @@ describe('HttpAccountApiClient', () => {
 
     it('should throw error when validation fails', async () => {
       // Arrange
-      const validationError = {
+      const _validationError = {
         valid: false,
         message: 'Validation error',
         fieldErrors: { name: ['Name cannot be empty'] }

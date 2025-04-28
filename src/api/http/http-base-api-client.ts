@@ -7,8 +7,8 @@ import { ApiResponse, ListOptions, ListResponse } from '../../models/common';
 import { HttpClient, RequestOptions } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';
 import {
-  ValidationParams,
   validateRequiredParams as baseValidateRequiredParams,
+  ValidationParams,
 } from '../interfaces/api-client';
 import { UrlBuilder } from '../url-builder';
 
@@ -340,7 +340,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * @param options - Optional list options
    * @returns Promise resolving to list response
    */
-  public list?(listOptions?: ListOptions): Promise<ListResponse<T>> {
+  public list?(_listOptions?: ListOptions): Promise<ListResponse<T>> {
     throw new Error('Method not implemented');
   }
 
@@ -351,7 +351,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * @param id - Resource ID
    * @returns Promise resolving to resource
    */
-  public get?(resourceId: string): Promise<T> {
+  public get?(_resourceId: string): Promise<T> {
     throw new Error('Method not implemented');
   }
 
@@ -362,7 +362,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * @param input - Resource creation input
    * @returns Promise resolving to created resource
    */
-  public create?(input: C): Promise<T> {
+  public create?(_input: C): Promise<T> {
     throw new Error('Method not implemented');
   }
 
@@ -374,7 +374,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * @param input - Resource update input
    * @returns Promise resolving to updated resource
    */
-  public update?(id: string, input: U): Promise<T> {
+  public update?(_id: string, _input: U): Promise<T> {
     throw new Error('Method not implemented');
   }
 
@@ -385,7 +385,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * @param id - Resource ID
    * @returns Promise resolving when deleted
    */
-  public delete?(resourceId: string): Promise<void> {
+  public delete?(_resourceId: string): Promise<void> {
     throw new Error('Method not implemented');
   }
 }

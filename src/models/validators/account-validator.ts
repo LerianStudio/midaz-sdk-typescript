@@ -3,9 +3,9 @@
  */
 
 import {
-  combineValidationResults,
   validateNotEmpty,
   validatePattern,
+  combineValidationResults,
   validateRequired,
   ValidationResult,
 } from '../../util/validation/validation';
@@ -76,7 +76,7 @@ export function validateCreateAccountInput(input: CreateAccountInput): Validatio
     return {
       valid: false,
       message: Object.entries(fieldErrors)
-        .map(([field, errors]) => errors[0])
+        .map(([_field, errors]) => errors[0])
         .join('; '),
       fieldErrors
     };

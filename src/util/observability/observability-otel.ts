@@ -278,7 +278,7 @@ export class OpenTelemetryProvider {
    * @returns OpenTelemetry tracer
    * @private
    */
-  private initializeTracing(options: ObservabilityOptions): Tracer {
+  private initializeTracing(_options: ObservabilityOptions): Tracer {
     // In a real implementation, this would initialize the OpenTelemetry tracing SDK
     // For demonstration purposes, we're creating a simplified version
     return {
@@ -318,7 +318,7 @@ export class OpenTelemetryProvider {
    * @returns OpenTelemetry meter
    * @private
    */
-  private initializeMetrics(options: ObservabilityOptions): Meter {
+  private initializeMetrics(_options: ObservabilityOptions): Meter {
     // In a real implementation, this would initialize the OpenTelemetry metrics SDK
     // For demonstration purposes, we're creating a simplified version
     return {

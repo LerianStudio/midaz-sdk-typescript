@@ -7,7 +7,7 @@ import {
 } from '../../src/util/concurrency/worker-pool';
 
 // Define the internal functions that are used in tests but not exported from the original module
-const processSequentially = async <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>, options: any): Promise<R[]> => {
+const processSequentially = async <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>, _options: any): Promise<R[]> => {
   return Promise.all(items.map((item, index) => worker(item, index)));
 };
 
@@ -25,7 +25,7 @@ const processBatches = async <T, R>(items: T[], worker: (batch: T[], index: numb
 };
 
 // This function has a different signature in the tests compared to the original implementation
-const processWithThrottling = async <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>, delayMs: number): Promise<R[]> => {
+const processWithThrottling = async <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>, _delayMs: number): Promise<R[]> => {
   return Promise.all(items.map((item, index) => worker(item, index)));
 };
 
@@ -397,7 +397,7 @@ describe('Worker Pool Utilities (Actual Implementation)', () => {
       const simplifiedProcessWithThrottling = async <T, R>(
         items: T[],
         workerFn: (item: T, index: number) => Promise<R>,
-        _delayMs: number = 0,
+        _delayMs = 0,
         options: WorkerPoolOptions<R> = {}
       ): Promise<R[]> => {
         const { 
@@ -504,7 +504,7 @@ describe('Worker Pool Utilities (Actual Implementation)', () => {
         expect(promise).toBeInstanceOf(Promise);
         
         // Clean up the promise to avoid unhandled promise rejection
-        promise.catch(() => {});
+        promise.catch(() => { /* empty catch to prevent unhandled rejections */ });
       } finally {
         // Restore original environment variable
         process.env.MIDAZ_WORKER_THROTTLE_DELAY = originalEnv;
@@ -517,7 +517,7 @@ describe('Worker Pool Utilities (Actual Implementation)', () => {
       const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       const batchSize = 3;
       
-      const batchFn = jest.fn().mockImplementation(async (batch: number[]) => {
+      const _batchFn = jest.fn().mockImplementation(async (batch: number[]) => {
         return batch.map(item => item * 2);
       });
       
@@ -534,7 +534,7 @@ describe('Worker Pool Utilities (Actual Implementation)', () => {
     it('should use default batch size when not specified', async () => {
       const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       
-      const batchFn = jest.fn().mockImplementation(async (batch: number[]) => {
+      const _batchFn = jest.fn().mockImplementation(async (batch: number[]) => {
         return batch.map(item => item * 2);
       });
       
@@ -555,7 +555,7 @@ describe('Worker Pool Utilities (Actual Implementation)', () => {
       const simplifiedProcessWithThrottling = async <T, R>(
         items: T[],
         workerFn: (item: T, index: number) => Promise<R>,
-        _delayMs: number = 0,
+        _delayMs = 0,
         options: WorkerPoolOptions<R> = {}
       ): Promise<R[]> => {
         const { 
@@ -662,7 +662,7 @@ describe('Worker Pool Utilities (Actual Implementation)', () => {
         expect(promise).toBeInstanceOf(Promise);
         
         // Clean up the promise to avoid unhandled promise rejection
-        promise.catch(() => {});
+        promise.catch(() => { /* empty catch to prevent unhandled rejections */ });
       } finally {
         // Restore original environment variable
         process.env.MIDAZ_WORKER_THROTTLE_DELAY = originalEnv;

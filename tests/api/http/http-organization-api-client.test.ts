@@ -2,15 +2,15 @@
  * Tests for HttpOrganizationApiClient
  */
 
-import { ListOptions, ListResponse, StatusCode, Address } from '../../../src/models/common';
+import { Address, ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpOrganizationApiClient } from '../../../src/api/http/http-organization-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
-import { MidazError, ErrorCategory, ErrorCode } from '../../../src/util/error';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 import { 
-  Organization, 
   CreateOrganizationInput, 
+  Organization, 
   UpdateOrganizationInput 
 } from '../../../src/api/interfaces/organization-api-client';
 import { 
@@ -33,7 +33,7 @@ describe('HttpOrganizationApiClient', () => {
   // Sample data
   const orgId = 'org-123';
   const apiVersion = 'v1';
-  const serviceName = 'midaz-organization-api-client';
+  const _serviceName = 'midaz-organization-api-client';
 
   // Mock address
   const address: Address = {
@@ -302,7 +302,7 @@ describe('HttpOrganizationApiClient', () => {
         ...mockOrganization, 
         legalName: updateInput.legalName, 
         doingBusinessAs: updateInput.doingBusinessAs,
-        status: { code: updateInput.status!, timestamp: new Date().toISOString() }
+        status: { code: updateInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() }
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedOrganization);
       (validateUpdateOrganizationInput as jest.Mock).mockReturnValueOnce({ valid: true });

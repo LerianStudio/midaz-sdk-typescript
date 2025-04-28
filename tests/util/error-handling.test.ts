@@ -2,15 +2,15 @@
  * @file Tests for error handling utilities
  */
 import {
-  processApiError,
-  getUserFriendlyErrorMessage,
-  isInsufficientFundsError,
-  isDuplicateTransactionError,
-  MidazError,
   ErrorCategory,
-  ErrorCode
+  ErrorCode,
+  getUserFriendlyErrorMessage,
+  isDuplicateTransactionError,
+  isInsufficientFundsError,
+  MidazError,
+  processApiError
 } from '../../src/util/error';
-import { categorizeTransactionError } from '../../src/util/error';
+import { categorizeTransactionError } from '../../src/util/error/error-utils';
 
 describe('Error Handling Utilities', () => {
   describe('processApiError', () => {

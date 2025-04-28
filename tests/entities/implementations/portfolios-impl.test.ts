@@ -5,7 +5,7 @@
 
 import { PortfoliosServiceImpl } from '../../../src/entities/implementations/portfolios-impl';
 import { Observability } from '../../../src/util/observability';
-import { Portfolio, CreatePortfolioInput, UpdatePortfolioInput } from '../../../src/models/portfolio';
+import { CreatePortfolioInput, Portfolio, UpdatePortfolioInput } from '../../../src/models/portfolio';
 import { ListResponse, StatusCode } from '../../../src/models/common';
 import { ValidationError } from '../../../src/util/validation';
 import { PortfolioApiClient } from '../../../src/api/interfaces/portfolio-api-client';

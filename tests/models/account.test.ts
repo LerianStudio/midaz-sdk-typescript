@@ -1,10 +1,10 @@
 import {
     Account,
+    AccountType,
     CreateAccountInput,
     newCreateAccountInput,
     newCreateAccountInputWithAlias,
-    UpdateAccountInput,
-    AccountType
+    UpdateAccountInput
 } from '../../src/models/account';
 import { StatusCode } from '../../src/models/common';
 

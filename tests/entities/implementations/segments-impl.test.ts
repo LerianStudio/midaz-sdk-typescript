@@ -5,7 +5,7 @@
 
 import { SegmentsServiceImpl } from '../../../src/entities/implementations/segments-impl';
 import { SegmentApiClient } from '../../../src/api/interfaces/segment-api-client';
-import { Segment, CreateSegmentInput, UpdateSegmentInput } from '../../../src/models/segment';
+import { CreateSegmentInput, Segment, UpdateSegmentInput } from '../../../src/models/segment';
 import { ListResponse, StatusCode } from '../../../src/models/common';
 import { Observability } from '../../../src/util/observability/observability';
 import { ValidationError } from '../../../src/util/validation';
@@ -36,7 +36,7 @@ jest.mock('../../../src/models/validators/segment-validator', () => {
       }
       return { valid: true };
     }),
-    validateUpdateSegmentInput: jest.fn().mockImplementation((input) => {
+    validateUpdateSegmentInput: jest.fn().mockImplementation((_input) => {
       return { valid: true };
     })
   };
@@ -46,7 +46,7 @@ describe('SegmentsServiceImpl', () => {
   let segmentsService: SegmentsServiceImpl;
   let segmentApiClient: jest.Mocked<SegmentApiClient>;
   let mockObservability: jest.Mocked<Observability>;
-  let config: any;
+  let _config: any;
 
   // Test data
   const orgId = 'org_123';
@@ -81,7 +81,7 @@ describe('SegmentsServiceImpl', () => {
     
     // Create a mock SegmentApiClient
     segmentApiClient = {
-      listSegments: jest.fn().mockImplementation((orgId, ledgerId, options) => {
+      listSegments: jest.fn().mockImplementation((orgId, ledgerId, _options) => {
         if (!orgId) throw new ValidationError('Organization ID is required');
         if (!ledgerId) throw new ValidationError('Ledger ID is required');
         return Promise.resolve(mockSegmentsList);
@@ -98,7 +98,7 @@ describe('SegmentsServiceImpl', () => {
         if (!input.name) throw new ValidationError('Segment name is required');
         return Promise.resolve(mockSegment);
       }),
-      updateSegment: jest.fn().mockImplementation((orgId, ledgerId, id, input) => {
+      updateSegment: jest.fn().mockImplementation((orgId, ledgerId, id, _input) => {
         if (!orgId) throw new ValidationError('Organization ID is required');
         if (!ledgerId) throw new ValidationError('Ledger ID is required');
         if (!id) throw new ValidationError('Segment ID is required');
@@ -124,7 +124,7 @@ describe('SegmentsServiceImpl', () => {
     } as unknown as jest.Mocked<Observability>;
     
     // Create config for reference
-    config = {
+    _config = {
       environment: 'sandbox'
     };
     

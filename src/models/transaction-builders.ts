@@ -3,7 +3,7 @@
  * @description Helper functions for creating common transaction types with proper structure
  */
 
-import { AmountInput, CreateTransactionInput, OperationInput } from './transaction';
+import { OperationInput, AmountInput, CreateTransactionInput } from './transaction';
 
 /**
  * Creates an amount input with proper structure

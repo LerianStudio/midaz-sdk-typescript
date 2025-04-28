@@ -4,7 +4,7 @@
 import { workerPool, WorkerPoolOptions } from '../../src/util/concurrency/worker-pool';
 
 // Define the chunk function for testing since it's not exported from the module
-function chunk<T>(array: T[], size: number = 50): T[][] {
+function chunk<T>(array: T[], size = 50): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < array.length; i += size) {
     chunks.push(array.slice(i, i + size));

@@ -20,7 +20,7 @@ describe('Rate Limiter Utilities', () => {
   const mockDateNow = jest.spyOn(Date, 'now');
   
   // Store setTimeout callbacks and delays for controlled execution
-  let timeoutCallbacks: Array<{ callback: Function; delay: number }> = [];
+  let timeoutCallbacks: Array<{ callback: (...args: unknown[]) => void; delay: number }> = [];
   let originalSetTimeout: typeof global.setTimeout;
   
   beforeEach(() => {
@@ -55,7 +55,8 @@ describe('Rate Limiter Utilities', () => {
   // Helper function to execute the next queued setTimeout callback
   const runNextTimeout = () => {
     if (timeoutCallbacks.length === 0) return;
-    const { callback } = timeoutCallbacks.shift()!;
+    // The array is guaranteed to be non-empty due to the length check above
+    const { callback } = timeoutCallbacks.shift() || { callback: () => { /* empty callback for testing */ } };
     callback();
   };
   

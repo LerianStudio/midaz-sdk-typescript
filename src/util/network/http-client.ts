@@ -4,17 +4,21 @@
  */
 
 import { createHash } from 'crypto';
-import http, { Agent as HttpAgent } from 'http';
-import https, { Agent as HttpsAgent } from 'https';
+import dns from 'dns';
+import _http, { Agent as HttpAgent } from 'http';
+import _https, { Agent as HttpsAgent } from 'https';
 import { URL } from 'url';
+
+// Import these at the top to avoid require statements
+import { ConfigService } from '../config';
 
 import { Cache } from '../cache/cache';
 import {
   ErrorCategory,
   ErrorCode,
-  errorFromHttpResponse,
   MidazError,
   newNetworkError,
+  errorFromHttpResponse
 } from '../error';
 import { Observability, Span } from '../observability/observability';
 
@@ -439,9 +443,7 @@ export class HttpClient {
    * @param config - Configuration options for the client
    */
   constructor(config: HttpClientConfig = {}) {
-    // Import ConfigService
-    // We need to use require here because of circular dependencies
-    const { ConfigService } = require('../config');
+    // Get the config service instance
     const configService = ConfigService.getInstance();
     
     // Get API URL configuration from ConfigService
@@ -1211,7 +1213,7 @@ export class HttpClient {
       }
 
       // If not in cache or expired, do a fresh lookup
-      require('dns').lookup(
+      dns.lookup(
         hostname,
         options,
         (err: Error | null, address: string, family: number) => {
@@ -1248,10 +1250,10 @@ export class HttpClient {
 
     // Return a no-op span if observability is not available
     return {
-      setAttribute: () => {},
-      recordException: () => {},
-      setStatus: () => {},
-      end: () => {},
+      setAttribute: () => { /* empty setAttribute */ },
+      recordException: () => { /* empty recordException */ },
+      setStatus: () => { /* empty setStatus */ },
+      end: () => { /* empty end */ },
     };
   }
 }

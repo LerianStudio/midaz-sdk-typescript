@@ -192,7 +192,8 @@ export function validateNotEmpty(
     return requiredResult;
   }
 
-  if (value!.trim() === '') {
+  // At this point, value is guaranteed to exist due to validateRequired check
+  if (!value || value.trim() === '') {
     return {
       valid: false,
       message: `${fieldName} cannot be empty`,
@@ -218,7 +219,8 @@ export function validatePattern(
     return requiredResult;
   }
 
-  if (!pattern.test(value!)) {
+  // At this point, value is guaranteed to exist due to validateRequired check
+  if (value && !pattern.test(value)) {
     return {
       valid: false,
       message: `${fieldName} must match ${patternDescription}`,
@@ -717,11 +719,13 @@ export function validateAddress(
   });
 
   // Validate line2 if provided
+  // At this point, address is guaranteed to exist due to the required check above
   if (
-    address!.line2 !== undefined &&
-    address!.line2 !== null &&
-    typeof address!.line2 === 'string' &&
-    address!.line2.length > maxStringLength
+    address &&
+    address.line2 !== undefined &&
+    address.line2 !== null &&
+    typeof address.line2 === 'string' &&
+    address.line2.length > maxStringLength
   ) {
     errors.push(`${fieldName}.line2 exceeds maximum length of ${maxStringLength} characters`);
     fieldErrors[`${fieldName}.line2`] = [
@@ -730,15 +734,18 @@ export function validateAddress(
   }
 
   // Validate country code if provided
+  // At this point, address is guaranteed to exist due to the required check above
   if (
-    address!.countryCode !== undefined &&
-    address!.countryCode !== null &&
-    typeof address!.countryCode === 'string'
+    address &&
+    address.countryCode !== undefined &&
+    address.countryCode !== null &&
+    typeof address.countryCode === 'string'
   ) {
-    const countryResult = validateCountryCode(address!.countryCode, `${fieldName}.countryCode`);
+    // We've already checked that address and countryCode exist in the condition above
+    const countryResult = validateCountryCode(address.countryCode, `${fieldName}.countryCode`);
 
     if (!countryResult.valid) {
-      errors.push(countryResult.message!);
+      errors.push(countryResult.message || `Invalid country code: ${address.countryCode}`);
 
       if (countryResult.fieldErrors) {
         Object.entries(countryResult.fieldErrors).forEach(([field, fieldErrs]) => {

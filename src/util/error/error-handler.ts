@@ -6,18 +6,18 @@
 import type { LogLevel } from '../observability/logger';
 import { 
   EnhancedErrorInfo, 
+  TransactionErrorCategory, 
   ErrorHandlerOptions, 
   ErrorRecoveryOptions, 
-  OperationResult, 
-  TransactionErrorCategory
+  OperationResult
 } from './error-types';
 import { 
-  processError, 
-  isRetryableError, 
-  isInsufficientFundsError, 
   isAccountEligibilityError, 
+  isDuplicateTransactionError, 
   isInsufficientBalanceError,
-  isDuplicateTransactionError
+  isInsufficientFundsError, 
+  isRetryableError, 
+  processError
 } from './error-utils';
 
 /**

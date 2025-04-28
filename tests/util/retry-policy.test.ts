@@ -1,8 +1,8 @@
 /**
  * @file Tests for retry policy utilities
  */
-import { RetryPolicy, RetryOptions } from '../../src/util/network/retry-policy';
-import { MidazError, ErrorCategory, ErrorCode } from '../../src/util/error';
+import { RetryOptions, RetryPolicy } from '../../src/util/network/retry-policy';
+import { ErrorCategory, ErrorCode, MidazError } from '../../src/util/error';
 
 describe('Retry Policy Utilities', () => {
   // Helper to mock the sleep function to avoid actual delays in tests
@@ -271,7 +271,7 @@ describe('Retry Policy Utilities', () => {
   describe('sleep method', () => {
     it('should resolve after the specified time', async () => {
       // Use jest.spyOn instead of direct replacement
-      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((callback: any, ms?: number) => {
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((callback: any, _ms?: number) => {
         callback();
         return {} as NodeJS.Timeout;
       });

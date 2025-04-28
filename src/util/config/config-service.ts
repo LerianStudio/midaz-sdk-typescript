@@ -190,7 +190,7 @@ export class ConfigService {
    * Creates a new configuration service instance
    * @private - Use the static getInstance() method instead
    */
-  private constructor() {}
+  private constructor() { /* Use getInstance instead */ }
 
   /**
    * Gets the global configuration service instance
@@ -312,7 +312,7 @@ export class ConfigService {
    * @returns The environment variable value or default value
    * @private
    */
-  private getEnv(name: string, defaultValue: string = ''): string {
+  private getEnv(name: string, defaultValue = ''): string {
     return process.env[name] || defaultValue;
   }
 

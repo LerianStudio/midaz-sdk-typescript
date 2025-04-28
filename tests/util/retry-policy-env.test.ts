@@ -12,8 +12,8 @@ process.env.MIDAZ_RETRY_MAX_DELAY = '3000';
 process.env.MIDAZ_RETRY_STATUS_CODES = '429,503,504';
 
 // Import after setting environment variables
-import { RetryPolicy, RetryOptions } from '../../src/util/network/retry-policy';
-import { MidazError, ErrorCategory, ErrorCode } from '../../src/util/error';
+import { RetryOptions, RetryPolicy } from '../../src/util/network/retry-policy';
+import { ErrorCategory, ErrorCode, MidazError } from '../../src/util/error';
 
 describe('Retry Policy Utilities with Environment Variables', () => {
   afterAll(() => {
