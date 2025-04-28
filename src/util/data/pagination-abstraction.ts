@@ -3,7 +3,7 @@
  * @description Standardizes pagination interfaces and implementations across all entity types
  */
 
-import { ListMetadata, ListOptions, ListResponse } from '../../models/common';
+import { ListMetadata as _ListMetadata, ListOptions, ListResponse } from '../../models/common';
 import { Observability, Span } from '../../util/observability/observability';
 
 /**

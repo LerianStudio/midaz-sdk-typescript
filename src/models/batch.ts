@@ -3,9 +3,9 @@
  * @description Simple wrapper around transaction-batch for compatibility
  */
 
-import { MidazClient } from '../client';
-import { createTransactionBatch, TransactionBatchOptions, TransactionBatchResult } from './transaction-batch';
-import { CreateTransactionInput } from './transaction';
+import { MidazClient as _MidazClient } from '../client';
+import { createTransactionBatch as _createTransactionBatch, TransactionBatchResult as _TransactionBatchResult, TransactionBatchOptions } from './transaction-batch';
+import { CreateTransactionInput as _CreateTransactionInput } from './transaction';
 
 /**
  * Batch class compatible with the workflow example

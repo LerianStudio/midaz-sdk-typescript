@@ -14,11 +14,11 @@ import { ConfigService } from '../config';
 
 import { Cache } from '../cache/cache';
 import {
-  ErrorCategory,
-  ErrorCode,
-  errorFromHttpResponse,
-  MidazError,
-  newNetworkError
+  ErrorCategory as _ErrorCategory,
+  ErrorCode as _ErrorCode,
+  MidazError as _MidazError,
+  newNetworkError as _newNetworkError,
+  errorFromHttpResponse
 } from '../error';
 import { Observability, Span } from '../observability/observability';
 

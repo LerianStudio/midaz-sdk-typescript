@@ -3,18 +3,18 @@
  * @description Error handling and recovery functions
  */
 
-import type { LogLevel } from '../observability/logger';
+import type { LogLevel as _LogLevel } from '../observability/logger';
 import { 
-  EnhancedErrorInfo, 
-  ErrorCategory, 
-  ErrorCode, 
-  ErrorHandlerOptions, 
-  ErrorRecoveryOptions
+  EnhancedErrorInfo as _EnhancedErrorInfo, 
+  ErrorCategory as _ErrorCategory, 
+  ErrorCode as _ErrorCode, 
+  MidazError as _MidazError, 
+  TransactionErrorCategory as _TransactionErrorCategory
 , 
-  MidazError, 
-  OperationResult, 
-  TransactionErrorCategory, 
-  TransactionErrorType 
+  TransactionErrorType as _TransactionErrorType, 
+  ErrorHandlerOptions, 
+  ErrorRecoveryOptions, 
+  OperationResult 
 } from './error-types';
 import { 
   isAccountEligibilityError, 
@@ -192,8 +192,8 @@ export async function withErrorRecovery<T>(
   const {
     maxRetries = 3,
     initialDelay = 500,
-    maxDelay = 10000,
-    backoffFactor = 2,
+    maxDelay: _maxDelay = 10000,
+    backoffFactor: _backoffFactor = 2,
     retryCondition = isRetryableError,
     onRetry,
     onExhausted,

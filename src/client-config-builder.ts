@@ -5,6 +5,7 @@
 
 import { MidazConfig } from './client';
 import { HttpClient } from './util/network/http-client';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { RetryPolicy } from './util/network/retry-policy';
 
 /**

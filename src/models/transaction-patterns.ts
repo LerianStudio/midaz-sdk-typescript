@@ -183,8 +183,12 @@ export async function createInitialDeposit(
     }
     
     const { status, result: txResult, error } = await executeTransaction(
+      // We've checked these exist in the if statement above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       () => mergedOptions.client!.entities.transactions.createTransaction(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.organizationId!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.ledgerId!,
         transaction
       ),
@@ -292,8 +296,12 @@ export async function createUserTransfer(
     }
     
     const { status, result: txResult, error } = await executeTransaction(
+      // We've checked these exist in the if statement above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       () => mergedOptions.client!.entities.transactions.createTransaction(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.organizationId!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.ledgerId!,
         transaction
       ),
@@ -398,8 +406,12 @@ export async function createUserWithdrawal(
     }
     
     const { status, result: txResult, error } = await executeTransaction(
+      // We've checked these exist in the if statement above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       () => mergedOptions.client!.entities.transactions.createTransaction(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.organizationId!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.ledgerId!,
         transaction
       ),
@@ -522,8 +534,12 @@ export async function createRoundupSavings(
     }
     
     const { status, result: txResult, error } = await executeTransaction(
+      // We've checked these exist in the if statement above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       () => mergedOptions.client!.entities.transactions.createTransaction(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.organizationId!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.ledgerId!,
         transaction
       ),
@@ -638,8 +654,12 @@ export async function createRecurringPayment(
     }
     
     const { status, result: txResult, error } = await executeTransaction(
+      // We've checked these exist in the if statement above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       () => mergedOptions.client!.entities.transactions.createTransaction(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.organizationId!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mergedOptions.ledgerId!,
         transaction
       ),

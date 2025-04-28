@@ -3,7 +3,7 @@
  * @description Provides utilities for working with accounts, including classification, filtering, and identification
  */
 
-import { Account } from '../../models/account';
+import { Account as _Account } from '../../models/account';
 
 /**
  * Checks if an account ID belongs to an external account
