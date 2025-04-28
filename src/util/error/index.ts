@@ -12,6 +12,12 @@ export * from './error-utils';
 // Export all error handler functions
 export * from './error-handler';
 
+// Export enhanced error recovery
+export * from './enhanced-error-recovery';
+
+// Export compatibility functions for workflow example
+export * from './enhanced-recovery-exports';
+
 // Import necessary types for the additional functions
 import { ErrorCategory, ErrorCode, MidazError } from './error-types';
 import { 

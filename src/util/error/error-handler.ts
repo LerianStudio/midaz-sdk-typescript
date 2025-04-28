@@ -290,6 +290,11 @@ export async function executeOperation<T>(
 }
 
 /** 
+ * Result type specifically for transaction execution
+ */
+export interface ExecuteTransactionResult<T> extends OperationResult<T> {}
+
+/** 
  * Specialized version of executeOperation for financial transactions
  * 
  * @param transactionFn - Transaction function to execute
@@ -299,7 +304,7 @@ export async function executeOperation<T>(
 export async function executeTransaction<T>(
   transactionFn: () => Promise<T>,
   options?: Partial<ErrorRecoveryOptions>
-): Promise<OperationResult<T>> {
+): Promise<ExecuteTransactionResult<T>> {
   return executeOperation(
     transactionFn,
     {

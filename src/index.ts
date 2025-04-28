@@ -167,6 +167,18 @@ export {
   createWithdrawalTransaction,
 } from './models/transaction-builders';
 
+// Transaction pair utilities
+export * from './models/transaction-pairs';
+
+// Transaction batch processing
+export * from './models/transaction-batch';
+
+// Compatibility batch interface
+export * from './models/batch';
+
+// Common transaction patterns
+export * from './models/transaction-patterns';
+
 // ------------------------------
 // Balances
 // ------------------------------
