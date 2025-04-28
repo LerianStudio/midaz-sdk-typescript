@@ -315,9 +315,37 @@ npm run build
 # Run tests
 npm test
 
+# Run linter
+npm run lint
+
+# Format code
+npm run format
+
 # Generate documentation
 npm run docs
+
+# Run example workflow
+npm run example:workflow
 ```
+
+## Continuous Integration
+
+This repository uses GitHub Actions for continuous integration and deployment:
+
+- **CI Pipeline**: Automatically runs on pull requests and pushes to main branch.
+  - Builds the SDK with multiple Node.js versions
+  - Runs all tests
+  - Checks code formatting and linting
+  - Generates documentation
+
+- **Dependency Scanning**: Weekly checks for vulnerabilities in dependencies.
+
+- **Release Pipeline**: Automatically publishes to npm when a new release is created.
+  - Builds and tests the SDK before publishing
+  - Deploys documentation to GitHub Pages
+  - Generates changelog from commits
+
+Contributors should ensure all tests pass locally before submitting a pull request.
 
 ## Documentation
 
