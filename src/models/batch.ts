@@ -1,6 +1,4 @@
 /**
- * @file Batch interface compatible with the workflow example
- * @description Simple wrapper around transaction-batch for compatibility
  */
 
 import { MidazClient as _MidazClient } from '../client';
@@ -43,7 +41,6 @@ export class TransactionBatch {
 /**
  * Creates a new transaction batch
  * 
- * @param options - Batch options
  * @returns A new TransactionBatch instance
  */
 export function createBatch(options: TransactionBatchOptions = {}): TransactionBatch {
@@ -53,7 +50,6 @@ export function createBatch(options: TransactionBatchOptions = {}): TransactionB
 /**
  * Executes a transaction batch
  * 
- * @param batch - The transaction batch to execute
  * @returns Array of results from the batch execution
  */
 export async function executeBatch(batch: TransactionBatch): Promise<any[]> {

@@ -29,9 +29,6 @@ export interface AssetsService {
   /**
    * Lists assets with optional filters
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of assets
    */
   listAssets(orgId: string, ledgerId: string, opts?: ListOptions): Promise<ListResponse<Asset>>;
@@ -39,9 +36,6 @@ export interface AssetsService {
   /**
    * Gets an asset by ID
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Asset ID to retrieve
    * @returns Promise resolving to the asset
    */
   getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset>;
@@ -49,9 +43,6 @@ export interface AssetsService {
   /**
    * Creates a new asset
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param input Asset creation input
    * @returns Promise resolving to the created asset
    */
   createAsset(orgId: string, ledgerId: string, input: CreateAssetInput): Promise<Asset>;
@@ -59,10 +50,6 @@ export interface AssetsService {
   /**
    * Updates an existing asset
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Asset ID to update
-   * @param input Asset update input
    * @returns Promise resolving to the updated asset
    */
   updateAsset(orgId: string, ledgerId: string, id: string, input: UpdateAssetInput): Promise<Asset>;
@@ -70,9 +57,6 @@ export interface AssetsService {
   /**
    * Deletes an asset
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Asset ID to delete
    * @returns Promise that resolves when the asset is deleted
    */
   deleteAsset(orgId: string, ledgerId: string, id: string): Promise<void>;

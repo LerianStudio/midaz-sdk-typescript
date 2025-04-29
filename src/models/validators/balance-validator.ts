@@ -1,6 +1,4 @@
 /**
- * @file Balance validation functions for the Midaz SDK
- * @description Provides validation functions to ensure balance data meets required format and business rules
  */
 
 import {
@@ -21,7 +19,6 @@ import { UpdateBalanceInput } from '../balance';
  * These flags are important for implementing account freezes, holds, or other
  * operational controls on accounts.
  *
- * @param input - The UpdateBalanceInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example

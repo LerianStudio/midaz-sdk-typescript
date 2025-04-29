@@ -1,6 +1,4 @@
 /**
- * @file Configuration service for the Midaz SDK
- * @description Centralizes configuration and environment variable access throughout the SDK
  */
 
 /**
@@ -205,7 +203,6 @@ export class ConfigService {
 
   /**
    * Configures the global configuration service with override values
-   * @param options - Override configuration options
    */
   public static configure(options: {
     observability?: Partial<ObservabilityConfig>;
@@ -307,8 +304,6 @@ export class ConfigService {
 
   /**
    * Gets an environment variable as a string
-   * @param name - Environment variable name
-   * @param defaultValue - Default value if environment variable is not set
    * @returns The environment variable value or default value
    * @private
    */
@@ -318,8 +313,6 @@ export class ConfigService {
 
   /**
    * Gets an environment variable as a boolean
-   * @param name - Environment variable name
-   * @param defaultValue - Default value if environment variable is not set
    * @returns The environment variable value as a boolean or default value
    * @private
    */
@@ -330,8 +323,6 @@ export class ConfigService {
 
   /**
    * Gets an environment variable as a number
-   * @param name - Environment variable name
-   * @param defaultValue - Default value if environment variable is not set
    * @returns The environment variable value as a number or default value
    * @private
    */
@@ -342,8 +333,6 @@ export class ConfigService {
 
   /**
    * Gets an environment variable as an array of numbers
-   * @param name - Environment variable name
-   * @param defaultValue - Default value if environment variable is not set
    * @returns The environment variable value as an array of numbers or default value
    * @private
    */

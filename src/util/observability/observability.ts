@@ -1,6 +1,4 @@
 /**
- * @file Observability utilities
- * @description Tracing, metrics, and logging for monitoring and debugging
  */
 
 /** Configuration options for observability */
@@ -154,8 +152,6 @@ export class Observability {
   /** 
    * Starts a new span for an operation 
    * 
-   * @param name - Name of the span
-   * @param initialAttributes - Initial attributes for the span
    */
   startSpan(name: string, initialAttributes: Record<string, AttributeValue> = {}): Span {
     if (!this.options.enableTracing || !this.otelProvider) {

@@ -16,7 +16,6 @@ import { UpdateAssetRateInput } from '../asset-rate';
 /**
  * Validates a CreateAssetInput object
  * 
- * @param input - The CreateAssetInput object to validate
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateCreateAssetInput(input: CreateAssetInput): ValidationResult {
@@ -88,7 +87,6 @@ export function validateCreateAssetInput(input: CreateAssetInput): ValidationRes
 /**
  * Validates an UpdateAssetInput object
  * 
- * @param input - The UpdateAssetInput object to validate
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationResult {
@@ -159,7 +157,6 @@ export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationRes
 /**
  * Validates an UpdateAssetRateInput object
  * 
- * @param input - The UpdateAssetRateInput object to validate
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateUpdateAssetRateInput(input: UpdateAssetRateInput): ValidationResult {

@@ -1,6 +1,4 @@
 /**
- * @file Operations service implementation for the Midaz SDK
- * @description Implements the OperationsService interface for managing operations within the Midaz system
  */
 
 import { OperationApiClient } from '../../api/interfaces/operation-api-client';
@@ -22,7 +20,6 @@ import { OperationPaginatorImpl } from './operation-paginator-impl';
  * Operations represent the individual entries that make up transactions and record
  * the actual debits and credits to accounts in the ledger system.
  *
- * @implements {OperationsService}
  *
  * @example
  * ```typescript
@@ -48,8 +45,6 @@ export class OperationsServiceImpl implements OperationsService {
   /**
    * Creates a new OperationsServiceImpl
    *
-   * @param operationApiClient - Operation API client for making API requests
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly operationApiClient: OperationApiClient,
@@ -68,10 +63,6 @@ export class OperationsServiceImpl implements OperationsService {
    * specified organization and ledger. The results can be filtered, sorted, and
    * paginated using the options parameter.
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID to retrieve operations for
-   * @param opts - List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of operations
    */
   public async listOperations(
@@ -123,11 +114,6 @@ export class OperationsServiceImpl implements OperationsService {
    * organization, ledger, and account. Optionally, a transaction ID can be provided
    * to narrow down the search.
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID that contains the operation
-   * @param operationId - Operation ID to retrieve
-   * @param transactionId - Optional transaction ID that contains the operation
    * @returns Promise resolving to the operation
    */
   public async getOperation(
@@ -185,11 +171,6 @@ export class OperationsServiceImpl implements OperationsService {
    * are immutable once created to maintain the integrity of the ledger.
    * Typically, only metadata fields can be updated.
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID that contains the operation
-   * @param operationId - Operation ID to update
-   * @param input - Operation update input with properties to change
    * @returns Promise resolving to the updated operation
    */
   public async updateOperation(
@@ -247,10 +228,6 @@ export class OperationsServiceImpl implements OperationsService {
    * page by page. This is useful for processing large numbers of operations
    * without loading them all into memory at once.
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID to retrieve operations for
-   * @param opts - List options for pagination, sorting, and filtering
    * @returns An operation paginator for iterating through operations
    */
   public getOperationPaginator(
@@ -308,10 +285,6 @@ export class OperationsServiceImpl implements OperationsService {
    * handling pagination. This is useful for processing large numbers of operations
    * using modern JavaScript async iteration.
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID to retrieve operations for
-   * @param opts - List options for sorting and filtering
    * @returns Async generator yielding pages of operations
    */
   public async *iterateOperations(
@@ -387,10 +360,6 @@ export class OperationsServiceImpl implements OperationsService {
    * Note: For large result sets, consider using getOperationPaginator() or
    * iterateOperations() instead to avoid memory issues.
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID to retrieve operations for
-   * @param opts - List options for sorting and filtering
    * @returns Promise resolving to all operations
    */
   public async getAllOperations(

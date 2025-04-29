@@ -1,6 +1,4 @@
 /**
- * @file Organizations service implementation for the Midaz SDK
- * @description Implements the OrganizationsService interface for managing organizations within the Midaz system
  */
 
 import { OrganizationApiClient } from '../../api/interfaces/organization-api-client';
@@ -15,7 +13,6 @@ import { OrganizationsService } from '../organizations';
 
 /**
  * @inheritdoc
- * @implements {OrganizationsService}
  */
 export class OrganizationsServiceImpl implements OrganizationsService {
   /**
@@ -27,8 +24,6 @@ export class OrganizationsServiceImpl implements OrganizationsService {
   /**
    * Creates a new OrganizationsServiceImpl
    *
-   * @param apiClient - API client for organization-related operations
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(private readonly apiClient: OrganizationApiClient, observability?: Observability) {
     // Initialize observability with service name
@@ -75,7 +70,6 @@ export class OrganizationsServiceImpl implements OrganizationsService {
    *
    * Retrieves a single organization by its unique identifier.
    *
-   * @param id - Organization ID to retrieve
    * @returns Promise resolving to the organization
    */
   public async getOrganization(id: string): Promise<Organization> {

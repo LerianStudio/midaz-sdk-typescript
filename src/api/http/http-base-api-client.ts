@@ -1,6 +1,4 @@
 /**
- * @file Base HTTP API client
- * @description Provides common functionality for all HTTP API clients
  */
 
 import { ApiResponse, ListOptions, ListResponse } from '../../models/common';
@@ -29,10 +27,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Creates a new HttpBaseApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param serviceName - Name of the service for observability
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     protected readonly httpClient: HttpClient,
@@ -52,10 +46,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Makes a GET request with standardized error handling and tracing
    *
-   * @param operationName - Name of the operation for tracing
-   * @param url - URL to request
-   * @param options - Optional HTTP options
-   * @param attributes - Span attributes for tracing
    * @returns Promise resolving to the response data
    */
   protected async getRequest<R extends ApiResponse>(
@@ -100,11 +90,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Makes a POST request with standardized error handling and tracing
    *
-   * @param operationName - Name of the operation for tracing
-   * @param url - URL to request
-   * @param data - Data to send
-   * @param options - Optional HTTP options
-   * @param attributes - Span attributes for tracing
    * @returns Promise resolving to the response data
    */
   protected async postRequest<R extends ApiResponse>(
@@ -145,11 +130,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Makes a PATCH request with standardized error handling and tracing
    *
-   * @param operationName - Name of the operation for tracing
-   * @param url - URL to request
-   * @param data - Data to send
-   * @param options - Optional HTTP options
-   * @param attributes - Span attributes for tracing
    * @returns Promise resolving to the response data
    */
   protected async patchRequest<R extends ApiResponse>(
@@ -190,10 +170,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Makes a DELETE request with standardized error handling and tracing
    *
-   * @param operationName - Name of the operation for tracing
-   * @param url - URL to request
-   * @param options - Optional HTTP options
-   * @param attributes - Span attributes for tracing
    * @returns Promise resolving to void
    */
   protected async deleteRequest(
@@ -232,8 +208,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Validates required parameters consistently using the common implementation
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    */
   protected validateRequiredParams(span: Span, params: ValidationParams): void {
     baseValidateRequiredParams(span, params);
@@ -242,9 +216,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Optional metric tags
    */
   protected recordMetrics(name: string, value: number, tags?: Record<string, any>): void {
     this.observability.recordMetric(name, value, tags || {});
@@ -253,8 +224,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Creates a new span with the given attributes
    *
-   * @param operationName - Name of the operation
-   * @param attributes - Optional attributes to set on the span
    * @returns The created span
    */
   protected startSpan(operationName: string, attributes?: Record<string, any>): Span {
@@ -274,9 +243,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Records metrics based on the response data
    *
-   * @param operationName - Name of the operation
-   * @param response - Response data
-   * @param attributes - Optional attributes for metrics
    */
   protected recordResponseMetrics(
     operationName: string,
@@ -295,8 +261,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Sets attributes on the span for list options
    *
-   * @param span - The current tracing span
-   * @param options - List options
    */
   protected setListOptionsAttributes(span: Span, options: ListOptions): void {
     if (!options) return;
@@ -317,8 +281,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   /**
    * Handles errors consistently
    *
-   * @param span - The current tracing span
-   * @param error - The error that occurred
    */
   protected handleError(span: Span, error: Error): void {
     span.recordException(error);
@@ -329,7 +291,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * List resources (base implementation for ApiClient interface)
    * Intended to be overridden by subclasses
    *
-   * @param options - Optional list options
    * @returns Promise resolving to list response
    */
   public list?(_listOptions?: ListOptions): Promise<ListResponse<T>> {
@@ -340,7 +301,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * Get a resource by ID (base implementation for ApiClient interface)
    * Intended to be overridden by subclasses
    *
-   * @param id - Resource ID
    * @returns Promise resolving to resource
    */
   public get?(_resourceId: string): Promise<T> {
@@ -351,7 +311,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * Create a resource (base implementation for ApiClient interface)
    * Intended to be overridden by subclasses
    *
-   * @param input - Resource creation input
    * @returns Promise resolving to created resource
    */
   public create?(_input: C): Promise<T> {
@@ -362,8 +321,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * Update a resource (base implementation for ApiClient interface)
    * Intended to be overridden by subclasses
    *
-   * @param id - Resource ID
-   * @param input - Resource update input
    * @returns Promise resolving to updated resource
    */
   public update?(_id: string, _input: U): Promise<T> {
@@ -374,7 +331,6 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
    * Delete a resource (base implementation for ApiClient interface)
    * Intended to be overridden by subclasses
    *
-   * @param id - Resource ID
    * @returns Promise resolving when deleted
    */
   public delete?(_resourceId: string): Promise<void> {

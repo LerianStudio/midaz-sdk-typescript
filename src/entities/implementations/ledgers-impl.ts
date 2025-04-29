@@ -1,6 +1,4 @@
 /**
- * @file Ledgers service implementation
- * @description Implements the LedgersService interface
  */
 
 import { LedgerApiClient } from '../../api/interfaces/ledger-api-client';
@@ -11,7 +9,6 @@ import { LedgersService } from '../ledgers';
 
 /**
  * @inheritdoc
- * @implements {LedgersService}
  */
 export class LedgersServiceImpl implements LedgersService {
   /** Observability instance for tracing and metrics @private */

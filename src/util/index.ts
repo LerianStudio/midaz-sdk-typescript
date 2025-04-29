@@ -1,6 +1,4 @@
 /**
- * @file Utility barrel file for the Midaz SDK
- * @description Re-exports all utility modules from their respective folders
  */
 
 // Re-export utility modules by category

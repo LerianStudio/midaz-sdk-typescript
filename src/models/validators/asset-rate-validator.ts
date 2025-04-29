@@ -1,6 +1,4 @@
 /**
- * @file Asset Rate validation functions for the Midaz SDK
- * @description Provides validation functions to ensure asset rate data meets required format and business rules
  */
 
 import { ValidationResult } from '../../util/validation';
@@ -19,7 +17,6 @@ import { UpdateAssetRateInput } from '../asset-rate';
  * conversion and valuation. Each rate has a specific time period during which it is valid,
  * defined by the effective and expiration dates.
  *
- * @param input - The UpdateAssetRateInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example

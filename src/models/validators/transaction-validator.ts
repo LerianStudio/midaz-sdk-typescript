@@ -1,6 +1,4 @@
 /**
- * @file Transaction validation functions for the Midaz SDK
- * @description Provides validation functions to ensure transaction data meets required format and business rules
  */
 
 import {
@@ -30,7 +28,6 @@ import { CreateTransactionInput, OperationInput } from '../transaction';
  * movements of value between accounts. Each transaction consists of one or more
  * operations that must follow double-entry accounting principles.
  *
- * @param input - The CreateTransactionInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example
@@ -123,8 +120,6 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
  * Operations are the individual entries that make up a transaction, representing
  * either a debit (decrease) or credit (increase) to an account's balance.
  *
- * @param operation - The operation object to validate
- * @param fieldName - Field name for error message context
  * @returns ValidationResult indicating if the operation is valid, with error messages if not
  *
  * @example
@@ -188,8 +183,6 @@ function validateOperation(operation: OperationInput, fieldName: string): Valida
  * Amount objects represent monetary values in transactions and operations,
  * specifying both the numeric value and the currency.
  *
- * @param amount - The amount object to validate
- * @param fieldName - Field name for error message context
  * @returns ValidationResult indicating if the amount is valid, with error messages if not
  *
  * @example
@@ -263,7 +256,6 @@ function validateAmount(amount: any, fieldName: string): ValidationResult {
  * across all operations, with exceptions for specific transaction types that
  * represent money entering or leaving the system.
  *
- * @param operations - Array of operations to validate
  * @returns ValidationResult indicating if the transaction is balanced, with error messages if not
  *
  * @example

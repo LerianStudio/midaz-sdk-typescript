@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of ledger API client
- * @description Implements the ledger API client interface using HTTP
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -27,9 +25,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Creates a new HttpLedgerApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -53,8 +48,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Lists ledgers for a specific organization
    *
-   * @param orgId - Organization ID
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of ledgers
    */
   public async listLedgers(orgId: string, options?: ListOptions): Promise<ListResponse<Ledger>> {
@@ -99,8 +92,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Gets a ledger by ID
    *
-   * @param orgId - Organization ID
-   * @param id - Ledger ID
    * @returns Promise resolving to the ledger
    */
   public async getLedger(orgId: string, id: string): Promise<Ledger> {
@@ -137,8 +128,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Creates a new ledger
    *
-   * @param orgId - Organization ID
-   * @param input - Ledger creation input
    * @returns Promise resolving to the created ledger
    */
   public async createLedger(orgId: string, input: CreateLedgerInput): Promise<Ledger> {
@@ -188,9 +177,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Updates an existing ledger
    *
-   * @param orgId - Organization ID
-   * @param id - Ledger ID
-   * @param input - Ledger update input
    * @returns Promise resolving to the updated ledger
    */
   public async updateLedger(orgId: string, id: string, input: UpdateLedgerInput): Promise<Ledger> {
@@ -241,8 +227,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Deletes a ledger
    *
-   * @param orgId - Organization ID
-   * @param id - Ledger ID
    * @returns Promise resolving when the ledger is deleted
    */
   public async deleteLedger(orgId: string, id: string): Promise<void> {
@@ -278,8 +262,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(span: Span, params: Record<string, any>): void {
@@ -295,9 +277,6 @@ export class HttpLedgerApiClient implements LedgerApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   private recordMetrics(name: string, value: number, tags?: Record<string, any>): void {

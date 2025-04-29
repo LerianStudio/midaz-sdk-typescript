@@ -17,8 +17,6 @@ export class AssetsServiceImpl implements AssetsService {
 
   /**
    * Creates a new AssetsServiceImpl
-   * @param apiClient API client for asset operations
-   * @param observability Optional observability provider
    */
   constructor(private readonly apiClient: AssetApiClient, observability?: Observability) {
     // Initialize observability with service name

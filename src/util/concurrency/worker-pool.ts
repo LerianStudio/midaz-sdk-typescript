@@ -1,6 +1,4 @@
 /**
- * @file Worker pool utilities for the Midaz SDK
- * @description Provides tools for parallel processing with controlled concurrency, batching, and throttling
  */
 
 /**
@@ -33,16 +31,12 @@ export interface WorkerPoolOptions<_T> {
   /**
    * Function to call on each successful item
    * Allows processing results as they complete
-   * @param result - The result of the worker function
-   * @param index - The index of the original item
    */
   onSuccess?: (result: any, index: number) => void;
 
   /**
    * Function to call on each failed item
    * Allows handling errors as they occur
-   * @param error - The error that occurred
-   * @param index - The index of the original item
    */
   onError?: (error: Error, index: number) => void;
 
@@ -82,9 +76,6 @@ const _DEFAULT_WORKER_POOL_OPTIONS = {
  *
  * @template I - Type of input items
  * @template T - Type of output results
- * @param items - Array of items to process
- * @param worker - Function to process each item
- * @param options - Worker pool configuration options
  * @returns Promise resolving to an array of results
  *
  * @example
@@ -151,9 +142,6 @@ export async function workerPool<T>(
  *
  * @template I - Type of input items
  * @template T - Type of output results
- * @param items - Array of items to process
- * @param worker - Function to process each item
- * @param options - Worker pool configuration options
  * @returns Promise resolving to an array of results
  * @private
  */
@@ -194,9 +182,6 @@ async function processSequentially<T>(
  *
  * @template I - Type of input items
  * @template T - Type of output results
- * @param items - Array of items to process
- * @param worker - Function to process each item
- * @param options - Worker pool configuration options
  * @returns Promise resolving to an array of results
  * @private
  */
@@ -251,9 +236,6 @@ async function processBatches<T>(
  *
  * @template I - Type of input items
  * @template T - Type of output results
- * @param items - Array of items to process
- * @param worker - Function to process each item
- * @param options - Worker pool configuration options
  * @returns Promise resolving to an array of results
  * @private
  */
@@ -323,7 +305,6 @@ async function processWithThrottling<T>(
 /**
  * Sleeps for a specified duration
  *
- * @param ms - Duration in milliseconds
  * @returns Promise that resolves after the specified duration
  * @private
  */

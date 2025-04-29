@@ -1,6 +1,4 @@
 /**
- * @file Portfolio service implementation for the Midaz SDK
- * @description Implements the PortfoliosService interface for managing portfolios within the Midaz system
  */
 
 import { PortfolioApiClient } from '../../api/interfaces/portfolio-api-client';
@@ -20,7 +18,6 @@ import { PortfoliosService } from '../portfolios';
  * analysis, or organizational purposes within a ledger. They provide a way to categorize
  * and manage related accounts as a single unit.
  *
- * @implements {PortfoliosService}
  *
  * @example
  * ```typescript
@@ -46,8 +43,6 @@ export class PortfoliosServiceImpl implements PortfoliosService {
   /**
    * Creates a new PortfoliosServiceImpl
    *
-   * @param portfolioApiClient - Portfolio API client for making API requests
-   * @param observability - Optional observability provider for tracing and metrics
    */
   constructor(
     private readonly portfolioApiClient: PortfolioApiClient,
@@ -73,9 +68,6 @@ export class PortfoliosServiceImpl implements PortfoliosService {
    * Retrieves a paginated list of portfolios for a specific organization and ledger.
    * The results can be filtered, sorted, and paginated using the optional parameters.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the portfolios
-   * @param opts - Optional list options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of portfolios
    *
    * @example
@@ -130,9 +122,6 @@ export class PortfoliosServiceImpl implements PortfoliosService {
    *
    * Retrieves the details of a specific portfolio identified by its ID.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param portfolioId - ID of the portfolio to retrieve
    * @returns Promise resolving to the portfolio details
    *
    * @example
@@ -179,9 +168,6 @@ export class PortfoliosServiceImpl implements PortfoliosService {
    *
    * Creates a new portfolio in the specified organization and ledger.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID where the portfolio will be created
-   * @param input - Portfolio details to create
    * @returns Promise resolving to the created portfolio
    *
    * @example
@@ -235,10 +221,6 @@ export class PortfoliosServiceImpl implements PortfoliosService {
    *
    * Updates the details of an existing portfolio identified by its ID.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param portfolioId - ID of the portfolio to update
-   * @param input - Updated portfolio details
    * @returns Promise resolving to the updated portfolio
    *
    * @example
@@ -300,9 +282,6 @@ export class PortfoliosServiceImpl implements PortfoliosService {
    *
    * Permanently removes a portfolio from the system.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param portfolioId - ID of the portfolio to delete
    * @returns Promise that resolves when the portfolio is deleted
    *
    * @example

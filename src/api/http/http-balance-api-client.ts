@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of balance API client
- * @description Implements the balance API client interface using HTTP
  */
 
 import { Balance, UpdateBalanceInput } from '../../models/balance';
@@ -24,9 +22,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Creates a new HttpBalanceApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -50,9 +45,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Lists balances for a ledger with optional filters
    *
-   * @param orgId - Organization ID that owns the balances
-   * @param ledgerId - Ledger ID that contains the balances
-   * @param options - Optional list options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    */
   public async listBalances(
@@ -116,10 +108,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Lists balances for a specific account
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID to retrieve balances for
-   * @param options - Optional list options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    */
   public async listAccountBalances(
@@ -189,9 +177,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Gets a balance by ID
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to retrieve
    * @returns Promise resolving to the balance
    */
   public async getBalance(orgId: string, ledgerId: string, id: string): Promise<Balance> {
@@ -242,10 +227,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Updates an existing balance
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to update
-   * @param input - Balance update input with properties to change
    * @returns Promise resolving to the updated balance
    */
   public async updateBalance(
@@ -318,9 +299,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Deletes a balance
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to delete
    * @returns Promise resolving when the balance is deleted
    */
   public async deleteBalance(orgId: string, ledgerId: string, id: string): Promise<void> {
@@ -358,8 +336,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(span: Span, params: Record<string, any>): void {
@@ -375,9 +351,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   private recordMetrics(name: string, value: number, tags?: Record<string, any>): void {

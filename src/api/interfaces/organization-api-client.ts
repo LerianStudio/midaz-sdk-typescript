@@ -1,6 +1,4 @@
 /**
- * @file Organization API client interface
- * @description Defines the interface for organization API operations
  */
 
 import { Address, ListOptions, ListResponse, Status } from '../../models/common';
@@ -60,7 +58,6 @@ export interface OrganizationApiClient
   /**
    * Lists organizations with optional filters
    *
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of organizations
    */
   listOrganizations(options?: ListOptions): Promise<ListResponse<Organization>>;
@@ -68,7 +65,6 @@ export interface OrganizationApiClient
   /**
    * Gets an organization by ID
    *
-   * @param id - Organization ID
    * @returns Promise resolving to the organization
    */
   getOrganization(id: string): Promise<Organization>;
@@ -76,7 +72,6 @@ export interface OrganizationApiClient
   /**
    * Creates a new organization
    *
-   * @param input - Organization creation input
    * @returns Promise resolving to the created organization
    */
   createOrganization(input: CreateOrganizationInput): Promise<Organization>;
@@ -84,8 +79,6 @@ export interface OrganizationApiClient
   /**
    * Updates an existing organization
    *
-   * @param id - Organization ID
-   * @param input - Organization update input
    * @returns Promise resolving to the updated organization
    */
   updateOrganization(id: string, input: UpdateOrganizationInput): Promise<Organization>;
@@ -93,7 +86,6 @@ export interface OrganizationApiClient
   /**
    * Deletes an organization
    *
-   * @param id - Organization ID
    * @returns Promise resolving when the organization is deleted
    */
   deleteOrganization(id: string): Promise<void>;

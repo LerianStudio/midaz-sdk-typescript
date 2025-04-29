@@ -1,6 +1,4 @@
 /**
- * @file Response helpers for the Midaz SDK
- * @description Utilities for processing API responses, extracting data, and handling common response patterns
  */
 
 import { ApiResponse as _ApiResponse, ListResponse } from '../../models/common';
@@ -13,7 +11,6 @@ import { transformResponse as _transformResponse } from './model-transformer';
  * when API endpoints return items directly or wrapped in a response object.
  *
  * @template T - The type of items in the response
- * @param response - The API response, which could be an array, a ListResponse, or undefined
  * @returns An array of items, or an empty array if no items were found
  *
  * @example
@@ -57,8 +54,6 @@ export function extractItems<T>(response: T[] | ListResponse<T> | undefined | nu
  * especially when combining results from multiple sources.
  *
  * @template T - The type of items in the array
- * @param items - The array of items to deduplicate
- * @param keySelector - Function that extracts a unique key from each item
  * @returns Array of unique items
  *
  * @example

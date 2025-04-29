@@ -26,8 +26,6 @@ export interface LedgersService {
   /**
    * Lists ledgers with pagination, sorting, and filtering
    *
-   * @param orgId Organization ID
-   * @param opts List options
    * @returns Promise resolving to a paginated list of ledgers
    */
   listLedgers(orgId: string, opts?: ListOptions): Promise<ListResponse<Ledger>>;
@@ -35,8 +33,6 @@ export interface LedgersService {
   /**
    * Gets a ledger by ID
    *
-   * @param orgId Organization ID
-   * @param id Ledger ID to retrieve
    * @returns Promise resolving to the ledger
    */
   getLedger(orgId: string, id: string): Promise<Ledger>;
@@ -44,8 +40,6 @@ export interface LedgersService {
   /**
    * Creates a new ledger
    *
-   * @param orgId Organization ID
-   * @param input Ledger creation input
    * @returns Promise resolving to the created ledger
    */
   createLedger(orgId: string, input: CreateLedgerInput): Promise<Ledger>;
@@ -53,9 +47,6 @@ export interface LedgersService {
   /**
    * Updates an existing ledger
    *
-   * @param orgId Organization ID
-   * @param id Ledger ID to update
-   * @param input Ledger update input
    * @returns Promise resolving to the updated ledger
    */
   updateLedger(orgId: string, id: string, input: UpdateLedgerInput): Promise<Ledger>;
@@ -63,8 +54,6 @@ export interface LedgersService {
   /**
    * Deletes a ledger
    *
-   * @param orgId Organization ID
-   * @param id Ledger ID to delete
    * @returns Promise that resolves when the ledger is deleted
    */
   deleteLedger(orgId: string, id: string): Promise<void>;

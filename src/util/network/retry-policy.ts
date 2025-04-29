@@ -1,6 +1,4 @@
 /**
- * @file Retry policy
- * @description Configurable retry logic with exponential backoff for API requests
  */
 
 import { MidazError } from '../error';
@@ -97,8 +95,6 @@ export class RetryPolicy {
   /**
    * Executes a function with retry logic
    * 
-   * @param fn - Function to execute with retry logic
-   * @param onAttempt - Optional callback that receives the current attempt number and retry information
    * @returns Promise resolving to the function's result
    * @throws Error if all retry attempts fail
    */

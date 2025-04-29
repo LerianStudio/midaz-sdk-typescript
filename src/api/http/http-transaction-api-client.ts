@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of transaction API client
- * @description Implements the transaction API client interface using HTTP
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -28,9 +26,6 @@ export class HttpTransactionApiClient
   /**
    * Creates a new HttpTransactionApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(httpClient: HttpClient, urlBuilder: UrlBuilder, observability?: Observability) {
     super(httpClient, urlBuilder, 'midaz-transaction-api-client', observability);
@@ -39,9 +34,6 @@ export class HttpTransactionApiClient
   /**
    * Lists transactions for a specific organization and ledger
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of transactions
    */
   public async listTransactions(
@@ -70,9 +62,6 @@ export class HttpTransactionApiClient
   /**
    * Gets a transaction by ID
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Transaction ID
    * @returns Promise resolving to the transaction
    */
   public async getTransaction(orgId: string, ledgerId: string, id: string): Promise<Transaction> {
@@ -96,9 +85,6 @@ export class HttpTransactionApiClient
   /**
    * Creates a new transaction
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param input - Transaction creation input
    * @returns Promise resolving to the created transaction
    */
   public async createTransaction(

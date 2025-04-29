@@ -17,8 +17,6 @@ export class AccountsServiceImpl implements AccountsService {
 
   /**
    * Creates a new AccountsServiceImpl
-   * @param accountApiClient API client for account operations
-   * @param observability Optional observability instance
    */
   constructor(
     private readonly accountApiClient: AccountApiClient,

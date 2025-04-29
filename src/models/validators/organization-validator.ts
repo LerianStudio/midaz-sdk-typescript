@@ -1,6 +1,4 @@
 /**
- * @file Organization validation functions for the Midaz SDK
- * @description Provides validation functions to ensure organization data meets required format and business rules
  */
 
 import {
@@ -24,7 +22,6 @@ import { CreateOrganizationInput, UpdateOrganizationInput } from '../organizatio
  * Organizations are the top-level entities in the Midaz system and represent
  * legal entities like companies, institutions, or other business entities.
  *
- * @param input - The CreateOrganizationInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example
@@ -88,7 +85,6 @@ export function validateCreateOrganizationInput(input: CreateOrganizationInput):
  * Note that unlike creation, updates don't require any specific fields as long as at least
  * one valid field is being updated.
  *
- * @param input - The UpdateOrganizationInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example
@@ -171,8 +167,6 @@ export function validateUpdateOrganizationInput(input: UpdateOrganizationInput):
  * Address validation is important for ensuring that organizations have valid
  * physical locations for legal and operational purposes.
  *
- * @param address - The address object to validate
- * @param fieldName - Field name for error message context
  * @returns ValidationResult indicating if the address is valid, with error messages if not
  *
  * @example

@@ -1,6 +1,4 @@
 /**
- * @file Common helper functions for the Midaz SDK
- * @description Provides reusable helper functions that can be used across multiple model types
  * to standardize common operations and reduce code duplication
  */
 

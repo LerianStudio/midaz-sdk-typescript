@@ -1,6 +1,4 @@
 /**
- * @file Error types for the Midaz SDK
- * @description Defines error categories, codes, and the base MidazError class
  */
 
 /**
@@ -197,7 +195,6 @@ export class MidazError extends Error {
   /**
    * Creates a new MidazError
    *
-   * @param params - Error parameters
    */
   constructor(params: {
     category: ErrorCategory;

@@ -1,6 +1,4 @@
 /**
- * @file Organization model definitions for the Midaz SDK
- * @description Defines the organization data structures and helper functions for managing organizations in the Midaz ledger system
  */
 
 import { Address, Status } from './common';
@@ -126,9 +124,6 @@ export class OrganizationBuilderImpl
  * This factory function creates a builder that allows you to use method chaining
  * to construct an organization with a more fluent API.
  *
- * @param legalName - Official registered name of the organization
- * @param legalDocument - Official identification document (e.g., tax ID, registration number)
- * @param doingBusinessAs - Trading or brand name of the organization
  * @returns An organization builder with method chaining
  *
  * @example

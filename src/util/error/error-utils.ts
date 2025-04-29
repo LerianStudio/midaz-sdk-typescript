@@ -1,6 +1,4 @@
 /**
- * @file Error utilities for the Midaz SDK
- * @description Provides all utility functions for working with errors - type guards, factories, classification, etc.
  * 
  * This file contains:
  * - Type guards (isMidazError, isValidationError, etc.)
@@ -23,7 +21,6 @@ import {
  *
  * Checks if an error is an instance of MidazError.
  *
- * @param error - Error to check
  * @returns Whether the error is a MidazError
  */
 export function isMidazError(error: unknown): error is MidazError {
@@ -33,7 +30,6 @@ export function isMidazError(error: unknown): error is MidazError {
 /**
  * Type guard for validation errors
  *
- * @param error - Error to check
  * @returns Whether the error is a validation error
  */
 export function isValidationError(error: unknown): boolean {
@@ -43,7 +39,6 @@ export function isValidationError(error: unknown): boolean {
 /**
  * Type guard for not found errors
  *
- * @param error - Error to check
  * @returns Whether the error is a not found error
  */
 export function isNotFoundError(error: unknown): boolean {
@@ -53,7 +48,6 @@ export function isNotFoundError(error: unknown): boolean {
 /**
  * Type guard for authentication errors
  *
- * @param error - Error to check
  * @returns Whether the error is an authentication error
  */
 export function isAuthenticationError(error: unknown): boolean {
@@ -63,7 +57,6 @@ export function isAuthenticationError(error: unknown): boolean {
 /**
  * Type guard for authorization errors
  *
- * @param error - Error to check
  * @returns Whether the error is an authorization error
  */
 export function isAuthorizationError(error: unknown): boolean {
@@ -73,7 +66,6 @@ export function isAuthorizationError(error: unknown): boolean {
 /**
  * Type guard for conflict errors
  *
- * @param error - Error to check
  * @returns Whether the error is a conflict error
  */
 export function isConflictError(error: unknown): boolean {
@@ -83,7 +75,6 @@ export function isConflictError(error: unknown): boolean {
 /**
  * Type guard for rate limit errors
  *
- * @param error - Error to check
  * @returns Whether the error is a rate limit error
  */
 export function isRateLimitError(error: unknown): boolean {
@@ -93,7 +84,6 @@ export function isRateLimitError(error: unknown): boolean {
 /**
  * Type guard for timeout errors
  *
- * @param error - Error to check
  * @returns Whether the error is a timeout error
  */
 export function isTimeoutError(error: unknown): boolean {
@@ -103,7 +93,6 @@ export function isTimeoutError(error: unknown): boolean {
 /**
  * Type guard for network errors
  *
- * @param error - Error to check
  * @returns Whether the error is a network error
  */
 export function isNetworkError(error: unknown): boolean {
@@ -113,7 +102,6 @@ export function isNetworkError(error: unknown): boolean {
 /**
  * Type guard for internal errors
  *
- * @param error - Error to check
  * @returns Whether the error is an internal error
  */
 export function isInternalError(error: unknown): boolean {
@@ -123,7 +111,6 @@ export function isInternalError(error: unknown): boolean {
 /**
  * Type guard for insufficient balance errors
  *
- * @param error - Error to check
  * @returns Whether the error is an insufficient balance error
  */
 export function isInsufficientBalanceError(error: unknown): boolean {
@@ -133,7 +120,6 @@ export function isInsufficientBalanceError(error: unknown): boolean {
 /**
  * Type guard for account eligibility errors
  *
- * @param error - Error to check
  * @returns Whether the error is an account eligibility error
  */
 export function isAccountEligibilityError(error: unknown): boolean {
@@ -143,7 +129,6 @@ export function isAccountEligibilityError(error: unknown): boolean {
 /**
  * Type guard for asset mismatch errors
  *
- * @param error - Error to check
  * @returns Whether the error is an asset mismatch error
  */
 export function isAssetMismatchError(error: unknown): boolean {
@@ -153,7 +138,6 @@ export function isAssetMismatchError(error: unknown): boolean {
 /**
  * Determines if an error should be retried based on its type
  *
- * @param error - Any error object
  * @returns Whether the error should be retried
  */
 export function isRetryableError(error: unknown): boolean {
@@ -200,7 +184,6 @@ export function isRetryableError(error: unknown): boolean {
 /**
  * Checks if an error is related to insufficient funds
  *
- * @param error - Any error object
  * @returns True if the error is related to insufficient funds
  */
 export function isInsufficientFundsError(error: unknown): boolean {
@@ -242,7 +225,6 @@ export function isInsufficientFundsError(error: unknown): boolean {
 /**
  * Checks if an error is related to a duplicate transaction
  *
- * @param error - Any error object
  * @returns True if the error is related to a duplicate transaction
  */
 export function isDuplicateTransactionError(error: unknown): boolean {
@@ -284,8 +266,6 @@ export function isDuplicateTransactionError(error: unknown): boolean {
 /**
  * Maps a transaction error to a user-friendly category
  *
- * @param error - Error to categorize
- * @param uppercase - Whether to return uppercase format (defaults to false - lowercase_underscores format)
  * @returns User-friendly error category
  */
 export function categorizeTransactionError(error: unknown, uppercase = false): string {
@@ -398,7 +378,6 @@ export function categorizeTransactionError(error: unknown, uppercase = false): s
 /**
  * Gets a user-friendly message for a specific error
  *
- * @param error - Any error object
  * @returns User-friendly error message
  */
 export function getUserFriendlyErrorMessage(error: unknown): string {
@@ -476,7 +455,6 @@ export function getUserFriendlyErrorMessage(error: unknown): string {
 /**
  * Provides domain-specific recovery recommendations based on error type
  *
- * @param error - Any error object
  * @returns Recovery recommendation text
  */
 export function getErrorRecoveryRecommendation(error: unknown): string {
@@ -842,7 +820,6 @@ export function newAccountEligibilityError(
 /**
  * Processes any error into a comprehensive enhanced error information object
  *
- * @param error - Any error object
  * @returns Enhanced error information
  */
 export function processError(error: unknown): EnhancedErrorInfo {
@@ -967,10 +944,6 @@ export function processError(error: unknown): EnhancedErrorInfo {
  *
  * Maps HTTP status codes to appropriate error types.
  *
- * @param statusCode - HTTP status code
- * @param responseBody - Response body (may contain error details)
- * @param method - HTTP method (GET, POST, etc.)
- * @param url - Request URL
  * @returns Appropriate MidazError for the HTTP status
  */
 export function errorFromHttpResponse(

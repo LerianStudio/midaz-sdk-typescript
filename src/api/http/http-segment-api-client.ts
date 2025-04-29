@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of segment API client
- * @description Implements the segment API client interface using HTTP
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -31,9 +29,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Creates a new HttpSegmentApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -57,9 +52,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Lists segments for a ledger with optional filters
    *
-   * @param orgId - Organization ID that owns the segments
-   * @param ledgerId - Ledger ID that contains the segments
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of segments
    */
   public async listSegments(
@@ -110,9 +102,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Gets a segment by ID
    *
-   * @param orgId - Organization ID that owns the segment
-   * @param ledgerId - Ledger ID that contains the segment
-   * @param id - Segment ID to retrieve
    * @returns Promise resolving to the segment
    */
   public async getSegment(orgId: string, ledgerId: string, id: string): Promise<Segment> {
@@ -151,9 +140,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Creates a new segment
    *
-   * @param orgId - Organization ID that will own the segment
-   * @param ledgerId - Ledger ID that will contain the segment
-   * @param input - Segment creation input with required properties
    * @returns Promise resolving to the created segment
    */
   public async createSegment(
@@ -200,10 +186,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Updates an existing segment
    *
-   * @param orgId - Organization ID that owns the segment
-   * @param ledgerId - Ledger ID that contains the segment
-   * @param id - Segment ID to update
-   * @param input - Segment update input with properties to change
    * @returns Promise resolving to the updated segment
    */
   public async updateSegment(
@@ -261,9 +243,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Deletes a segment
    *
-   * @param orgId - Organization ID that owns the segment
-   * @param ledgerId - Ledger ID that contains the segment
-   * @param id - Segment ID to delete
    * @returns Promise resolving when the segment is deleted
    */
   public async deleteSegment(orgId: string, ledgerId: string, id: string): Promise<void> {
@@ -301,8 +280,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(span: Span, params: Record<string, any>): void {
@@ -318,9 +295,6 @@ export class HttpSegmentApiClient implements SegmentApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   private recordMetrics(name: string, value: number, tags?: Record<string, any>): void {

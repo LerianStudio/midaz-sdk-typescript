@@ -1,6 +1,4 @@
 /**
- * @file Model transformer
- * @description Utilities for converting between client and API model formats
  */
 
 import { ApiResponse } from '../../models/common';

@@ -1,6 +1,4 @@
 /**
- * @file Ledger validation functions for the Midaz SDK
- * @description Provides validation functions to ensure ledger data meets required format and business rules
  */
 
 import {
@@ -23,7 +21,6 @@ import { CreateLedgerInput, UpdateLedgerInput } from '../ledger';
  * and while they have minimal validation requirements, the name is essential
  * for identification purposes.
  *
- * @param input - The CreateLedgerInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example
@@ -65,7 +62,6 @@ export function validateCreateLedgerInput(input: CreateLedgerInput): ValidationR
  * Note that unlike creation, updates don't require any specific fields as long as at least
  * one valid field is being updated.
  *
- * @param input - The UpdateLedgerInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example

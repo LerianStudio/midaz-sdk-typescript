@@ -1,6 +1,4 @@
 /**
- * @file Portfolio API client interface
- * @description Defines the interface for portfolio API operations
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -19,9 +17,6 @@ export interface PortfolioApiClient
   /**
    * Lists portfolios for a ledger with optional filters
    *
-   * @param orgId - Organization ID that owns the portfolios
-   * @param ledgerId - Ledger ID that contains the portfolios
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of portfolios
    */
   listPortfolios(
@@ -33,9 +28,6 @@ export interface PortfolioApiClient
   /**
    * Gets a portfolio by ID
    *
-   * @param orgId - Organization ID that owns the portfolio
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param id - Portfolio ID to retrieve
    * @returns Promise resolving to the portfolio
    */
   getPortfolio(orgId: string, ledgerId: string, id: string): Promise<Portfolio>;
@@ -43,9 +35,6 @@ export interface PortfolioApiClient
   /**
    * Creates a new portfolio
    *
-   * @param orgId - Organization ID that will own the portfolio
-   * @param ledgerId - Ledger ID that will contain the portfolio
-   * @param input - Portfolio creation input with required properties
    * @returns Promise resolving to the created portfolio
    */
   createPortfolio(orgId: string, ledgerId: string, input: CreatePortfolioInput): Promise<Portfolio>;
@@ -53,10 +42,6 @@ export interface PortfolioApiClient
   /**
    * Updates an existing portfolio
    *
-   * @param orgId - Organization ID that owns the portfolio
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param id - Portfolio ID to update
-   * @param input - Portfolio update input with properties to change
    * @returns Promise resolving to the updated portfolio
    */
   updatePortfolio(
@@ -69,9 +54,6 @@ export interface PortfolioApiClient
   /**
    * Deletes a portfolio
    *
-   * @param orgId - Organization ID that owns the portfolio
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param id - Portfolio ID to delete
    * @returns Promise resolving when the portfolio is deleted
    */
   deletePortfolio(orgId: string, ledgerId: string, id: string): Promise<void>;

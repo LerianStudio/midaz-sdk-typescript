@@ -28,9 +28,6 @@ export interface PortfoliosService {
   /**
    * Lists portfolios for a ledger with optional filters
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of portfolios
    */
   listPortfolios(
@@ -42,9 +39,6 @@ export interface PortfoliosService {
   /**
    * Gets a portfolio by ID
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Portfolio ID to retrieve
    * @returns Promise resolving to the portfolio
    */
   getPortfolio(orgId: string, ledgerId: string, id: string): Promise<Portfolio>;
@@ -52,9 +46,6 @@ export interface PortfoliosService {
   /**
    * Creates a new portfolio
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param input Portfolio creation input
    * @returns Promise resolving to the created portfolio
    */
   createPortfolio(orgId: string, ledgerId: string, input: CreatePortfolioInput): Promise<Portfolio>;
@@ -62,10 +53,6 @@ export interface PortfoliosService {
   /**
    * Updates an existing portfolio
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Portfolio ID to update
-   * @param input Portfolio update input
    * @returns Promise resolving to the updated portfolio
    */
   updatePortfolio(
@@ -78,9 +65,6 @@ export interface PortfoliosService {
   /**
    * Deletes a portfolio
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Portfolio ID to delete
    * @returns Promise that resolves when the portfolio is deleted
    */
   deletePortfolio(orgId: string, ledgerId: string, id: string): Promise<void>;

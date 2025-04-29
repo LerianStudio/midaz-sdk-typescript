@@ -1,6 +1,4 @@
 /**
- * @file Transaction transformer
- * @description Converts between client and API transaction formats
  */
 
 import { createModelTransformer, ModelTransformer } from '../util/data/model-transformer';
@@ -9,7 +7,6 @@ import { CreateTransactionInput, Transaction } from './transaction';
 /** 
  * Transforms a client-side transaction to the API format
  * 
- * @param input - Client transaction input
  */
 export function toApiTransaction(input: CreateTransactionInput): any {
   // Group operations by type (DEBIT and CREDIT)
@@ -72,7 +69,6 @@ export function toApiTransaction(input: CreateTransactionInput): any {
 /** 
  * Transforms an API transaction to the client format (currently pass-through)
  * 
- * @param apiTransaction - API transaction
  */
 export function toClientTransaction(apiTransaction: any): Transaction {
   // Currently a pass-through since the API response is already in the right format

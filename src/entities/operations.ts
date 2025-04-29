@@ -26,10 +26,6 @@ export interface OperationsService {
   /**
    * Lists operations for an account with optional filters
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param accountId Account ID to retrieve operations for
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of operations
    */
   listOperations(
@@ -42,11 +38,6 @@ export interface OperationsService {
   /**
    * Gets an operation by ID
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param accountId Account ID that contains the operation
-   * @param operationId Operation ID to retrieve
-   * @param transactionId Optional transaction ID that contains the operation
    * @returns Promise resolving to the operation
    */
   getOperation(
@@ -60,11 +51,6 @@ export interface OperationsService {
   /**
    * Updates an existing operation
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param accountId Account ID that contains the operation
-   * @param operationId Operation ID to update
-   * @param input Operation update input
    * @returns Promise resolving to the updated operation
    */
   updateOperation(
@@ -78,10 +64,6 @@ export interface OperationsService {
   /**
    * Gets an operation paginator for iterating through operations
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param accountId Account ID to retrieve operations for
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Operation paginator for iterating through operations
    */
   getOperationPaginator(
@@ -94,10 +76,6 @@ export interface OperationsService {
   /**
    * Iterates through all operations
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param accountId Account ID to retrieve operations for
-   * @param opts List options for sorting and filtering
    * @returns Async generator yielding pages of operations
    */
   iterateOperations(
@@ -110,10 +88,6 @@ export interface OperationsService {
   /**
    * Gets all operations (convenience method that handles pagination)
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param accountId Account ID to retrieve operations for
-   * @param opts List options for sorting and filtering
    * @returns Promise resolving to all operations
    */
   getAllOperations(

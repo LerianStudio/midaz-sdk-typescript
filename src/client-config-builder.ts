@@ -1,6 +1,4 @@
 /**
- * @file Client configuration builder
- * @description Provides a builder pattern for creating MidazClient configuration
  */
 
 import { MidazConfig } from './client';
@@ -57,47 +55,37 @@ const DEFAULT_CONFIG: Partial<MidazConfig> = {
 export interface ClientConfigBuilder {
   /**
    * Set the API key for authentication
-   * @param apiKey - API key for authentication
    */
   withApiKey(apiKey: string): ClientConfigBuilder;
 
   /**
    * Set the auth token for authentication (alternative to API key)
-   * @param authToken - Auth token for authentication
    */
   withAuthToken(authToken: string): ClientConfigBuilder;
 
   /**
    * Set the environment (development, sandbox, production)
    * This will automatically set default base URLs for the environment
-   * @param environment - Environment to connect to
    */
   withEnvironment(environment: 'development' | 'sandbox' | 'production'): ClientConfigBuilder;
 
   /**
    * Set the API version to use for requests
-   * @param apiVersion - API version (e.g., 'v1', 'v2')
    */
   withApiVersion(apiVersion: string): ClientConfigBuilder;
 
   /**
    * Set custom base URLs for services
-   * @param baseUrls - Map of service names to base URLs
    */
   withBaseUrls(baseUrls: Record<string, string>): ClientConfigBuilder;
 
   /**
    * Set timeout for HTTP requests
-   * @param timeoutMs - Timeout in milliseconds
    */
   withTimeout(timeoutMs: number): ClientConfigBuilder;
 
   /**
    * Configure retry behavior
-   * @param maxRetries - Maximum number of retry attempts
-   * @param initialDelay - Initial delay between retries in milliseconds
-   * @param maxDelay - Maximum delay between retries in milliseconds
-   * @param retryableStatusCodes - HTTP status codes that should trigger a retry
    */
   withRetryPolicy(options: {
     maxRetries?: number;
@@ -109,7 +97,6 @@ export interface ClientConfigBuilder {
 
   /**
    * Configure observability (tracing, metrics, logging)
-   * @param options - Observability options
    */
   withObservability(options: {
     enableTracing?: boolean;
@@ -121,13 +108,11 @@ export interface ClientConfigBuilder {
 
   /**
    * Enable debug mode for verbose logging
-   * @param enable - Whether to enable debug mode
    */
   withDebugMode(enable: boolean): ClientConfigBuilder;
 
   /**
    * Set a custom HTTP client
-   * @param httpClient - Custom HTTP client instance
    */
   withHttpClient(httpClient: HttpClient): ClientConfigBuilder;
 
@@ -146,7 +131,6 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
 
   /**
    * Create a new client configuration builder
-   * @param initialConfig - Optional initial configuration to start with
    */
   constructor(initialConfig: Partial<MidazConfig> = {}) {
     this.config = { ...initialConfig };
@@ -258,7 +242,6 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
 
 /**
  * Creates a client configuration builder with an API key
- * @param apiKey - API key for authentication
  * @returns A new client configuration builder
  */
 export function createClientConfigBuilder(apiKey: string): ClientConfigBuilder {
@@ -267,7 +250,6 @@ export function createClientConfigBuilder(apiKey: string): ClientConfigBuilder {
 
 /**
  * Creates a client configuration builder with an auth token
- * @param authToken - Auth token for authentication
  * @returns A new client configuration builder
  */
 export function createClientConfigWithToken(authToken: string): ClientConfigBuilder {
@@ -276,8 +258,6 @@ export function createClientConfigWithToken(authToken: string): ClientConfigBuil
 
 /**
  * Creates a development environment configuration builder
- * @param apiKey - API key for authentication
- * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with development environment defaults
  */
 export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
@@ -289,8 +269,6 @@ export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): Clie
 
 /**
  * Creates a sandbox environment configuration builder
- * @param apiKey - API key for authentication
- * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with sandbox environment defaults
  */
 export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
@@ -301,8 +279,6 @@ export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientCo
 
 /**
  * Creates a production environment configuration builder
- * @param apiKey - API key for authentication
- * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with production environment defaults
  */
 export function createProductionConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
@@ -313,9 +289,6 @@ export function createProductionConfig(apiKey: string, apiVersion = 'v1'): Clien
 
 /**
  * Creates a local development configuration builder
- * @param apiKey - API key for authentication
- * @param port - Base port for local services (onboarding will use this port, transaction will use port+1)
- * @param apiVersion - API version to use (defaults to 'v1')
  * @returns A new client configuration builder with local development defaults
  */
 export function createLocalConfig(apiKey: string, port = 3000, apiVersion = 'v1'): ClientConfigBuilder {

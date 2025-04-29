@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of organization API client
- * @description Implements the organization API client interface using HTTP
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -31,9 +29,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Creates a new HttpOrganizationApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -57,7 +52,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Lists organizations with optional filters
    *
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of organizations
    */
   public async listOrganizations(options?: ListOptions): Promise<ListResponse<Organization>> {
@@ -96,7 +90,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Gets an organization by ID
    *
-   * @param id - Organization ID
    * @returns Promise resolving to the organization
    */
   public async getOrganization(id: string): Promise<Organization> {
@@ -131,7 +124,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Creates a new organization
    *
-   * @param input - Organization creation input
    * @returns Promise resolving to the created organization
    */
   public async createOrganization(input: CreateOrganizationInput): Promise<Organization> {
@@ -176,8 +168,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Updates an existing organization
    *
-   * @param id - Organization ID
-   * @param input - Organization update input
    * @returns Promise resolving to the updated organization
    */
   public async updateOrganization(
@@ -235,7 +225,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Deletes an organization
    *
-   * @param id - Organization ID
    * @returns Promise resolving when the organization is deleted
    */
   public async deleteOrganization(id: string): Promise<void> {
@@ -269,8 +258,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(span: Span, params: Record<string, any>): void {
@@ -286,9 +273,6 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   private recordMetrics(name: string, value: number, tags?: Record<string, any>): void {

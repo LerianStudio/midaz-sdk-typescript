@@ -1,6 +1,4 @@
 /**
- * @file Data utilities barrel file
- * @description Re-exports all data-related utilities including pagination,
  * response helpers, and formatting
  */
 

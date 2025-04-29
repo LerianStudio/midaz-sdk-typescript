@@ -1,6 +1,4 @@
 /**
- * @file Pagination abstraction for the Midaz SDK
- * @description Standardizes pagination interfaces and implementations across all entity types
  */
 
 import { ListMetadata as _ListMetadata, ListOptions, ListResponse } from '../../models/common';
@@ -43,14 +41,12 @@ export interface Paginator<T> {
   /**
    * Processes each page with a callback function
    * 
-   * @param callback - Function to call for each page of items
    */
   forEachPage(callback: (items: T[]) => Promise<void>): Promise<void>;
 
   /**
    * Processes each item with a callback function
    * 
-   * @param callback - Function to call for each item
    */
   forEachItem(callback: (item: T) => Promise<void>): Promise<void>;
 
@@ -203,7 +199,6 @@ export abstract class BasePaginator<T> implements Paginator<T> {
   /**
    * Creates a new BasePaginator
    * 
-   * @param config - Paginator configuration
    */
   constructor(protected readonly config: PaginatorConfig<T>) {
     this.options = config.initialOptions || {};
@@ -226,7 +221,6 @@ export abstract class BasePaginator<T> implements Paginator<T> {
   /**
    * Creates a span for the current operation
    * 
-   * @param operationName - Name of the operation
    * @returns Created span with common attributes
    */
   protected createSpan(operationName: string): Span {
@@ -335,7 +329,6 @@ export abstract class BasePaginator<T> implements Paginator<T> {
   /**
    * Processes each page with a callback function
    * 
-   * @param callback - Function to call for each page of items
    */
   public async forEachPage(callback: (items: T[]) => Promise<void>): Promise<void> {
     const span = this.createSpan('forEachPage');
@@ -360,7 +353,6 @@ export abstract class BasePaginator<T> implements Paginator<T> {
   /**
    * Processes each item with a callback function
    * 
-   * @param callback - Function to call for each item
    */
   public async forEachItem(callback: (item: T) => Promise<void>): Promise<void> {
     const span = this.createSpan('forEachItem');
@@ -487,7 +479,6 @@ export class StandardPaginator<T> extends BasePaginator<T> {
  * Creates a standard paginator for any entity type
  * 
  * @template T - Type of items to paginate
- * @param config - Paginator configuration
  * @returns A new paginator instance
  */
 export function createPaginator<T>(config: PaginatorConfig<T>): Paginator<T> {
@@ -498,7 +489,6 @@ export function createPaginator<T>(config: PaginatorConfig<T>): Paginator<T> {
  * Creates an async generator for iterating through paginated results
  * 
  * @template T - Type of items being paginated
- * @param config - Paginator configuration
  * @returns Async generator yielding pages of items
  */
 export async function* paginateItems<T>(config: PaginatorConfig<T>): AsyncGenerator<T[]> {
@@ -513,7 +503,6 @@ export async function* paginateItems<T>(config: PaginatorConfig<T>): AsyncGenera
  * Fetches all items from a paginated API
  * 
  * @template T - Type of items being paginated
- * @param config - Paginator configuration
  * @returns Promise resolving to an array of all items
  */
 export async function fetchAllItems<T>(config: PaginatorConfig<T>): Promise<T[]> {

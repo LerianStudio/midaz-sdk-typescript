@@ -1,6 +1,4 @@
 /**
- * @file Transaction batch utilities for the Midaz SDK
- * @description Utilities for processing groups of related transactions as batches
  */
 
 import { MidazClient } from '../client';
@@ -123,11 +121,6 @@ export interface TransactionBatchResult {
  * This function processes multiple transactions as a single batch
  * with controlled concurrency, error handling, and recovery.
  * 
- * @param client - Midaz client instance
- * @param organizationId - Organization ID
- * @param ledgerId - Ledger ID
- * @param transactions - Array of transaction inputs
- * @param options - Batch processing options
  * @returns Promise resolving to the batch result
  * 
  * @example
@@ -269,14 +262,6 @@ export async function createTransactionBatch(
  * This function creates deposit transactions for multiple accounts
  * with the same external source and asset.
  * 
- * @param client - Midaz client instance
- * @param organizationId - Organization ID
- * @param ledgerId - Ledger ID
- * @param sourceAccountId - Source account ID (usually external account)
- * @param destinationAccountIds - Array of destination account IDs
- * @param amount - Amount to deposit (same for all accounts)
- * @param assetCode - Asset code
- * @param options - Batch processing options
  * @returns Promise resolving to the batch result
  * 
  * @example
@@ -348,13 +333,6 @@ export async function createDepositBatch(
  * 
  * This function creates transfer transactions between pairs of accounts.
  * 
- * @param client - Midaz client instance
- * @param organizationId - Organization ID
- * @param ledgerId - Ledger ID
- * @param accountPairs - Array of source/destination account pairs
- * @param amounts - Array of amounts (must match accountPairs length)
- * @param assetCode - Asset code
- * @param options - Batch processing options
  * @returns Promise resolving to the batch result
  * 
  * @example

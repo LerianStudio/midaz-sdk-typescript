@@ -1,6 +1,4 @@
 /**
- * @file Pagination utilities for the Midaz SDK
- * @description Provides tools for handling paginated API responses with cursor-based pagination
  */
 
 import { ListMetadata, ListOptions, ListResponse } from '../../models/common';
@@ -141,7 +139,6 @@ export class Paginator<T> implements AsyncIterator<T[]> {
   /**
    * Creates a new Paginator instance
    *
-   * @param options - Configuration options for the paginator
    */
   constructor(options: PaginatorOptions<T>) {
     this.fetchPage = options.fetchPage;
@@ -226,7 +223,6 @@ export class Paginator<T> implements AsyncIterator<T[]> {
  * paginated results using for-await-of loops.
  *
  * @template T - Type of items being paginated
- * @param options - Configuration options for the paginator
  * @returns Async generator yielding pages of items
  *
  * @example
@@ -260,7 +256,6 @@ export async function* paginateItems<T>(options: PaginatorOptions<T>): AsyncGene
  * into a single array.
  *
  * @template T - Type of items being paginated
- * @param options - Configuration options for the paginator
  * @returns Promise resolving to an array of all items
  *
  * @example
@@ -291,8 +286,6 @@ export async function fetchAllItems<T>(options: PaginatorOptions<T>): Promise<T[
  * without having to create a PaginatorOptions object.
  *
  * @template T - The type of items being paginated
- * @param fetchFunction - Function that fetches a page of results
- * @param initialOptions - Initial options for the first page request
  * @returns Promise resolving to an array of all items
  *
  * @example

@@ -1,6 +1,4 @@
 /**
- * @file Rate limiting utilities for the Midaz SDK
- * @description Provides tools for controlling the rate of API requests to prevent throttling and ensure compliance with rate limits
  */
 
 /**
@@ -114,7 +112,6 @@ export class RateLimiter {
   /**
    * Creates a new rate limiter
    *
-   * @param options - Configuration options for the rate limiter
    */
   constructor(options: RateLimiterOptions) {
     // Use environment variables if available
@@ -149,7 +146,6 @@ export class RateLimiter {
    * Executes a function with rate limiting
    *
    * @template T - Type of the function's return value
-   * @param fn - Function to execute with rate limiting
    * @returns Promise resolving to the function's return value
    * @throws Error if the rate limit is exceeded and queueExceeded is false
    */
