@@ -9,350 +9,143 @@ The Midaz SDK enables seamless integration with Midaz's financial services platf
 ## Features
 
 - **Type-Safe API**: Full TypeScript support with accurate type definitions
-- **API Versioning**: Support for different API versions with version negotiation
-- **Comprehensive Error Handling**: Structured error types with detailed information
+- **Builder Pattern**: Fluent interfaces for constructing complex objects
+- **Comprehensive Error Handling**: Sophisticated error handling with recovery mechanisms
 - **Observability**: Built-in tracing, metrics, and logging capabilities
+- **Layered Architecture**: Clear separation between client, entities, API, and model layers
 - **Automatic Retries**: Configurable retry policies for transient failures
-- **Pagination Helpers**: Utilities for handling large dataset queries
-- **Transaction Builders**: Helper functions for creating common transaction types
+- **Concurrency Controls**: Utilities for managing parallel operations with controlled throughput
+- **Caching**: In-memory caching mechanisms for improved performance
 - **Validation**: Extensive input validation with clear error messages
 
 ## Installation
 
 ```bash
 npm install midaz-sdk
+# or
+yarn add midaz-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { MidazClient } from 'midaz-sdk';
+import { createClient } from 'midaz-sdk';
 
 // Initialize the client
-const client = new MidazClient({
+const client = createClient({
   apiKey: 'your-api-key',
   environment: 'sandbox', // Options: 'development', 'sandbox', 'production'
 });
 
-// IMPORTANT: Always use client.entities (not client.entity which is deprecated)
+// Create an asset using the builder pattern
+import { createAssetBuilder } from 'midaz-sdk';
 
-// Use the client to interact with the API
-async function example() {
-  try {
-    // Create an organization
-    const organization = await client.entities.organizations.createOrganization({
-      legalName: 'Acme Inc.',
-      legalDocument: '123456789',
-      doingBusinessAs: 'Acme',
-      address: {
-        line1: '123 Main St',
-        city: 'San Francisco',
-        state: 'CA',
-        zipCode: '94105',
-        country: 'US',
-      }
-    });
-    
-    console.log(`Created organization: ${organization.id}`);
-    
-    // Create a ledger within the organization
-    const ledger = await client.entities.ledgers.createLedger(
-      organization.id,
-      {
-        name: 'Main Ledger'
-      }
-    );
-    
-    console.log(`Created ledger: ${ledger.id}`);
-    
-    // Create accounts
-    const sourceAccount = await client.entities.accounts.createAccount(
-      organization.id,
-      ledger.id,
-      {
-        name: 'Operating Account',
-        alias: 'operating',
-        type: 'deposit'
-      }
-    );
-    
-    const destinationAccount = await client.entities.accounts.createAccount(
-      organization.id,
-      ledger.id,
-      {
-        name: 'Savings Account',
-        alias: 'savings',
-        type: 'savings'
-      }
-    );
-    
-    // Create a transfer transaction
-    const transaction = await client.entities.transactions.createTransaction(
-      organization.id,
-      ledger.id,
-      {
-        description: 'Monthly transfer',
-        operations: [
-          {
-            accountId: sourceAccount.id,
-            type: 'DEBIT',
-            amount: { value: 1000, assetCode: 'USD', scale: 2 }
-          },
-          {
-            accountId: destinationAccount.id,
-            type: 'CREDIT',
-            amount: { value: 1000, assetCode: 'USD', scale: 2 }
-          }
-        ],
-        metadata: { category: 'internal-transfer' }
-      }
-    );
-    
-    console.log(`Created transaction: ${transaction.id}`);
-    
-    // Check account balances
-    const balances = await client.entities.balances.listBalances(
-      organization.id,
-      ledger.id,
-      { filter: { accountId: destinationAccount.id } }
-    );
-    
-    console.log('Account balances:', balances.items);
-  } catch (error) {
-    if (error.category && error.code) {
-      console.error(`Error ${error.category}/${error.code}: ${error.message}`);
-    } else {
-      console.error('Unexpected error:', error);
-    }
+const assetInput = createAssetBuilder('US Dollar', 'USD')
+  .withType('currency')
+  .withMetadata({ precision: 2, symbol: '$' })
+  .build();
+
+const asset = await client.entities.assets.createAsset('org_123', 'ledger_456', assetInput);
+
+// Create an account
+import { createAccountBuilder } from 'midaz-sdk';
+
+const accountInput = createAccountBuilder('Savings Account', 'USD')
+  .withType('savings')
+  .withAlias('personal-savings')
+  .build();
+
+const account = await client.entities.accounts.createAccount('org_123', 'ledger_456', accountInput);
+
+// Create a transaction
+import { createTransactionBuilder } from 'midaz-sdk';
+
+const transactionInput = createTransactionBuilder()
+  .withCode('payment_001')
+  .withOperations([
+    {
+      accountId: 'source_account_id',
+      assetCode: 'USD',
+      amount: 100 * 100, // $100.00
+      type: 'debit',
+    },
+    {
+      accountId: 'destination_account_id',
+      assetCode: 'USD',
+      amount: 100 * 100, // $100.00
+      type: 'credit',
+    },
+  ])
+  .withMetadata({ purpose: 'Monthly payment' })
+  .build();
+
+// Use enhanced error recovery for critical operations
+import { withEnhancedRecovery } from 'midaz-sdk/util/error';
+
+const result = await withEnhancedRecovery(
+  () => client.entities.transactions.createTransaction('org_123', 'ledger_456', transactionInput),
+  {
+    maxRetries: 3,
+    enableSmartRecovery: true,
   }
-}
-
-example();
-```
-
-## Transaction Helpers
-
-The SDK provides helper functions for creating common transaction types:
-
-```typescript
-import { 
-  createDepositTransaction,
-  createWithdrawalTransaction,
-  createTransferTransaction
-} from 'midaz-sdk';
-
-// Create a deposit transaction
-const depositTx = createDepositTransaction(
-  '@external/USD',  // Source (external account)
-  'acc_12345',      // Destination account
-  1000,             // Amount
-  'USD',            // Asset code
-  2,                // Scale (2 decimal places)
-  'Customer deposit'
 );
 
-// Create a withdrawal transaction
-const withdrawalTx = createWithdrawalTransaction(
-  'acc_12345',      // Source account
-  '@external/USD',  // Destination (external account)
-  500,              // Amount
-  'USD',            // Asset code
-  2,                // Scale
-  'Customer withdrawal'
-);
-
-// Create a transfer transaction
-const transferTx = createTransferTransaction(
-  'acc_savings',    // Source account
-  'acc_checking',   // Destination account
-  200,              // Amount
-  'USD',            // Asset code
-  2,                // Scale
-  'Monthly transfer'
-);
-
-// Execute transactions
-await client.entities.transactions.createTransaction(orgId, ledgerId, depositTx);
-await client.entities.transactions.createTransaction(orgId, ledgerId, withdrawalTx);
-await client.entities.transactions.createTransaction(orgId, ledgerId, transferTx);
+// Clean up resources when done
+client.close();
 ```
-
-## Working with Large Datasets
-
-For handling large collections of data, the SDK provides paginator objects:
-
-```typescript
-// Create a transaction paginator
-const paginator = client.entities.transactions.getTransactionPaginator(
-  organizationId,
-  ledgerId,
-  { limit: 100 }
-);
-
-// Process transactions page by page
-while (await paginator.hasNext()) {
-  const transactions = await paginator.next();
-  for (const transaction of transactions) {
-    // Process each transaction
-    console.log(`Processing transaction ${transaction.id}`);
-  }
-}
-
-// Alternatively, use async iteration
-for await (const transactions of client.entities.transactions.iterateTransactions(
-  organizationId,
-  ledgerId
-)) {
-  for (const transaction of transactions) {
-    // Process each transaction
-    console.log(`Processing transaction ${transaction.id}`);
-  }
-}
-```
-
-## Error Handling
-
-The SDK provides structured error handling:
-
-```typescript
-try {
-  const account = await client.entities.accounts.getAccount(
-    organizationId,
-    ledgerId,
-    'non-existent-id'
-  );
-} catch (error) {
-  if (error.category === 'not_found') {
-    console.log('Account not found');
-  } else if (error.category === 'validation') {
-    console.log(`Validation error: ${error.message}`);
-    if (error.fieldErrors) {
-      for (const [field, errors] of Object.entries(error.fieldErrors)) {
-        console.log(`- ${field}: ${errors.join(', ')}`);
-      }
-    }
-  } else if (error.category === 'network') {
-    console.log(`Network error: ${error.message}`);
-    // Implement retry logic or fallback
-  } else {
-    console.log(`Unexpected error: ${error.message}`);
-  }
-}
-```
-
-## Advanced Configuration
-
-The SDK supports advanced configuration options:
-
-```typescript
-const client = new MidazClient({
-  // Authentication
-  apiKey: 'your-api-key',
-  
-  // Environment
-  environment: 'sandbox', // 'development', 'sandbox', or 'production'
-  
-  // API Version
-  apiVersion: 'v1', // API version to use (defaults to 'v1')
-  
-  // Custom base URLs
-  baseUrls: {
-    onboarding: 'https://custom.onboarding.api.example.com',
-    transaction: 'https://custom.transaction.api.example.com'
-  },
-  
-  // Network settings
-  timeout: 60000, // 60 seconds
-  retries: {
-    maxRetries: 5,
-    initialDelay: 200,
-    maxDelay: 3000,
-    retryableStatusCodes: [408, 429, 500, 502, 503, 504],
-    retryCondition: (error) => error.message.includes('timeout')
-  },
-  
-  // Observability
-  observability: {
-    enableTracing: true,
-    enableMetrics: true,
-    enableLogging: true,
-    serviceName: 'my-application',
-    collectorEndpoint: 'http://localhost:4318'
-  }
-});
-```
-
-## SDK Documentation
-
-The SDK provides comprehensive entity APIs:
-
-| Entity        | Description                                       |
-| ------------- | ------------------------------------------------- |
-| Organizations | Manage companies or business entities             |
-| Ledgers       | Financial record-keeping systems                  |
-| Accounts      | Individual accounts within ledgers                |
-| Transactions  | Financial movements between accounts              |
-| Operations    | Individual debits and credits within transactions |
-| Assets        | Currencies or other value stores                  |
-| Asset Rates   | Exchange rates between assets                     |
-| Balances      | Account balances for specific assets              |
-| Portfolios    | Collections of assets                             |
-| Segments      | Subdivisions within portfolios                    |
-
-Each entity service follows a consistent pattern with methods for creating, retrieving, updating, and listing resources.
-
-## Development
-
-For contributors to the Midaz SDK:
-
-```bash
-# Install dependencies
-npm install
-
-# Build the SDK
-npm run build
-
-# Run tests
-npm test
-
-# Run linter
-npm run lint
-
-# Format code
-npm run format
-
-# Generate documentation
-npm run docs
-
-# Run example workflow
-npm run example:workflow
-```
-
-## Continuous Integration
-
-This repository uses GitHub Actions for continuous integration and deployment:
-
-- **CI Pipeline**: Automatically runs on pull requests and pushes to main branch.
-  - Builds the SDK with multiple Node.js versions
-  - Runs all tests
-  - Checks code formatting and linting
-  - Generates documentation
-
-- **Dependency Scanning**: Weekly checks for vulnerabilities in dependencies.
-
-- **Release Pipeline**: Automatically publishes to npm when a new release is created.
-  - Builds and tests the SDK before publishing
-  - Deploys documentation to GitHub Pages
-  - Generates changelog from commits
-
-Contributors should ensure all tests pass locally before submitting a pull request.
 
 ## Documentation
 
-- [API Version Migration Guide](./docs/api-version-migration-guide.md): Guide for migrating between API versions
-- [JSDoc Documentation](./docs/jsdoc/): Detailed API documentation for all classes and methods
-- [TypeDoc Documentation](./docs/typedoc/): TypeScript interface documentation
+For detailed documentation, see the [SDK Documentation](./docs/README.md) which includes:
+
+### Architecture
+
+- [Overview](./docs/architecture/overview.md) - High-level architecture overview and design principles
+- [Service Layer](./docs/architecture/service-layer.md) - Service layer design and patterns
+- [Error Handling](./docs/architecture/error-handling.md) - Error handling architecture and recovery mechanisms
+- [Data Modeling](./docs/architecture/data-modeling.md) - Data modeling approach and validation
+- [Client Interface](./docs/architecture/client-interface.md) - Client interface design and usage
+
+### Core Concepts
+
+- [Builder Pattern](./docs/core-concepts/builder-pattern.md) - How to use builders for creating complex objects
+- [Error Handling](./docs/core-concepts/error-handling.md) - Error handling and recovery strategies
+
+### Entities
+
+- [Assets](./docs/entities/assets.md) - Working with assets (currencies, commodities, etc.)
+- [Accounts](./docs/entities/accounts.md) - Working with accounts
+- [Transactions](./docs/entities/transactions.md) - Creating and managing transactions
+- [Organizations](./docs/entities/organizations.md) - Working with organizations
+- [Ledgers](./docs/entities/ledgers.md) - Managing ledgers
+- [Asset Rates](./docs/entities/asset-rates.md) - Managing exchange rates between assets
+- [Balances](./docs/entities/balances.md) - Working with account balances
+- [Operations](./docs/entities/operations.md) - Managing operations that make up transactions
+- [Portfolios](./docs/entities/portfolios.md) - Working with portfolios
+- [Segments](./docs/entities/segments.md) - Managing segments for analytics and grouping
+
+### Utilities
+
+- [Account Helpers](./docs/utilities/account-helpers.md) - Helper functions for account operations
+- [Cache](./docs/utilities/cache.md) - Caching mechanisms for improved performance
+- [Concurrency](./docs/utilities/concurrency.md) - Utilities for managing concurrent operations
+- [Config](./docs/utilities/config.md) - Configuration management
+- [Data](./docs/utilities/data.md) - Data formatting and pagination utilities
+- [Error Handling](./docs/utilities/error-handling.md) - Error handling utilities and enhanced recovery
+- [HTTP Client](./docs/utilities/http-client.md) - Low-level HTTP client for API communication
+- [Network](./docs/utilities/network.md) - High-level networking utilities and retry mechanisms
+- [Observability](./docs/utilities/observability.md) - Tracing, metrics, and logging utilities
+- [Pagination](./docs/utilities/pagination.md) - Utilities for handling paginated responses
+- [Validation](./docs/utilities/validation.md) - Data validation utilities
+
+## TypeScript Support
+
+The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 4.5 or later.
+
+## Contributing
+
+Contributions are welcome! Please see our [Contributing Guide](./CONTRIBUTING.md) for details on how to contribute to the Midaz SDK.
 
 ## License
 
-Apache-2.0
+This project is licensed under the Apache 2.0 License - see the [LICENSE](./LICENSE) file for details.

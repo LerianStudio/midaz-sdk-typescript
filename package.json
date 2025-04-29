@@ -18,7 +18,17 @@
     "docs": "npm run docs:typedoc && npm run docs:jsdoc",
     "example:workflow": "npx ts-node examples/workflow.ts",
     "example:client-config": "npx ts-node examples/client-config-example.ts",
-    "example:api-versioning": "npx ts-node examples/api-versioning-example.ts"
+    "example:api-versioning": "npx ts-node examples/api-versioning-example.ts",
+    "example:cache": "npx ts-node examples/cache-example.ts",
+    "example:concurrency": "npx ts-node examples/concurrency-example.ts",
+    "example:validation": "npx ts-node examples/validation-example.ts",
+    "example:error-handling": "npx ts-node examples/error-handling-example.ts",
+    "example:network": "npx ts-node examples/network-example.ts",
+    "example:data": "npx ts-node examples/data-example.ts",
+    "example:observability": "npx ts-node examples/observability-example.ts",
+    "example:network-example": "npx ts-node examples/network-example.ts",
+    "example:data-example": "npx ts-node examples/data-example.ts",
+    "example:version-transformer-example": "npx ts-node examples/version-transformer-example.ts"
   },
   "keywords": [
     "midaz",
@@ -34,29 +44,32 @@
   "author": "Lerian Studio",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.25.1",
     "@types/jest": "^29.5.14",
-    "@types/node": "^18.19.86",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
+    "@types/node": "^22.15.3",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
     "dotenv": "^16.5.0",
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "^10.1.2",
+    "eslint": "^9.25.1",
+    "eslint-import-resolver-typescript": "^4.3.4",
     "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-prettier": "^5.2.6",
     "jest": "^29.5.0",
     "jsdoc": "^4.0.4",
     "prettier": "^3.5.3",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.2",
-    "typedoc": "^0.24.1",
-    "typescript": "^5.0.3",
+    "typedoc": "^0.28.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.1",
     "uuid": "^11.1.0"
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
+    "axios": "^1.9.0",
     "node-fetch": "^3.3.2"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.18.0 <23"
   }
 }
