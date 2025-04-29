@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of asset API client
- * @description Implements the asset API client interface using HTTP
  */
 
 import { Asset, CreateAssetInput, UpdateAssetInput } from '../../models/asset';
@@ -17,7 +15,6 @@ import { UrlBuilder } from '../url-builder';
 
 /**
  * @inheritdoc
- * @implements {AssetApiClient}
  */
 export class HttpAssetApiClient implements AssetApiClient {
   private readonly observability: Observability;
@@ -25,9 +22,6 @@ export class HttpAssetApiClient implements AssetApiClient {
   /**
    * Creates a new HttpAssetApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -281,8 +275,6 @@ export class HttpAssetApiClient implements AssetApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(
@@ -302,17 +294,11 @@ export class HttpAssetApiClient implements AssetApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags with proper typing (string, number, or boolean values)
    * @private
    */
   private recordMetrics(

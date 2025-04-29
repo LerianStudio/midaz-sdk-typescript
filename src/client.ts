@@ -143,7 +143,6 @@ export class MidazClient {
   /**
    * Creates a new Midaz client with the provided configuration
    *
-   * @param configOrBuilder Client configuration or a configuration builder
    */
   constructor(configOrBuilder: MidazConfig | ClientConfigBuilder) {
     // Convert builder to config if necessary

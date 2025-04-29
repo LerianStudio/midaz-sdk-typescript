@@ -1,6 +1,4 @@
 /**
- * @file Ledger API client interface
- * @description Defines the interface for ledger API operations
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -18,8 +16,6 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
   /**
    * Lists ledgers for a specific organization
    *
-   * @param orgId - Organization ID
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of ledgers
    */
   listLedgers(orgId: string, options?: ListOptions): Promise<ListResponse<Ledger>>;
@@ -27,8 +23,6 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
   /**
    * Gets a ledger by ID
    *
-   * @param orgId - Organization ID
-   * @param id - Ledger ID
    * @returns Promise resolving to the ledger
    */
   getLedger(orgId: string, id: string): Promise<Ledger>;
@@ -36,8 +30,6 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
   /**
    * Creates a new ledger
    *
-   * @param orgId - Organization ID
-   * @param input - Ledger creation input
    * @returns Promise resolving to the created ledger
    */
   createLedger(orgId: string, input: CreateLedgerInput): Promise<Ledger>;
@@ -45,9 +37,6 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
   /**
    * Updates an existing ledger
    *
-   * @param orgId - Organization ID
-   * @param id - Ledger ID
-   * @param input - Ledger update input
    * @returns Promise resolving to the updated ledger
    */
   updateLedger(orgId: string, id: string, input: UpdateLedgerInput): Promise<Ledger>;
@@ -55,8 +44,6 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
   /**
    * Deletes a ledger
    *
-   * @param orgId - Organization ID
-   * @param id - Ledger ID
    * @returns Promise resolving when the ledger is deleted
    */
   deleteLedger(orgId: string, id: string): Promise<void>;

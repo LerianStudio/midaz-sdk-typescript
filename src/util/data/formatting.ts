@@ -1,6 +1,4 @@
 /**
- * @file Formatting utilities for the Midaz SDK
- * @description Provides utilities for formatting financial values, dates, balances, and other data types
  */
 
 /**
@@ -9,9 +7,6 @@
  * Converts an integer amount and scale to a properly formatted decimal string.
  * For example, an amount of 1000 with a scale of 100 would be formatted as "10.00".
  *
- * @param amount - The integer amount to format
- * @param scale - The scale factor (e.g., 100 for 2 decimal places, 1000 for 3 decimal places)
- * @param options - Optional formatting options
  * @returns Formatted balance string with proper decimal places
  *
  * @example
@@ -70,7 +65,6 @@ export function formatBalance(
 /**
  * Calculates the decimal places from a scale factor
  *
- * @param scale - The scale factor (e.g., 100 for 2 decimal places)
  * @returns The number of decimal places
  *
  * @example
@@ -89,10 +83,6 @@ export function getDecimalPlacesFromScale(scale: number): number {
 /**
  * Formats an amount as a human-readable string with asset code
  *
- * @param amount - The integer amount to format
- * @param scale - The scale factor
- * @param assetCode - The asset code (e.g., "USD", "BTC")
- * @param options - Optional formatting options
  * @returns Formatted amount with asset code
  *
  * @example
@@ -136,9 +126,6 @@ export function formatAmountWithAsset(
  * This is an enhanced version of formatBalance that handles various input types
  * and edge cases, making it safer for use in UIs and reports.
  *
- * @param value - The value to format (can be string, number, or undefined)
- * @param scale - The scale factor (can be string, number, or undefined)
- * @param options - Optional formatting options
  * @returns Formatted balance string with proper decimal places
  *
  * @example
@@ -199,8 +186,6 @@ export function formatBalanceSafely(
 /**
  * Formats an account balance for display with asset code, available and on-hold amounts
  *
- * @param balance - The balance object to format
- * @param options - Optional formatting options
  * @returns Formatted balance object with display properties
  *
  * @example

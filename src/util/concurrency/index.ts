@@ -1,6 +1,4 @@
 /**
- * @file Concurrency utilities barrel file
- * @description Re-exports all concurrency-related utilities
  */
 
 // Export from concurrency.ts

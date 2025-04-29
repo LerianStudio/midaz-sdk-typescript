@@ -14,7 +14,6 @@ import { CreateAccountInput, UpdateAccountInput } from '../account';
 /**
  * Validates a CreateAccountInput object
  * 
- * @param input - The CreateAccountInput object to validate
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateCreateAccountInput(input: CreateAccountInput): ValidationResult {
@@ -89,7 +88,6 @@ export function validateCreateAccountInput(input: CreateAccountInput): Validatio
 /**
  * Validates an UpdateAccountInput object
  * 
- * @param input - The UpdateAccountInput object to validate
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateUpdateAccountInput(input: UpdateAccountInput): ValidationResult {

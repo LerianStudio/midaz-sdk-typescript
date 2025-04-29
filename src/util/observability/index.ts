@@ -1,6 +1,4 @@
 /**
- * @file Observability utilities barrel file
- * @description Re-exports all observability-related utilities
  */
 
 // Export from observability.ts

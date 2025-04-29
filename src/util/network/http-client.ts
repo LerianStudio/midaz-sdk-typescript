@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /**
- * @file HTTP client implementation for the Midaz SDK
- * @description Provides a robust HTTP client with retry logic, error handling, and observability
  */
 
 import { createHash } from 'crypto';
@@ -222,50 +220,36 @@ export interface HttpClientConfig {
 export type HttpClientInterface = {
   /**
    * Makes a GET request
-   * @param url The URL to make the request to
-   * @param options Optional request options
    * @returns A promise that resolves to the response
    */
   get<T>(url: string, options?: RequestOptions): Promise<T>;
 
   /**
    * Makes a POST request
-   * @param url The URL to make the request to
-   * @param data The data to send in the request body
-   * @param options Optional request options
    * @returns A promise that resolves to the response
    */
   post<T>(url: string, data?: any, options?: RequestOptions): Promise<T>;
 
   /**
    * Makes a PUT request
-   * @param url The URL to make the request to
-   * @param data The data to send in the request body
-   * @param options Optional request options
    * @returns A promise that resolves to the response
    */
   put<T>(url: string, data?: any, options?: RequestOptions): Promise<T>;
 
   /**
    * Makes a PATCH request
-   * @param url The URL to make the request to
-   * @param data The data to send in the request body
-   * @param options Optional request options
    * @returns A promise that resolves to the response
    */
   patch<T>(url: string, data?: any, options?: RequestOptions): Promise<T>;
 
   /**
    * Makes a DELETE request
-   * @param url The URL to make the request to
-   * @param options Optional request options
    * @returns A promise that resolves to the response
    */
   delete<T>(url: string, options?: RequestOptions): Promise<T>;
 
   /**
    * Gets the base URL for a specific service
-   * @param service The service name
    * @returns The base URL for the service
    */
   getBaseUrl(service: string): string;
@@ -277,7 +261,6 @@ export type HttpClientInterface = {
    * It's particularly useful for updating base URLs and authentication credentials
    * without having to recreate the client.
    *
-   * @param config - New configuration options
    */
   updateConfig(config: Partial<HttpClientConfig>): void;
 
@@ -316,7 +299,6 @@ export type HttpClientInterface = {
 /**
  * Creates a new HTTP client
  *
- * @param config - Configuration options for the client
  */
 export class HttpClient implements HttpClientInterface {
   /**
@@ -451,7 +433,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Creates a new HTTP client
    *
-   * @param config - Configuration options for the client
    */
   constructor(config: HttpClientConfig = {}) {
     // Get the config service instance
@@ -538,8 +519,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Makes a GET request
    *
-   * @param url - URL to request, can include the service prefix (e.g., 'onboarding/organizations')
-   * @param options - Request options
    * @returns Promise resolving to the response data
    *
    * @example
@@ -596,9 +575,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Makes a POST request
    *
-   * @param url - URL to request, can include the service prefix (e.g., 'onboarding/organizations')
-   * @param data - Data to send in the request body
-   * @param options - Request options
    * @returns Promise resolving to the response data
    *
    * @example
@@ -632,9 +608,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Makes a PUT request
    *
-   * @param url - URL to request, can include the service prefix (e.g., 'onboarding/organizations/org_123')
-   * @param data - Data to send in the request body
-   * @param options - Request options
    * @returns Promise resolving to the response data
    *
    * @example
@@ -667,9 +640,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Makes a PATCH request
    *
-   * @param url - URL to request, can include the service prefix (e.g., 'onboarding/organizations/org_123')
-   * @param data - Data to send in the request body
-   * @param options - Request options
    * @returns Promise resolving to the response data
    *
    * @example
@@ -702,8 +672,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Makes a DELETE request
    *
-   * @param url - URL to request, can include the service prefix (e.g., 'onboarding/organizations/org_123')
-   * @param options - Request options
    * @returns Promise resolving to the response data
    *
    * @example
@@ -734,7 +702,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Gets the base URL for a specific service
    *
-   * @param service The service name
    * @returns The base URL for the service
    */
   public getBaseUrl(service: string): string {
@@ -748,7 +715,6 @@ export class HttpClient implements HttpClientInterface {
    * It's particularly useful for updating base URLs and authentication credentials
    * without having to recreate the client.
    *
-   * @param config - New configuration options
    */
   public updateConfig(config: Partial<HttpClientConfig>): void {
     // Update base URLs if provided
@@ -971,10 +937,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Makes an HTTP request with retry logic
    *
-   * @param method - HTTP method (GET, POST, PUT, PATCH, DELETE)
-   * @param url - URL to request, can include the service prefix (e.g., 'onboarding/organizations')
-   * @param data - Data to send in the request body
-   * @param options - Request options
    * @returns Promise resolving to the response data
    * @private
    */
@@ -1080,7 +1042,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Builds the full URL for a request
    *
-   * @param url - URL to build, can include the service prefix (e.g., 'onboarding/organizations')
    * @returns Full URL
    * @private
    */
@@ -1107,8 +1068,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Builds headers for a request
    *
-   * @param method - HTTP method
-   * @param options - Request options
    * @returns Headers object
    * @private
    */
@@ -1135,7 +1094,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Builds a query string from parameters
    *
-   * @param params - Query parameters
    * @returns Query string starting with '?'
    * @private
    */
@@ -1169,7 +1127,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Parses the response body based on content type
    *
-   * @param response - Fetch response object
    * @returns Parsed response body
    * @private
    */
@@ -1191,9 +1148,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Generates a cache key for a request
    *
-   * @param method - HTTP method
-   * @param url - URL
-   * @param params - Query parameters
    * @returns Cache key
    * @private
    */
@@ -1220,7 +1174,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Creates a DNS lookup function with caching
    *
-   * @param ttl - Cache TTL in milliseconds
    * @returns Lookup function for the http.Agent
    * @private
    */
@@ -1263,8 +1216,6 @@ export class HttpClient implements HttpClientInterface {
   /**
    * Starts a span for tracing
    *
-   * @param name - Span name
-   * @param attributes - Span attributes
    * @returns Span object
    * @private
    */

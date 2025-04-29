@@ -1,6 +1,4 @@
 /**
- * @file Portfolio validation functions for the Midaz SDK
- * @description Provides validation functions to ensure portfolio data meets required format and business rules
  */
 
 import {
@@ -23,7 +21,6 @@ import { CreatePortfolioInput, UpdatePortfolioInput } from '../portfolio';
  * and performance tracking purposes. The entityId links the portfolio to a client,
  * customer, department, or other entity.
  *
- * @param input - The CreatePortfolioInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example
@@ -90,7 +87,6 @@ export function validateCreatePortfolioInput(input: CreatePortfolioInput): Valid
  * Note that unlike creation, updates don't require any specific fields as long as at least
  * one valid field is being updated. Also, the entityId cannot be changed after portfolio creation.
  *
- * @param input - The UpdatePortfolioInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example

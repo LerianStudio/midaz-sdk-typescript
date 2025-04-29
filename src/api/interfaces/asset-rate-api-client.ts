@@ -1,6 +1,4 @@
 /**
- * @file Asset rate API client interface
- * @description Defines the interface for asset rate API operations
  */
 
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
@@ -18,10 +16,6 @@ export interface AssetRateApiClient
   /**
    * Retrieves the exchange rate between two assets
    *
-   * @param organizationId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param sourceAssetCode - Source asset code
-   * @param destinationAssetCode - Destination asset code
    * @returns Promise resolving to the asset rate
    */
   getAssetRate(
@@ -34,9 +28,6 @@ export interface AssetRateApiClient
   /**
    * Creates a new asset rate or updates an existing one
    *
-   * @param organizationId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param input - Asset rate input with all required fields
    * @returns Promise resolving to the created or updated asset rate
    */
   createOrUpdateAssetRate(

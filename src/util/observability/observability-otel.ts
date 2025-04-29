@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /**
- * @file OpenTelemetry implementation for the Midaz SDK observability system
- * @description Provides OpenTelemetry-compatible implementations of tracing, metrics, and logging
  *
  * This file contains the OpenTelemetry implementation of the observability system.
  * In a real implementation, this would use the actual OpenTelemetry libraries.
@@ -20,8 +18,6 @@ export interface Tracer {
   /**
    * Starts a new span for tracking an operation
    *
-   * @param name - Name of the operation being traced
-   * @param options - Optional configuration for the span
    * @returns A new OpenTelemetry span instance
    */
   startSpan(name: string, options?: any): OTelSpan;
@@ -39,15 +35,12 @@ export interface OTelSpan {
    *
    * Attributes provide additional context about the operation being traced.
    *
-   * @param key - Name of the attribute
-   * @param value - Value of the attribute (string, number, or boolean)
    */
   setAttribute(key: string, value: string | number | boolean): void;
 
   /**
    * Records an exception/error that occurred during the operation
    *
-   * @param error - Error object to record
    */
   recordException(error: Error): void;
 
@@ -56,8 +49,6 @@ export interface OTelSpan {
    *
    * The status indicates whether the operation completed successfully or with an error.
    *
-   * @param code - Status code ("ok" or "error")
-   * @param message - Optional message explaining the status
    */
   setStatus(code: 'ok' | 'error', message?: string): void;
 
@@ -81,8 +72,6 @@ export interface Meter {
    *
    * Counters track values that only increase over time, like request counts.
    *
-   * @param name - Name of the counter
-   * @param options - Optional configuration for the counter
    * @returns A counter metric
    */
   createCounter(name: string, options?: any): Counter;
@@ -92,8 +81,6 @@ export interface Meter {
    *
    * Histograms track distributions of values, like request durations.
    *
-   * @param name - Name of the histogram
-   * @param options - Optional configuration for the histogram
    * @returns A histogram metric
    */
   createHistogram(name: string, options?: any): Histogram;
@@ -108,8 +95,6 @@ export interface Counter {
   /**
    * Adds a value to the counter
    *
-   * @param value - Value to add (must be non-negative)
-   * @param attributes - Optional attributes to associate with the measurement
    */
   add(value: number, attributes?: Record<string, any>): void;
 }
@@ -123,8 +108,6 @@ export interface Histogram {
   /**
    * Records a value in the histogram
    *
-   * @param value - Value to record
-   * @param attributes - Optional attributes to associate with the measurement
    */
   record(value: number, attributes?: Record<string, any>): void;
 }
@@ -139,32 +122,24 @@ export interface Logger {
   /**
    * Logs a debug message
    *
-   * @param message - Message to log
-   * @param attributes - Optional attributes to associate with the log
    */
   debug(message: string, attributes?: Record<string, any>): void;
 
   /**
    * Logs an info message
    *
-   * @param message - Message to log
-   * @param attributes - Optional attributes to associate with the log
    */
   info(message: string, attributes?: Record<string, any>): void;
 
   /**
    * Logs a warning message
    *
-   * @param message - Message to log
-   * @param attributes - Optional attributes to associate with the log
    */
   warn(message: string, attributes?: Record<string, any>): void;
 
   /**
    * Logs an error message
    *
-   * @param message - Message to log
-   * @param attributes - Optional attributes to associate with the log
    */
   error(message: string, attributes?: Record<string, any>): void;
 }
@@ -182,7 +157,6 @@ class OpenTelemetrySpan implements Span {
   /**
    * Creates a new OpenTelemetry span adapter
    *
-   * @param span - The underlying OpenTelemetry span
    */
   constructor(span: OTelSpan) {
     this.span = span;
@@ -191,8 +165,6 @@ class OpenTelemetrySpan implements Span {
   /**
    * Sets a span attribute
    *
-   * @param key - Attribute key
-   * @param value - Attribute value
    */
   setAttribute(key: string, value: string | number | boolean): void {
     this.span.setAttribute(key, value);
@@ -201,7 +173,6 @@ class OpenTelemetrySpan implements Span {
   /**
    * Records an exception
    *
-   * @param error - Error to record
    */
   recordException(error: Error): void {
     this.span.recordException(error);
@@ -210,8 +181,6 @@ class OpenTelemetrySpan implements Span {
   /**
    * Sets the span status
    *
-   * @param status - Status code
-   * @param message - Optional status message
    */
   setStatus(status: 'ok' | 'error', message?: string): void {
     this.span.setStatus(status, message);
@@ -259,7 +228,6 @@ export class OpenTelemetryProvider {
   /**
    * Creates a new OpenTelemetry provider
    *
-   * @param options - Observability configuration options
    */
   constructor(options: ObservabilityOptions) {
     // Store options for later use
@@ -284,7 +252,6 @@ export class OpenTelemetryProvider {
   /**
    * Initializes OpenTelemetry tracing
    *
-   * @param options - Observability configuration options
    * @returns OpenTelemetry tracer
    * @private
    */
@@ -341,7 +308,6 @@ export class OpenTelemetryProvider {
   /**
    * Initializes OpenTelemetry metrics
    *
-   * @param options - Observability configuration options
    * @returns OpenTelemetry meter
    * @private
    */
@@ -385,7 +351,6 @@ export class OpenTelemetryProvider {
   /**
    * Initializes OpenTelemetry logging
    *
-   * @param options - Observability configuration options
    * @returns OpenTelemetry logger
    * @private
    */
@@ -450,8 +415,6 @@ export class OpenTelemetryProvider {
   /**
    * Starts a new span
    *
-   * @param name - Name of the span
-   * @param attributes - Initial attributes for the span
    * @returns A span object that implements the Midaz SDK span interface
    */
   startSpan(name: string, attributes: Record<string, any> = {}): Span {
@@ -466,9 +429,6 @@ export class OpenTelemetryProvider {
   /**
    * Records a metric
    *
-   * @param name - Name of the metric
-   * @param value - Value of the metric
-   * @param attributes - Attributes for the metric
    */
   recordMetric(name: string, value: number, attributes: Record<string, any> = {}): void {
     if (!this.meter) {
@@ -488,9 +448,6 @@ export class OpenTelemetryProvider {
   /**
    * Logs a message
    *
-   * @param level - Log level
-   * @param message - Log message
-   * @param attributes - Additional attributes for the log
    */
   log(
     level: 'debug' | 'info' | 'warn' | 'error',

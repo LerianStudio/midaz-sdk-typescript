@@ -1,6 +1,4 @@
 /**
- * @file API client factory
- * @description Factory for creating API clients for service implementations
  */
 
 import { MidazConfig } from '../client';
@@ -42,9 +40,6 @@ export class ApiFactory {
   /**
    * Creates a new ApiFactory
    *
-   * @param httpClient - HTTP client for API requests
-   * @param config - Midaz client configuration
-   * @param observability - Optional observability provider
    */
   constructor(
     private readonly httpClient: HttpClient,

@@ -1,6 +1,4 @@
 /**
- * @file Balances service implementation for the Midaz SDK
- * @description Implements the BalancesService interface for managing account balances within the Midaz system
  */
 
 import { BalanceApiClient } from '../../api/interfaces/balance-api-client';
@@ -21,7 +19,6 @@ import { BalancesService } from '../balances';
  * of that asset held in the account. Balances are automatically updated when transactions
  * affect the associated account.
  *
- * @implements {BalancesService}
  *
  * @example
  * ```typescript
@@ -46,8 +43,6 @@ export class BalancesServiceImpl implements BalancesService {
   /**
    * Creates a new BalancesServiceImpl
    *
-   * @param balanceApiClient - Balance API client for making API requests
-   * @param observability - Optional observability provider for tracing and metrics
    */
   constructor(private readonly balanceApiClient: BalanceApiClient, observability?: Observability) {
     // Initialize observability with service name
@@ -62,9 +57,6 @@ export class BalancesServiceImpl implements BalancesService {
    * Retrieves a paginated list of balances within the specified organization and ledger.
    * The results can be filtered, sorted, and paginated using the options parameter.
    *
-   * @param orgId - Organization ID that owns the balances
-   * @param ledgerId - Ledger ID that contains the balances
-   * @param opts - List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    *
    * @throws Error if organization ID or ledger ID is missing
@@ -133,10 +125,6 @@ export class BalancesServiceImpl implements BalancesService {
    * specified organization and ledger. Most accounts will have only one balance,
    * but some may have multiple balances for different purposes or time periods.
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID to retrieve balances for
-   * @param opts - List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    *
    * @throws Error if organization ID, ledger ID, or account ID is missing
@@ -214,9 +202,6 @@ export class BalancesServiceImpl implements BalancesService {
    * Retrieves a single balance by its unique identifier within the specified
    * organization and ledger.
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to retrieve
    * @returns Promise resolving to the balance
    *
    * @throws Error if organization ID, ledger ID, or balance ID is missing
@@ -274,10 +259,6 @@ export class BalancesServiceImpl implements BalancesService {
    * rather than direct updates to maintain proper accounting records.
    * This method is primarily for administrative or corrective actions.
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to update
-   * @param input - Balance update input with properties to change
    * @returns Promise resolving to the updated balance
    *
    * @throws Error if organization ID, ledger ID, or balance ID is missing
@@ -349,9 +330,6 @@ export class BalancesServiceImpl implements BalancesService {
    * managed automatically by the system. Deleting a balance should only be
    * done in exceptional circumstances, such as correcting erroneous data.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to delete
    * @returns Promise resolving to void
    *
    * @throws Error if any required ID is missing

@@ -1,6 +1,4 @@
 /**
- * @file Version transformer
- * @description Factory for creating API version-specific model transformers
  */
 
 import { ModelTransformer } from './model-transformer';
@@ -16,7 +14,6 @@ export interface VersionTransformerFactory<TClient, _TApiV1 = TClient, _TApiV2 =
   /**
    * Get a model transformer for the specified API version
    * 
-   * @param version - API version
    * @returns Appropriate transformer for the version
    */
   getTransformer(version: string): ModelTransformer<TClient, any>;
@@ -25,7 +22,6 @@ export interface VersionTransformerFactory<TClient, _TApiV1 = TClient, _TApiV2 =
 /**
  * Creates a factory for version-specific model transformers
  * 
- * @param transformers - Map of API versions to their corresponding model transformers
  * @returns A version transformer factory
  */
 export function createVersionTransformerFactory<TClient>(

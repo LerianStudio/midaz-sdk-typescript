@@ -29,37 +29,24 @@ export interface AccountsService {
   /**
    * Lists accounts with pagination, sorting, and filtering
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options
    */
   listAccounts(orgId: string, ledgerId: string, opts?: ListOptions): Promise<ListResponse<Account>>;
 
   /** 
    * Gets an account by ID
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Account ID to retrieve
    */
   getAccount(orgId: string, ledgerId: string, id: string): Promise<Account>;
 
   /**
    * Creates a new account
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param input Account creation input
    */
   createAccount(orgId: string, ledgerId: string, input: CreateAccountInput): Promise<Account>;
 
   /**
    * Updates an existing account
    * 
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Account ID to update
-   * @param input Account update input
    */
   updateAccount(
     orgId: string,
@@ -71,9 +58,6 @@ export interface AccountsService {
   /**
    * Deletes an account
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Account ID to delete
    */
   deleteAccount(orgId: string, ledgerId: string, id: string): Promise<void>;
 }

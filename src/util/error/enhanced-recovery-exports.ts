@@ -1,6 +1,4 @@
 /**
- * @file Enhanced recovery export compatibility
- * @description Provides compatibility exports for the workflow example
  */
 
 import { createTransactionVerification, withEnhancedRecovery } from './enhanced-error-recovery';

@@ -1,8 +1,6 @@
 /* eslint-disable no-useless-catch */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
- * @file Concurrency utilities for the Midaz SDK
- * @description Provides tools for parallel processing with controlled concurrency while maintaining result order
  */
 
 /**
@@ -44,7 +42,6 @@ const DEFAULT_WORKER_POOL_OPTIONS: WorkerPoolOptions = {
  *
  * @template T - Type of input items
  * @template R - Type of output results
- * @param params - Worker pool parameters including items, worker function, and options
  * @returns Promise resolving to an array of results
  *
  * @example
@@ -107,8 +104,6 @@ export async function workerPool<T, R>({
  *
  * @template T - Type of input items
  * @template R - Type of output results
- * @param items - Array of items to process
- * @param workerFn - Function to process each item
  * @returns Promise resolving to an array of results
  * @private
  */
@@ -130,9 +125,6 @@ async function processSequentially<T, R>(
  *
  * @template T - Type of input items
  * @template R - Type of output results
- * @param items - Array of items to process
- * @param workerFn - Function to process each item
- * @param concurrency - Maximum number of concurrent operations
  * @returns Promise resolving to an array of results
  * @private
  */
@@ -160,9 +152,6 @@ export async function processBatches<T, R>(
  *
  * @template T - Type of input items
  * @template R - Type of output results
- * @param items - Array of items to process
- * @param workerFn - Function to process each item
- * @param concurrency - Maximum number of concurrent operations
  * @returns Promise resolving to an array of results
  * @private
  */
@@ -223,8 +212,6 @@ export async function processWithThrottling<T, R>(
  * Divides an array into chunks of a specified size
  *
  * @template T - Type of array elements
- * @param array - Array to divide into chunks
- * @param size - Size of each chunk
  * @returns Array of chunks
  *
  * @example

@@ -1,6 +1,4 @@
 /**
- * @file Logging utilities for the Midaz SDK
- * @description Provides a flexible and extensible logging system with support for different log levels,
  * custom handlers, module-specific loggers, and request tracking
  */
 
@@ -182,7 +180,6 @@ export class Logger {
   /**
    * Creates a new Logger instance
    *
-   * @param options - Configuration options for the logger
    */
   constructor(options: LoggerOptions = {}) {
     this.minLevel = options.minLevel || LogLevel.INFO;
@@ -198,9 +195,6 @@ export class Logger {
    * Debug messages contain detailed information useful during development
    * and troubleshooting but are typically too verbose for production use.
    *
-   * @param message - Log message text
-   * @param data - Optional data to include with the log entry
-   * @param module - Optional module name to override the default
    *
    * @example
    * ```typescript
@@ -217,9 +211,6 @@ export class Logger {
    * Info messages provide general information about system operation
    * and are typically included in production logs.
    *
-   * @param message - Log message text
-   * @param data - Optional data to include with the log entry
-   * @param module - Optional module name to override the default
    *
    * @example
    * ```typescript
@@ -236,9 +227,6 @@ export class Logger {
    * Warning messages indicate potential issues or unexpected conditions
    * that don't prevent the system from functioning but should be addressed.
    *
-   * @param message - Log message text
-   * @param data - Optional data to include with the log entry
-   * @param module - Optional module name to override the default
    *
    * @example
    * ```typescript
@@ -255,9 +243,6 @@ export class Logger {
    * Error messages indicate problems that prevented an operation from completing
    * successfully and require attention.
    *
-   * @param message - Log message text
-   * @param data - Optional data to include with the log entry (can be an Error object)
-   * @param module - Optional module name to override the default
    *
    * @example
    * ```typescript
@@ -278,10 +263,6 @@ export class Logger {
    * This is the core logging method that all other logging methods use.
    * It handles level filtering, formatting, and dispatching to handlers.
    *
-   * @param level - Log level for this message
-   * @param message - Log message text
-   * @param data - Optional data to include with the log entry
-   * @param module - Optional module name to override the default
    */
   public log(level: LogLevel, message: string, data?: any, module?: string): void {
     // Skip if level is below minimum
@@ -314,7 +295,6 @@ export class Logger {
    *
    * This can be used to dynamically change the logging verbosity at runtime.
    *
-   * @param level - New minimum log level
    *
    * @example
    * ```typescript
@@ -338,7 +318,6 @@ export class Logger {
    * Log handlers receive log entries and determine how they are processed.
    * Multiple handlers can be added to route logs to different destinations.
    *
-   * @param handler - Log handler function to add
    *
    * @example
    * ```typescript
@@ -357,7 +336,6 @@ export class Logger {
   /**
    * Removes a previously added log handler
    *
-   * @param handler - Log handler function to remove
    * @returns True if the handler was found and removed, false otherwise
    */
   public removeHandler(handler: LogHandler): boolean {
@@ -384,7 +362,6 @@ export class Logger {
    * The request ID is used for distributed tracing to correlate logs across
    * different components handling the same request.
    *
-   * @param requestId - Unique identifier for the current request
    *
    * @example
    * ```typescript
@@ -408,7 +385,6 @@ export class Logger {
    * Child loggers inherit all settings from the parent but use a different
    * module name. This is useful for creating loggers for specific components.
    *
-   * @param module - Module name for the child logger
    * @returns A new Logger instance with the specified module name
    *
    * @example
@@ -442,7 +418,6 @@ export class Logger {
    * Checks if a log level should be logged based on the minimum level
    *
    * @private
-   * @param level - Log level to check
    * @returns True if the level should be logged, false otherwise
    */
   private shouldLog(level: LogLevel): boolean {
@@ -464,7 +439,6 @@ export class Logger {
    * using the appropriate console method for each log level.
    *
    * @private
-   * @param entry - Log entry to process
    */
   private consoleHandler(entry: LogEntry): void {
     // Format the log message
@@ -532,8 +506,6 @@ export interface FileLoggerOptions {
 /**
  * Creates a logger that writes to a file
  *
- * @param filePath - Path to the log file
- * @param options - Additional options for file logging
  * @returns A logger instance that writes to the specified file
  */
 export function createFileLogger(

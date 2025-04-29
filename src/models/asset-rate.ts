@@ -1,6 +1,4 @@
 /**
- * @file Asset rate model definitions for the Midaz SDK
- * @description Defines the asset rate data structures and helper functions for managing exchange rates between assets in the Midaz ledger system
  */
 
 /**
@@ -169,11 +167,6 @@ export interface UpdateAssetRateInput {
  * This helper function simplifies the creation of asset rate inputs by
  * handling the conversion of Date objects to ISO strings automatically.
  *
- * @param fromAsset - The source asset code (e.g., "USD")
- * @param toAsset - The target asset code (e.g., "EUR")
- * @param rate - The exchange rate value (e.g., 0.92 for USD→EUR)
- * @param effectiveAt - Timestamp when the rate becomes effective (Date object or ISO string)
- * @param expirationAt - Timestamp when the rate expires (Date object or ISO string)
  * @returns A complete UpdateAssetRateInput object ready to be used in API calls
  *
  * @example

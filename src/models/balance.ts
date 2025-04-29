@@ -1,6 +1,4 @@
 /**
- * @file Balance model definitions for the Midaz SDK
- * @description Defines the balance data structures and helper functions for managing account balances in the Midaz ledger system
  */
 
 /**
@@ -229,8 +227,6 @@ export function newUpdateBalanceInput(): UpdateBalanceInput {
  * This controls whether funds can be sent from the account.
  * When set to false, the account cannot be used as a source in transactions.
  *
- * @param input - UpdateBalanceInput object to modify
- * @param allowed - Whether to allow sending funds
  * @returns The modified UpdateBalanceInput for chaining
  *
  * @example
@@ -254,8 +250,6 @@ export function withAllowSending(input: UpdateBalanceInput, allowed: boolean): U
  * This controls whether funds can be received into the account.
  * When set to false, the account cannot be used as a destination in transactions.
  *
- * @param input - UpdateBalanceInput object to modify
- * @param allowed - Whether to allow receiving funds
  * @returns The modified UpdateBalanceInput for chaining
  *
  * @example

@@ -1,6 +1,4 @@
 /**
- * @file URL builder utility for the Midaz SDK
- * @description Centralizes URL construction logic for API endpoints
  */
 
 import { MidazConfig } from '../client';
@@ -23,7 +21,6 @@ export class UrlBuilder {
   /**
    * Creates a new UrlBuilder instance
    *
-   * @param config - The Midaz client configuration
    */
   constructor(config: MidazConfig) {
     this.baseUrls = config.baseUrls || {};
@@ -63,7 +60,6 @@ export class UrlBuilder {
   /**
    * Gets the base URL for a specific service
    *
-   * @param service - The service name
    * @returns The base URL for the service
    */
   public getBaseUrl(service: string): string {
@@ -73,7 +69,6 @@ export class UrlBuilder {
   /**
    * Builds the versioned API URL
    * 
-   * @param baseUrl - Base URL for the service
    * @returns URL with version path
    */
   private getVersionedUrl(baseUrl: string): string {
@@ -83,7 +78,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for organization endpoints
    *
-   * @param orgId - Optional organization ID
    * @returns The constructed URL
    */
   public buildOrganizationUrl(orgId?: string): string {
@@ -101,8 +95,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for ledger endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Optional ledger ID
    * @returns The constructed URL
    */
   public buildLedgerUrl(orgId: string, ledgerId?: string): string {
@@ -120,9 +112,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for account endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Optional account ID
    * @returns The constructed URL
    */
   public buildAccountUrl(orgId: string, ledgerId: string, accountId?: string): string {
@@ -140,10 +129,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for transaction endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param transactionId - Optional transaction ID
-   * @param isCreate - Whether this is a create operation (adds "/json" suffix)
    * @returns The constructed URL
    */
   public buildTransactionUrl(
@@ -168,9 +153,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for asset endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param assetId - Optional asset ID
    * @returns The constructed URL
    */
   public buildAssetUrl(orgId: string, ledgerId: string, assetId?: string): string {
@@ -188,9 +170,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for asset rate endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param assetId - Asset ID for which to get rates
    * @returns The constructed URL
    */
   public buildAssetRateUrl(orgId: string, ledgerId: string, assetId: string): string {
@@ -202,9 +181,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for balance endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Optional account ID
    * @returns The constructed URL
    */
   public buildBalanceUrl(orgId: string, ledgerId: string, accountId?: string): string {
@@ -222,9 +198,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for operation endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param operationId - Optional operation ID
    * @returns The constructed URL
    */
   public buildOperationUrl(orgId: string, ledgerId: string, operationId?: string): string {
@@ -242,9 +215,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for portfolio endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param portfolioId - Optional portfolio ID
    * @returns The constructed URL
    */
   public buildPortfolioUrl(orgId: string, ledgerId: string, portfolioId?: string): string {
@@ -262,9 +232,6 @@ export class UrlBuilder {
   /**
    * Builds the URL for segment endpoints
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param segmentId - Optional segment ID
    * @returns The constructed URL
    */
   public buildSegmentUrl(orgId: string, ledgerId: string, segmentId?: string): string {

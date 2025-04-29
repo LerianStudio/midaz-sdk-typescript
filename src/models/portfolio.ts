@@ -1,6 +1,4 @@
 /**
- * @file Portfolio model definitions for the Midaz SDK
- * @description Defines the portfolio data structures and helper functions for managing portfolios in the Midaz ledger system
  */
 
 import { Status, StatusCode } from './common';
@@ -268,8 +266,6 @@ export class PortfolioBuilderImpl
  * This factory function creates a builder that allows you to use method chaining
  * to construct a portfolio with a more fluent API.
  *
- * @param entityId - Identifier of the entity that will own this portfolio
- * @param name - Human-readable name for the portfolio
  * @returns A portfolio builder with method chaining
  *
  * @example
@@ -369,8 +365,6 @@ export function createUpdatePortfolioBuilder(): UpdatePortfolioBuilder {
  * This constructor ensures that all mandatory fields are provided when creating a portfolio input.
  * It sets sensible defaults for optional fields where appropriate.
  *
- * @param entityId - Identifier of the entity that will own this portfolio
- * @param name - Human-readable name for the portfolio
  * @returns A new CreatePortfolioInput object with required fields set
  *
  * @example
@@ -402,8 +396,6 @@ export function newCreatePortfolioInput(entityId: string, name: string): CreateP
  * It can be used to create portfolios in a non-default status or to update the status
  * of existing portfolios.
  *
- * @param input - CreatePortfolioInput or UpdatePortfolioInput object to modify
- * @param status - The status to set for the portfolio
  * @returns The modified input object for chaining
  *
  * @example
@@ -435,8 +427,6 @@ export function withStatus(
  * This can include risk profiles, investment strategies, client preferences,
  * performance metrics, or any other application-specific data.
  *
- * @param input - CreatePortfolioInput or UpdatePortfolioInput object to modify
- * @param metadata - A map of key-value pairs to store as metadata
  * @returns The modified input object for chaining
  *
  * @example
@@ -504,8 +494,6 @@ export function newUpdatePortfolioInput(): UpdatePortfolioInput {
  * This updates the human-readable name of the portfolio.
  * The name should be descriptive and meaningful to users.
  *
- * @param input - UpdatePortfolioInput object to modify
- * @param name - The new name for the portfolio
  * @returns The modified UpdatePortfolioInput for chaining
  *
  * @example

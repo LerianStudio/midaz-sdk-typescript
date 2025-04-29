@@ -1,6 +1,4 @@
 /**
- * @file Segment validation functions for the Midaz SDK
- * @description Provides validation functions to ensure segment data meets required format and business rules
  */
 
 import {
@@ -24,7 +22,6 @@ import { CreateSegmentInput, UpdateSegmentInput } from '../segment';
  * enabling more detailed reporting and management. Common uses include business unit
  * categorization, geographic segmentation, and product line segmentation.
  *
- * @param input - The CreateSegmentInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example
@@ -96,7 +93,6 @@ export function validateCreateSegmentInput(input: CreateSegmentInput): Validatio
  * Note that unlike creation, updates don't require any specific fields as long as at least
  * one valid field is being updated.
  *
- * @param input - The UpdateSegmentInput object to validate
  * @returns ValidationResult indicating if the input is valid, with error messages if not
  *
  * @example
@@ -188,7 +184,6 @@ export function validateUpdateSegmentInput(input: UpdateSegmentInput): Validatio
  * Metadata is used to store additional custom information about segments,
  * such as region codes, business unit identifiers, or reporting categories.
  *
- * @param metadata - Metadata object to validate
  * @returns Array of validation error messages, empty if valid
  *
  * @example

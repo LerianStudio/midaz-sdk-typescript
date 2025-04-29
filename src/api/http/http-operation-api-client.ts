@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of operation API client
- * @description Implements the operation API client interface using HTTP
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -22,9 +20,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Creates a new HttpOperationApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -48,10 +43,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Lists operations for a specific organization, ledger, and account
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of operations
    */
   public async listOperations(
@@ -125,11 +116,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Gets an operation by ID
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param operationId - Operation ID
-   * @param transactionId - Optional transaction ID that contains the operation
    * @returns Promise resolving to the operation
    */
   public async getOperation(
@@ -186,11 +172,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Updates an existing operation
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param operationId - Operation ID
-   * @param input - Operation update input
    * @returns Promise resolving to the updated operation
    */
   public async updateOperation(
@@ -247,9 +228,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Builds the URL for operations API calls
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
    * @returns Full URL for the operations API endpoint
    * @private
    */
@@ -262,11 +240,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Builds the URL for a specific operation
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param operationId - Operation ID
-   * @param transactionId - Optional transaction ID
    * @returns Full URL for the specific operation
    * @private
    */
@@ -289,8 +262,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(span: Span, params: Record<string, any>): void {
@@ -306,9 +277,6 @@ export class HttpOperationApiClient implements OperationApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   private recordMetrics(name: string, value: number, tags: Record<string, any>): void {

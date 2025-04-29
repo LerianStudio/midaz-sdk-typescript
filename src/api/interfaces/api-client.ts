@@ -1,6 +1,4 @@
 /**
- * @file Base API client interface
- * @description Defines the common interface for all API clients
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -21,7 +19,6 @@ export interface ApiClient<T, C = unknown, U = unknown> {
   /**
    * Lists entities with optional filtering and pagination
    *
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of entities
    */
   list?(options?: ListOptions): Promise<ListResponse<T>>;
@@ -29,7 +26,6 @@ export interface ApiClient<T, C = unknown, U = unknown> {
   /**
    * Gets a single entity by its ID
    *
-   * @param id - Entity ID
    * @returns Promise resolving to the entity
    */
   get?(id: string): Promise<T>;
@@ -37,7 +33,6 @@ export interface ApiClient<T, C = unknown, U = unknown> {
   /**
    * Creates a new entity
    *
-   * @param input - Entity creation input
    * @returns Promise resolving to the created entity
    */
   create?(input: C): Promise<T>;
@@ -45,8 +40,6 @@ export interface ApiClient<T, C = unknown, U = unknown> {
   /**
    * Updates an existing entity
    *
-   * @param id - Entity ID
-   * @param input - Entity update input
    * @returns Promise resolving to the updated entity
    */
   update?(id: string, input: U): Promise<T>;
@@ -54,7 +47,6 @@ export interface ApiClient<T, C = unknown, U = unknown> {
   /**
    * Deletes an entity
    *
-   * @param id - Entity ID
    * @returns Promise resolving when the entity is deleted
    */
   delete?(id: string): Promise<void>;
@@ -73,8 +65,6 @@ export type ValidationParams = Record<string, string | number | boolean | null |
  * in a consistent way across all clients. The service layer should not
  * perform this validation.
  *
- * @param span - The current tracing span for error recording
- * @param params - The parameters to validate as a record of key-value pairs
  * @throws Error if any parameter is falsy (undefined, null, empty string)
  */
 export function validateRequiredParams(

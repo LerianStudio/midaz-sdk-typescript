@@ -1,6 +1,4 @@
 /**
- * @file Operation paginator implementation for the Midaz SDK
- * @description Implements the OperationPaginator interface using the standardized pagination abstraction
  */
 
 import { OperationApiClient } from '../../api/interfaces/operation-api-client';
@@ -16,7 +14,6 @@ import { OperationPaginator } from '../operations';
  * This class extends the BasePaginator to provide operation-specific functionality
  * while leveraging the standardized pagination logic.
  *
- * @implements {OperationPaginator}
  */
 export class OperationPaginatorImpl extends BasePaginator<Operation> implements OperationPaginator {
   /**
@@ -42,12 +39,6 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
   /**
    * Creates a new OperationPaginatorImpl
    *
-   * @param operationApiClient - Operation API client for making API requests
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param opts - List options for pagination, sorting, and filtering
-   * @param observability - Optional observability instance for tracing and metrics
    */
   constructor(
     operationApiClient: OperationApiClient,
@@ -184,8 +175,6 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
    *
    * Iterates through all operations and processes them by type.
    *
-   * @param debitHandler - Function to call for each debit operation
-   * @param creditHandler - Function to call for each credit operation
    */
   public async trackOperationsByType(
     debitHandler: (op: Operation) => Promise<void>,

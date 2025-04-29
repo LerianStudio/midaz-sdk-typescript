@@ -39,9 +39,6 @@ export interface TransactionsService {
   /**
    * Lists transactions with optional filters
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of transactions
    */
   listTransactions(
@@ -53,9 +50,6 @@ export interface TransactionsService {
   /**
    * Gets a transaction by ID
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Transaction ID to retrieve
    * @returns Promise resolving to the transaction
    */
   getTransaction(orgId: string, ledgerId: string, id: string): Promise<Transaction>;
@@ -67,9 +61,6 @@ export interface TransactionsService {
    * (debits equal credits). Once created, transactions cannot be updated
    * or deleted to maintain ledger integrity.
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param input Transaction creation input
    * @returns Promise resolving to the created transaction
    */
   createTransaction(
@@ -81,9 +72,6 @@ export interface TransactionsService {
   /**
    * Creates a paginator for iterating through transactions
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Transaction paginator instance
    */
   getTransactionPaginator(
@@ -98,9 +86,6 @@ export interface TransactionsService {
    * Returns an async generator that yields pages of transactions, automatically
    * handling pagination.
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options for sorting and filtering
    * @returns Async generator yielding pages of transactions
    */
   iterateTransactions(
@@ -115,9 +100,6 @@ export interface TransactionsService {
    * Retrieves all transactions matching the specified criteria, automatically
    * handling pagination.
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options for sorting and filtering
    * @returns Promise resolving to all transactions
    */
   getAllTransactions(orgId: string, ledgerId: string, opts?: ListOptions): Promise<Transaction[]>;
@@ -187,7 +169,6 @@ export interface TransactionPaginator {
   /**
    * Process transactions by category
    * 
-   * @param categoryHandler - Function to call for each transaction with its category
    * @returns Map of categories to transaction counts
    */
   categorizeTransactions(

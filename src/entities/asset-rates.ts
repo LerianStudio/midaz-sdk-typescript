@@ -38,10 +38,6 @@ export interface AssetRatesService {
   /**
    * Retrieves the exchange rate between two assets
    *
-   * @param organizationId Organization ID
-   * @param ledgerId Ledger ID
-   * @param sourceAssetCode Source asset code (e.g., "USD")
-   * @param destinationAssetCode Destination asset code (e.g., "EUR")
    * @returns Promise resolving to the asset rate
    */
   getAssetRate(
@@ -54,9 +50,6 @@ export interface AssetRatesService {
   /**
    * Creates a new asset rate or updates an existing one
    *
-   * @param organizationId Organization ID
-   * @param ledgerId Ledger ID
-   * @param input Asset rate details
    * @returns Promise resolving to the created or updated asset rate
    */
   createOrUpdateAssetRate(

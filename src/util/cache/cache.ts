@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
- * @file Cache utility for the Midaz SDK
- * @description Provides a flexible in-memory caching mechanism with TTL and LRU eviction
  */
 
 /**
@@ -103,7 +101,6 @@ export class Cache<T = any> {
   /**
    * Creates a new cache
    *
-   * @param options - Cache configuration options
    */
   constructor(options: CacheOptions = {}) {
     // Set default TTL from environment variable or fallback to 60 seconds
@@ -125,7 +122,6 @@ export class Cache<T = any> {
   /**
    * Gets a value from the cache
    *
-   * @param key - Cache key
    * @returns Cached value or undefined if not found or expired
    */
   public get<R = T>(key: string): R | undefined {
@@ -155,9 +151,6 @@ export class Cache<T = any> {
   /**
    * Sets a value in the cache
    *
-   * @param key - Cache key
-   * @param value - Value to cache
-   * @param ttl - Optional custom TTL in milliseconds
    */
   public set(key: string, value: T, ttl?: number): void {
     // Calculate expiration time
@@ -186,7 +179,6 @@ export class Cache<T = any> {
   /**
    * Deletes a value from the cache
    *
-   * @param key - Cache key
    * @returns Whether the key was found and deleted
    */
   public delete(key: string): boolean {
@@ -249,7 +241,6 @@ export class Cache<T = any> {
   /**
    * Updates the LRU status of a key
    *
-   * @param key - Cache key
    * @private
    */
   private updateLRU(key: string): void {
@@ -289,9 +280,6 @@ export class Cache<T = any> {
  * Memoizes a function with caching
  *
  * @template T - Function return type
- * @param fn - Function to memoize
- * @param keyFn - Optional function to generate cache keys
- * @param options - Cache options
  * @returns Memoized function
  *
  * @example

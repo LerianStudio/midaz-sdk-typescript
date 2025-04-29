@@ -1,6 +1,4 @@
 /**
- * @file Account helper utilities for the Midaz SDK
- * @description Provides utilities for working with accounts, including classification, filtering, and identification
  */
 
 /**
@@ -9,7 +7,6 @@
  * External accounts typically have an '@external' prefix or contain the word 'external'
  * These accounts represent sources or sinks of funds outside the ledger system.
  *
- * @param accountId - The account ID to check
  * @returns True if the account ID indicates an external account
  *
  * @example
@@ -32,7 +29,6 @@ export function isExternalAccount(accountId: string | null | undefined): boolean
  * System accounts include external accounts and accounts that are designated
  * for special system purposes rather than regular user accounts.
  *
- * @param account - The account object to check
  * @returns True if the account is a system account
  *
  * @example
@@ -63,7 +59,6 @@ export function isSystemAccount(account: any): boolean {
  * 1. Regular accounts: Normal user accounts for tracking assets and liabilities
  * 2. System accounts: Special accounts used by the system (external accounts, etc.)
  *
- * @param accounts - The list of accounts to categorize
  * @returns Object containing arrays of regular and system accounts
  *
  * @example
@@ -97,8 +92,6 @@ export function categorizeAccounts<T extends { id?: string; name?: string; type?
  * making it easier to display related accounts together or perform asset-specific
  * operations.
  *
- * @param accounts - The list of accounts to group
- * @param options - Optional filtering options
  * @returns Object mapping asset codes to arrays of accounts
  *
  * @example

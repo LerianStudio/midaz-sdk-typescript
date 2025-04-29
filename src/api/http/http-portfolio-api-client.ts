@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of portfolio API client
- * @description Implements the portfolio API client interface using HTTP
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -27,9 +25,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Creates a new HttpPortfolioApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -53,9 +48,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Lists portfolios for a ledger with optional filters
    *
-   * @param orgId - Organization ID that owns the portfolios
-   * @param ledgerId - Ledger ID that contains the portfolios
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of portfolios
    */
   public async listPortfolios(
@@ -106,9 +98,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Gets a portfolio by ID
    *
-   * @param orgId - Organization ID that owns the portfolio
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param id - Portfolio ID to retrieve
    * @returns Promise resolving to the portfolio
    */
   public async getPortfolio(orgId: string, ledgerId: string, id: string): Promise<Portfolio> {
@@ -147,9 +136,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Creates a new portfolio
    *
-   * @param orgId - Organization ID that will own the portfolio
-   * @param ledgerId - Ledger ID that will contain the portfolio
-   * @param input - Portfolio creation input with required properties
    * @returns Promise resolving to the created portfolio
    */
   public async createPortfolio(
@@ -197,10 +183,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Updates an existing portfolio
    *
-   * @param orgId - Organization ID that owns the portfolio
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param id - Portfolio ID to update
-   * @param input - Portfolio update input with properties to change
    * @returns Promise resolving to the updated portfolio
    */
   public async updatePortfolio(
@@ -258,9 +240,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Deletes a portfolio
    *
-   * @param orgId - Organization ID that owns the portfolio
-   * @param ledgerId - Ledger ID that contains the portfolio
-   * @param id - Portfolio ID to delete
    * @returns Promise resolving when the portfolio is deleted
    */
   public async deletePortfolio(orgId: string, ledgerId: string, id: string): Promise<void> {
@@ -298,8 +277,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(span: Span, params: Record<string, any>): void {
@@ -315,9 +292,6 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   private recordMetrics(name: string, value: number, tags?: Record<string, any>): void {

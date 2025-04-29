@@ -1,6 +1,4 @@
 /**
- * @file Segment model definitions for the Midaz SDK
- * @description Defines the segment data structures and helper functions for managing segments in the Midaz ledger system
  */
 
 import { Status, StatusCode } from './common';
@@ -234,7 +232,6 @@ export class SegmentBuilderImpl
  * This factory function creates a builder that allows you to use method chaining
  * to construct a segment with a more fluent API.
  *
- * @param name - Human-readable name for the segment
  * @returns A segment builder with method chaining
  *
  * @example
@@ -329,7 +326,6 @@ export function createUpdateSegmentBuilder(): UpdateSegmentBuilder {
  * This constructor ensures that all mandatory fields are provided when creating a segment input.
  * It sets sensible defaults for optional fields where appropriate.
  *
- * @param name - Human-readable name for the segment
  * @returns A new CreateSegmentInput object with required fields set
  *
  * @example
@@ -357,8 +353,6 @@ export function newCreateSegmentInput(name: string): CreateSegmentInput {
  * It can be used to create segments in a non-default status or to update the status
  * of existing segments.
  *
- * @param input - CreateSegmentInput or UpdateSegmentInput object to modify
- * @param status - The status to set for the segment
  * @returns The modified input object for chaining
  *
  * @example
@@ -387,8 +381,6 @@ export function withStatus(
  * This can include region codes, business unit identifiers, reporting categories,
  * or any other application-specific data.
  *
- * @param input - CreateSegmentInput or UpdateSegmentInput object to modify
- * @param metadata - A map of key-value pairs to store as metadata
  * @returns The modified input object for chaining
  *
  * @example
@@ -452,8 +444,6 @@ export function newUpdateSegmentInput(): UpdateSegmentInput {
  * This updates the human-readable name of the segment.
  * The name should be descriptive and meaningful to users.
  *
- * @param input - UpdateSegmentInput object to modify
- * @param name - The new name for the segment
  * @returns The modified UpdateSegmentInput for chaining
  *
  * @example

@@ -25,9 +25,6 @@ export interface BalancesService {
   /**
    * Lists balances for a ledger with optional filters
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    */
   listBalances(orgId: string, ledgerId: string, opts?: ListOptions): Promise<ListResponse<Balance>>;
@@ -35,10 +32,6 @@ export interface BalancesService {
   /**
    * Lists balances for a specific account
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param accountId Account ID to retrieve balances for
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    */
   listAccountBalances(
@@ -51,9 +44,6 @@ export interface BalancesService {
   /**
    * Gets a balance by ID
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Balance ID to retrieve
    * @returns Promise resolving to the balance
    */
   getBalance(orgId: string, ledgerId: string, id: string): Promise<Balance>;
@@ -61,10 +51,6 @@ export interface BalancesService {
   /**
    * Updates an existing balance
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Balance ID to update
-   * @param input Balance update input
    * @returns Promise resolving to the updated balance
    */
   updateBalance(
@@ -77,9 +63,6 @@ export interface BalancesService {
   /**
    * Deletes a balance
    *
-   * @param orgId Organization ID
-   * @param ledgerId Ledger ID
-   * @param id Balance ID to delete
    * @returns Promise resolving when the balance is deleted
    */
   deleteBalance(orgId: string, ledgerId: string, id: string): Promise<void>;

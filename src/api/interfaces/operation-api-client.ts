@@ -1,6 +1,4 @@
 /**
- * @file Operation API client interface
- * @description Defines the interface for operation API operations
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -18,10 +16,6 @@ export interface OperationApiClient extends ApiClient<Operation, never, Record<s
   /**
    * Lists operations for a specific organization, ledger, and account
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of operations
    */
   listOperations(
@@ -34,11 +28,6 @@ export interface OperationApiClient extends ApiClient<Operation, never, Record<s
   /**
    * Gets an operation by ID
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param operationId - Operation ID
-   * @param transactionId - Optional transaction ID that contains the operation
    * @returns Promise resolving to the operation
    */
   getOperation(
@@ -52,11 +41,6 @@ export interface OperationApiClient extends ApiClient<Operation, never, Record<s
   /**
    * Updates an existing operation
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param accountId - Account ID
-   * @param operationId - Operation ID
-   * @param input - Operation update input
    * @returns Promise resolving to the updated operation
    */
   updateOperation(

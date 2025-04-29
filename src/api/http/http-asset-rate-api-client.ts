@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of asset rate API client
- * @description Implements the asset rate API client interface using HTTP
  */
 
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
@@ -30,9 +28,6 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
   /**
    * Creates a new HttpAssetRateApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -56,10 +51,6 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
   /**
    * Retrieves the exchange rate between two assets
    *
-   * @param organizationId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param sourceAssetCode - Source asset code
-   * @param destinationAssetCode - Destination asset code
    * @returns Promise resolving to the asset rate
    */
   public async getAssetRate(
@@ -188,9 +179,6 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
   /**
    * Creates a new asset rate or updates an existing one
    *
-   * @param organizationId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param input - Asset rate input with all required fields
    * @returns Promise resolving to the created or updated asset rate
    */
   public async createOrUpdateAssetRate(
@@ -296,9 +284,6 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
   /**
    * Builds the URL for asset rate API calls
    *
-   * @param organizationId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param sourceAssetCode - Source asset code
    * @returns Full URL for the asset rate API endpoint
    * @private
    */
@@ -315,8 +300,6 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
   /**
    * Validates required parameters and throws an error if any are missing
    *
-   * @param span - The current tracing span
-   * @param params - The parameters to validate
    * @private
    */
   private validateRequiredParams(span: Span, params: Record<string, any>): void {
@@ -332,9 +315,6 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
   /**
    * Records metrics for an operation
    *
-   * @param name - Metric name
-   * @param value - Metric value
-   * @param tags - Metric tags
    * @private
    */
   private recordMetrics(name: string, value: number, tags: Record<string, any>): void {

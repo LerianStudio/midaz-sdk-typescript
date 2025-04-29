@@ -13,7 +13,6 @@ import { AssetRatesService } from '../asset-rates';
  * Handles asset rate-related business logic and delegates API communication
  * to the AssetRateApiClient.
  *
- * @implements {AssetRatesService}
  */
 export class AssetRatesServiceImpl implements AssetRatesService {
   /**
@@ -25,8 +24,6 @@ export class AssetRatesServiceImpl implements AssetRatesService {
   /**
    * Creates a new AssetRatesServiceImpl
    *
-   * @param assetRateApiClient Asset rate API client for making API requests
-   * @param observability Optional observability provider
    */
   constructor(
     private readonly assetRateApiClient: AssetRateApiClient,
@@ -49,10 +46,6 @@ export class AssetRatesServiceImpl implements AssetRatesService {
   /**
    * Retrieves the exchange rate between two assets
    *
-   * @param organizationId Organization ID
-   * @param ledgerId Ledger ID
-   * @param sourceAssetCode Source asset code (e.g., "USD")
-   * @param destinationAssetCode Destination asset code (e.g., "EUR")
    * @returns Promise resolving to the asset rate
    */
   public async getAssetRate(
@@ -91,9 +84,6 @@ export class AssetRatesServiceImpl implements AssetRatesService {
   /**
    * Creates a new asset rate or updates an existing one
    *
-   * @param organizationId Organization ID
-   * @param ledgerId Ledger ID
-   * @param input Asset rate details
    * @returns Promise resolving to the created or updated asset rate
    */
   public async createOrUpdateAssetRate(

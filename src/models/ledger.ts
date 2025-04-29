@@ -1,6 +1,4 @@
 /**
- * @file Ledger model definitions for the Midaz SDK
- * @description Defines the ledger data structures and helper functions for managing ledgers in the Midaz system
  */
 
 import { Status, StatusCode } from './common';
@@ -228,7 +226,6 @@ export class LedgerBuilderImpl
  * This factory function creates a builder that allows you to use method chaining
  * to construct a ledger with a more fluent API.
  *
- * @param name - Human-readable name for the ledger
  * @returns A ledger builder with method chaining
  *
  * @example
@@ -325,7 +322,6 @@ export function createUpdateLedgerBuilder(): UpdateLedgerBuilder {
  * This constructor ensures that all mandatory fields are provided when creating a ledger input.
  * It sets sensible defaults for optional fields where appropriate.
  *
- * @param name Human-readable name for the ledger
  * @returns New CreateLedgerInput object with required fields set and default status
  *
  * @example
@@ -381,8 +377,6 @@ export function newUpdateLedgerInput(): UpdateLedgerInput {
  * This updates the human-readable name of the ledger.
  * The name should be descriptive and meaningful to users.
  *
- * @param input UpdateLedgerInput object to modify
- * @param name The new name for the ledger
  * @returns The modified UpdateLedgerInput for chaining
  *
  * @example
@@ -406,8 +400,6 @@ export function withName(input: UpdateLedgerInput, name: string): UpdateLedgerIn
  * This updates the status of the ledger.
  * The status controls whether the ledger can be used for new accounts or transactions.
  *
- * @param input UpdateLedgerInput object to modify
- * @param status The new status for the ledger
  * @returns The modified UpdateLedgerInput for chaining
  *
  * @example
@@ -432,8 +424,6 @@ export function withStatus(input: UpdateLedgerInput, status: StatusCode): Update
  * This can include fiscal year, accounting standards, base currency,
  * or any other application-specific data.
  *
- * @param input CreateLedgerInput or UpdateLedgerInput object to modify
- * @param metadata The metadata to set
  * @returns The modified input object for chaining
  *
  * @example

@@ -1,6 +1,4 @@
 /**
- * @file Balance API client interface
- * @description Defines the interface for balance API operations
  */
 
 import { Balance, UpdateBalanceInput } from '../../models/balance';
@@ -18,9 +16,6 @@ export interface BalanceApiClient extends ApiClient<Balance, never, UpdateBalanc
   /**
    * Lists balances for a ledger with optional filters
    *
-   * @param orgId - Organization ID that owns the balances
-   * @param ledgerId - Ledger ID that contains the balances
-   * @param options - Optional list options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    */
   listBalances(
@@ -32,10 +27,6 @@ export interface BalanceApiClient extends ApiClient<Balance, never, UpdateBalanc
   /**
    * Lists balances for a specific account
    *
-   * @param orgId - Organization ID that owns the account
-   * @param ledgerId - Ledger ID that contains the account
-   * @param accountId - Account ID to retrieve balances for
-   * @param options - Optional list options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of balances
    */
   listAccountBalances(
@@ -48,9 +39,6 @@ export interface BalanceApiClient extends ApiClient<Balance, never, UpdateBalanc
   /**
    * Gets a balance by ID
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to retrieve
    * @returns Promise resolving to the balance
    */
   getBalance(orgId: string, ledgerId: string, id: string): Promise<Balance>;
@@ -58,10 +46,6 @@ export interface BalanceApiClient extends ApiClient<Balance, never, UpdateBalanc
   /**
    * Updates an existing balance
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to update
-   * @param input - Balance update input with properties to change
    * @returns Promise resolving to the updated balance
    */
   updateBalance(
@@ -74,9 +58,6 @@ export interface BalanceApiClient extends ApiClient<Balance, never, UpdateBalanc
   /**
    * Deletes a balance
    *
-   * @param orgId - Organization ID that owns the balance
-   * @param ledgerId - Ledger ID that contains the balance
-   * @param id - Balance ID to delete
    * @returns Promise resolving when the balance is deleted
    */
   deleteBalance(orgId: string, ledgerId: string, id: string): Promise<void>;

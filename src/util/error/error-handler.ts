@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /**
- * @file Error handler
- * @description Error handling and recovery functions
  */
 
 import { ErrorHandlerOptions, ErrorRecoveryOptions, OperationResult } from './error-types';
@@ -28,9 +26,6 @@ const DEFAULT_RECOVERY_OPTIONS: ErrorRecoveryOptions = {
 /**
  * Logs detailed error information for debugging
  *
- * @param error - Error to log
- * @param context - Additional context information
- * @param logger - Custom logger function (defaults to console.error)
  */
 export function logDetailedError(
   error: unknown,
@@ -162,8 +157,6 @@ export async function withErrorHandling<T>(
 /**
  * Executes a function with automatic error recovery (retry with exponential backoff)
  *
- * @param operation - Function to execute and potentially retry
- * @param options - Error recovery options
  * @returns The result of the operation
  */
 export async function withErrorRecovery<T>(
@@ -233,8 +226,6 @@ export async function withErrorRecovery<T>(
 /**
  * Safely executes an operation with advanced error handling and recovery
  *
- * @param operation - Function to execute
- * @param options - Error recovery options
  * @returns Operation result with status and error information
  */
 export async function executeOperation<T>(
@@ -307,8 +298,6 @@ export type ExecuteTransactionResult<T> = OperationResult<T>;
 /**
  * Specialized version of executeOperation for financial transactions
  *
- * @param transactionFn - Transaction function to execute
- * @param options - Error recovery options
  * @returns Transaction result and status information
  */
 export async function executeTransaction<T>(

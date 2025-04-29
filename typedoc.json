@@ -22,6 +22,8 @@
     "src/models/portfolio.ts",
     "src/models/segment.ts",
     "src/models/transaction.ts",
+    "src/models/common.ts",
+    "src/models/common-helpers.ts",
     "src/models/validators/account-validator.ts",
     "src/models/validators/asset-validator.ts",
     "src/models/validators/ledger-validator.ts",
@@ -61,6 +63,7 @@
     "src/util/network/index.ts",
     "src/util/network/http-client.ts",
     "src/util/observability/index.ts",
+    "src/util/observability/logger.ts",
     "src/util/validation/index.ts"
   ],
   "out": "docs/typedoc",
@@ -71,7 +74,7 @@
   ],
   "excludePrivate": true,
   "excludeProtected": false,
-  "excludeExternals": false,
+  "excludeExternals": true,
   "includeVersion": true,
   "categorizeByGroup": true,
   "categoryOrder": [

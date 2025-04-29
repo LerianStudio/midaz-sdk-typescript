@@ -1,6 +1,4 @@
 /**
- * @file Error utilities barrel file
- * @description Exports all error-related utilities from consolidated error handling system
  */
 
 // Export all error handler functions

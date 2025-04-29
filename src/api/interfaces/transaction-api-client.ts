@@ -1,6 +1,4 @@
 /**
- * @file Transaction API client interface
- * @description Defines the interface for transaction API operations
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
@@ -19,9 +17,6 @@ export interface TransactionApiClient
   /**
    * Lists transactions for a specific organization and ledger
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of transactions
    */
   listTransactions(
@@ -33,9 +28,6 @@ export interface TransactionApiClient
   /**
    * Gets a transaction by ID
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Transaction ID
    * @returns Promise resolving to the transaction
    */
   getTransaction(orgId: string, ledgerId: string, id: string): Promise<Transaction>;
@@ -43,9 +35,6 @@ export interface TransactionApiClient
   /**
    * Creates a new transaction
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param input - Transaction creation input
    * @returns Promise resolving to the created transaction
    */
   createTransaction(

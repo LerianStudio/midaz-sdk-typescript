@@ -1,6 +1,4 @@
 /**
- * @file Enhanced error recovery utilities for the Midaz SDK
- * @description Advanced error recovery mechanisms with intelligent retry strategies
  */
 
 import { executeOperation } from './error-handler';
@@ -109,8 +107,6 @@ export interface EnhancedOperationResult<T> extends OperationResult<T> {
  * This function extends the standard error recovery with intelligent
  * strategies like operation transformation, fallbacks, and verification.
  * 
- * @param operation - Function to execute
- * @param options - Enhanced recovery options
  * @returns Promise resolving to an enhanced operation result
  * 
  * @example
@@ -310,8 +306,6 @@ export async function withEnhancedRecovery<T>(
  * Executes a financial transaction with enhanced error recovery and
  * specialized handling for common financial transaction errors
  * 
- * @param transactionFn - Transaction function to execute
- * @param options - Enhanced recovery options
  * @returns Promise resolving to an enhanced operation result
  * 
  * @example
@@ -383,7 +377,6 @@ export async function executeTransactionWithRecovery<T>(
 /**
  * Creates an operation verification function for transaction status
  * 
- * @param checkFn - Function to check if transaction exists
  * @returns Function for use with usePolledVerification
  * 
  * @example

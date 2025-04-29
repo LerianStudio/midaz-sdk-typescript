@@ -1,6 +1,4 @@
 /**
- * @file Segment service implementation for the Midaz SDK
- * @description Implements the SegmentsService interface for managing segments within the Midaz system
  */
 
 import { SegmentApiClient } from '../../api/interfaces/segment-api-client';
@@ -20,7 +18,6 @@ import { SegmentsService } from '../segments';
  * to organize accounts and transactions. They provide a way to structure financial data
  * for reporting, analysis, and management purposes.
  *
- * @implements {SegmentsService}
  *
  * @example
  * ```typescript
@@ -46,8 +43,6 @@ export class SegmentsServiceImpl implements SegmentsService {
   /**
    * Creates a new SegmentsServiceImpl
    *
-   * @param segmentApiClient - Segment API client for making API requests
-   * @param observability - Optional observability provider for tracing and metrics
    */
   constructor(private readonly segmentApiClient: SegmentApiClient, observability?: Observability) {
     // Initialize observability with service name
@@ -62,9 +57,6 @@ export class SegmentsServiceImpl implements SegmentsService {
    * Retrieves a paginated list of segments for a specific organization and ledger.
    * The results can be filtered, sorted, and paginated using the optional parameters.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the segments
-   * @param opts - Optional list options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of segments
    *
    * @example
@@ -119,9 +111,6 @@ export class SegmentsServiceImpl implements SegmentsService {
    *
    * Retrieves the details of a specific segment identified by its ID.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the segment
-   * @param segmentId - ID of the segment to retrieve
    * @returns Promise resolving to the segment details
    *
    * @example
@@ -164,9 +153,6 @@ export class SegmentsServiceImpl implements SegmentsService {
    *
    * Creates a new segment in the specified organization and ledger.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID where the segment will be created
-   * @param input - Segment details to create
    * @returns Promise resolving to the created segment
    *
    * @example
@@ -219,10 +205,6 @@ export class SegmentsServiceImpl implements SegmentsService {
    *
    * Updates the details of an existing segment identified by its ID.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the segment
-   * @param segmentId - ID of the segment to update
-   * @param input - Updated segment details
    * @returns Promise resolving to the updated segment
    *
    * @example
@@ -279,9 +261,6 @@ export class SegmentsServiceImpl implements SegmentsService {
    *
    * Permanently removes a segment from the system.
    *
-   * @param orgId - Organization ID that owns the ledger
-   * @param ledgerId - Ledger ID that contains the segment
-   * @param segmentId - ID of the segment to delete
    * @returns Promise that resolves when the segment is deleted
    *
    * @example

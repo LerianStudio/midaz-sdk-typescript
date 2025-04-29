@@ -1,6 +1,4 @@
 /**
- * @file Transactions service implementation for the Midaz SDK
- * @description Implements the TransactionsService interface for managing transactions within the Midaz system
  */
 
 import { TransactionApiClient } from '../../api/interfaces/transaction-api-client';
@@ -12,7 +10,6 @@ import { TransactionPaginator, TransactionsService } from '../transactions';
 
 /**
  * @inheritdoc
- * @implements {TransactionsService}
  */
 export class TransactionsServiceImpl implements TransactionsService {
   /**
@@ -24,8 +21,6 @@ export class TransactionsServiceImpl implements TransactionsService {
   /**
    * Creates a new TransactionsServiceImpl
    *
-   * @param apiClient - API client for transaction-related operations
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(private readonly apiClient: TransactionApiClient, observability?: Observability) {
     // Initialize observability with service name
@@ -83,9 +78,6 @@ export class TransactionsServiceImpl implements TransactionsService {
    * page by page. This is useful for processing large numbers of transactions
    * without loading them all into memory at once.
    *
-   * @param orgId - Organization ID that owns the transactions
-   * @param ledgerId - Ledger ID that contains the transactions
-   * @param opts - List options for pagination, sorting, and filtering
    * @returns Transaction paginator for iterating through transactions
    */
   public getTransactionPaginator(
@@ -288,7 +280,6 @@ export class TransactionsServiceImpl implements TransactionsService {
 
 /**
  * @inheritdoc
- * @implements {TransactionPaginator}
  */
 export class TransactionPaginatorImpl extends BasePaginator<Transaction> implements TransactionPaginator {
   /**
@@ -309,11 +300,6 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
   /**
    * Creates a new TransactionPaginatorImpl
    *
-   * @param apiClient - API client for transaction operations
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param opts - List options for pagination
-   * @param observability - Optional observability instance (if not provided, a new one will be created)
    */
   constructor(
     apiClient: TransactionApiClient,
@@ -422,7 +408,6 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
    * 
    * Processes all transactions and groups them by category
    * 
-   * @param categoryHandler - Function to call for each transaction with its category
    * @returns Map of categories to transaction counts
    */
   public async categorizeTransactions(

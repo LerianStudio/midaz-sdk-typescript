@@ -1,6 +1,4 @@
 /**
- * @file Transaction builder utilities for the Midaz SDK
- * @description Helper functions for creating common transaction types with proper structure
  */
 
 import { AmountInput, CreateTransactionInput } from './transaction';
@@ -8,9 +6,6 @@ import { AmountInput, CreateTransactionInput } from './transaction';
 /**
  * Creates an amount input with proper structure
  *
- * @param value - The amount value (can be a number or string)
- * @param assetCode - The asset code (e.g., "USD", "EUR", "BTC")
- * @param scale - The scale factor for the amount (e.g., 100 for 2 decimal places)
  * @returns Properly structured amount input
  */
 export function createAmountInput(
@@ -31,13 +26,6 @@ export function createAmountInput(
  * Deposit transactions represent funds coming into the system from an external source.
  * This creates a properly structured transaction with the correct debit and credit operations.
  *
- * @param sourceAccount - The source account ID (usually an external account like "@external/USD")
- * @param destinationAccount - The destination account ID to receive the funds
- * @param amount - The amount to deposit
- * @param assetCode - The asset code (e.g., "USD", "EUR", "BTC")
- * @param scale - The scale factor for the amount (optional, defaults to 0)
- * @param description - Transaction description (optional)
- * @param metadata - Additional transaction metadata (optional)
  * @returns A properly structured deposit transaction input
  *
  * @example
@@ -108,13 +96,6 @@ export function createDepositTransaction(
  * Withdrawal transactions represent funds leaving the system to an external destination.
  * This creates a properly structured transaction with the correct debit and credit operations.
  *
- * @param sourceAccount - The source account ID to withdraw from
- * @param destinationAccount - The destination account ID (usually an external account)
- * @param amount - The amount to withdraw
- * @param assetCode - The asset code (e.g., "USD", "EUR", "BTC")
- * @param scale - The scale factor for the amount (optional, defaults to 0)
- * @param description - Transaction description (optional)
- * @param metadata - Additional transaction metadata (optional)
  * @returns A properly structured withdrawal transaction input
  *
  * @example
@@ -187,13 +168,6 @@ export function createWithdrawalTransaction(
  * Transfer transactions move funds between accounts within the system.
  * This creates a properly structured transaction with the correct debit and credit operations.
  *
- * @param sourceAccount - The source account ID to transfer from
- * @param destinationAccount - The destination account ID to transfer to
- * @param amount - The amount to transfer
- * @param assetCode - The asset code (e.g., "USD", "EUR", "BTC")
- * @param scale - The scale factor for the amount (optional, defaults to 0)
- * @param description - Transaction description (optional)
- * @param metadata - Additional transaction metadata (optional)
  * @returns A properly structured transfer transaction input
  *
  * @example
@@ -261,16 +235,6 @@ export function createTransferTransaction(
  * This is useful for currency exchange or asset swaps where the source
  * and destination are different assets with different exchange rates.
  *
- * @param sourceAccount - The source account ID
- * @param sourceAmount - The amount to debit from source
- * @param sourceAssetCode - The source asset code
- * @param sourceScale - The source asset scale
- * @param destinationAccount - The destination account ID
- * @param destinationAmount - The amount to credit to destination
- * @param destinationAssetCode - The destination asset code
- * @param destinationScale - The destination asset scale
- * @param description - Transaction description (optional)
- * @param metadata - Additional transaction metadata (optional)
  * @returns A properly structured multi-currency transaction input
  *
  * @example

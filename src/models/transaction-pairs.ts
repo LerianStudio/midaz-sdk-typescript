@@ -1,6 +1,4 @@
 /**
- * @file Transaction pair utilities for the Midaz SDK
- * @description Helper functions for creating complementary credit/debit transaction pairs
  */
 
 import { MidazClient } from '../client';
@@ -30,15 +28,11 @@ export interface TransactionPairOptions {
 
   /**
    * Callback function for successful transactions
-   * @param type - The transaction type (credit or debit)
-   * @param status - The transaction execution status
    */
   onSuccess?: (type: 'credit' | 'debit', status: string) => void;
 
   /**
    * Callback function for failed transactions
-   * @param type - The transaction type (credit or debit)
-   * @param error - The error that occurred
    */
   onError?: (type: 'credit' | 'debit', error: unknown) => void;
 }
@@ -79,15 +73,6 @@ export interface TransactionPairResult {
  * This function creates a credit transaction from source to destination,
  * followed by a debit transaction back from destination to source.
  * 
- * @param client - Midaz client instance
- * @param organizationId - Organization ID
- * @param ledgerId - Ledger ID
- * @param sourceAccountId - Source account ID
- * @param destinationAccountId - Destination account ID
- * @param creditAmount - Amount for the credit transaction
- * @param debitAmount - Amount for the debit transaction
- * @param assetCode - Asset code (e.g., "USD", "EUR", "BTC")
- * @param options - Transaction pair options
  * @returns Promise resolving to the transaction pair result
  * 
  * @example
@@ -219,14 +204,6 @@ export async function createTransactionPair(
  * This function creates credit and debit transactions between accounts in the array.
  * Each account will have transactions with other accounts having the same asset.
  * 
- * @param client - Midaz client instance
- * @param organizationId - Organization ID 
- * @param ledgerId - Ledger ID
- * @param accounts - Array of accounts with the same asset
- * @param assetCode - Asset code
- * @param creditAmount - Amount for credit transactions (default: 25)
- * @param debitAmount - Amount for debit transactions (default: 10)
- * @param options - Transaction pair options
  * @returns Promise resolving to the number of successful transactions
  * 
  * @example
@@ -321,13 +298,6 @@ export async function createTransactionPairsForAccounts(
  * This function creates a circular flow of transactions between accounts,
  * where each account receives funds from one account and sends to another.
  * 
- * @param client - Midaz client instance
- * @param organizationId - Organization ID
- * @param ledgerId - Ledger ID
- * @param accounts - Array of accounts with the same asset
- * @param assetCode - Asset code
- * @param amount - Transaction amount
- * @param options - Transaction pair options
  * @returns Promise resolving to the number of successful transactions
  * 
  * @example
@@ -478,9 +448,6 @@ export interface ExecuteTransactionPairResult {
 /**
  * Executes a pair of credit and debit transactions with enhanced error handling
  * 
- * @param creditTxFn - Function that creates and executes the credit transaction
- * @param debitTxFn - Function that creates and executes the debit transaction
- * @param options - Options for executing the transaction pair
  * @returns Promise resolving to the transaction pair execution result
  * 
  * @example

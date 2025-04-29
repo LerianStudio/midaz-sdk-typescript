@@ -1,6 +1,4 @@
 /**
- * @file Asset API client interface
- * @description Defines the interface for asset API operations
  */
 
 import { Asset, CreateAssetInput, UpdateAssetInput } from '../../models/asset';
@@ -18,9 +16,6 @@ export interface AssetApiClient extends ApiClient<Asset, CreateAssetInput, Updat
   /**
    * Lists assets for a specific organization and ledger
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param options - Optional list options for filtering and pagination
    * @returns Promise resolving to a paginated list of assets
    */
   listAssets(orgId: string, ledgerId: string, options?: ListOptions): Promise<ListResponse<Asset>>;
@@ -28,9 +23,6 @@ export interface AssetApiClient extends ApiClient<Asset, CreateAssetInput, Updat
   /**
    * Gets an asset by ID
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Asset ID
    * @returns Promise resolving to the asset
    */
   getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset>;
@@ -38,9 +30,6 @@ export interface AssetApiClient extends ApiClient<Asset, CreateAssetInput, Updat
   /**
    * Creates a new asset
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param input - Asset creation input
    * @returns Promise resolving to the created asset
    */
   createAsset(orgId: string, ledgerId: string, input: CreateAssetInput): Promise<Asset>;
@@ -48,10 +37,6 @@ export interface AssetApiClient extends ApiClient<Asset, CreateAssetInput, Updat
   /**
    * Updates an existing asset
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Asset ID
-   * @param input - Asset update input
    * @returns Promise resolving to the updated asset
    */
   updateAsset(orgId: string, ledgerId: string, id: string, input: UpdateAssetInput): Promise<Asset>;
@@ -59,9 +44,6 @@ export interface AssetApiClient extends ApiClient<Asset, CreateAssetInput, Updat
   /**
    * Deletes an asset
    *
-   * @param orgId - Organization ID
-   * @param ledgerId - Ledger ID
-   * @param id - Asset ID
    * @returns Promise resolving when the asset is deleted
    */
   deleteAsset(orgId: string, ledgerId: string, id: string): Promise<void>;

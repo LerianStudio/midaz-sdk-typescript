@@ -1,6 +1,4 @@
 /**
- * @file Transaction pattern utilities for the Midaz SDK
- * @description Helper functions for common financial transaction patterns and workflows
  */
 
 import { MidazClient } from '../client';
@@ -105,10 +103,6 @@ export interface TransactionPatternResult {
  * This pattern represents the common operation of funding an account
  * from an external source, usually as the first transaction for a new account.
  * 
- * @param destinationAccountId - Destination account ID
- * @param amount - Amount to deposit
- * @param assetCode - Asset code
- * @param options - Transaction pattern options
  * @returns Promise resolving to the transaction pattern result
  * 
  * @example
@@ -212,11 +206,6 @@ export async function createInitialDeposit(
  * This pattern represents the common operation of transferring funds
  * between two accounts owned by users within the system.
  * 
- * @param sourceAccountId - Source account ID
- * @param destinationAccountId - Destination account ID
- * @param amount - Amount to transfer
- * @param assetCode - Asset code
- * @param options - Transaction pattern options
  * @returns Promise resolving to the transaction pattern result
  * 
  * @example
@@ -322,10 +311,6 @@ export async function createUserTransfer(
  * This pattern represents the common operation of withdrawing funds
  * from an internal account to an external destination.
  * 
- * @param sourceAccountId - Source account ID
- * @param amount - Amount to withdraw
- * @param assetCode - Asset code
- * @param options - Transaction pattern options
  * @returns Promise resolving to the transaction pattern result
  * 
  * @example
@@ -429,12 +414,6 @@ export async function createUserWithdrawal(
  * This pattern represents the common operation of transferring the "spare change"
  * from a transaction to a savings account by rounding up to the nearest whole amount.
  * 
- * @param spendingAccountId - Spending account ID
- * @param savingsAccountId - Savings account ID
- * @param transactionAmount - Original transaction amount
- * @param roundupTo - Amount to round up to (default: 1)
- * @param assetCode - Asset code
- * @param options - Transaction pattern options
  * @returns Promise resolving to the transaction pattern result
  * 
  * @example
@@ -554,12 +533,6 @@ export async function createRoundupSavings(
  * This pattern creates a transaction that represents an automatic
  * recurring payment such as a subscription or bill payment.
  * 
- * @param sourceAccountId - Source account ID (user account)
- * @param destinationAccountId - Destination account ID (merchant account)
- * @param amount - Payment amount
- * @param assetCode - Asset code
- * @param recurringReference - Reference ID for the recurring payment series
- * @param options - Transaction pattern options
  * @returns Promise resolving to the transaction pattern result
  * 
  * @example
@@ -671,10 +644,6 @@ export async function createRecurringPayment(
  * This pattern represents a payment that is split between multiple
  * recipients, such as a bill split or marketplace payment distribution.
  * 
- * @param sourceAccountId - Source account ID
- * @param destinations - Array of destination accounts and amounts
- * @param assetCode - Asset code
- * @param options - Transaction pattern options
  * @returns Promise resolving to the transaction batch result
  * 
  * @example
@@ -711,12 +680,6 @@ export async function createRecurringPayment(
  * - A credit transaction from source to destination account
  * - A debit transaction for a (possibly different) amount from destination back to source
  * 
- * @param sourceAccountId - Source account ID
- * @param destinationAccountId - Destination account ID
- * @param amount - Amount for the transaction
- * @param assetCode - Asset code (e.g., "USD", "EUR")
- * @param description - Optional description for both transactions
- * @param metadata - Optional metadata to include in both transactions
  * @returns Object containing the credit and debit transaction inputs
  * 
  * @example
@@ -784,10 +747,6 @@ export function createCreditDebitPair(
  * This pattern creates a chain of transfers between multiple accounts,
  * useful for more complex transaction flows or settlement processes.
  * 
- * @param accounts - Ordered array of account IDs to transfer through
- * @param amount - Amount to transfer
- * @param assetCode - Asset code
- * @param options - Transaction pattern options
  * @returns Promise resolving to the transaction batch result
  * 
  * @example

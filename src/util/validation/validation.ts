@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
- * @file Validation utilities
- * @description Comprehensive data validation with structured error handling
  */
 
 import { ErrorCategory, ErrorCode, MidazError } from '../error';

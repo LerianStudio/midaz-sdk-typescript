@@ -1,6 +1,4 @@
 /**
- * @file HTTP implementation of account API client
- * @description Implements the account API client interface using HTTP
  */
 
 import { Account, CreateAccountInput, UpdateAccountInput } from '../../models/account';
@@ -19,7 +17,6 @@ import { HttpBaseApiClient } from './http-base-api-client';
 
 /**
  * @inheritdoc
- * @implements {AccountApiClient}
  */
 export class HttpAccountApiClient
   extends HttpBaseApiClient<Account, CreateAccountInput, UpdateAccountInput>
@@ -28,9 +25,6 @@ export class HttpAccountApiClient
   /**
    * Creates a new HttpAccountApiClient
    *
-   * @param httpClient - HTTP client for making API requests
-   * @param urlBuilder - URL builder for constructing endpoint URLs
-   * @param observability - Optional observability provider (if not provided, a new one will be created)
    */
   constructor(httpClient: HttpClient, urlBuilder: UrlBuilder, observability?: Observability) {
     super(httpClient, urlBuilder, 'midaz-account-api-client', observability);

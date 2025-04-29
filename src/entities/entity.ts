@@ -79,9 +79,6 @@ export class Entity {
 
   /**
    * Creates a new Entity instance with all service interfaces
-   * @param httpClient HTTP client instance
-   * @param config Midaz configuration (optional)
-   * @param observability Observability instance (optional)
    */
   constructor(
     private readonly httpClient: HttpClient,
@@ -161,7 +158,6 @@ export class Entity {
 
   /**
    * Configures all entity services with the provided configuration
-   * @param config Midaz configuration
    */
   public configure(config: MidazConfig): void {
     this.httpClient.updateConfig({

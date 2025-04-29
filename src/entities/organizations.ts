@@ -28,7 +28,6 @@ export interface OrganizationsService {
   /**
    * Lists organizations with optional filters
    *
-   * @param opts List options for pagination, sorting, and filtering
    * @returns Promise resolving to a paginated list of organizations
    */
   listOrganizations(opts?: ListOptions): Promise<ListResponse<Organization>>;
@@ -36,7 +35,6 @@ export interface OrganizationsService {
   /**
    * Gets an organization by ID
    *
-   * @param id Organization ID to retrieve
    * @returns Promise resolving to the organization
    */
   getOrganization(id: string): Promise<Organization>;
@@ -44,7 +42,6 @@ export interface OrganizationsService {
   /**
    * Creates a new organization
    *
-   * @param input Organization creation input
    * @returns Promise resolving to the created organization
    */
   createOrganization(input: CreateOrganizationInput): Promise<Organization>;
@@ -52,8 +49,6 @@ export interface OrganizationsService {
   /**
    * Updates an existing organization
    *
-   * @param id Organization ID to update
-   * @param input Organization update input
    * @returns Promise resolving to the updated organization
    */
   updateOrganization(id: string, input: UpdateOrganizationInput): Promise<Organization>;
@@ -61,7 +56,6 @@ export interface OrganizationsService {
   /**
    * Deletes an organization
    *
-   * @param id Organization ID to delete
    * @returns Promise that resolves when the organization is deleted
    */
   deleteOrganization(id: string): Promise<void>;
