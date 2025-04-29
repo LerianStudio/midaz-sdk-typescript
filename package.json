@@ -18,7 +18,14 @@
     "docs": "npm run docs:typedoc && npm run docs:jsdoc",
     "example:workflow": "npx ts-node examples/workflow.ts",
     "example:client-config": "npx ts-node examples/client-config-example.ts",
-    "example:api-versioning": "npx ts-node examples/api-versioning-example.ts"
+    "example:api-versioning": "npx ts-node examples/api-versioning-example.ts",
+    "example:cache": "npx ts-node examples/cache-example.ts",
+    "example:concurrency": "npx ts-node examples/concurrency-example.ts",
+    "example:validation": "npx ts-node examples/validation-example.ts",
+    "example:error-handling": "npx ts-node examples/error-handling-example.ts",
+    "example:network": "npx ts-node examples/network-example.ts",
+    "example:data": "npx ts-node examples/data-example.ts",
+    "example:observability": "npx ts-node examples/observability-example.ts"
   },
   "keywords": [
     "midaz",

@@ -168,7 +168,7 @@ export function validateRequired<T>(
   value: T | undefined | null,
   fieldName: string
 ): ValidationResult {
-  if (value === undefined || value === null) {
+  if (value === undefined || value === null || value === '') {
     return {
       valid: false,
       message: `${fieldName} is required`,
@@ -186,14 +186,19 @@ export function validateNotEmpty(
   value: string | null | undefined,
   fieldName: string
 ): ValidationResult {
-  const requiredResult = validateRequired(value, fieldName);
-
-  if (!requiredResult.valid) {
-    return requiredResult;
+  // Check for null/undefined first
+  if (value === null || value === undefined) {
+    return {
+      valid: false,
+      message: `${fieldName} is required`,
+      fieldErrors: {
+        [fieldName]: [`${fieldName} is required`],
+      },
+    };
   }
 
-  // At this point, value is guaranteed to exist due to validateRequired check
-  if (!value || value.trim() === '') {
+  // Now check for empty string
+  if (value.trim() === '') {
     return {
       valid: false,
       message: `${fieldName} cannot be empty`,
