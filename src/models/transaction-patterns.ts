@@ -184,9 +184,9 @@ export async function createInitialDeposit(
     
     const { status, result: txResult, error } = await executeTransaction(
       // We've checked these exist in the if statement above
-      () => mergedOptions.client.entities.transactions.createTransaction(
-        mergedOptions.organizationId,
-        mergedOptions.ledgerId,
+      () => mergedOptions.client!.entities.transactions.createTransaction(
+        mergedOptions.organizationId!,
+        mergedOptions.ledgerId!,
         transaction
       ),
       { maxRetries: mergedOptions.maxRetries }
@@ -294,9 +294,9 @@ export async function createUserTransfer(
     
     const { status, result: txResult, error } = await executeTransaction(
       // We've checked these exist in the if statement above
-      () => mergedOptions.client.entities.transactions.createTransaction(
-        mergedOptions.organizationId,
-        mergedOptions.ledgerId,
+      () => mergedOptions.client!.entities.transactions.createTransaction(
+        mergedOptions.organizationId!,
+        mergedOptions.ledgerId!,
         transaction
       ),
       { maxRetries: mergedOptions.maxRetries }
@@ -401,9 +401,9 @@ export async function createUserWithdrawal(
     
     const { status, result: txResult, error } = await executeTransaction(
       // We've checked these exist in the if statement above
-      () => mergedOptions.client.entities.transactions.createTransaction(
-        mergedOptions.organizationId,
-        mergedOptions.ledgerId,
+      () => mergedOptions.client!.entities.transactions.createTransaction(
+        mergedOptions.organizationId!,
+        mergedOptions.ledgerId!,
         transaction
       ),
       { maxRetries: mergedOptions.maxRetries }
@@ -526,9 +526,9 @@ export async function createRoundupSavings(
     
     const { status, result: txResult, error } = await executeTransaction(
       // We've checked these exist in the if statement above
-      () => mergedOptions.client.entities.transactions.createTransaction(
-        mergedOptions.organizationId,
-        mergedOptions.ledgerId,
+      () => mergedOptions.client!.entities.transactions.createTransaction(
+        mergedOptions.organizationId!,
+        mergedOptions.ledgerId!,
         transaction
       ),
       { maxRetries: mergedOptions.maxRetries }
@@ -643,9 +643,9 @@ export async function createRecurringPayment(
     
     const { status, result: txResult, error } = await executeTransaction(
       // We've checked these exist in the if statement above
-      () => mergedOptions.client.entities.transactions.createTransaction(
-        mergedOptions.organizationId,
-        mergedOptions.ledgerId,
+      () => mergedOptions.client!.entities.transactions.createTransaction(
+        mergedOptions.organizationId!,
+        mergedOptions.ledgerId!,
         transaction
       ),
       { maxRetries: mergedOptions.maxRetries }
