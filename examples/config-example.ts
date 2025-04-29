@@ -25,7 +25,7 @@ function basicConfigExample() {
   console.log(JSON.stringify(apiUrlConfig, null, 2));
   
   // Get HTTP client configuration
-  const httpConfig = config.getHttpConfig();
+  const httpConfig = config.getHttpClientConfig();
   console.log('\nDefault HTTP Client Configuration:');
   console.log(JSON.stringify(httpConfig, null, 2));
   
@@ -77,7 +77,7 @@ function environmentVariableExample() {
   
   // Get the current configuration
   const config = ConfigService.getInstance();
-  const originalHttpConfig = config.getHttpConfig();
+  const originalHttpConfig = config.getHttpClientConfig();
   
   console.log('Original HTTP Configuration:');
   console.log(JSON.stringify(originalHttpConfig, null, 2));
@@ -93,7 +93,7 @@ function environmentVariableExample() {
   
   // Get the updated configuration
   const updatedConfig = ConfigService.getInstance();
-  const updatedHttpConfig = updatedConfig.getHttpConfig();
+  const updatedHttpConfig = updatedConfig.getHttpClientConfig();
   
   console.log('\nUpdated HTTP Configuration with environment variables:');
   console.log(JSON.stringify(updatedHttpConfig, null, 2));
@@ -133,7 +133,7 @@ function environmentConfigExample() {
   const devConfig = ConfigService.getInstance();
   console.log('\nDevelopment Environment Configuration:');
   console.log('API URLs:', JSON.stringify(devConfig.getApiUrlConfig(), null, 2));
-  console.log('HTTP Client:', JSON.stringify(devConfig.getHttpConfig(), null, 2));
+  console.log('HTTP Client:', JSON.stringify(devConfig.getHttpClientConfig(), null, 2));
   console.log('Observability:', JSON.stringify(devConfig.getObservabilityConfig(), null, 2));
   
   // Reset for staging environment
@@ -161,7 +161,7 @@ function environmentConfigExample() {
   const stagingConfig = ConfigService.getInstance();
   console.log('\nStaging Environment Configuration:');
   console.log('API URLs:', JSON.stringify(stagingConfig.getApiUrlConfig(), null, 2));
-  console.log('HTTP Client:', JSON.stringify(stagingConfig.getHttpConfig(), null, 2));
+  console.log('HTTP Client:', JSON.stringify(stagingConfig.getHttpClientConfig(), null, 2));
   console.log('Observability:', JSON.stringify(stagingConfig.getObservabilityConfig(), null, 2));
   
   // Reset for production environment
@@ -195,7 +195,7 @@ function environmentConfigExample() {
   const prodConfig = ConfigService.getInstance();
   console.log('\nProduction Environment Configuration:');
   console.log('API URLs:', JSON.stringify(prodConfig.getApiUrlConfig(), null, 2));
-  console.log('HTTP Client:', JSON.stringify(prodConfig.getHttpConfig(), null, 2));
+  console.log('HTTP Client:', JSON.stringify(prodConfig.getHttpClientConfig(), null, 2));
   console.log('Observability:', JSON.stringify(prodConfig.getObservabilityConfig(), null, 2));
   console.log('Retry Policy:', JSON.stringify(prodConfig.getRetryPolicyConfig(), null, 2));
 }
@@ -234,7 +234,7 @@ function configInComponentsExample() {
     }
     
     getApiKey(): string | undefined {
-      return this.config.getHttpConfig().apiKey;
+      return this.config.getHttpClientConfig().apiKey;
     }
     
     getFullUrl(endpoint: string): string {

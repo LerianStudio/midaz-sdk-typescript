@@ -14,7 +14,9 @@ async function basicHttpClientExample() {
   
   // Create an HTTP client with default settings
   const httpClient = new HttpClient({
-    baseUrl: 'https://jsonplaceholder.typicode.com',
+    baseUrls: {
+      default: 'https://jsonplaceholder.typicode.com'
+    },
     timeout: 10000, // 10 seconds
     debug: true // Enable debug logging
   });
@@ -69,11 +71,10 @@ async function advancedHttpClientExample() {
   
   // Create an HTTP client with advanced configuration
   const httpClient = new HttpClient({
-    baseUrl: 'https://jsonplaceholder.typicode.com',
+    baseUrls: {
+      default: 'https://jsonplaceholder.typicode.com'
+    },
     timeout: 15000, // 15 seconds
-    retries: 3, // Retry up to 3 times
-    retryDelay: 1000, // Wait 1 second between retries
-    retryPolicy: RetryPolicy.EXPONENTIAL_BACKOFF, // Use exponential backoff
     headers: {
       'X-API-Key': 'demo-api-key',
       'User-Agent': 'Midaz-SDK-Example/1.0'
@@ -117,21 +118,25 @@ async function errorHandlingExample() {
   
   // Create an HTTP client with retry configuration
   const httpClient = new HttpClient({
-    baseUrl: 'https://jsonplaceholder.typicode.com',
-    timeout: 5000,
-    retries: 3,
-    retryDelay: 1000,
-    retryPolicy: RetryPolicy.EXPONENTIAL_BACKOFF,
-    // Only retry on network errors and 5xx responses
-    retryCondition: (error) => {
-      if (error instanceof MidazError) {
-        return (
-          error.category === ErrorCategory.NETWORK ||
-          (error.statusCode && error.statusCode >= 500)
-        );
-      }
-      return false;
+    baseUrls: {
+      default: 'https://jsonplaceholder.typicode.com'
     },
+    timeout: 5000,
+    // Set retry policy configuration
+    retryPolicy: new RetryPolicy({
+      maxRetries: 3,
+      initialDelay: 1000,
+      maxDelay: 5000,
+      retryCondition: (error: Error): boolean => {
+        if (error instanceof MidazError) {
+          return (
+            error.category === ErrorCategory.NETWORK ||
+            (error.statusCode !== undefined && error.statusCode >= 500)
+          );
+        }
+        return false;
+      }
+    }),
     debug: true
   });
   
@@ -145,8 +150,8 @@ async function errorHandlingExample() {
       console.error('Error category:', error.category);
       console.error('Error code:', error.code);
       console.error('Status code:', error.statusCode);
-      console.error('Was retried:', error.retried);
-      console.error('Retry count:', error.retryCount);
+      console.error('Was retried:', error.category === ErrorCategory.NETWORK);
+      console.error('Status code:', error.statusCode || 'N/A');
     } else {
       console.error('Unexpected error:', error);
     }
@@ -154,10 +159,10 @@ async function errorHandlingExample() {
   
   // Create a client that will simulate network errors
   const unreliableClient = new HttpClient({
-    baseUrl: 'https://this-domain-does-not-exist-123456789.com',
+    baseUrls: {
+      default: 'https://this-domain-does-not-exist-123456789.com'
+    },
     timeout: 3000,
-    retries: 3,
-    retryDelay: 500,
     debug: true
   });
   
@@ -170,8 +175,8 @@ async function errorHandlingExample() {
       console.error('Error making request:', error.message);
       console.error('Error category:', error.category);
       console.error('Error code:', error.code);
-      console.error('Was retried:', error.retried);
-      console.error('Retry count:', error.retryCount);
+      console.error('Was retried:', error.category === ErrorCategory.NETWORK);
+      console.error('Status code:', error.statusCode || 'N/A');
     } else {
       console.error('Unexpected error:', error);
     }
@@ -184,7 +189,9 @@ async function requestCancellationExample() {
   
   // Create an HTTP client
   const httpClient = new HttpClient({
-    baseUrl: 'https://jsonplaceholder.typicode.com',
+    baseUrls: {
+      default: 'https://jsonplaceholder.typicode.com'
+    },
     timeout: 30000, // Long timeout
     debug: true
   });
@@ -214,7 +221,7 @@ async function requestCancellationExample() {
       console.error('Error making request:', error.message);
       console.error('Error category:', error.category);
       console.error('Error code:', error.code);
-      console.error('Was cancelled:', error.cancelled);
+      console.error('Was cancelled:', error.category === ErrorCategory.CANCELLATION);
     } else {
       console.error('Unexpected error:', error);
     }

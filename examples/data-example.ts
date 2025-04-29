@@ -18,6 +18,9 @@ interface SimplePaginatorConfig<T> {
 
 // Custom paginator implementations for the example
 class CursorPaginator<T> extends BasePaginator<T> {
+  // Add missing properties needed for our implementation
+  protected nextCursor?: string;
+  protected prevCursor?: string;
   constructor(options: SimplePaginatorConfig<T>) {
     super({
       fetchPage: async (listOptions: ListOptions): Promise<ListResponse<T>> => {
@@ -27,10 +30,12 @@ class CursorPaginator<T> extends BasePaginator<T> {
         });
         
         return {
-          data: response.data,
-          metadata: {
-            cursor: response.metadata?.cursor,
-            hasMore: response.metadata?.hasMore || false
+          items: response.data,
+          meta: {
+            nextCursor: response.metadata?.cursor,
+            prevCursor: undefined,
+            total: response.data.length,
+            count: response.data.length
           }
         };
       },
@@ -39,10 +44,52 @@ class CursorPaginator<T> extends BasePaginator<T> {
       }
     });
   }
+  
+  async next(): Promise<T[]> {
+    // This is a simplified implementation for the example
+    // In a real implementation, you would need more error handling and state management
+    const state = this.getPaginationState();
+    
+    // Check if there are more pages
+    if (!this.hasMorePages) {
+      return [];
+    }
+    
+    // Create options for the next page
+    const options: ListOptions = {
+      cursor: this.nextCursor,
+      limit: this.config.initialOptions?.limit || 10
+    };
+    
+    try {
+      // Call the fetchPage method from the config
+      const response = await this.config.fetchPage(options);
+      
+      // Store the current page
+      this.currentPage = response.items;
+      
+      // Update pagination state
+      this.nextCursor = response.meta.nextCursor;
+      this.prevCursor = response.meta.prevCursor;
+      this.hasMorePages = !!response.meta.nextCursor;
+      this.itemsFetched += response.items.length;
+      this.pagesFetched++;
+      this.lastFetchTimestamp = Date.now();
+      
+      // Return the current page
+      return this.currentPage;
+    } catch (error) {
+      console.error('Error fetching next page:', error);
+      return [];
+    }
+  }
 }
 
 class OffsetPaginator<T> extends BasePaginator<T> {
   private offset = 0;
+  // Add missing properties needed for our implementation
+  protected nextCursor?: string;
+  protected prevCursor?: string;
   
   constructor(options: SimplePaginatorConfig<T>) {
     super({
@@ -60,12 +107,12 @@ class OffsetPaginator<T> extends BasePaginator<T> {
         const hasMore = this.offset < total;
         
         return {
-          data: response.data,
-          metadata: {
-            offset: this.offset,
-            limit: listOptions.limit || options.limit,
+          items: response.data,
+          meta: {
+            nextCursor: this.offset < total ? String(this.offset) : undefined,
+            prevCursor: undefined,
             total,
-            hasMore
+            count: response.data.length
           }
         };
       },
@@ -79,6 +126,44 @@ class OffsetPaginator<T> extends BasePaginator<T> {
   public reset(): void {
     super.reset();
     this.offset = 0;
+  }
+  
+  async next(): Promise<T[]> {
+    // This is a simplified implementation for the example
+    // In a real implementation, you would need more error handling and state management
+    const state = this.getPaginationState();
+    
+    // Check if there are more pages
+    if (!this.hasMorePages) {
+      return [];
+    }
+    
+    // Create options for the next page
+    const options: ListOptions = {
+      limit: this.config.initialOptions?.limit || 10
+    };
+    
+    try {
+      // Call the fetchPage method from the config
+      const response = await this.config.fetchPage(options);
+      
+      // Store the current page
+      this.currentPage = response.items;
+      
+      // Update pagination state
+      this.nextCursor = response.meta.nextCursor;
+      this.prevCursor = response.meta.prevCursor;
+      this.hasMorePages = !!response.meta.nextCursor;
+      this.itemsFetched += response.items.length;
+      this.pagesFetched++;
+      this.lastFetchTimestamp = Date.now();
+      
+      // Return the current page
+      return this.currentPage;
+    } catch (error) {
+      console.error('Error fetching next page:', error);
+      return [];
+    }
   }
 }
 
@@ -178,9 +263,10 @@ async function cursorPaginationExample() {
     fetchFunction: async (options: any) => {
       const response = await fetchUsers(options.cursor, options.limit);
       return {
-        data: response.data,
-        metadata: {
-          cursor: response.metadata.cursor,
+        items: response.data,
+        meta: {
+          nextCursor: response.metadata.cursor,
+          total: response.data.length,
           hasMore: response.metadata.hasMore
         }
       };
@@ -246,12 +332,13 @@ async function offsetPaginationExample() {
   const productPaginator = new OffsetPaginator<any>({
     fetchFunction: async (options: any) => {
       const response = await fetchProducts(options.offset, options.limit);
+      const hasMore = (options.offset + options.limit) < response.metadata.total;
       return {
-        data: response.data,
-        metadata: {
-          offset: response.metadata.offset,
-          limit: response.metadata.limit,
-          total: response.metadata.total
+        items: response.data,
+        meta: {
+          nextCursor: hasMore ? String(options.offset + options.limit) : undefined,
+          total: response.metadata.total,
+          hasMore
         }
       };
     },

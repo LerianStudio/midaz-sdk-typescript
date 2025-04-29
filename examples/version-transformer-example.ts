@@ -593,6 +593,9 @@ function identityTransformerExample() {
     createdAt: Date;
   }
   
+  // Define specific union type for notification types
+  type NotificationType = 'email' | 'sms' | 'push';
+  
   // Define API v1 notification model (identical to client model)
   interface ApiV1Notification {
     id: string;
@@ -609,7 +612,7 @@ function identityTransformerExample() {
     recipient: {
       userId: string;
     };
-    channel: string;  // 'email', 'sms', 'push'
+    channel: NotificationType;  // 'email', 'sms', 'push'
     content: {
       message: string;
       template?: string;
@@ -631,7 +634,11 @@ function identityTransformerExample() {
     
     // API v1 to Client
     (apiNotif: ApiV1Notification): ClientNotification => ({
-      ...apiNotif,
+      id: apiNotif.id,
+      userId: apiNotif.userId,
+      type: apiNotif.type as NotificationType,
+      message: apiNotif.message,
+      isRead: apiNotif.isRead,
       createdAt: new Date(apiNotif.createdAt)
     })
   );
