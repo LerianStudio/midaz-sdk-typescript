@@ -25,7 +25,10 @@
     "example:error-handling": "npx ts-node examples/error-handling-example.ts",
     "example:network": "npx ts-node examples/network-example.ts",
     "example:data": "npx ts-node examples/data-example.ts",
-    "example:observability": "npx ts-node examples/observability-example.ts"
+    "example:observability": "npx ts-node examples/observability-example.ts",
+    "example:network-example": "npx ts-node examples/network-example.ts",
+    "example:data-example": "npx ts-node examples/data-example.ts",
+    "example:version-transformer-example": "npx ts-node examples/version-transformer-example.ts"
   },
   "keywords": [
     "midaz",

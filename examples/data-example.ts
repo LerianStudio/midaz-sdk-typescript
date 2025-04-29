@@ -21,6 +21,7 @@ class CursorPaginator<T> extends BasePaginator<T> {
   // Add missing properties needed for our implementation
   protected nextCursor?: string;
   protected prevCursor?: string;
+
   constructor(options: SimplePaginatorConfig<T>) {
     super({
       fetchPage: async (listOptions: ListOptions): Promise<ListResponse<T>> => {
@@ -34,7 +35,7 @@ class CursorPaginator<T> extends BasePaginator<T> {
           meta: {
             nextCursor: response.metadata?.cursor,
             prevCursor: undefined,
-            total: response.data.length,
+            total: response.metadata?.total || response.data.length,
             count: response.data.length
           }
         };
@@ -48,7 +49,6 @@ class CursorPaginator<T> extends BasePaginator<T> {
   async next(): Promise<T[]> {
     // This is a simplified implementation for the example
     // In a real implementation, you would need more error handling and state management
-    const state = this.getPaginationState();
     
     // Check if there are more pages
     if (!this.hasMorePages) {
@@ -109,7 +109,7 @@ class OffsetPaginator<T> extends BasePaginator<T> {
         return {
           items: response.data,
           meta: {
-            nextCursor: this.offset < total ? String(this.offset) : undefined,
+            nextCursor: hasMore ? String(this.offset) : undefined,
             prevCursor: undefined,
             total,
             count: response.data.length
@@ -131,7 +131,6 @@ class OffsetPaginator<T> extends BasePaginator<T> {
   async next(): Promise<T[]> {
     // This is a simplified implementation for the example
     // In a real implementation, you would need more error handling and state management
-    const state = this.getPaginationState();
     
     // Check if there are more pages
     if (!this.hasMorePages) {
@@ -226,7 +225,7 @@ async function cursorPaginationExample() {
   console.log('\n=== Cursor Pagination Example ===');
   
   // Mock API function that returns paginated data with a cursor
-  async function fetchUsers(cursor?: string, limit: number = 10): Promise<any> {
+  async function fetchUsers(options: { cursor?: string, limit: number }): Promise<any> {
     // Simulate a database with 35 users
     const allUsers = Array.from({ length: 35 }, (_, i) => ({
       id: `user-${i + 1}`,
@@ -236,41 +235,32 @@ async function cursorPaginationExample() {
     
     // Determine the starting index based on the cursor
     let startIndex = 0;
-    if (cursor) {
-      const cursorIndex = allUsers.findIndex(user => user.id === cursor);
+    if (options.cursor) {
+      const cursorIndex = allUsers.findIndex(user => user.id === options.cursor);
       startIndex = cursorIndex !== -1 ? cursorIndex + 1 : 0;
     }
     
     // Get the subset of users for this page
-    const endIndex = Math.min(startIndex + limit, allUsers.length);
+    const endIndex = Math.min(startIndex + options.limit, allUsers.length);
     const users = allUsers.slice(startIndex, endIndex);
     
     // Determine if there are more results
     const hasMore = endIndex < allUsers.length;
     
-    // Return the paginated response
+    // Return the paginated response with proper format
     return {
       data: users,
       metadata: {
         cursor: hasMore ? users[users.length - 1].id : undefined,
-        hasMore
+        hasMore,
+        total: allUsers.length
       }
     };
   }
   
   // Create a cursor paginator
   const userPaginator = new CursorPaginator<any>({
-    fetchFunction: async (options: any) => {
-      const response = await fetchUsers(options.cursor, options.limit);
-      return {
-        items: response.data,
-        meta: {
-          nextCursor: response.metadata.cursor,
-          total: response.data.length,
-          hasMore: response.metadata.hasMore
-        }
-      };
-    },
+    fetchFunction: fetchUsers,
     limit: 10
   });
   
@@ -306,7 +296,7 @@ async function offsetPaginationExample() {
   console.log('\n=== Offset Pagination Example ===');
   
   // Mock API function that returns paginated data with offset/limit
-  async function fetchProducts(offset: number = 0, limit: number = 10): Promise<any> {
+  async function fetchProducts(options: { offset: number, limit: number }): Promise<any> {
     // Simulate a database with 45 products
     const allProducts = Array.from({ length: 45 }, (_, i) => ({
       id: i + 1,
@@ -315,14 +305,14 @@ async function offsetPaginationExample() {
     }));
     
     // Get the subset of products for this page
-    const products = allProducts.slice(offset, offset + limit);
+    const products = allProducts.slice(options.offset, options.offset + options.limit);
     
-    // Return the paginated response
+    // Return the paginated response with proper format
     return {
       data: products,
       metadata: {
-        offset,
-        limit,
+        offset: options.offset,
+        limit: options.limit,
         total: allProducts.length
       }
     };
@@ -330,18 +320,7 @@ async function offsetPaginationExample() {
   
   // Create an offset paginator
   const productPaginator = new OffsetPaginator<any>({
-    fetchFunction: async (options: any) => {
-      const response = await fetchProducts(options.offset, options.limit);
-      const hasMore = (options.offset + options.limit) < response.metadata.total;
-      return {
-        items: response.data,
-        meta: {
-          nextCursor: hasMore ? String(options.offset + options.limit) : undefined,
-          total: response.metadata.total,
-          hasMore
-        }
-      };
-    },
+    fetchFunction: fetchProducts,
     limit: 15
   });
   
@@ -354,20 +333,26 @@ async function offsetPaginationExample() {
   console.log('\nProcessing each item individually...');
   let processedCount = 0;
   
-  // Only process the first 30 items to keep the example short
-  await productPaginator.forEachItem(async (product: any) => {
-    processedCount++;
-    if (processedCount <= 3) {
-      console.log(`Processing product: ${product.name} - $${product.price}`);
-    } else if (processedCount === 4) {
-      console.log('... (processing remaining items)');
+  try {
+    // Only process the first 30 items to keep the example short
+    await productPaginator.forEachItem(async (product: any) => {
+      processedCount++;
+      if (processedCount <= 3) {
+        console.log(`Processing product: ${product.name} - $${product.price}`);
+      } else if (processedCount === 4) {
+        console.log('... (processing remaining items)');
+      }
+      
+      // Stop after 30 items
+      if (processedCount >= 30) {
+        throw new Error('STOP_ITERATION');
+      }
+    });
+  } catch (error) {
+    if ((error as Error).message !== 'STOP_ITERATION') {
+      console.error('Error processing products:', error);
     }
-    
-    // Stop after 30 items
-    if (processedCount >= 30) {
-      return Promise.reject(new Error('STOP_ITERATION'));
-    }
-  });
+  }
   
   console.log(`Processed ${processedCount} products`);
 }
