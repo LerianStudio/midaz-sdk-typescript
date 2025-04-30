@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 /**
  */
 
@@ -17,7 +18,7 @@ export interface ObservabilityOptions {
 
   /** OpenTelemetry collector endpoint URL */
   collectorEndpoint?: string;
-  
+
   /** Enable/disable console output for telemetry data @default true */
   consoleExporter?: boolean;
 }
@@ -32,7 +33,7 @@ import { ConfigService } from '../config';
 function getDefaultObservabilityOptions(): ObservabilityOptions {
   const configService = ConfigService.getInstance();
   const observabilityConfig = configService.getObservabilityConfig();
-  
+
   return {
     enableTracing: observabilityConfig.enableTracing,
     enableMetrics: observabilityConfig.enableMetrics,
@@ -64,10 +65,18 @@ export interface Span {
  * @internal
  */
 class NoopSpan implements Span {
-  setAttribute(): void { /* empty setAttribute */ }
-  recordException(_error: unknown): void { /* empty recordException */ }
-  setStatus(): void { /* empty setStatus */ }
-  end(): void { /* empty end */ }
+  setAttribute(): void {
+    /* empty setAttribute */
+  }
+  recordException(_error: unknown): void {
+    /* empty recordException */
+  }
+  setStatus(): void {
+    /* empty setStatus */
+  }
+  end(): void {
+    /* empty end */
+  }
 }
 
 // Import the OpenTelemetry provider
@@ -149,9 +158,9 @@ export class Observability {
     return new OpenTelemetryProvider(options);
   }
 
-  /** 
-   * Starts a new span for an operation 
-   * 
+  /**
+   * Starts a new span for an operation
+   *
    */
   startSpan(name: string, initialAttributes: Record<string, AttributeValue> = {}): Span {
     if (!this.options.enableTracing || !this.otelProvider) {

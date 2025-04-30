@@ -1,20 +1,20 @@
 /** Common models, shared data structures, enums, and constants */
 
-/** 
- * Base marker interface for all API responses 
+/**
+ * Base marker interface for all API responses
  * This interface now also serves as an extensible object type for API responses
  */
 export interface ApiResponse {
   readonly __apiResponse?: never;
-  
+
   /**
    * Allow any additional properties in API responses
    */
   [key: string]: any;
 }
 
-/** 
- * Marker interface for models that can be built using builder pattern 
+/**
+ * Marker interface for models that can be built using builder pattern
  * This is used for type checking and doesn't contain any properties
  */
 export interface BuildableModel {
@@ -226,4 +226,4 @@ export const PaginationDefaults = {
 
   /** Default sort direction */
   DEFAULT_SORT_DIRECTION: SortDirection.DESC,
-}
+};

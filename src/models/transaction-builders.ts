@@ -1,7 +1,7 @@
 /**
  */
 
-import { OperationInput as _OperationInput, AmountInput, CreateTransactionInput } from './transaction';
+import { AmountInput, CreateTransactionInput } from './transaction';
 
 /**
  * Creates an amount input with proper structure

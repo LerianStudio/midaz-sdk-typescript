@@ -35,10 +35,8 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     observability?: Observability
   ) {
     // Use provided observability or create a new one
-    this.observability =
-      observability ||
-      Observability.getInstance();
-    
+    this.observability = observability || Observability.getInstance();
+
     // Get API version from URL builder
     this.apiVersion = this.urlBuilder.getApiVersion();
   }
@@ -59,7 +57,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     try {
       span.setAttribute('url', url);
       span.setAttribute('apiVersion', this.apiVersion);
-      
+
       if (options?.params) {
         span.setAttribute('hasParams', true);
         this.setListOptionsAttributes(span, options.params as ListOptions);
@@ -70,8 +68,8 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
         ...options,
         headers: {
           ...options?.headers,
-          'X-API-Version': this.apiVersion
-        }
+          'X-API-Version': this.apiVersion,
+        },
       };
 
       const result = await this.httpClient.get<R>(url, requestOptions);
@@ -110,8 +108,8 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
         ...options,
         headers: {
           ...options?.headers,
-          'X-API-Version': this.apiVersion
-        }
+          'X-API-Version': this.apiVersion,
+        },
       };
 
       const result = await this.httpClient.post<R>(url, data, requestOptions);
@@ -150,8 +148,8 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
         ...options,
         headers: {
           ...options?.headers,
-          'X-API-Version': this.apiVersion
-        }
+          'X-API-Version': this.apiVersion,
+        },
       };
 
       const result = await this.httpClient.patch<R>(url, data, requestOptions);
@@ -189,8 +187,8 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
         ...options,
         headers: {
           ...options?.headers,
-          'X-API-Version': this.apiVersion
-        }
+          'X-API-Version': this.apiVersion,
+        },
       };
 
       await this.httpClient.delete(url, requestOptions);

@@ -2,6 +2,10 @@
  * custom handlers, module-specific loggers, and request tracking
  */
 
+// Import Node.js modules for file system operations
+import * as fs from 'fs';
+import * as path from 'path';
+
 /**
  * Available log levels in order of increasing severity
  *
@@ -474,18 +478,17 @@ export class Logger {
   }
 }
 
-import fs from 'fs';
-import path from 'path';
+// Already imported at the top of the file
 
 /**
  * Configuration options for file logging
  */
 export interface FileLoggerOptions {
   /**
-   * Log level for file logging
+   * Minimum log level for file logging
    * @default LogLevel.INFO
    */
-  level?: LogLevel;
+  minLevel?: LogLevel;
 
   /**
    * Log format for file logging
@@ -510,7 +513,7 @@ export function createFileLogger(
   options: FileLoggerOptions = {}
 ): Logger {
   // Default options
-  const { level = LogLevel.INFO, ..._rest } = options;
+  const { minLevel = LogLevel.INFO, ..._rest } = options;
 
   // Check if running in browser environment
   if (typeof window !== 'undefined') {
@@ -541,7 +544,7 @@ export function createFileLogger(
 
     // Create a logger with both console and file handlers
     return new Logger({
-      minLevel: level,
+      minLevel: minLevel,
       handlers: [fileHandler],
     });
   } catch (error) {

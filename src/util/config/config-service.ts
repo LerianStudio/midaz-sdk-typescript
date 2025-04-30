@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 /**
  */
 
@@ -142,22 +143,22 @@ export interface HttpConfig {
 
 /**
  * Configuration service for the Midaz SDK
- * 
+ *
  * This service centralizes all configuration and environment variable access
  * throughout the SDK, making it easier to manage configuration and test code
  * that relies on environment variables.
- * 
+ *
  * @example
  * ```typescript
  * // Get the global configuration instance
  * const config = ConfigService.getInstance();
- * 
+ *
  * // Get observability configuration
  * const observabilityConfig = config.getObservabilityConfig();
- * 
+ *
  * // Get API URL configuration
  * const apiUrlConfig = config.getApiUrlConfig();
- * 
+ *
  * // Override configuration settings
  * ConfigService.configure({
  *   observability: {
@@ -271,7 +272,10 @@ export class ConfigService {
       maxRetries: this.getNumberEnv('MIDAZ_RETRY_MAX_RETRIES', 3),
       initialDelay: this.getNumberEnv('MIDAZ_RETRY_INITIAL_DELAY', 100),
       maxDelay: this.getNumberEnv('MIDAZ_RETRY_MAX_DELAY', 1000),
-      retryableStatusCodes: this.getArrayEnv('MIDAZ_RETRY_STATUS_CODES', [408, 429, 500, 502, 503, 504]),
+      retryableStatusCodes: this.getArrayEnv(
+        'MIDAZ_RETRY_STATUS_CODES',
+        [408, 429, 500, 502, 503, 504]
+      ),
     };
 
     return {

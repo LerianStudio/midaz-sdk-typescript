@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  *
  * This file contains the OpenTelemetry implementation of the observability system.
@@ -231,7 +232,7 @@ export class OpenTelemetryProvider {
   constructor(options: ObservabilityOptions) {
     // Store options for later use
     this._options = { ...options };
-    
+
     // Initialize tracing if enabled
     if (options.enableTracing) {
       this.tracer = this.initializeTracing(options);
@@ -257,10 +258,10 @@ export class OpenTelemetryProvider {
   private initializeTracing(options: ObservabilityOptions): Tracer {
     // In a real implementation, this would initialize the OpenTelemetry tracing SDK
     // For demonstration purposes, we're creating a simplified version
-    
+
     // Check if console exporter is enabled (default to true if not specified)
     const enableConsole = options.consoleExporter !== false;
-    
+
     return {
       startSpan: (name: string, attributes: Record<string, any> = {}) => {
         // Only log to console if console exporter is enabled
@@ -282,7 +283,9 @@ export class OpenTelemetryProvider {
           },
           setStatus: (code: 'ok' | 'error', message?: string) => {
             if (enableConsole) {
-              console.debug(`[OpenTelemetry] Span status: ${code}${message ? ` - ${message}` : ''}`);
+              console.debug(
+                `[OpenTelemetry] Span status: ${code}${message ? ` - ${message}` : ''}`
+              );
             }
           },
           end: () => {
@@ -311,10 +314,10 @@ export class OpenTelemetryProvider {
   private initializeMetrics(options: ObservabilityOptions): Meter {
     // In a real implementation, this would initialize the OpenTelemetry metrics SDK
     // For demonstration purposes, we're creating a simplified version
-    
+
     // Check if console exporter is enabled (default to true if not specified)
     const enableConsole = options.consoleExporter !== false;
-    
+
     return {
       createCounter: (name: string, options?: any) => {
         if (enableConsole) {
@@ -354,10 +357,10 @@ export class OpenTelemetryProvider {
   private initializeLogging(options: ObservabilityOptions): Logger {
     // In a real implementation, this would initialize the OpenTelemetry logging SDK
     // For demonstration purposes, we're creating a simplified version
-    
+
     // Check if console exporter is enabled (default to true if not specified)
     const enableConsole = options.consoleExporter !== false;
-    
+
     return {
       debug: (message: string, attributes?: Record<string, any>) => {
         if (enableConsole) {
@@ -468,7 +471,7 @@ export class OpenTelemetryProvider {
   async shutdown(): Promise<void> {
     // Check if console exporter is enabled (default to true if not specified)
     const enableConsole = this._options?.consoleExporter !== false;
-    
+
     if (enableConsole) {
       console.debug('[OpenTelemetry] Shutting down');
     }

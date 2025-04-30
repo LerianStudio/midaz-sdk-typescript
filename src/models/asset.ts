@@ -78,10 +78,10 @@ export interface UpdateAssetInput {
 export interface AssetBuilder extends Builder<CreateAssetInput, AssetBuilder> {
   /** Set the name for the asset */
   withName(name: string): AssetBuilder;
-  
+
   /** Set the code for the asset */
   withCode(code: string): AssetBuilder;
-  
+
   /** Set the type for the asset */
   withType(type: string): AssetBuilder;
 }
@@ -89,7 +89,8 @@ export interface AssetBuilder extends Builder<CreateAssetInput, AssetBuilder> {
 /** Implementation of the AssetBuilder interface */
 export class AssetBuilderImpl
   extends ModelBuilder<CreateAssetInput, AssetBuilder>
-  implements AssetBuilder {
+  implements AssetBuilder
+{
   constructor(model: CreateAssetInput) {
     super(model);
   }
@@ -124,11 +125,7 @@ export function createAssetBuilder(name: string, code: string): AssetBuilder {
 /**
  * Creates a new asset builder with type field pre-filled
  */
-export function createAssetBuilderWithType(
-  name: string,
-  code: string,
-  type: string
-): AssetBuilder {
+export function createAssetBuilderWithType(name: string, code: string, type: string): AssetBuilder {
   const model: CreateAssetInput = {
     name,
     code,
@@ -146,7 +143,8 @@ export interface UpdateAssetBuilder extends Builder<UpdateAssetInput, UpdateAsse
 /** Implementation of the UpdateAssetBuilder interface */
 export class UpdateAssetBuilderImpl
   extends ModelBuilder<UpdateAssetInput, UpdateAssetBuilder>
-  implements UpdateAssetBuilder {
+  implements UpdateAssetBuilder
+{
   constructor(model: UpdateAssetInput) {
     super(model);
   }
@@ -168,10 +166,7 @@ export function createUpdateAssetBuilder(): UpdateAssetBuilder {
 /**
  * Sets the status on a CreateAssetInput
  */
-export function withStatus<T extends { status?: StatusCode }>(
-  input: T,
-  status: StatusCode
-): T {
+export function withStatus<T extends { status?: StatusCode }>(input: T, status: StatusCode): T {
   input.status = status;
   return input;
 }

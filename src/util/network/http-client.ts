@@ -1,23 +1,18 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 /**
  */
 
 import { createHash } from 'crypto';
-import dns from 'dns';
-import _http, { Agent as HttpAgent } from 'http';
-import _https, { Agent as HttpsAgent } from 'https';
+import * as dns from 'dns';
+import { Agent as HttpAgent } from 'http';
+import { Agent as HttpsAgent } from 'https';
 import { URL } from 'url';
 
 // Import these at the top to avoid require statements
 import { ConfigService } from '../config';
 
 import { Cache } from '../cache/cache';
-import {
-  ErrorCategory as _ErrorCategory,
-  ErrorCode as _ErrorCode,
-  MidazError as _MidazError,
-  newNetworkError as _newNetworkError,
-  errorFromHttpResponse
-} from '../error';
+import { errorFromHttpResponse } from '../error';
 import { Observability, Span } from '../observability/observability';
 
 import { RetryPolicy } from './retry-policy';
@@ -442,12 +437,12 @@ export class HttpClient implements HttpClientInterface {
   constructor(config: HttpClientConfig = {}) {
     // Get the config service instance
     const configService = ConfigService.getInstance();
-    
+
     // Get API URL configuration from ConfigService
     const apiUrlConfig = configService.getApiUrlConfig();
     // Get HTTP configuration from ConfigService with explicit type casting to avoid conflicts
     const httpConfig = configService.getHttpClientConfig() as any;
-    
+
     // Initialize base URLs
     this.baseUrls = config.baseUrls || {};
 
@@ -488,8 +483,10 @@ export class HttpClient implements HttpClientInterface {
     this.keepAlive = config.keepAlive !== undefined ? config.keepAlive : httpConfig.keepAlive;
     this.maxSockets = config.maxSockets || httpConfig.maxSockets;
     this.keepAliveMsecs = config.keepAliveMsecs || httpConfig.keepAliveMsecs;
-    this.enableHttp2 = config.enableHttp2 !== undefined ? config.enableHttp2 : httpConfig.enableHttp2;
-    this.dnsCacheTtl = config.dnsCacheTtl !== undefined ? config.dnsCacheTtl : httpConfig.dnsCacheTtl;
+    this.enableHttp2 =
+      config.enableHttp2 !== undefined ? config.enableHttp2 : httpConfig.enableHttp2;
+    this.dnsCacheTtl =
+      config.dnsCacheTtl !== undefined ? config.dnsCacheTtl : httpConfig.dnsCacheTtl;
     this.tlsOptions = config.tlsOptions;
 
     // Initialize connection pooling with agents
@@ -984,7 +981,7 @@ export class HttpClient implements HttpClientInterface {
       if (this.debug) {
         console.log(`[HttpClient] ${method} ${urlWithParams}`);
         if (data) {
-          console.log(`[HttpClient] Request body:`, data);
+          console.log(`[HttpClient] Request body:`, JSON.stringify(data));
         }
       }
 
@@ -992,11 +989,11 @@ export class HttpClient implements HttpClientInterface {
       const response = await this.retryPolicy.execute(
         async () => {
           const response = await fetch(urlWithParams, requestOptions);
-
           // Handle non-successful responses
           if (!response.ok) {
             // Use the errorFromHttpResponse helper with the correct number of arguments
-            return errorFromHttpResponse(
+
+            throw errorFromHttpResponse(
               response.status,
               await this.parseResponseBody(response),
               method,
@@ -1083,7 +1080,7 @@ export class HttpClient implements HttpClientInterface {
 
     // Add API key if available
     if (this.apiKey) {
-      headers['X-API-Key'] = this.apiKey;
+      headers['Authorization'] = this.apiKey;
     }
 
     // Add idempotency key for non-GET requests if enabled
@@ -1198,25 +1195,21 @@ export class HttpClient implements HttpClientInterface {
       }
 
       // If not in cache or expired, do a fresh lookup
-      dns.lookup(
-        hostname,
-        options,
-        (err: Error | null, address: string, family: number) => {
-          if (err) {
-            callback(err);
-            return;
-          }
-
-          // Cache the result
-          dnsCache.set(cacheKey, {
-            expires: now + ttl,
-            addresses: [address],
-            family,
-          });
-
-          callback(null, address, family);
+      dns.lookup(hostname, options, (err: Error | null, address: string, family: number) => {
+        if (err) {
+          callback(err);
+          return;
         }
-      );
+
+        // Cache the result
+        dnsCache.set(cacheKey, {
+          expires: now + ttl,
+          addresses: [address],
+          family,
+        });
+
+        callback(null, address, family);
+      });
     };
   }
 
@@ -1233,10 +1226,18 @@ export class HttpClient implements HttpClientInterface {
 
     // Return a no-op span if observability is not available
     return {
-      setAttribute: () => { /* empty setAttribute */ },
-      recordException: () => { /* empty recordException */ },
-      setStatus: () => { /* empty setStatus */ },
-      end: () => { /* empty end */ },
+      setAttribute: () => {
+        /* empty setAttribute */
+      },
+      recordException: () => {
+        /* empty recordException */
+      },
+      setStatus: () => {
+        /* empty setStatus */
+      },
+      end: () => {
+        /* empty end */
+      },
     };
   }
 }

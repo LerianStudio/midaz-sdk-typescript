@@ -1,26 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  */
 
-import type { LogLevel as _LogLevel } from '../observability/logger';
-import { 
-  EnhancedErrorInfo as _EnhancedErrorInfo, 
-  ErrorCategory as _ErrorCategory, 
-  ErrorCode as _ErrorCode, 
-  MidazError as _MidazError, 
-  TransactionErrorCategory as _TransactionErrorCategory
-, 
-  TransactionErrorType as _TransactionErrorType, 
-  ErrorHandlerOptions, 
-  ErrorRecoveryOptions, 
-  OperationResult 
-} from './error-types';
-import { 
-  isAccountEligibilityError, 
-  isDuplicateTransactionError, 
+import { ErrorHandlerOptions, ErrorRecoveryOptions, OperationResult } from './error-types';
+import {
+  isAccountEligibilityError,
+  isDuplicateTransactionError,
   isInsufficientBalanceError,
-  isInsufficientFundsError, 
+  isInsufficientFundsError,
   isRetryableError,
-  processError
+  processError,
 } from './error-utils';
 
 /**
@@ -34,9 +23,9 @@ const DEFAULT_RECOVERY_OPTIONS: ErrorRecoveryOptions = {
   retryCondition: isRetryableError,
 };
 
-/** 
+/**
  * Logs detailed error information for debugging
- * 
+ *
  */
 export function logDetailedError(
   error: unknown,
@@ -102,17 +91,15 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
   return function handleError(error: unknown, handlerContext?: Record<string, any>) {
     // Process the error to get all details
     const errorInfo = processError(error);
-    
+
     // Get the error message
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Handle user display if enabled
     if (displayErrors) {
       // If we have a formatter and valid errorInfo, use it, otherwise use the raw error message
-      const displayMessage = formatMessage && errorInfo 
-        ? formatMessage(errorInfo) 
-        : errorMessage;
-      
+      const displayMessage = formatMessage && errorInfo ? formatMessage(errorInfo) : errorMessage;
+
       displayFn(displayMessage);
     }
 
@@ -125,7 +112,7 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
     if (logErrors) {
       logDetailedError(error, handlerContext, (message, ...args) => {
         // Handle different log levels appropriately
-        switch(logLevel) {
+        switch (logLevel) {
           case 'debug':
             console.debug(message, ...args);
             break;
@@ -159,7 +146,7 @@ export async function withErrorHandling<T>(
   options?: ErrorHandlerOptions
 ): Promise<T | null> {
   const handler = createErrorHandler(options);
-  
+
   try {
     return await fn();
   } catch (error) {
@@ -167,7 +154,7 @@ export async function withErrorHandling<T>(
   }
 }
 
-/** 
+/**
  * Executes a function with automatic error recovery (retry with exponential backoff)
  *
  * @returns The result of the operation
@@ -236,9 +223,9 @@ export async function withErrorRecovery<T>(
   throw lastError;
 }
 
-/** 
+/**
  * Safely executes an operation with advanced error handling and recovery
- * 
+ *
  * @returns Operation result with status and error information
  */
 export async function executeOperation<T>(
@@ -249,13 +236,10 @@ export async function executeOperation<T>(
 
   try {
     // First, try to execute the operation with automatic retries for retryable errors
-    const result = await withErrorRecovery(
-      async () => {
-        attempts++;
-        return await operation();
-      },
-      options
-    );
+    const result = await withErrorRecovery(async () => {
+      attempts++;
+      return await operation();
+    }, options);
 
     // Operation succeeded
     return {
@@ -297,12 +281,12 @@ export async function executeOperation<T>(
   }
 }
 
-/** 
- * Legacy alias to maintain backwards compatibility - use executeOperation instead 
+/**
+ * Legacy alias to maintain backwards compatibility - use executeOperation instead
  */
 export const safelyExecuteOperation = executeOperation;
 
-/** 
+/**
  * Result type specifically for transaction execution
  * This interface extends OperationResult without adding new members
  * to provide a more specific type for transaction operations.
@@ -311,35 +295,32 @@ export const safelyExecuteOperation = executeOperation;
 // Type alias instead of empty interface to avoid lint errors
 export type ExecuteTransactionResult<T> = OperationResult<T>;
 
-/** 
+/**
  * Specialized version of executeOperation for financial transactions
- * 
+ *
  * @returns Transaction result and status information
  */
 export async function executeTransaction<T>(
   transactionFn: () => Promise<T>,
   options?: Partial<ErrorRecoveryOptions>
-): Promise<ExecuteTransactionResult<T>> {
-  return executeOperation(
-    transactionFn,
-    {
-      // Use custom retry condition that only retries network errors, not business logic errors
-      retryCondition: (error) => {
-        // Don't retry business logic errors like insufficient funds
-        if (
-          isInsufficientFundsError(error) ||
-          isInsufficientBalanceError(error) ||
-          isAccountEligibilityError(error)
-        ) {
-          return false;
-        }
+): Promise<OperationResult<T>> {
+  return executeOperation(transactionFn, {
+    // Use custom retry condition that only retries network errors, not business logic errors
+    retryCondition: (error) => {
+      // Don't retry business logic errors like insufficient funds
+      if (
+        isInsufficientFundsError(error) ||
+        isInsufficientBalanceError(error) ||
+        isAccountEligibilityError(error)
+      ) {
+        return false;
+      }
 
-        // Use standard retry condition for other errors
-        return isRetryableError(error);
-      },
-      ...options,
-    }
-  );
+      // Use standard retry condition for other errors
+      return isRetryableError(error);
+    },
+    ...options,
+  });
 }
 
 // For backward compatibility

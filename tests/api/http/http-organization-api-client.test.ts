@@ -8,14 +8,14 @@ import { Observability, Span } from '../../../src/util/observability/observabili
 import { HttpOrganizationApiClient } from '../../../src/api/http/http-organization-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
 import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
-import { 
-  CreateOrganizationInput, 
-  Organization, 
-  UpdateOrganizationInput 
+import {
+  CreateOrganizationInput,
+  Organization,
+  UpdateOrganizationInput,
 } from '../../../src/api/interfaces/organization-api-client';
-import { 
-  validateCreateOrganizationInput, 
-  validateUpdateOrganizationInput 
+import {
+  validateCreateOrganizationInput,
+  validateUpdateOrganizationInput,
 } from '../../../src/models/validators/organization-validator';
 
 // Mock dependencies
@@ -41,7 +41,7 @@ describe('HttpOrganizationApiClient', () => {
     city: 'San Francisco',
     state: 'CA',
     zipCode: '94105',
-    country: 'USA'
+    country: 'USA',
   };
 
   // Mock organization data
@@ -55,7 +55,7 @@ describe('HttpOrganizationApiClient', () => {
     status: { code: StatusCode.ACTIVE, timestamp: new Date().toISOString() },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    metadata: { industry: 'Technology' }
+    metadata: { industry: 'Technology' },
   };
 
   // Mock organization list response
@@ -64,8 +64,8 @@ describe('HttpOrganizationApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -83,19 +83,19 @@ describe('HttpOrganizationApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
@@ -106,9 +106,9 @@ describe('HttpOrganizationApiClient', () => {
         }
         return url;
       }),
-      getApiVersion: jest.fn().mockReturnValue(apiVersion)
+      getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
-    
+
     // Reset all mocks
     mockHttpClient.get.mockReset();
     mockHttpClient.post.mockReset();
@@ -121,12 +121,8 @@ describe('HttpOrganizationApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpOrganizationApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
-    
+    client = new HttpOrganizationApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
+
     // Access the protected apiVersion property by using type assertion
     (client as any).apiVersion = apiVersion;
 
@@ -214,7 +210,7 @@ describe('HttpOrganizationApiClient', () => {
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
         message: 'Organization not found',
-        statusCode: 404
+        statusCode: 404,
       });
       mockHttpClient.get.mockRejectedValueOnce(error);
 
@@ -235,9 +231,9 @@ describe('HttpOrganizationApiClient', () => {
         city: 'San Francisco',
         state: 'CA',
         zipCode: '94107',
-        country: 'USA'
+        country: 'USA',
       },
-      metadata: { industry: 'Finance' }
+      metadata: { industry: 'Finance' },
     };
 
     it('should successfully create an organization', async () => {
@@ -271,7 +267,9 @@ describe('HttpOrganizationApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.createOrganization(createInput)).rejects.toThrow('Validation error');
+      await expect(client.createOrganization(createInput)).rejects.toThrow(
+        'Failed to create organization'
+      );
       expect(mockHttpClient.post).not.toHaveBeenCalled();
     });
 
@@ -282,7 +280,9 @@ describe('HttpOrganizationApiClient', () => {
       mockHttpClient.post.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.createOrganization(createInput)).rejects.toThrow('API Error');
+      await expect(client.createOrganization(createInput)).rejects.toThrow(
+        'Failed to create organization'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -293,16 +293,19 @@ describe('HttpOrganizationApiClient', () => {
       legalName: 'Updated Organization Inc.',
       doingBusinessAs: 'UpdatedOrg',
       status: StatusCode.INACTIVE,
-      metadata: { industry: 'Healthcare' }
+      metadata: { industry: 'Healthcare' },
     };
 
     it('should successfully update an organization', async () => {
       // Arrange
-      const updatedOrganization = { 
-        ...mockOrganization, 
-        legalName: updateInput.legalName, 
+      const updatedOrganization = {
+        ...mockOrganization,
+        legalName: updateInput.legalName,
         doingBusinessAs: updateInput.doingBusinessAs,
-        status: { code: updateInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() }
+        status: {
+          code: updateInput.status || StatusCode.INACTIVE,
+          timestamp: new Date().toISOString(),
+        },
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedOrganization);
       (validateUpdateOrganizationInput as jest.Mock).mockReturnValueOnce({ valid: true });
@@ -320,7 +323,10 @@ describe('HttpOrganizationApiClient', () => {
         expect.objectContaining({ organizationId: orgId })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedLegalName', updateInput.legalName);
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedDoingBusinessAs', updateInput.doingBusinessAs);
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith(
+        'updatedDoingBusinessAs',
+        updateInput.doingBusinessAs
+      );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedMetadata', true);
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedStatus', updateInput.status);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -333,7 +339,9 @@ describe('HttpOrganizationApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.updateOrganization(orgId, updateInput)).rejects.toThrow('Validation error');
+      await expect(client.updateOrganization(orgId, updateInput)).rejects.toThrow(
+        'Validation error'
+      );
       expect(mockHttpClient.patch).not.toHaveBeenCalled();
     });
 
@@ -366,23 +374,29 @@ describe('HttpOrganizationApiClient', () => {
           city: 'New City',
           state: 'NY',
           zipCode: '10001',
-          country: 'USA'
+          country: 'USA',
         },
-        metadata: { 
+        metadata: {
           updated: true,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
         },
-        parentOrganizationId: 'parent-org-456'
+        parentOrganizationId: 'parent-org-456',
       };
-      
+
       mockHttpClient.patch.mockResolvedValueOnce(mockOrganization);
-      
+
       // Act
       await client.updateOrganization(orgId, fullUpdateInput);
-      
+
       // Assert
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedLegalName', fullUpdateInput.legalName);
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedDoingBusinessAs', fullUpdateInput.doingBusinessAs);
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith(
+        'updatedLegalName',
+        fullUpdateInput.legalName
+      );
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith(
+        'updatedDoingBusinessAs',
+        fullUpdateInput.doingBusinessAs
+      );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedStatus', fullUpdateInput.status);
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedAddress', true);
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedMetadata', true);
@@ -430,10 +444,10 @@ describe('HttpOrganizationApiClient', () => {
     it('should validate required parameters and throw error if missing', async () => {
       // The validateRequiredParams method is private, but we can test it indirectly
       // through the public methods that use it
-      
+
       // Test with missing parameters
       await expect(client.getOrganization('')).rejects.toThrow('id is required');
-      
+
       // Verify the error is recorded on the span
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -441,16 +455,16 @@ describe('HttpOrganizationApiClient', () => {
     it('should record metrics with the observability provider', async () => {
       // Use a public method to indirectly test the private recordMetrics method
       mockHttpClient.get.mockResolvedValueOnce(mockOrganization);
-      
+
       // Act
       await client.getOrganization(orgId);
-      
+
       // Assert
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'organizations.get',
         1,
-        expect.objectContaining({ 
-          organizationId: orgId 
+        expect.objectContaining({
+          organizationId: orgId,
         })
       );
     });

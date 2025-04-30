@@ -1,8 +1,7 @@
 /**
  */
 
-import { ApiResponse as _ApiResponse, ListResponse } from '../../models/common';
-import { transformResponse as _transformResponse } from './model-transformer';
+import { ListResponse } from '../../models/common';
 
 /**
  * Extracts items from an API response that may be either an array or a ListResponse object

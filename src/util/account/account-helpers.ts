@@ -1,8 +1,6 @@
 /**
  */
 
-import { Account as _Account } from '../../models/account';
-
 /**
  * Checks if an account ID belongs to an external account
  *
@@ -118,24 +116,27 @@ export function groupAccountsByAsset<T extends { assetCode?: string; ledgerId?: 
     ledgerId?: string;
   }
 ): Record<string, T[]> {
-  return accounts.reduce((acc: Record<string, T[]>, account) => {
-    // Skip accounts that don't match the ledger filter
-    if (options?.ledgerId && account.ledgerId !== options.ledgerId) {
+  return accounts.reduce(
+    (acc: Record<string, T[]>, account) => {
+      // Skip accounts that don't match the ledger filter
+      if (options?.ledgerId && account.ledgerId !== options.ledgerId) {
+        return acc;
+      }
+
+      // Skip accounts without an asset code
+      if (!account.assetCode) {
+        return acc;
+      }
+
+      // Initialize array for this asset code if needed
+      if (!acc[account.assetCode]) {
+        acc[account.assetCode] = [];
+      }
+
+      // Add the account to its asset group
+      acc[account.assetCode].push(account);
       return acc;
-    }
-
-    // Skip accounts without an asset code
-    if (!account.assetCode) {
-      return acc;
-    }
-
-    // Initialize array for this asset code if needed
-    if (!acc[account.assetCode]) {
-      acc[account.assetCode] = [];
-    }
-
-    // Add the account to its asset group
-    acc[account.assetCode].push(account);
-    return acc;
-  }, {} as Record<string, T[]>);
+    },
+    {} as Record<string, T[]>
+  );
 }

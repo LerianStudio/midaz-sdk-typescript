@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-catch */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  */
 

@@ -1,8 +1,6 @@
 /**
  */
 
-import { Status as _Status } from './common';
-
 /**
  * Balance represents an account balance in the Midaz system.
  *

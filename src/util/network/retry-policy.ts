@@ -1,6 +1,7 @@
 /**
  */
 
+import { ConfigService } from '../config';
 import { MidazError } from '../error';
 
 /**
@@ -23,9 +24,6 @@ export interface RetryOptions {
   retryCondition?: (error: Error) => boolean;
 }
 
-// Import ConfigService
-import { ConfigService } from '../config';
-
 /**
  * Default retry options
  * @internal
@@ -33,7 +31,7 @@ import { ConfigService } from '../config';
 function getDefaultRetryOptions(): RetryOptions {
   const configService = ConfigService.getInstance();
   const retryPolicyConfig = configService.getRetryPolicyConfig();
-  
+
   return {
     maxRetries: retryPolicyConfig.maxRetries,
     initialDelay: retryPolicyConfig.initialDelay,
@@ -85,10 +83,17 @@ export class RetryPolicy {
   constructor(options: RetryOptions = {}) {
     const defaultOptions = getDefaultRetryOptions();
     // Use explicit type assertions to avoid type errors
-    this.maxRetries = (options.maxRetries !== undefined ? options.maxRetries : defaultOptions.maxRetries) as number;
-    this.initialDelay = (options.initialDelay !== undefined ? options.initialDelay : defaultOptions.initialDelay) as number;
-    this.maxDelay = (options.maxDelay !== undefined ? options.maxDelay : defaultOptions.maxDelay) as number;
-    this.retryableStatusCodes = (options.retryableStatusCodes || defaultOptions.retryableStatusCodes) as number[];
+    this.maxRetries = (
+      options.maxRetries !== undefined ? options.maxRetries : defaultOptions.maxRetries
+    ) as number;
+    this.initialDelay = (
+      options.initialDelay !== undefined ? options.initialDelay : defaultOptions.initialDelay
+    ) as number;
+    this.maxDelay = (
+      options.maxDelay !== undefined ? options.maxDelay : defaultOptions.maxDelay
+    ) as number;
+    this.retryableStatusCodes = (options.retryableStatusCodes ||
+      defaultOptions.retryableStatusCodes) as number[];
     this.retryCondition = options.retryCondition;
   }
 

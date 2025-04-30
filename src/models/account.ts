@@ -152,7 +152,8 @@ export interface AccountBuilder extends Builder<CreateAccountInput, AccountBuild
  */
 export class AccountBuilderImpl
   extends ModelBuilder<CreateAccountInput, AccountBuilder>
-  implements AccountBuilder {
+  implements AccountBuilder
+{
   constructor(model: CreateAccountInput) {
     super(model);
   }
@@ -224,7 +225,8 @@ export interface UpdateAccountBuilder extends Builder<UpdateAccountInput, Update
  */
 export class UpdateAccountBuilderImpl
   extends ModelBuilder<UpdateAccountInput, UpdateAccountBuilder>
-  implements UpdateAccountBuilder {
+  implements UpdateAccountBuilder
+{
   constructor(model: UpdateAccountInput) {
     super(model);
   }
@@ -249,6 +251,31 @@ export class UpdateAccountBuilderImpl
  * Creates a new account update builder with method chaining
  */
 export function createUpdateAccountBuilder(): UpdateAccountBuilder {
-  const model: UpdateAccountInput = {};
-  return new UpdateAccountBuilderImpl(model);
+  return new UpdateAccountBuilderImpl({});
+}
+
+// Compatibility factory functions for backward compatibility
+/**
+ * Creates a new account input object
+ * @deprecated Use createAccountBuilder instead
+ */
+export function newCreateAccountInput(
+  name: string,
+  assetCode: string,
+  type: AccountType
+): CreateAccountInput {
+  return createAccountBuilder(name, assetCode, type).build();
+}
+
+/**
+ * Creates a new account input object with alias
+ * @deprecated Use createAccountBuilder instead
+ */
+export function newCreateAccountInputWithAlias(
+  name: string,
+  assetCode: string,
+  type: AccountType,
+  alias: string
+): CreateAccountInput {
+  return createAccountBuilder(name, assetCode, type).withAlias(alias).build();
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  */
 
@@ -131,15 +132,15 @@ export class RateLimiter {
       options.queueExceeded !== undefined
         ? options.queueExceeded
         : process.env.MIDAZ_RATE_LIMIT_QUEUE_EXCEEDED
-        ? process.env.MIDAZ_RATE_LIMIT_QUEUE_EXCEEDED.toLowerCase() === 'true'
-        : true;
+          ? process.env.MIDAZ_RATE_LIMIT_QUEUE_EXCEEDED.toLowerCase() === 'true'
+          : true;
 
     this.maxQueueSize =
       options.maxQueueSize !== undefined
         ? options.maxQueueSize
         : process.env.MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE
-        ? parseInt(process.env.MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE, 10)
-        : Infinity;
+          ? parseInt(process.env.MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE, 10)
+          : Infinity;
   }
 
   /**

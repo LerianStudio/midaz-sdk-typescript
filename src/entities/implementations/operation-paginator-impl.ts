@@ -13,7 +13,7 @@ import { OperationPaginator } from '../operations';
  *
  * This class extends the BasePaginator to provide operation-specific functionality
  * while leveraging the standardized pagination logic.
- * 
+ *
  */
 export class OperationPaginatorImpl extends BasePaginator<Operation> implements OperationPaginator {
   /**
@@ -50,15 +50,16 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
   ) {
     // Create the configuration for the base paginator
     const config: PaginatorConfig<Operation> = {
-      fetchPage: (options) => operationApiClient.listOperations(orgId, ledgerId, accountId, options),
+      fetchPage: (options) =>
+        operationApiClient.listOperations(orgId, ledgerId, accountId, options),
       initialOptions: opts,
       observability,
       serviceName: 'operation-paginator',
       spanAttributes: {
         orgId,
         ledgerId,
-        accountId
-      }
+        accountId,
+      },
     };
 
     super(config);
@@ -82,7 +83,7 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
    */
   public async next(): Promise<Operation[]> {
     const span = this.createSpan('next');
-    
+
     try {
       // Check if there are more operations to retrieve
       if (!(await this.hasNext())) {
@@ -90,13 +91,13 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
         span.setStatus('ok');
         return [];
       }
-      
+
       // Prepare options with cursor
       const paginationOpts = {
         ...this.options,
         cursor: this.nextCursor,
       };
-      
+
       // Make the API request
       this.lastFetchTimestamp = Date.now();
       const response = await this.operationApiClient.listOperations(
@@ -105,7 +106,7 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
         this.accountId,
         paginationOpts
       );
-      
+
       // Update pagination state
       this.nextCursor = response.meta?.nextCursor;
       this.hasMorePages = !!this.nextCursor;
@@ -119,7 +120,7 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
         ledgerId: this.ledgerId,
         accountId: this.accountId,
       });
-      
+
       // Record operation-specific metrics
       if (this.currentPage) {
         // Count debit and credit operations
@@ -142,11 +143,11 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
           });
         }
       }
-      
+
       span.setAttribute('operationCount', response.items.length);
       span.setAttribute('hasMore', this.hasMorePages);
       span.setStatus('ok');
-      
+
       return this.currentPage || [];
     } catch (error) {
       span.recordException(error as Error);
@@ -159,10 +160,10 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
 
   /**
    * Gets all operations
-   * 
+   *
    * Retrieves all operations that match the filters, handling
    * pagination automatically.
-   * 
+   *
    * @returns Promise resolving to all matching operations
    */
   public async getAllOperations(): Promise<Operation[]> {
@@ -171,9 +172,9 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
 
   /**
    * Tracks operations by type
-   * 
+   *
    * Iterates through all operations and processes them by type.
-   * 
+   *
    */
   public async trackOperationsByType(
     debitHandler: (op: Operation) => Promise<void>,
@@ -182,7 +183,7 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
     const span = this.createSpan('trackOperationsByType');
     let debitCount = 0;
     let creditCount = 0;
-    
+
     try {
       await this.forEachItem(async (operation) => {
         if (operation.type === 'DEBIT') {
@@ -193,7 +194,7 @@ export class OperationPaginatorImpl extends BasePaginator<Operation> implements 
           creditCount++;
         }
       });
-      
+
       span.setAttribute('debitCount', debitCount);
       span.setAttribute('creditCount', creditCount);
       span.setStatus('ok');

@@ -1,0 +1,17 @@
+
+# Folders
+src/
+.vscode/
+examples/
+docs/
+
+# Files
+tsconfig.json
+*.test.ts
+jest.config.*
+.eslintrc.*
+.prettierrc
+typedoc.json
+tsconfig.test.json
+package-lock.json
+.gitignore

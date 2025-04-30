@@ -3,8 +3,6 @@
 
 import { MidazConfig } from './client';
 import { HttpClient } from './util/network/http-client';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { RetryPolicy } from './util/network/retry-policy';
 
 /**
  * Environment-specific base URLs
@@ -272,9 +270,7 @@ export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): Clie
  * @returns A new client configuration builder with sandbox environment defaults
  */
 export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey)
-    .withEnvironment('sandbox')
-    .withApiVersion(apiVersion);
+  return createClientConfigBuilder(apiKey).withEnvironment('sandbox').withApiVersion(apiVersion);
 }
 
 /**
@@ -282,16 +278,18 @@ export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientCo
  * @returns A new client configuration builder with production environment defaults
  */
 export function createProductionConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey)
-    .withEnvironment('production')
-    .withApiVersion(apiVersion);
+  return createClientConfigBuilder(apiKey).withEnvironment('production').withApiVersion(apiVersion);
 }
 
 /**
  * Creates a local development configuration builder
  * @returns A new client configuration builder with local development defaults
  */
-export function createLocalConfig(apiKey: string, port = 3000, apiVersion = 'v1'): ClientConfigBuilder {
+export function createLocalConfig(
+  apiKey: string,
+  port = 3000,
+  apiVersion = 'v1'
+): ClientConfigBuilder {
   return createClientConfigBuilder(apiKey)
     .withBaseUrls({
       onboarding: `http://localhost:${port}`,

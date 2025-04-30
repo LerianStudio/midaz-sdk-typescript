@@ -7,7 +7,7 @@ export * from './error-handler';
 // Export all error types and interfaces
 export * from './error-types';
 
-// Export all error utility functions  
+// Export all error utility functions
 export * from './error-utils';
 
 // Export compatibility functions for workflow example
@@ -18,9 +18,7 @@ export * from './enhanced-error-recovery';
 
 // Import necessary types for the additional functions
 import { ErrorCategory, ErrorCode, MidazError } from './error-types';
-import { 
-  isMidazError
-} from './error-utils';
+import { isMidazError } from './error-utils';
 
 /**
  * Checks if an error is a cancellation error
@@ -37,6 +35,6 @@ export const newCancellationError = (message = 'Operation cancelled', params = {
     message,
     category: ErrorCategory.CANCELLATION,
     code: ErrorCode.CANCELLED,
-    ...params
+    ...params,
   });
 };
