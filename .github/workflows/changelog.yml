@@ -13,7 +13,7 @@ jobs:
           fetch-depth: 0
 
       - name: Generate changelog
-        uses: BobAnkh/auto-generate-changelog@v1.2.2
+        uses: BobAnkh/auto-generate-changelog@v1.2.5
         with:
           REPO_NAME: 'lerianstudio/midaz-sdk-typescript'
           ACCESS_TOKEN: ${{secrets.GITHUB_TOKEN}}
