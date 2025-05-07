@@ -54,9 +54,9 @@ jobs:
       - name: Fix vulnerabilities (if possible)
         run: npm audit fix
 
-  unit-tests:
+  prepare-build:
     runs-on: ubuntu-latest
-    name: Run Unit Tests
+    name: Prepare project for build (TypeScript compile)
     steps:
       - uses: actions/checkout@v4
 
@@ -72,7 +72,7 @@ jobs:
       - name: Build TypeScript project
         run: npm run build
 
-  build-and-test:
+  lint-build-test-docs:
     runs-on: ubuntu-latest
     name: Lint, Build, Test, Docs
     strategy:
