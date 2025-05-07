@@ -2,6 +2,7 @@
  */
 
 import { MidazConfig } from './client';
+import { AccessManagerConfig } from './util/auth/access-manager';
 import { HttpClient } from './util/network/http-client';
 
 /**
@@ -113,6 +114,11 @@ export interface ClientConfigBuilder {
    * Set a custom HTTP client
    */
   withHttpClient(httpClient: HttpClient): ClientConfigBuilder;
+  
+  /**
+   * Configure Access Manager for plugin-based authentication
+   */
+  withAccessManager(config: AccessManagerConfig): ClientConfigBuilder;
 
   /**
    * Build the final configuration object
@@ -203,6 +209,11 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
     this.config.httpClient = httpClient;
     return this;
   }
+  
+  withAccessManager(config: AccessManagerConfig): ClientConfigBuilder {
+    this.config.accessManager = config;
+    return this;
+  }
 
   build(): MidazConfig {
     // Apply default configuration for any unset properties
@@ -255,7 +266,30 @@ export function createClientConfigWithToken(authToken: string): ClientConfigBuil
 }
 
 /**
- * Creates a development environment configuration builder
+ * Creates a client configuration builder with Access Manager authentication
+ * @returns A new client configuration builder with Access Manager configured
+ */
+export function createClientConfigWithAccessManager(
+  config: {
+    address: string;
+    clientId: string;
+    clientSecret: string;
+    tokenEndpoint?: string;
+    refreshThresholdSeconds?: number;
+  }
+): ClientConfigBuilder {
+  return new ClientConfigBuilderImpl().withAccessManager({
+    enabled: true,
+    address: config.address,
+    clientId: config.clientId,
+    clientSecret: config.clientSecret,
+    tokenEndpoint: config.tokenEndpoint,
+    refreshThresholdSeconds: config.refreshThresholdSeconds,
+  });
+}
+
+/**
+ * Creates a development environment configuration builder with API key authentication
  * @returns A new client configuration builder with development environment defaults
  */
 export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
@@ -266,7 +300,27 @@ export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): Clie
 }
 
 /**
- * Creates a sandbox environment configuration builder
+ * Creates a development environment configuration builder with Access Manager authentication
+ * @returns A new client configuration builder with development environment defaults and Access Manager
+ */
+export function createDevelopmentConfigWithAccessManager(
+  config: {
+    address: string;
+    clientId: string;
+    clientSecret: string;
+    tokenEndpoint?: string;
+    refreshThresholdSeconds?: number;
+  },
+  apiVersion = 'v1'
+): ClientConfigBuilder {
+  return createClientConfigWithAccessManager(config)
+    .withEnvironment('development')
+    .withApiVersion(apiVersion)
+    .withDebugMode(true);
+}
+
+/**
+ * Creates a sandbox environment configuration builder with API key authentication
  * @returns A new client configuration builder with sandbox environment defaults
  */
 export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
@@ -274,7 +328,26 @@ export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientCo
 }
 
 /**
- * Creates a production environment configuration builder
+ * Creates a sandbox environment configuration builder with Access Manager authentication
+ * @returns A new client configuration builder with sandbox environment defaults and Access Manager
+ */
+export function createSandboxConfigWithAccessManager(
+  config: {
+    address: string;
+    clientId: string;
+    clientSecret: string;
+    tokenEndpoint?: string;
+    refreshThresholdSeconds?: number;
+  },
+  apiVersion = 'v1'
+): ClientConfigBuilder {
+  return createClientConfigWithAccessManager(config)
+    .withEnvironment('sandbox')
+    .withApiVersion(apiVersion);
+}
+
+/**
+ * Creates a production environment configuration builder with API key authentication
  * @returns A new client configuration builder with production environment defaults
  */
 export function createProductionConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
@@ -282,7 +355,26 @@ export function createProductionConfig(apiKey: string, apiVersion = 'v1'): Clien
 }
 
 /**
- * Creates a local development configuration builder
+ * Creates a production environment configuration builder with Access Manager authentication
+ * @returns A new client configuration builder with production environment defaults and Access Manager
+ */
+export function createProductionConfigWithAccessManager(
+  config: {
+    address: string;
+    clientId: string;
+    clientSecret: string;
+    tokenEndpoint?: string;
+    refreshThresholdSeconds?: number;
+  },
+  apiVersion = 'v1'
+): ClientConfigBuilder {
+  return createClientConfigWithAccessManager(config)
+    .withEnvironment('production')
+    .withApiVersion(apiVersion);
+}
+
+/**
+ * Creates a local development configuration builder with API key authentication
  * @returns A new client configuration builder with local development defaults
  */
 export function createLocalConfig(
@@ -291,6 +383,30 @@ export function createLocalConfig(
   apiVersion = 'v1'
 ): ClientConfigBuilder {
   return createClientConfigBuilder(apiKey)
+    .withBaseUrls({
+      onboarding: `http://localhost:${port}`,
+      transaction: `http://localhost:${port + 1}`,
+    })
+    .withApiVersion(apiVersion)
+    .withDebugMode(true);
+}
+
+/**
+ * Creates a local development configuration builder with Access Manager authentication
+ * @returns A new client configuration builder with local development defaults and Access Manager
+ */
+export function createLocalConfigWithAccessManager(
+  config: {
+    address: string;
+    clientId: string;
+    clientSecret: string;
+    tokenEndpoint?: string;
+    refreshThresholdSeconds?: number;
+  },
+  port = 3000,
+  apiVersion = 'v1'
+): ClientConfigBuilder {
+  return createClientConfigWithAccessManager(config)
     .withBaseUrls({
       onboarding: `http://localhost:${port}`,
       transaction: `http://localhost:${port + 1}`,

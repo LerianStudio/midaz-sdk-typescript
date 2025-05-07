@@ -130,13 +130,13 @@ describe('ConfigService', () => {
 
     it('should use environment variables when they are set', () => {
       process.env.MIDAZ_HTTP_TIMEOUT = '10000';
-      process.env.MIDAZ_API_KEY = 'test-api-key';
+      process.env.MIDAZ_AUTH_TOKEN = 'test-auth-token';
       process.env.MIDAZ_DEBUG = 'true';
       process.env.MIDAZ_HTTP_MAX_SOCKETS = '20';
 
       const config = ConfigService.getInstance().getHttpClientConfig();
       expect(config.timeout).toBe(10000);
-      expect(config.apiKey).toBe('test-api-key');
+      expect(config.apiKey).toBe('test-auth-token');
       expect(config.debug).toBe(true);
       expect(config.maxSockets).toBe(20);
     });

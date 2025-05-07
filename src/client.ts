@@ -4,6 +4,7 @@ import { HttpClient } from './util/network/http-client';
 import { RetryPolicy } from './util/network/retry-policy';
 import { Observability } from './util/observability/observability';
 import { ConfigService } from './util/config';
+import { AccessManager, AccessManagerConfig } from './util/auth/access-manager';
 
 /**
  * Configuration options for the Midaz client
@@ -108,6 +109,11 @@ export interface MidazConfig {
    * Custom HTTP client
    */
   httpClient?: HttpClient;
+  
+  /**
+   * Access Manager configuration for plugin-based authentication
+   */
+  accessManager?: AccessManagerConfig;
 }
 
 /**
@@ -139,6 +145,11 @@ export class MidazClient {
    * Observability provider
    */
   private readonly observability: Observability;
+  
+  /**
+   * Access Manager for authentication
+   */
+  private readonly accessManager?: AccessManager;
 
   /**
    * Creates a new Midaz client with the provided configuration
@@ -157,6 +168,11 @@ export class MidazClient {
     // Get API version from config or ConfigService
     if (!this.config.apiVersion) {
       this.config.apiVersion = configService.getApiUrlConfig().apiVersion;
+    }
+    
+    // Initialize Access Manager if configured
+    if (this.config.accessManager) {
+      this.accessManager = new AccessManager(this.config.accessManager);
     }
     
     // Initialize HTTP client
@@ -178,6 +194,12 @@ export class MidazClient {
         debug: this.config.debug,
         observability: this.observability,
       });
+      
+    // If Access Manager is enabled, set up authentication interceptor
+    if (this.accessManager?.isEnabled()) {
+      // We can't directly modify the private request method, so we'll intercept the public methods
+      this.setupAuthInterceptors();
+    }
 
     // Initialize entities API with config and observability
     this.entities = new Entity(this.httpClient, this.config, this.observability);
@@ -209,5 +231,83 @@ export class MidazClient {
    */
   public async shutdown(): Promise<void> {
     await this.observability.shutdown();
+  }
+  
+  /**
+   * Checks if the client is using plugin-based authentication
+   */
+  public isUsingAccessManager(): boolean {
+    return this.accessManager?.isEnabled() || false;
+  }
+  
+  /**
+   * Sets up authentication interceptors for all HTTP methods
+   * 
+   * This method wraps the public HTTP client methods to add authentication tokens
+   * from the Access Manager to each request.
+   * 
+   * @private
+   */
+  private setupAuthInterceptors(): void {
+    // Store original method implementations
+    const originalGet = this.httpClient.get.bind(this.httpClient);
+    const originalPost = this.httpClient.post.bind(this.httpClient);
+    const originalPut = this.httpClient.put.bind(this.httpClient);
+    const originalPatch = this.httpClient.patch.bind(this.httpClient);
+    const originalDelete = this.httpClient.delete.bind(this.httpClient);
+    
+    // Wrap get method
+    this.httpClient.get = async <T>(url: string, options: any = {}) => {
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
+      return originalGet<T>(url, options);
+    };
+    
+    // Wrap post method
+    this.httpClient.post = async <T>(url: string, data?: any, options: any = {}) => {
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
+      return originalPost<T>(url, data, options);
+    };
+    
+    // Wrap put method
+    this.httpClient.put = async <T>(url: string, data?: any, options: any = {}) => {
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
+      return originalPut<T>(url, data, options);
+    };
+    
+    // Wrap patch method
+    this.httpClient.patch = async <T>(url: string, data?: any, options: any = {}) => {
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
+      return originalPatch<T>(url, data, options);
+    };
+    
+    // Wrap delete method
+    this.httpClient.delete = async <T>(url: string, options: any = {}) => {
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
+      return originalDelete<T>(url, options);
+    };
+  }
+  
+  /**
+   * Gets an authentication token from the Access Manager
+   * 
+   * @returns Promise resolving to the authentication token
+   * @private
+   */
+  private async getAuthToken(): Promise<string> {
+    if (!this.accessManager?.isEnabled()) {
+      throw new Error('Access Manager is not enabled');
+    }
+    
+    try {
+      return await this.accessManager.getToken();
+    } catch (error) {
+      console.error('Failed to get authentication token:', error);
+      throw new Error(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
