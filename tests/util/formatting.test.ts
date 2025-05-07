@@ -8,42 +8,48 @@ import {
 } from '../../src/util/data/formatting';
 
 describe('Formatting Utilities', () => {
+  let locale: string;
+
+  beforeEach(() => {
+    locale = 'pt-BR';
+  });
+
   // Test 1: formatBalance function
   describe('formatBalance', () => {
     it('should format balance with 2 decimal places', () => {
-      const result = formatBalance(1050, 100);
+      const result = formatBalance(1050, 100, { locale });
       expect(result).toBe('10,50');
     });
 
     it('should format balance with 8 decimal places', () => {
-      const result = formatBalance(123456789, 100000000);
+      const result = formatBalance(123456789, 100000000, { locale });
       expect(result).toBe('1,23456789');
     });
 
     it('should format balance with currency symbol', () => {
       // Note: This test is locale-dependent, so we'll check for expected patterns
-      const result = formatBalance(2050, 100, { currency: 'USD' });
+      const result = formatBalance(2050, 100, { currency: 'USD', locale });
       expect(result).toContain('20,50');
       expect(result).toContain('$');
     });
 
     it('should respect minimum fraction digits', () => {
-      const result = formatBalance(10, 100, { minimumFractionDigits: 2 });
+      const result = formatBalance(10, 100, { minimumFractionDigits: 2, locale });
       expect(result).toBe('0,10');
     });
 
     it('should respect maximum fraction digits', () => {
-      const result = formatBalance(12345, 10000, { maximumFractionDigits: 2 });
+      const result = formatBalance(12345, 10000, { maximumFractionDigits: 2, locale });
       expect(result).toBe('1,23');
     });
 
     it('should handle zero amounts', () => {
-      const result = formatBalance(0, 100);
+      const result = formatBalance(0, 100, { locale });
       expect(result).toBe('0,00');
     });
 
     it('should handle negative amounts', () => {
-      const result = formatBalance(-1050, 100);
+      const result = formatBalance(-1050, 100, { locale });
       expect(result).toBe('-10,50');
     });
   });
