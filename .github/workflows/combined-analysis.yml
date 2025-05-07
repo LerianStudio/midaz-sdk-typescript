@@ -1,0 +1,118 @@
+name: "SDK Typescript Combined Analysis"
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+  actions: read
+  security-events: write
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    name: Run npm audit and fix vulnerabilities
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run npm audit
+        run: npm audit --omit=dev
+
+      - name: Fix vulnerabilities
+        run: npm audit fix
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Run Unit Tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install SWC binary (Linux only)
+        run: npm install --save-dev @next/swc-linux-x64-gnu --platform=linux --cpu=x64
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Patch Next.js SWC binaries (warm-up)
+        run: npx next build
+
+      - name: Run Unit Tests
+        run: npm test
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Lint, Build, Test, Docs
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 7
+
+      - name: Generate docs
+        run: npm run docs
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-${{ matrix.node-version }}
+          path: docs/
+          retention-days: 7
