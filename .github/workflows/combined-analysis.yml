@@ -72,9 +72,6 @@ jobs:
       - name: Build TypeScript project
         run: npm run build
 
-      - name: Run Unit Tests
-        run: npm test
-
   build-and-test:
     runs-on: ubuntu-latest
     name: Lint, Build, Test, Docs
