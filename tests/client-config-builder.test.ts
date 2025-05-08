@@ -232,6 +232,7 @@ describe('ClientConfigBuilder', () => {
 
     it('should allow setting API key after creation', () => {
       const accessManagerConfig = {
+        enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret'
@@ -245,6 +246,135 @@ describe('ClientConfigBuilder', () => {
       expect(config.apiKey).toBe('new-api-key');
       // Access Manager is still present in the config
       expect(config.accessManager).toBeDefined();
+    });
+    
+    describe('withAccessManager validation', () => {
+      let builder: ClientConfigBuilder;
+
+      beforeEach(() => {
+        builder = createClientConfigBuilder('test-api-key');
+      });
+
+      it('should throw error when enabled property is missing', () => {
+        const invalidConfig = {
+          // enabled is missing
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        expect(() => {
+          // @ts-ignore - We're intentionally passing an invalid config for testing
+          builder.withAccessManager(invalidConfig);
+        }).toThrow('AccessManagerConfig: "enabled" property is required');
+      });
+
+      it('should throw error when address property is missing', () => {
+        const invalidConfig = {
+          enabled: true,
+          // address is missing
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        expect(() => {
+          // @ts-ignore - We're intentionally passing an invalid config for testing
+          builder.withAccessManager(invalidConfig);
+        }).toThrow('AccessManagerConfig: "address" property is required');
+      });
+
+      it('should throw error when address property is empty', () => {
+        const invalidConfig = {
+          enabled: true,
+          address: '',  // empty address
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        expect(() => {
+          builder.withAccessManager(invalidConfig as any);
+        }).toThrow('AccessManagerConfig: "address" property is required');
+      });
+
+      it('should throw error when clientId property is missing', () => {
+        const invalidConfig = {
+          enabled: true,
+          address: 'https://auth.example.com',
+          // clientId is missing
+          clientSecret: 'test-client-secret'
+        };
+
+        expect(() => {
+          // @ts-ignore - We're intentionally passing an invalid config for testing
+          builder.withAccessManager(invalidConfig);
+        }).toThrow('AccessManagerConfig: "clientId" property is required');
+      });
+
+      it('should throw error when clientId property is empty', () => {
+        const invalidConfig = {
+          enabled: true,
+          address: 'https://auth.example.com',
+          clientId: '',  // empty clientId
+          clientSecret: 'test-client-secret'
+        };
+
+        expect(() => {
+          builder.withAccessManager(invalidConfig as any);
+        }).toThrow('AccessManagerConfig: "clientId" property is required');
+      });
+
+      it('should throw error when clientSecret property is missing', () => {
+        const invalidConfig = {
+          enabled: true,
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id'
+          // clientSecret is missing
+        };
+
+        expect(() => {
+          // @ts-ignore - We're intentionally passing an invalid config for testing
+          builder.withAccessManager(invalidConfig);
+        }).toThrow('AccessManagerConfig: "clientSecret" property is required');
+      });
+
+      it('should throw error when clientSecret property is empty', () => {
+        const invalidConfig = {
+          enabled: true,
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: ''  // empty clientSecret
+        };
+
+        expect(() => {
+          builder.withAccessManager(invalidConfig as any);
+        }).toThrow('AccessManagerConfig: "clientSecret" property is required');
+      });
+
+      it('should accept valid config with all required properties', () => {
+        const validConfig = {
+          enabled: true,
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        expect(() => {
+          builder.withAccessManager(validConfig);
+        }).not.toThrow();
+      });
+
+      it('should accept valid config with enabled set to false', () => {
+        const validConfig = {
+          enabled: false,
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        expect(() => {
+          builder.withAccessManager(validConfig);
+        }).not.toThrow();
+      });
     });
   });
 });
