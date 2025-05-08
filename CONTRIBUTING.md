@@ -17,8 +17,9 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 
 ### Prerequisites
 
-- Node.js 14+
+- Node.js 18.18.0 or later (but less than 24)
 - npm 6+
+- TypeScript 5.8 or later
 
 ### Setup
 
@@ -79,8 +80,10 @@ npm run example:workflow
 2. Update documentation as needed
 3. Add or update tests for new features or bug fixes
 4. Ensure all tests pass
-5. Submit a pull request to the `main` branch
-6. Fill out the pull request template completely
+5. Update TypeDoc comments for any new or modified public APIs
+6. Run `npm run docs` to generate updated API documentation
+7. Submit a pull request to the `main` branch
+8. Fill out the pull request template completely
 
 ### Branch Naming Convention
 
@@ -124,10 +127,38 @@ The release process is automated through GitHub Actions:
    - Generates documentation
    - Updates the changelog
 
+## Code Style Guidelines
+
+### TypeScript Best Practices
+
+- Use TypeScript's strict mode
+- Prefer interfaces over type aliases for object types
+- Use proper JSDoc comments for all public APIs
+- Follow the principle of least privilege for function parameters and return types
+- Use readonly modifiers where appropriate
+- Avoid using `any` type; use `unknown` instead when type is truly unknown
+
+### Testing Guidelines
+
+- Write unit tests for all new functionality
+- Aim for high test coverage, especially for critical components
+- Use descriptive test names that explain the expected behavior
+- Structure tests using the Arrange-Act-Assert pattern
+- Mock external dependencies appropriately
+
+## Documentation Guidelines
+
+- Use JSDoc comments for all public APIs
+- Include examples in documentation where appropriate
+- Keep the README and other documentation files up to date
+- Follow the established documentation structure
+
 ## Additional Resources
 
 - [API Documentation](https://docs.lerian.studio)
 - [Issue Tracker](https://github.com/lerianstudio/midaz-sdk-typescript/issues)
 - [Project Roadmap](https://github.com/lerianstudio/midaz-sdk-typescript/projects)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [Jest Testing Framework](https://jestjs.io/docs/getting-started)
 
 Thank you for contributing to the Midaz SDK!
