@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/**
- */
-
 import { createHash } from 'crypto';
 import * as dns from 'dns';
 import { Agent as HttpAgent } from 'http';
@@ -294,7 +290,7 @@ export type HttpClientInterface = {
    * to free up resources. After calling this method, the client should not be used.
    */
   destroy(): void;
-}
+};
 
 /**
  * Creates a new HTTP client

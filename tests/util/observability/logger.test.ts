@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import {
   createFileLogger,
   Logger,
@@ -330,10 +329,7 @@ describe('createFileLogger', () => {
     originalWindow = global.window;
 
     // Import the actual modules
-    // Using dynamic imports to avoid ESLint errors
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const fs = require('fs');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const path = require('path');
 
     // Set up spies on the module methods

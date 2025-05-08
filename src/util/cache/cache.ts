@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/**
- */
-
 /**
  * Cache entry with expiration
  * @internal

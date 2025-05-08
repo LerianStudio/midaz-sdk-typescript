@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/**
- */
-
 /**
  * Configuration options for observability
  */
@@ -52,7 +48,7 @@ export interface ApiUrlConfig {
    * @default "http://localhost:3001"
    */
   transactionUrl: string;
-  
+
   /**
    * API version to use for requests
    * @default "v1"
@@ -228,7 +224,9 @@ export class ConfigService {
    * Creates a new configuration service instance
    * @private - Use the static getInstance() method instead
    */
-  private constructor() { /* Use getInstance instead */ }
+  private constructor() {
+    /* Use getInstance instead */
+  }
 
   /**
    * Gets the global configuration service instance
