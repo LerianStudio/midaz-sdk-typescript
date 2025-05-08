@@ -211,6 +211,21 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
   }
   
   withAccessManager(config: AccessManagerConfig): ClientConfigBuilder {
+    // Validate required properties to prevent misconfiguration
+    if (config.enabled === undefined) {
+      throw new Error('AccessManagerConfig: "enabled" property is required');
+    }
+    if (!config.address) {
+      throw new Error('AccessManagerConfig: "address" property is required');
+    }
+    if (!config.clientId) {
+      throw new Error('AccessManagerConfig: "clientId" property is required');
+    }
+    if (!config.clientSecret) {
+      throw new Error('AccessManagerConfig: "clientSecret" property is required');
+    }
+    
+    // Assign the validated config
     this.config.accessManager = config;
     return this;
   }
