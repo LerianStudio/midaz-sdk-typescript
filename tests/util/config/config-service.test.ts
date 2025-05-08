@@ -161,4 +161,53 @@ describe('ConfigService', () => {
       expect(ConfigService.getInstance().getObservabilityConfig().enableTracing).toBe(false);
     });
   });
+
+  describe('getAccessManagerConfig', () => {
+    it('should return default values when no environment variables are set', () => {
+      const config = ConfigService.getInstance().getAccessManagerConfig();
+      expect(config).toEqual({
+        enabled: false,
+        address: '',
+        clientId: '',
+        clientSecret: '',
+        tokenEndpoint: '/oauth/token',
+        refreshThresholdSeconds: 300,
+      });
+    });
+
+    it('should use environment variables when they are set', () => {
+      process.env.PLUGIN_AUTH_ENABLED = 'true';
+      process.env.PLUGIN_AUTH_ADDRESS = 'https://auth.example.com';
+      process.env.MIDAZ_CLIENT_ID = 'test-client-id';
+      process.env.MIDAZ_CLIENT_SECRET = 'test-client-secret';
+      process.env.PLUGIN_AUTH_TOKEN_ENDPOINT = '/custom/token';
+      process.env.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS = '600';
+
+      const config = ConfigService.getInstance().getAccessManagerConfig();
+      expect(config).toEqual({
+        enabled: true,
+        address: 'https://auth.example.com',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        tokenEndpoint: '/custom/token',
+        refreshThresholdSeconds: 600,
+      });
+    });
+
+    it('should prioritize overrides over environment variables', () => {
+      process.env.PLUGIN_AUTH_ENABLED = 'true';
+      process.env.PLUGIN_AUTH_ADDRESS = 'https://env-auth.example.com';
+
+      ConfigService.configure({
+        accessManager: {
+          enabled: false,
+          address: 'https://override-auth.example.com',
+        },
+      });
+
+      const config = ConfigService.getInstance().getAccessManagerConfig();
+      expect(config.enabled).toBe(false);
+      expect(config.address).toBe('https://override-auth.example.com');
+    });
+  });
 });

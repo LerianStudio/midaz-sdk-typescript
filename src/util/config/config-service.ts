@@ -142,6 +142,44 @@ export interface HttpConfig {
 }
 
 /**
+ * Configuration options for Access Manager
+ */
+export interface AccessManagerConfig {
+  /**
+   * Whether the Access Manager is enabled
+   * @default false
+   */
+  enabled: boolean;
+
+  /**
+   * Address of the authentication service
+   */
+  address: string;
+
+  /**
+   * Client ID for authentication
+   */
+  clientId: string;
+
+  /**
+   * Client secret for authentication
+   */
+  clientSecret: string;
+
+  /**
+   * Endpoint for token requests
+   * @default "/oauth/token"
+   */
+  tokenEndpoint: string;
+
+  /**
+   * Time in seconds before token expiry when a refresh should be triggered
+   * @default 300 (5 minutes)
+   */
+  refreshThresholdSeconds: number;
+}
+
+/**
  * Configuration service for the Midaz SDK
  *
  * This service centralizes all configuration and environment variable access
@@ -183,6 +221,7 @@ export class ConfigService {
     apiUrls?: Partial<ApiUrlConfig>;
     retryPolicy?: Partial<RetryPolicyConfig>;
     httpClient?: Partial<HttpConfig>;
+    accessManager?: Partial<AccessManagerConfig>;
   } = {};
 
   /**
@@ -210,6 +249,7 @@ export class ConfigService {
     apiUrls?: Partial<ApiUrlConfig>;
     retryPolicy?: Partial<RetryPolicyConfig>;
     httpClient?: Partial<HttpConfig>;
+    accessManager?: Partial<AccessManagerConfig>;
   }): void {
     const instance = ConfigService.getInstance();
     instance.overrides = {
@@ -303,6 +343,26 @@ export class ConfigService {
     return {
       ...defaults,
       ...this.overrides.httpClient,
+    };
+  }
+
+  /**
+   * Gets the Access Manager configuration
+   * @returns The Access Manager configuration
+   */
+  public getAccessManagerConfig(): AccessManagerConfig {
+    const defaults: AccessManagerConfig = {
+      enabled: this.getBooleanEnv('PLUGIN_AUTH_ENABLED', false),
+      address: this.getEnv('PLUGIN_AUTH_ADDRESS', ''),
+      clientId: this.getEnv('MIDAZ_CLIENT_ID', ''),
+      clientSecret: this.getEnv('MIDAZ_CLIENT_SECRET', ''),
+      tokenEndpoint: this.getEnv('PLUGIN_AUTH_TOKEN_ENDPOINT', '/oauth/token'),
+      refreshThresholdSeconds: this.getNumberEnv('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS', 300),
+    };
+
+    return {
+      ...defaults,
+      ...this.overrides.accessManager,
     };
   }
 
