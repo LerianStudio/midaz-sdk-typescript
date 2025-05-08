@@ -1,0 +1,241 @@
+/**
+ * @file Tests for ClientConfigBuilder with Access Manager support
+ */
+import {
+  ClientConfigBuilder,
+  createClientConfigBuilder,
+  createClientConfigWithAccessManager,
+  createDevelopmentConfig,
+  createDevelopmentConfigWithAccessManager,
+  createSandboxConfig,
+  createSandboxConfigWithAccessManager,
+  createProductionConfig,
+  createProductionConfigWithAccessManager,
+  createLocalConfig,
+  createLocalConfigWithAccessManager
+} from '../src/client-config-builder';
+import { AccessManager } from '../src/util/auth/access-manager';
+
+// Mock AccessManager
+jest.mock('../src/util/auth/access-manager');
+
+describe('ClientConfigBuilder', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('createClientConfigBuilder', () => {
+    it('should create a builder with API key authentication', () => {
+      const builder = createClientConfigBuilder('test-api-key');
+      const config = builder.build();
+
+      expect(config.apiKey).toBe('test-api-key');
+      expect(config.accessManager).toBeUndefined();
+    });
+  });
+
+  describe('createClientConfigWithAccessManager', () => {
+    it('should create a builder with Access Manager authentication', () => {
+      const accessManagerConfig = {
+        address: 'https://auth.example.com',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret'
+      };
+
+      const builder = createClientConfigWithAccessManager(accessManagerConfig);
+      const config = builder.build();
+
+      expect(config.apiKey).toBeUndefined();
+      expect(config.accessManager).toBeDefined();
+      expect(AccessManager).toHaveBeenCalledWith({
+        enabled: true,
+        address: 'https://auth.example.com',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        tokenEndpoint: '/oauth/token',
+        refreshThresholdSeconds: 300
+      });
+    });
+
+    it('should allow custom token endpoint and refresh threshold', () => {
+      const accessManagerConfig = {
+        address: 'https://auth.example.com',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        tokenEndpoint: '/custom/token',
+        refreshThresholdSeconds: 600
+      };
+
+      const builder = createClientConfigWithAccessManager(accessManagerConfig);
+      const config = builder.build();
+
+      expect(config.accessManager).toBeDefined();
+      expect(AccessManager).toHaveBeenCalledWith({
+        enabled: true,
+        address: 'https://auth.example.com',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        tokenEndpoint: '/custom/token',
+        refreshThresholdSeconds: 600
+      });
+    });
+  });
+
+  describe('Environment-specific configurations', () => {
+    describe('Development', () => {
+      it('should create development config with API key', () => {
+        const builder = createDevelopmentConfig('test-api-key');
+        const config = builder.build();
+
+        expect(config.apiKey).toBe('test-api-key');
+        expect(config.environment).toBe('development');
+        expect(config.baseUrls.onboarding).toContain('dev');
+        expect(config.baseUrls.transaction).toContain('dev');
+      });
+
+      it('should create development config with Access Manager', () => {
+        const accessManagerConfig = {
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        const builder = createDevelopmentConfigWithAccessManager(accessManagerConfig);
+        const config = builder.build();
+
+        expect(config.apiKey).toBeUndefined();
+        expect(config.accessManager).toBeDefined();
+        expect(config.environment).toBe('development');
+        expect(config.baseUrls.onboarding).toContain('dev');
+        expect(config.baseUrls.transaction).toContain('dev');
+      });
+    });
+
+    describe('Sandbox', () => {
+      it('should create sandbox config with API key', () => {
+        const builder = createSandboxConfig('test-api-key');
+        const config = builder.build();
+
+        expect(config.apiKey).toBe('test-api-key');
+        expect(config.environment).toBe('sandbox');
+        expect(config.baseUrls.onboarding).toContain('sandbox');
+        expect(config.baseUrls.transaction).toContain('sandbox');
+      });
+
+      it('should create sandbox config with Access Manager', () => {
+        const accessManagerConfig = {
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        const builder = createSandboxConfigWithAccessManager(accessManagerConfig);
+        const config = builder.build();
+
+        expect(config.apiKey).toBeUndefined();
+        expect(config.accessManager).toBeDefined();
+        expect(config.environment).toBe('sandbox');
+        expect(config.baseUrls.onboarding).toContain('sandbox');
+        expect(config.baseUrls.transaction).toContain('sandbox');
+      });
+    });
+
+    describe('Production', () => {
+      it('should create production config with API key', () => {
+        const builder = createProductionConfig('test-api-key');
+        const config = builder.build();
+
+        expect(config.apiKey).toBe('test-api-key');
+        expect(config.environment).toBe('production');
+        expect(config.baseUrls.onboarding).not.toContain('dev');
+        expect(config.baseUrls.onboarding).not.toContain('sandbox');
+        expect(config.baseUrls.transaction).not.toContain('dev');
+        expect(config.baseUrls.transaction).not.toContain('sandbox');
+      });
+
+      it('should create production config with Access Manager', () => {
+        const accessManagerConfig = {
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        const builder = createProductionConfigWithAccessManager(accessManagerConfig);
+        const config = builder.build();
+
+        expect(config.apiKey).toBeUndefined();
+        expect(config.accessManager).toBeDefined();
+        expect(config.environment).toBe('production');
+        expect(config.baseUrls.onboarding).not.toContain('dev');
+        expect(config.baseUrls.onboarding).not.toContain('sandbox');
+        expect(config.baseUrls.transaction).not.toContain('dev');
+        expect(config.baseUrls.transaction).not.toContain('sandbox');
+      });
+    });
+
+    describe('Local', () => {
+      it('should create local config with API key', () => {
+        const builder = createLocalConfig('test-api-key');
+        const config = builder.build();
+
+        expect(config.apiKey).toBe('test-api-key');
+        expect(config.baseUrls.onboarding).toContain('localhost');
+        expect(config.baseUrls.transaction).toContain('localhost');
+        expect(config.debug).toBe(true);
+      });
+
+      it('should create local config with Access Manager', () => {
+        const accessManagerConfig = {
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret'
+        };
+
+        const builder = createLocalConfigWithAccessManager(accessManagerConfig);
+        const config = builder.build();
+
+        expect(config.apiKey).toBeUndefined();
+        expect(config.accessManager).toBeDefined();
+        expect(config.baseUrls.onboarding).toContain('localhost');
+        expect(config.baseUrls.transaction).toContain('localhost');
+        expect(config.debug).toBe(true);
+      });
+    });
+  });
+
+  describe('ClientConfigBuilder methods', () => {
+    it('should allow setting Access Manager after creation', () => {
+      const builder = createClientConfigBuilder('test-api-key');
+      
+      // Create a mock AccessManager instead of a real one to avoid type issues
+      const accessManager = {
+        isEnabled: jest.fn().mockReturnValue(true),
+        getToken: jest.fn().mockResolvedValue('test-token')
+      } as unknown as AccessManager;
+      
+      builder.withAccessManager(accessManager);
+      const config = builder.build();
+
+      expect(config.accessManager).toBe(accessManager);
+      // API key should be removed when Access Manager is set
+      expect(config.apiKey).toBeUndefined();
+    });
+
+    it('should allow setting API key after creation', () => {
+      const accessManagerConfig = {
+        address: 'https://auth.example.com',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret'
+      };
+
+      const builder = createClientConfigWithAccessManager(accessManagerConfig);
+      
+      builder.withApiKey('new-api-key');
+      const config = builder.build();
+
+      expect(config.apiKey).toBe('new-api-key');
+      // Access Manager should be removed when API key is set
+      expect(config.accessManager).toBeUndefined();
+    });
+  });
+});

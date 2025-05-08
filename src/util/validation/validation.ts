@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/**
- */
-
 import { ErrorCategory, ErrorCode, MidazError } from '../error';
 
 /** Validation-specific error with field-level error details */
@@ -121,7 +117,7 @@ export interface ValidationConfig {
   maxMetadataValueLength: number;
 }
 
-/** 
+/**
  * Combines multiple validation results into one with merged error messages
  */
 export function combineValidationResults(results: ValidationResult[]): ValidationResult {
@@ -505,7 +501,7 @@ export function validateDateRange(
 
     endTimestamp =
       typeof endDate === 'string' ? new Date(endDate).getTime() : (endDate as Date).getTime();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     return {
       valid: false,
@@ -783,12 +779,12 @@ export function validateAccountReference(
   // For backward compatibility with tests, empty accountId is considered valid
   // Skip validation for accountId if it's an empty string
   const results: ValidationResult[] = [];
-  
+
   // Only validate accountId if it's not an empty string
   if (accountId !== '') {
     results.push(validateRequired(accountId, `${fieldName}Id`));
   }
-  
+
   results.push(validateAssetCode(assetCode, `${fieldName}AssetCode`));
 
   return combineValidationResults(results);

@@ -1,8 +1,3 @@
-/* eslint-disable no-useless-catch */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/**
- */
-
 /**
  * Configuration options for the worker pool
  */

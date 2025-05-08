@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/**
- */
-
 /**
  * Configuration options for observability
  */
@@ -52,7 +48,7 @@ export interface ApiUrlConfig {
    * @default "http://localhost:3001"
    */
   transactionUrl: string;
-  
+
   /**
    * API version to use for requests
    * @default "v1"
@@ -142,6 +138,44 @@ export interface HttpConfig {
 }
 
 /**
+ * Configuration options for Access Manager
+ */
+export interface AccessManagerConfig {
+  /**
+   * Whether the Access Manager is enabled
+   * @default false
+   */
+  enabled: boolean;
+
+  /**
+   * Address of the authentication service
+   */
+  address: string;
+
+  /**
+   * Client ID for authentication
+   */
+  clientId: string;
+
+  /**
+   * Client secret for authentication
+   */
+  clientSecret: string;
+
+  /**
+   * Endpoint for token requests
+   * @default "/oauth/token"
+   */
+  tokenEndpoint: string;
+
+  /**
+   * Time in seconds before token expiry when a refresh should be triggered
+   * @default 300 (5 minutes)
+   */
+  refreshThresholdSeconds: number;
+}
+
+/**
  * Configuration service for the Midaz SDK
  *
  * This service centralizes all configuration and environment variable access
@@ -183,13 +217,16 @@ export class ConfigService {
     apiUrls?: Partial<ApiUrlConfig>;
     retryPolicy?: Partial<RetryPolicyConfig>;
     httpClient?: Partial<HttpConfig>;
+    accessManager?: Partial<AccessManagerConfig>;
   } = {};
 
   /**
    * Creates a new configuration service instance
    * @private - Use the static getInstance() method instead
    */
-  private constructor() { /* Use getInstance instead */ }
+  private constructor() {
+    /* Use getInstance instead */
+  }
 
   /**
    * Gets the global configuration service instance
@@ -210,6 +247,7 @@ export class ConfigService {
     apiUrls?: Partial<ApiUrlConfig>;
     retryPolicy?: Partial<RetryPolicyConfig>;
     httpClient?: Partial<HttpConfig>;
+    accessManager?: Partial<AccessManagerConfig>;
   }): void {
     const instance = ConfigService.getInstance();
     instance.overrides = {
@@ -291,7 +329,7 @@ export class ConfigService {
   public getHttpClientConfig(): HttpConfig {
     const defaults: HttpConfig = {
       timeout: this.getNumberEnv('MIDAZ_HTTP_TIMEOUT', 30000),
-      apiKey: this.getEnv('MIDAZ_API_KEY'),
+      apiKey: this.getEnv('MIDAZ_AUTH_TOKEN'),
       debug: this.getBooleanEnv('MIDAZ_DEBUG', false),
       keepAlive: this.getBooleanEnv('MIDAZ_HTTP_KEEP_ALIVE', true),
       maxSockets: this.getNumberEnv('MIDAZ_HTTP_MAX_SOCKETS', 10),
@@ -303,6 +341,26 @@ export class ConfigService {
     return {
       ...defaults,
       ...this.overrides.httpClient,
+    };
+  }
+
+  /**
+   * Gets the Access Manager configuration
+   * @returns The Access Manager configuration
+   */
+  public getAccessManagerConfig(): AccessManagerConfig {
+    const defaults: AccessManagerConfig = {
+      enabled: this.getBooleanEnv('PLUGIN_AUTH_ENABLED', false),
+      address: this.getEnv('PLUGIN_AUTH_ADDRESS', ''),
+      clientId: this.getEnv('MIDAZ_CLIENT_ID', ''),
+      clientSecret: this.getEnv('MIDAZ_CLIENT_SECRET', ''),
+      tokenEndpoint: this.getEnv('PLUGIN_AUTH_TOKEN_ENDPOINT', '/oauth/token'),
+      refreshThresholdSeconds: this.getNumberEnv('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS', 300),
+    };
+
+    return {
+      ...defaults,
+      ...this.overrides.accessManager,
     };
   }
 
