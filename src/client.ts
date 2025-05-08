@@ -249,47 +249,21 @@ export class MidazClient {
    * @private
    */
   private setupAuthInterceptors(): void {
-    // Store original method implementations
-    const originalGet = this.httpClient.get.bind(this.httpClient);
-    const originalPost = this.httpClient.post.bind(this.httpClient);
-    const originalPut = this.httpClient.put.bind(this.httpClient);
-    const originalPatch = this.httpClient.patch.bind(this.httpClient);
-    const originalDelete = this.httpClient.delete.bind(this.httpClient);
-    
-    // Wrap get method
-    this.httpClient.get = async <T>(url: string, options: any = {}) => {
-      options.headers = options.headers || {};
-      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
-      return originalGet<T>(url, options);
-    };
-    
-    // Wrap post method
-    this.httpClient.post = async <T>(url: string, data?: any, options: any = {}) => {
-      options.headers = options.headers || {};
-      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
-      return originalPost<T>(url, data, options);
-    };
-    
-    // Wrap put method
-    this.httpClient.put = async <T>(url: string, data?: any, options: any = {}) => {
-      options.headers = options.headers || {};
-      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
-      return originalPut<T>(url, data, options);
-    };
-    
-    // Wrap patch method
-    this.httpClient.patch = async <T>(url: string, data?: any, options: any = {}) => {
-      options.headers = options.headers || {};
-      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
-      return originalPatch<T>(url, data, options);
-    };
-    
-    // Wrap delete method
-    this.httpClient.delete = async <T>(url: string, options: any = {}) => {
-      options.headers = options.headers || {};
-      options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
-      return originalDelete<T>(url, options);
-    };
+    const methods = ['get', 'post', 'put', 'patch', 'delete'];
+
+    methods.forEach((method) => {
+      const originalMethod = this.httpClient[method].bind(this.httpClient);
+      this.httpClient[method] = async (...args: any[]) => {
+        const options = args[method === 'get' || method === 'delete' ? 1 : 2] || {};
+        options.headers = options.headers || {};
+        options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
+        if (method === 'get' || method === 'delete') {
+          return originalMethod(args[0], options);
+        } else {
+          return originalMethod(args[0], args[1], options);
+        }
+      };
+    });
   }
   
   /**
