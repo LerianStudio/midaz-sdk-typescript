@@ -17,6 +17,10 @@ The Midaz SDK enables seamless integration with Midaz's financial services platf
 - **Concurrency Controls**: Utilities for managing parallel operations with controlled throughput
 - **Caching**: In-memory caching mechanisms for improved performance
 - **Validation**: Extensive input validation with clear error messages
+- **API Versioning**: Support for multiple API versions with version transformers
+- **Abort Control**: Support for cancellable requests using AbortController
+- **Access Manager**: Plugin-based authentication with external identity providers
+- **Comprehensive Examples**: Detailed examples for all major features
 
 ## Installation
 
@@ -94,6 +98,76 @@ const result = await withEnhancedRecovery(
 client.close();
 ```
 
+### Using Access Manager for Authentication
+
+For applications that need to integrate with external identity providers, the SDK provides an Access Manager:
+
+```typescript
+import { createClientConfigWithAccessManager, MidazClient } from 'midaz-sdk';
+
+// Initialize the client with Access Manager authentication
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com', // Identity provider address
+    clientId: 'your-client-id', // OAuth client ID
+    clientSecret: 'your-client-secret', // OAuth client secret
+    tokenEndpoint: '/oauth/token', // Optional, defaults to '/oauth/token'
+    refreshThresholdSeconds: 300, // Optional, defaults to 300 (5 minutes)
+  })
+    .withEnvironment('sandbox')
+    .withApiVersion('v1')
+);
+
+// The SDK will automatically handle token acquisition and renewal
+// You can now use the client as normal
+const organizations = await client.entities.organizations.listOrganizations();
+
+// For environment-specific configurations with Access Manager
+const sandboxClient = new MidazClient(
+  createSandboxConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
+
+// Clean up resources when done
+client.close();
+```
+
+## Authentication
+
+The SDK supports multiple authentication methods:
+
+### API Key Authentication
+
+Simple authentication using an API key:
+
+```typescript
+const client = createClient({
+  apiKey: 'your-api-key',
+  environment: 'sandbox',
+});
+```
+
+### Access Manager Authentication
+
+For integration with external identity providers using OAuth:
+
+```typescript
+const client = createClient({
+  accessManager: {
+    enabled: true,
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  },
+  environment: 'sandbox',
+});
+```
+
+The Access Manager automatically handles token acquisition, caching, and renewal, eliminating the need to manage authentication tokens manually.
+
 ## Documentation
 
 For detailed documentation, see the [SDK Documentation](./docs/README.md) which includes:
@@ -140,7 +214,17 @@ For detailed documentation, see the [SDK Documentation](./docs/README.md) which 
 
 ## TypeScript Support
 
-The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 4.5 or later.
+The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 5.8 or later.
+
+### CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and delivery:
+
+- Automated testing across multiple Node.js versions
+- Code quality checks with ESLint and Prettier
+- Automated dependency updates via Dependabot
+- Automated release process with semantic versioning
+- Automated changelog generation
 
 ## Contributing
 
