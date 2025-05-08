@@ -214,7 +214,7 @@ For detailed documentation, see the [SDK Documentation](./docs/README.md) which 
 
 ## TypeScript Support
 
-The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 4,5 or later.
+The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 5.8 or later.
 
 ### CI/CD Pipeline
 
