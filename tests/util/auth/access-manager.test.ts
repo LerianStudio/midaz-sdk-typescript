@@ -23,7 +23,7 @@ describe('AccessManager', () => {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret',
         tokenEndpoint: '/custom/token',
-        refreshThresholdSeconds: 600
+        refreshThresholdSeconds: 600,
       });
 
       expect(accessManager.isEnabled()).toBe(true);
@@ -38,7 +38,7 @@ describe('AccessManager', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       // Private properties can't be directly accessed in tests
@@ -56,7 +56,7 @@ describe('AccessManager', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       expect(accessManager.isEnabled()).toBe(true);
@@ -67,7 +67,7 @@ describe('AccessManager', () => {
         enabled: false,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       expect(accessManager.isEnabled()).toBe(false);
@@ -80,7 +80,7 @@ describe('AccessManager', () => {
         enabled: false,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       await expect(accessManager.getToken()).rejects.toThrow('Access Manager is not enabled');
@@ -91,29 +91,31 @@ describe('AccessManager', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       // Mock successful token response
       mockedAxios.request.mockResolvedValueOnce({
         data: {
-          access_token: 'new-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600
-        }
+          accessToken: 'new-access-token',
+          tokenType: 'Bearer',
+          expiresIn: 3600,
+        },
       });
 
       const token = await accessManager.getToken();
-      
+
       expect(token).toBe('new-access-token');
-      expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
-        method: 'POST',
-        url: '/oauth/token',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        data: expect.stringContaining('grant_type=client_credentials')
-      }));
+      expect(mockedAxios.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          url: '/oauth/token',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          data: expect.stringContaining('grantType=client_credentials'),
+        })
+      );
     });
 
     it('should use refresh token when available', async () => {
@@ -121,17 +123,17 @@ describe('AccessManager', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       // First call to get initial token with refresh token
       mockedAxios.request.mockResolvedValueOnce({
         data: {
-          access_token: 'initial-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-          refresh_token: 'refresh-token'
-        }
+          accessToken: 'initial-access-token',
+          tokenType: 'Bearer',
+          expiresIn: 3600,
+          refreshToken: 'refresh-token',
+        },
       });
 
       // Get the initial token
@@ -144,25 +146,25 @@ describe('AccessManager', () => {
       // Second call to refresh the token
       mockedAxios.request.mockResolvedValueOnce({
         data: {
-          access_token: 'refreshed-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600
-        }
+          accessToken: 'refreshed-access-token',
+          tokenType: 'Bearer',
+          expiresIn: 3600,
+        },
       });
 
       // Force token refresh by manipulating the mock to simulate expiration
       // This is a bit of a hack, but it's the best we can do without exposing internals
       Object.defineProperty(accessManager, 'tokenExpiry', {
         value: Math.floor(Date.now() / 1000) - 100, // Token expired 100 seconds ago
-        writable: true
+        writable: true,
       });
 
       const token = await accessManager.getToken();
-      
+
       expect(token).toBe('refreshed-access-token');
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
       // The second call should use the refresh token
-      expect(mockedAxios.request.mock.calls[1][0].data).toContain('refresh_token=refresh-token');
+      expect(mockedAxios.request.mock.calls[1][0].data).toContain('refreshToken=refresh-token');
     });
 
     it('should handle token fetch errors', async () => {
@@ -170,13 +172,15 @@ describe('AccessManager', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       // Mock a failed token response
       mockedAxios.request.mockRejectedValueOnce(new Error('Network error'));
 
-      await expect(accessManager.getToken()).rejects.toThrow('Failed to fetch authentication token: Network error');
+      await expect(accessManager.getToken()).rejects.toThrow(
+        'Failed to fetch authentication token: Network error'
+      );
     });
 
     it('should return cached token if not expired', async () => {
@@ -184,24 +188,24 @@ describe('AccessManager', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       });
 
       // Mock successful token response
       mockedAxios.request.mockResolvedValueOnce({
         data: {
-          access_token: 'cached-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600
-        }
+          accessToken: 'cached-access-token',
+          tokenType: 'Bearer',
+          expiresIn: 3600,
+        },
       });
 
       // First call should fetch the token
       const token1 = await accessManager.getToken();
-      
+
       // Second call should use the cached token
       const token2 = await accessManager.getToken();
-      
+
       expect(token1).toBe('cached-access-token');
       expect(token2).toBe('cached-access-token');
       expect(mockedAxios.request).toHaveBeenCalledTimes(1);
@@ -229,7 +233,7 @@ describe('AccessManager', () => {
       process.env.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS = '900';
 
       const accessManager = AccessManager.fromEnvironment();
-      
+
       expect(accessManager.isEnabled()).toBe(true);
       expect(mockedAxios.create).toHaveBeenCalledWith({
         baseURL: 'https://env-auth.example.com',
@@ -250,7 +254,7 @@ describe('AccessManager', () => {
       process.env.PLUGIN_AUTH_ENABLED = 'false';
 
       const accessManager = AccessManager.fromEnvironment();
-      
+
       expect(accessManager.isEnabled()).toBe(false);
     });
   });

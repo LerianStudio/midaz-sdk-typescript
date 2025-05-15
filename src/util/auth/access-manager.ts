@@ -1,6 +1,6 @@
 /**
  * Access Manager for plugin-based authentication with external identity providers
- * 
+ *
  * This module provides a flexible authentication mechanism that integrates with
  * external identity providers, eliminating the need for hardcoded tokens.
  */
@@ -50,10 +50,10 @@ export interface AccessManagerConfig {
  * Authentication token response from the auth service
  */
 interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  refresh_token?: string;
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  refreshToken?: string;
   scope?: string;
 }
 
@@ -67,7 +67,7 @@ export class AccessManager {
   private clientSecret: string;
   private tokenEndpoint: string;
   private refreshThresholdSeconds: number;
-  
+
   private httpClient: AxiosInstance;
   private accessToken: string | null = null;
   private tokenExpiry: number = 0;
@@ -101,10 +101,10 @@ export class AccessManager {
 
   /**
    * Gets an authentication token
-   * 
+   *
    * If a token is already available and not close to expiring, returns it.
    * Otherwise, fetches a new token from the auth service.
-   * 
+   *
    * @returns Promise resolving to the authentication token
    */
   async getToken(): Promise<string> {
@@ -118,7 +118,7 @@ export class AccessManager {
     }
 
     const now = Math.floor(Date.now() / 1000);
-    
+
     // Check if we have a valid token that's not close to expiring
     if (this.accessToken && this.tokenExpiry > now + this.refreshThresholdSeconds) {
       return this.accessToken;
@@ -138,7 +138,7 @@ export class AccessManager {
 
   /**
    * Fetches a new token from the auth service
-   * 
+   *
    * @returns Promise resolving to the authentication token
    * @private
    */
@@ -152,24 +152,24 @@ export class AccessManager {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         data: new URLSearchParams({
-          grant_type: this.refreshToken ? 'refresh_token' : 'client_credentials',
-          client_id: this.clientId,
-          client_secret: this.clientSecret,
-          ...(this.refreshToken ? { refresh_token: this.refreshToken } : {}),
+          grantType: this.refreshToken ? 'refresh_token' : 'client_credentials',
+          clientId: this.clientId,
+          clientSecret: this.clientSecret,
+          ...(this.refreshToken ? { refreshToken: this.refreshToken } : {}),
         }).toString(),
       };
 
       const response = await this.httpClient.request<TokenResponse>(requestConfig);
-      
-      if (!response.data || !response.data.access_token) {
+
+      if (!response.data || !response.data.accessToken) {
         throw new Error('Invalid token response from auth service');
       }
 
-      this.accessToken = response.data.access_token;
-      this.tokenExpiry = now + response.data.expires_in;
-      
-      if (response.data.refresh_token) {
-        this.refreshToken = response.data.refresh_token;
+      this.accessToken = response.data.accessToken;
+      this.tokenExpiry = now + response.data.expiresIn;
+
+      if (response.data.refreshToken) {
+        this.refreshToken = response.data.refreshToken;
       }
 
       return this.accessToken;
@@ -177,7 +177,7 @@ export class AccessManager {
       // Clear token state on error
       this.accessToken = null;
       this.tokenExpiry = 0;
-      
+
       if (error instanceof Error) {
         throw new Error(`Failed to fetch authentication token: ${error.message}`);
       }
@@ -187,36 +187,36 @@ export class AccessManager {
 
   /**
    * Creates an Access Manager instance from environment variables
-   * 
+   *
    * @returns Access Manager instance configured from environment variables
    */
   static fromEnvironment(): AccessManager {
     // Access environment variables directly
-    
+
     // Use the private methods through a wrapper to avoid TypeScript errors
     const getEnv = (name: string, defaultValue = ''): string => {
       return process.env[name] || defaultValue;
     };
-    
+
     const getBooleanEnv = (name: string, defaultValue: boolean): boolean => {
       const value = process.env[name];
       return value ? value.toLowerCase() === 'true' : defaultValue;
     };
-    
+
     const getNumberEnv = (name: string, defaultValue: number): number => {
       const value = process.env[name];
       return value ? parseInt(value, 10) : defaultValue;
     };
-    
+
     const enabled = getBooleanEnv('PLUGIN_AUTH_ENABLED', false);
     const address = getEnv('PLUGIN_AUTH_ADDRESS', '');
     const clientId = getEnv('MIDAZ_CLIENT_ID', '');
     const clientSecret = getEnv('MIDAZ_CLIENT_SECRET', '');
-    
+
     if (enabled && (!address || !clientId || !clientSecret)) {
       throw new Error(
         'Plugin auth is enabled but required environment variables are missing. ' +
-        'Please set PLUGIN_AUTH_ADDRESS, MIDAZ_CLIENT_ID, and MIDAZ_CLIENT_SECRET.'
+          'Please set PLUGIN_AUTH_ADDRESS, MIDAZ_CLIENT_ID, and MIDAZ_CLIENT_SECRET.'
       );
     }
 
