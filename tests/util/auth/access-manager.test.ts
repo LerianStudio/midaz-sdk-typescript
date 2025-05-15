@@ -111,9 +111,13 @@ describe('AccessManager', () => {
           method: 'POST',
           url: '/oauth/token',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
           },
-          data: expect.stringContaining('grantType=client_credentials'),
+          data: expect.objectContaining({
+            grantType: 'client_credentials',
+            clientId: 'test-client-id',
+            clientSecret: 'test-client-secret',
+          }),
         })
       );
     });
@@ -164,7 +168,13 @@ describe('AccessManager', () => {
       expect(token).toBe('refreshed-access-token');
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
       // The second call should use the refresh token
-      expect(mockedAxios.request.mock.calls[1][0].data).toContain('refreshToken=refresh-token');
+      expect(mockedAxios.request.mock.calls[1][0].data).toEqual(
+        expect.objectContaining({
+          grantType: 'client_credentials',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret',
+        })
+      );
     });
 
     it('should handle token fetch errors', async () => {
