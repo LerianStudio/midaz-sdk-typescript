@@ -109,7 +109,7 @@ export interface MidazConfig {
    * Custom HTTP client
    */
   httpClient?: HttpClient;
-  
+
   /**
    * Access Manager configuration for plugin-based authentication
    */
@@ -145,7 +145,7 @@ export class MidazClient {
    * Observability provider
    */
   private readonly observability: Observability;
-  
+
   /**
    * Access Manager for authentication
    */
@@ -164,17 +164,17 @@ export class MidazClient {
 
     // Get ConfigService instance
     const configService = ConfigService.getInstance();
-    
+
     // Get API version from config or ConfigService
     if (!this.config.apiVersion) {
       this.config.apiVersion = configService.getApiUrlConfig().apiVersion;
     }
-    
+
     // Initialize Access Manager if configured
     if (this.config.accessManager) {
       this.accessManager = new AccessManager(this.config.accessManager);
     }
-    
+
     // Initialize HTTP client
     this.httpClient =
       this.config.httpClient ||
@@ -194,7 +194,7 @@ export class MidazClient {
         debug: this.config.debug,
         observability: this.observability,
       });
-      
+
     // If Access Manager is enabled, set up authentication interceptor
     if (this.accessManager?.isEnabled()) {
       // We can't directly modify the private request method, so we'll intercept the public methods
@@ -232,28 +232,29 @@ export class MidazClient {
   public async shutdown(): Promise<void> {
     await this.observability.shutdown();
   }
-  
+
   /**
    * Checks if the client is using plugin-based authentication
    */
   public isUsingAccessManager(): boolean {
     return this.accessManager?.isEnabled() || false;
   }
-  
+
   /**
    * Sets up authentication interceptors for all HTTP methods
-   * 
+   *
    * This method wraps the public HTTP client methods to add authentication tokens
    * from the Access Manager to each request.
-   * 
+   *
    * @private
    */
   private setupAuthInterceptors(): void {
-    const methods = ['get', 'post', 'put', 'patch', 'delete'];
+    type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
+    const methods: HttpMethod[] = ['get', 'post', 'put', 'patch', 'delete'];
 
     methods.forEach((method) => {
-      const originalMethod = this.httpClient[method].bind(this.httpClient);
-      this.httpClient[method] = async (...args: any[]) => {
+      const originalMethod = (this.httpClient[method] as any).bind(this.httpClient);
+      (this.httpClient[method] as any) = async (...args: any[]) => {
         const options = args[method === 'get' || method === 'delete' ? 1 : 2] || {};
         options.headers = options.headers || {};
         options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
@@ -265,10 +266,10 @@ export class MidazClient {
       };
     });
   }
-  
+
   /**
    * Gets an authentication token from the Access Manager
-   * 
+   *
    * @returns Promise resolving to the authentication token
    * @private
    */
@@ -276,12 +277,14 @@ export class MidazClient {
     if (!this.accessManager?.isEnabled()) {
       throw new Error('Access Manager is not enabled');
     }
-    
+
     try {
       return await this.accessManager.getToken();
     } catch (error) {
       console.error('Failed to get authentication token:', error);
-      throw new Error(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 }
