@@ -1072,10 +1072,11 @@ export class HttpClient implements HttpClientInterface {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...this.headers,
+      ...(options.headers || {}), // Merge headers from options
     };
 
-    // Add API key if available
-    if (this.apiKey) {
+    // Add API key if available and no Authorization header is present in options
+    if (this.apiKey && !options.headers?.['Authorization']) {
       headers['Authorization'] = this.apiKey;
     }
 

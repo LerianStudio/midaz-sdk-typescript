@@ -257,7 +257,8 @@ export class MidazClient {
       (this.httpClient[method] as any) = async (...args: any[]) => {
         const options = args[method === 'get' || method === 'delete' ? 1 : 2] || {};
         options.headers = options.headers || {};
-        options.headers['Authorization'] = `Bearer ${await this.getAuthToken()}`;
+        const token = await this.getAuthToken();
+        options.headers['Authorization'] = token;
         if (method === 'get' || method === 'delete') {
           return originalMethod(args[0], options);
         } else {
