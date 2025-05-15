@@ -149,14 +149,13 @@ export class AccessManager {
         method: 'POST',
         url: this.tokenEndpoint,
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        data: new URLSearchParams({
-          grantType: this.refreshToken ? 'refresh_token' : 'client_credentials',
+        data: {
+          grantType: 'client_credentials',
           clientId: this.clientId,
           clientSecret: this.clientSecret,
-          ...(this.refreshToken ? { refreshToken: this.refreshToken } : {}),
-        }).toString(),
+        },
       };
 
       const response = await this.httpClient.request<TokenResponse>(requestConfig);
