@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  */
 
@@ -120,8 +118,16 @@ export async function workerPool<T>(
       options.concurrency ?? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY || '10', 10),
     preserveOrder: options.preserveOrder ?? true,
     batchDelay: options.batchDelay ?? 0,
-    onSuccess: options.onSuccess ?? (() => { /* empty success handler */ }),
-    onError: options.onError ?? (() => { /* empty error handler */ }),
+    onSuccess:
+      options.onSuccess ??
+      (() => {
+        /* empty success handler */
+      }),
+    onError:
+      options.onError ??
+      (() => {
+        /* empty error handler */
+      }),
     continueOnError: options.continueOnError ?? false,
   };
 

@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/**
- */
-
 import { ErrorHandlerOptions, ErrorRecoveryOptions, OperationResult } from './error-types';
 import {
   isAccountEligibilityError,

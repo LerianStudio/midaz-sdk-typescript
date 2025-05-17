@@ -251,7 +251,7 @@ The configuration service automatically reads from environment variables. Here a
 | `MIDAZ_ONBOARDING_URL` | Base URL for onboarding service | `http://localhost:3000` |
 | `MIDAZ_TRANSACTION_URL` | Base URL for transaction service | `http://localhost:3001` |
 | `MIDAZ_API_URL` | Base URL for API (legacy) | `http://localhost:3000` |
-| `MIDAZ_API_KEY` | API key for authentication | |
+| `MIDAZ_AUTH_TOKEN` | Authentication token | |
 | `MIDAZ_HTTP_TIMEOUT` | HTTP request timeout in ms | `10000` |
 | `MIDAZ_HTTP_DEBUG` | Enable HTTP debug logging | `false` |
 | `MIDAZ_HTTP_KEEP_ALIVE` | Enable HTTP keep-alive | `true` |
@@ -277,7 +277,7 @@ The configuration service automatically reads from environment variables. Here a
 // Set environment variables
 process.env.MIDAZ_ONBOARDING_URL = 'https://api.example.com/v1/onboarding';
 process.env.MIDAZ_TRANSACTION_URL = 'https://api.example.com/v1/transaction';
-process.env.MIDAZ_API_KEY = 'your-api-key';
+process.env.MIDAZ_AUTH_TOKEN = 'your-auth-token';
 process.env.MIDAZ_HTTP_TIMEOUT = '30000';
 process.env.MIDAZ_RETRY_MAX_RETRIES = '5';
 

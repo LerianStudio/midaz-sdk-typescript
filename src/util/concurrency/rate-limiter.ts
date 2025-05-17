@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/**
- */
-
 /**
  * Configuration options for the rate limiter
  */
@@ -216,7 +212,7 @@ export class RateLimiter {
       // Queue is guaranteed to have items due to the length check above
       const queueItem = this.requestQueue.shift();
       if (!queueItem) return; // Should never happen, but satisfies TypeScript
-      
+
       const { fn, resolve, reject } = queueItem;
 
       try {

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  *
  * This file contains the OpenTelemetry implementation of the observability system.

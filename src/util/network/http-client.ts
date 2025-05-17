@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/**
- */
-
 import { createHash } from 'crypto';
 import * as dns from 'dns';
 import { Agent as HttpAgent } from 'http';
@@ -294,7 +290,7 @@ export type HttpClientInterface = {
    * to free up resources. After calling this method, the client should not be used.
    */
   destroy(): void;
-}
+};
 
 /**
  * Creates a new HTTP client
@@ -1076,10 +1072,11 @@ export class HttpClient implements HttpClientInterface {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...this.headers,
+      ...(options.headers || {}), // Merge headers from options
     };
 
-    // Add API key if available
-    if (this.apiKey) {
+    // Add API key if available and no Authorization header is present in options
+    if (this.apiKey && !options.headers?.['Authorization']) {
       headers['Authorization'] = this.apiKey;
     }
 

@@ -13,6 +13,11 @@ This SDK follows a layered architecture with clear separation of concerns and em
 - **Error Handling**: Sophisticated error handling with recovery mechanisms
 - **Observability**: Built-in tracing, metrics, and logging capabilities
 - **Layered Architecture**: Clear separation between client, entities, API, and model layers
+- **API Versioning**: Support for multiple API versions with version transformers
+- **Abort Control**: Support for cancellable requests using AbortController
+- **Concurrency Management**: Tools for controlling parallel operations and throughput
+- **Caching**: Configurable in-memory caching for improved performance
+- **Access Manager**: Plugin-based authentication with external identity providers
 
 ## Documentation Structure
 
@@ -51,6 +56,55 @@ This SDK follows a layered architecture with clear separation of concerns and em
 - [Observability](./utilities/observability.md) - Tracing, metrics, and logging utilities
 - [Pagination](./utilities/pagination.md) - Utilities for handling paginated responses
 - [Validation](./utilities/validation.md) - Data validation utilities
+
+## Authentication
+
+The SDK supports multiple authentication methods:
+
+### API Key Authentication
+
+Simple authentication using an API key:
+
+```typescript
+const client = createClient({
+  apiKey: 'your-api-key',
+  environment: 'sandbox'
+});
+```
+
+### Access Manager Authentication
+
+For integration with external identity providers using OAuth:
+
+```typescript
+// Using the createClient function
+const client = createClient({
+  accessManager: {
+    enabled: true,
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret'
+  },
+  environment: 'sandbox'
+});
+
+// Using the builder pattern with environment-specific configurations
+import { createSandboxConfigWithAccessManager, MidazClient } from 'midaz-sdk';
+
+const client = new MidazClient(
+  createSandboxConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret'
+  })
+);
+```
+
+The Access Manager automatically handles:
+- OAuth token acquisition using client credentials flow
+- Token caching to minimize authentication requests
+- Automatic token renewal before expiration
+- Secure token management
 
 ## Basic Usage
 
@@ -142,9 +196,54 @@ npm install midaz-sdk
 yarn add midaz-sdk
 ```
 
-## TypeScript Support
+## System Requirements
 
-The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 4.5 or later.
+### TypeScript Support
+
+The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 5.8 or later.
+
+### Node.js Compatibility
+
+The SDK is compatible with Node.js versions 18.18.0 or later (but less than 24). It leverages modern JavaScript features while maintaining compatibility with the LTS versions of Node.js.
+
+### Dependencies
+
+The SDK has minimal production dependencies:
+- `abort-controller`: For cancellable requests
+- `axios`: For HTTP communication
+- `node-fetch`: For network requests in Node.js environments
+
+## Development
+
+### Running Examples
+
+The SDK includes numerous examples demonstrating various features:
+
+```bash
+# Run the complete workflow example
+npm run example:workflow
+
+# Run specific feature examples
+npm run example:client-config
+npm run example:api-versioning
+npm run example:cache
+npm run example:concurrency
+npm run example:validation
+npm run example:error-handling
+npm run example:network
+npm run example:data
+npm run example:observability
+```
+
+### CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and delivery:
+
+- Automated testing across multiple Node.js versions
+- Code quality checks with ESLint and Prettier
+- Automated dependency updates via Dependabot
+- Automated release process with semantic versioning
+- Automated changelog generation
 
 ## Contributing
 
