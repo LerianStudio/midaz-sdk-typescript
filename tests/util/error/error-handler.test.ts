@@ -1,5 +1,5 @@
-import { 
-  isRetryableError, 
+import {
+  isRetryableError,
   categorizeTransactionError as getTransactionErrorType,
   TransactionErrorCategory,
   TransactionErrorCategory as _TransactionErrorType,
@@ -10,16 +10,26 @@ import {
   errorFromHttpResponse as _processApiError,
   withErrorRecovery,
   executeTransaction,
-  MidazError, 
-  ErrorCategory, 
+  MidazError,
+  ErrorCategory,
   ErrorCode,
   // Unified error handler aliases
   createErrorHandler as createStandardErrorHandler,
   withErrorHandling,
-  executeOperation as safelyExecuteOperation
+  executeOperation as safelyExecuteOperation,
 } from '../../../src/util/error';
+import { logger } from '../../../src/util/observability/logger-instance';
 
 // Mock the dependencies
+jest.mock('../../../src/util/observability/logger-instance', () => ({
+  logger: {
+    error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+  },
+}));
+
 jest.mock('../../../src/util/error/error-utils', () => {
   const originalModule = jest.requireActual('../../../src/util/error/error-utils');
   const _errorHandlerModule = jest.requireActual('../../../src/util/error/error-handler');
@@ -49,7 +59,8 @@ jest.mock('../../../src/util/error/error-utils', () => {
         if (error.message.includes('limit_exceeded')) return 'limit_exceeded';
         if (error.message.includes('transaction_rejected')) return 'transaction_rejected';
         if (error.message.includes('unauthorized')) return 'unauthorized_transaction';
-        if (error.message.includes('currency conversion failed')) return 'currency_conversion_error';
+        if (error.message.includes('currency conversion failed'))
+          return 'currency_conversion_error';
         if (error.message.includes('account_not_found')) return 'account_not_found';
       }
       return 'unknown_error';
@@ -66,10 +77,10 @@ jest.mock('../../../src/util/error/error-utils', () => {
             technicalDetails: `[${error.category}/${error.code}] ${error.message}`,
             isRetryable: true,
             shouldShowUser: true,
-            transactionErrorType: 'network_error'
+            transactionErrorType: 'network_error',
           };
         }
-        
+
         return {
           type: error.category,
           code: error.code,
@@ -77,9 +88,13 @@ jest.mock('../../../src/util/error/error-utils', () => {
           originalError: error,
           userMessage: error.message,
           technicalDetails: `[${error.category}/${error.code}] ${error.message}`,
-          isRetryable: [ErrorCategory.NETWORK, ErrorCategory.TIMEOUT, ErrorCategory.INTERNAL].includes(error.category),
+          isRetryable: [
+            ErrorCategory.NETWORK,
+            ErrorCategory.TIMEOUT,
+            ErrorCategory.INTERNAL,
+          ].includes(error.category),
           shouldShowUser: true,
-          transactionErrorType: originalModule.categorizeTransactionError(error)
+          transactionErrorType: originalModule.categorizeTransactionError(error),
         };
       } else if (error instanceof Error) {
         const errorType = originalModule.categorizeTransactionError(error);
@@ -91,7 +106,7 @@ jest.mock('../../../src/util/error/error-utils', () => {
           technicalDetails: error.stack || error.message,
           isRetryable: error.message.includes('network') || error.message.includes('timeout'),
           shouldShowUser: errorType !== 'duplicate_transaction',
-          transactionErrorType: errorType
+          transactionErrorType: errorType,
         };
       }
       return {
@@ -101,9 +116,9 @@ jest.mock('../../../src/util/error/error-utils', () => {
         userMessage: String(error),
         technicalDetails: String(error),
         isRetryable: false,
-        shouldShowUser: true
+        shouldShowUser: true,
       };
-    })
+    }),
   };
 });
 
@@ -111,7 +126,7 @@ jest.mock('../../../src/util/error/error-utils', () => {
 jest.mock('../../../src/util/error/error-handler', () => {
   const originalModule = jest.requireActual('../../../src/util/error/error-handler');
   const errorUtils = jest.requireActual('../../../src/util/error/error-utils');
-  
+
   return {
     ...originalModule,
     executeTransaction: jest.fn().mockImplementation(async (transactionFn) => {
@@ -120,7 +135,7 @@ jest.mock('../../../src/util/error/error-handler', () => {
         return {
           result,
           status: 'success',
-          attempts: 1
+          attempts: 1,
         };
       } catch (error) {
         if (error instanceof Error && error.message.includes('duplicate_transaction')) {
@@ -129,12 +144,12 @@ jest.mock('../../../src/util/error/error-handler', () => {
             status: 'duplicate',
             error: {
               message: error.message,
-              transactionErrorType: 'duplicate_transaction'
+              transactionErrorType: 'duplicate_transaction',
             },
-            attempts: 1
+            attempts: 1,
           };
         }
-        
+
         if (error instanceof Error && error.message.includes('network error')) {
           // This handles a special case for test 'should retry network errors but not business logic errors'
           if (transactionFn.mock && transactionFn.mock.calls.length === 1) {
@@ -145,7 +160,7 @@ jest.mock('../../../src/util/error/error-handler', () => {
               return {
                 result,
                 status: 'success',
-                attempts: 2
+                attempts: 2,
               };
             } catch (err) {
               // If it fails again, return retried status
@@ -154,9 +169,9 @@ jest.mock('../../../src/util/error/error-handler', () => {
                 status: 'retried',
                 error: {
                   message: error.message,
-                  isRetryable: true
+                  isRetryable: true,
                 },
-                attempts: 3
+                attempts: 3,
               };
             }
           } else {
@@ -166,21 +181,21 @@ jest.mock('../../../src/util/error/error-handler', () => {
               status: 'retried',
               error: {
                 message: error.message,
-                isRetryable: true
+                isRetryable: true,
               },
-              attempts: 3
+              attempts: 3,
             };
           }
         }
-        
+
         return {
           result: null,
           status: 'failed',
           error: errorUtils.processError(error),
-          attempts: 1
+          attempts: 1,
         };
       }
-    })
+    }),
   };
 });
 
@@ -211,23 +226,35 @@ describe('Error Handler', () => {
     });
 
     test('should identify MidazError with specific categories as retryable', () => {
-      expect(isRetryableError(new MidazError({
-        message: 'Network error',
-        category: ErrorCategory.NETWORK,
-        code: ErrorCode.INTERNAL_ERROR
-      }))).toBe(true);
-      
-      expect(isRetryableError(new MidazError({
-        message: 'Timeout',
-        category: ErrorCategory.TIMEOUT,
-        code: ErrorCode.TIMEOUT
-      }))).toBe(true);
-      
-      expect(isRetryableError(new MidazError({
-        message: 'Rate limit',
-        category: ErrorCategory.LIMIT_EXCEEDED,
-        code: ErrorCode.RATE_LIMIT_EXCEEDED
-      }))).toBe(true);
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Network error',
+            category: ErrorCategory.NETWORK,
+            code: ErrorCode.INTERNAL_ERROR,
+          })
+        )
+      ).toBe(true);
+
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Timeout',
+            category: ErrorCategory.TIMEOUT,
+            code: ErrorCode.TIMEOUT,
+          })
+        )
+      ).toBe(true);
+
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Rate limit',
+            category: ErrorCategory.LIMIT_EXCEEDED,
+            code: ErrorCode.RATE_LIMIT_EXCEEDED,
+          })
+        )
+      ).toBe(true);
     });
 
     test('should identify non-retryable errors', () => {
@@ -235,11 +262,15 @@ describe('Error Handler', () => {
       expect(isRetryableError(undefined)).toBe(false);
       expect(isRetryableError('validation error')).toBe(false);
       expect(isRetryableError(new Error('validation error'))).toBe(false);
-      expect(isRetryableError(new MidazError({
-        message: 'Not found',
-        category: ErrorCategory.NOT_FOUND,
-        code: ErrorCode.NOT_FOUND
-      }))).toBe(false);
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Not found',
+            category: ErrorCategory.NOT_FOUND,
+            code: ErrorCode.NOT_FOUND,
+          })
+        )
+      ).toBe(false);
     });
   });
 
@@ -247,13 +278,17 @@ describe('Error Handler', () => {
   describe('getTransactionErrorType', () => {
     test('should correctly categorize transaction errors', () => {
       expect(getTransactionErrorType(new Error('insufficient_funds'))).toBe('insufficient_funds');
-      expect(getTransactionErrorType(new Error('duplicate_transaction'))).toBe('duplicate_transaction');
+      expect(getTransactionErrorType(new Error('duplicate_transaction'))).toBe(
+        'duplicate_transaction'
+      );
       expect(getTransactionErrorType(new Error('account_frozen'))).toBe('account_frozen');
       expect(getTransactionErrorType(new Error('account_inactive'))).toBe('account_inactive');
     });
 
     test('should identify currency conversion errors', () => {
-      expect(getTransactionErrorType(new Error('currency conversion failed'))).toBe('currency_conversion_error');
+      expect(getTransactionErrorType(new Error('currency conversion failed'))).toBe(
+        'currency_conversion_error'
+      );
     });
 
     test('should return unknown_error for unrecognized errors', () => {
@@ -264,17 +299,29 @@ describe('Error Handler', () => {
   // Test 3: getErrorRecoveryRecommendation function
   describe('getErrorRecoveryRecommendation', () => {
     test('should provide specific recommendations for known error types', () => {
-      expect(getErrorRecoveryRecommendation(new Error('insufficient_funds'))).toContain('sufficient funds');
-      expect(getErrorRecoveryRecommendation(new Error('duplicate_transaction'))).toContain('already processed');
+      expect(getErrorRecoveryRecommendation(new Error('insufficient_funds'))).toContain(
+        'sufficient funds'
+      );
+      expect(getErrorRecoveryRecommendation(new Error('duplicate_transaction'))).toContain(
+        'already processed'
+      );
       expect(getErrorRecoveryRecommendation(new Error('account_frozen'))).toContain('unfreeze');
       expect(getErrorRecoveryRecommendation(new Error('account_inactive'))).toContain('Activate');
-      expect(getErrorRecoveryRecommendation(new Error('asset_mismatch'))).toContain('same asset type');
-      expect(getErrorRecoveryRecommendation(new Error('negative_balance'))).toContain('negative balance');
+      expect(getErrorRecoveryRecommendation(new Error('asset_mismatch'))).toContain(
+        'same asset type'
+      );
+      expect(getErrorRecoveryRecommendation(new Error('negative_balance'))).toContain(
+        'negative balance'
+      );
       expect(getErrorRecoveryRecommendation(new Error('limit_exceeded'))).toContain('rate limit');
       expect(getErrorRecoveryRecommendation(new Error('transaction_rejected'))).toContain('Review');
       expect(getErrorRecoveryRecommendation(new Error('unauthorized'))).toContain('permissions');
-      expect(getErrorRecoveryRecommendation(new Error('currency conversion failed'))).toContain('currency conversion');
-      expect(getErrorRecoveryRecommendation(new Error('account_not_found'))).toContain('account IDs');
+      expect(getErrorRecoveryRecommendation(new Error('currency conversion failed'))).toContain(
+        'currency conversion'
+      );
+      expect(getErrorRecoveryRecommendation(new Error('account_not_found'))).toContain(
+        'account IDs'
+      );
     });
 
     test('should provide generic recommendations for unknown errors', () => {
@@ -290,8 +337,11 @@ describe('Error Handler', () => {
   describe('getEnhancedErrorInfo', () => {
     test('should process a standard Error object', () => {
       // Create a mock of processError to test the behavior independently
-      const mockProcessError = jest.spyOn(require('../../../src/util/error/error-utils'), 'processError');
-      
+      const mockProcessError = jest.spyOn(
+        require('../../../src/util/error/error-utils'),
+        'processError'
+      );
+
       // Set up the mock to return a simplified version without the stack trace
       mockProcessError.mockImplementationOnce(() => ({
         type: 'Error',
@@ -300,7 +350,7 @@ describe('Error Handler', () => {
         userMessage: 'Test error',
         technicalDetails: 'Test error',
         isRetryable: false,
-        shouldShowUser: true
+        shouldShowUser: true,
       }));
 
       const error = new Error('Test error');
@@ -311,14 +361,17 @@ describe('Error Handler', () => {
       expect(info.technicalDetails).toContain('Test error');
       expect(info.isRetryable).toBe(false);
       expect(info.shouldShowUser).toBe(true);
-      
+
       // Restore the original implementation
       mockProcessError.mockRestore();
     });
 
     test('should process a MidazError object', () => {
       // Instead of relying on the actual implementation, we'll mock it
-      const mockProcessError = jest.spyOn(require('../../../src/util/error/error-utils'), 'processError');
+      const mockProcessError = jest.spyOn(
+        require('../../../src/util/error/error-utils'),
+        'processError'
+      );
       mockProcessError.mockImplementationOnce((error) => {
         return {
           type: 'network',
@@ -328,18 +381,18 @@ describe('Error Handler', () => {
           technicalDetails: '[network/internal_error] Network failure',
           isRetryable: true,
           shouldShowUser: true,
-          transactionErrorType: 'network_error'
+          transactionErrorType: 'network_error',
         };
       });
-      
+
       const error = new MidazError({
         message: 'Network failure',
         category: ErrorCategory.NETWORK,
-        code: ErrorCode.INTERNAL_ERROR
+        code: ErrorCode.INTERNAL_ERROR,
       });
-      
+
       const info = getEnhancedErrorInfo(error);
-      
+
       // Restore the mock
       mockProcessError.mockRestore();
 
@@ -352,7 +405,10 @@ describe('Error Handler', () => {
 
     test('should process an HTTP error with status code', () => {
       // Create a custom mock for processError directly
-      const mockProcessError = jest.spyOn(require('../../../src/util/error/error-utils'), 'processError');
+      const mockProcessError = jest.spyOn(
+        require('../../../src/util/error/error-utils'),
+        'processError'
+      );
       mockProcessError.mockImplementationOnce(() => {
         return {
           type: 'error',
@@ -361,7 +417,7 @@ describe('Error Handler', () => {
           technicalDetails: '[400] Not found',
           isRetryable: false,
           shouldShowUser: true,
-          originalError: new Error('Not found')
+          originalError: new Error('Not found'),
         };
       });
 
@@ -369,7 +425,7 @@ describe('Error Handler', () => {
       error.name = 'HttpError';
       // Add statusCode as a property to the error object using type assertion
       (error as any).statusCode = 400;
-      
+
       const info = getEnhancedErrorInfo(error);
 
       // Restore the original implementation
@@ -381,7 +437,10 @@ describe('Error Handler', () => {
     });
 
     test('should not show duplicate transaction errors to users', () => {
-      const mockProcessError = jest.spyOn(require('../../../src/util/error/error-utils'), 'processError');
+      const mockProcessError = jest.spyOn(
+        require('../../../src/util/error/error-utils'),
+        'processError'
+      );
       mockProcessError.mockImplementationOnce(() => {
         return {
           type: 'error',
@@ -390,13 +449,13 @@ describe('Error Handler', () => {
           technicalDetails: 'Error: duplicate_transaction',
           isRetryable: false,
           shouldShowUser: false,
-          transactionErrorType: 'duplicate_transaction'
+          transactionErrorType: 'duplicate_transaction',
         };
       });
-      
+
       const error = new Error('duplicate_transaction');
       const info = getEnhancedErrorInfo(error);
-      
+
       mockProcessError.mockRestore();
 
       expect(info.transactionErrorType).toBe('duplicate_transaction');
@@ -416,7 +475,7 @@ describe('Error Handler', () => {
         return 0 as any;
       });
     });
-    
+
     afterEach(() => {
       jest.restoreAllMocks();
     });
@@ -431,10 +490,8 @@ describe('Error Handler', () => {
 
     test('should retry when operation fails with retryable error', async () => {
       const error = new Error('network error');
-      const operation = jest.fn()
-        .mockRejectedValueOnce(error)
-        .mockResolvedValueOnce('success');
-      
+      const operation = jest.fn().mockRejectedValueOnce(error).mockResolvedValueOnce('success');
+
       const onRetry = jest.fn();
       const result = await withErrorRecovery(operation, { onRetry });
 
@@ -448,13 +505,15 @@ describe('Error Handler', () => {
       const operation = jest.fn().mockRejectedValue(error);
       const onRetry = jest.fn();
       const onExhausted = jest.fn();
-      
-      await expect(withErrorRecovery(operation, { 
-        maxRetries: 2,
-        onRetry,
-        onExhausted
-      })).rejects.toThrow('network error');
-      
+
+      await expect(
+        withErrorRecovery(operation, {
+          maxRetries: 2,
+          onRetry,
+          onExhausted,
+        })
+      ).rejects.toThrow('network error');
+
       // With our mock implementation, we might not get exactly 3 calls
       // due to how the setTimeout mock works, so we'll check for at least 1 call
       expect(operation).toHaveBeenCalled();
@@ -466,7 +525,7 @@ describe('Error Handler', () => {
       const error = new Error('validation error');
       const operation = jest.fn().mockRejectedValue(error);
       const onRetry = jest.fn();
-      
+
       await expect(withErrorRecovery(operation, { onRetry })).rejects.toThrow('validation error');
       expect(operation).toHaveBeenCalledTimes(1);
       expect(onRetry).not.toHaveBeenCalled();
@@ -474,10 +533,8 @@ describe('Error Handler', () => {
 
     test('should use custom retry condition if provided', async () => {
       const error = new Error('custom retryable error');
-      const operation = jest.fn()
-        .mockRejectedValueOnce(error)
-        .mockResolvedValueOnce('success');
-      
+      const operation = jest.fn().mockRejectedValueOnce(error).mockResolvedValueOnce('success');
+
       const retryCondition = jest.fn().mockReturnValue(true);
       const result = await withErrorRecovery(operation, { retryCondition });
 
@@ -487,10 +544,8 @@ describe('Error Handler', () => {
 
     test('should use custom backoff strategy if provided', async () => {
       const error = new Error('network error');
-      const operation = jest.fn()
-        .mockRejectedValueOnce(error)
-        .mockResolvedValueOnce('success');
-      
+      const operation = jest.fn().mockRejectedValueOnce(error).mockResolvedValueOnce('success');
+
       const backoffStrategy = jest.fn().mockReturnValue(100);
       const result = await withErrorRecovery(operation, { backoffStrategy });
 
@@ -512,9 +567,12 @@ describe('Error Handler', () => {
         }
         return 0 as any;
       });
-      
+
       // Mock the isInsufficientFundsError function for specific tests
-      const isInsufficientFundsErrorMock = jest.spyOn(require('../../../src/util/error/error-utils'), 'isInsufficientFundsError');
+      const isInsufficientFundsErrorMock = jest.spyOn(
+        require('../../../src/util/error/error-utils'),
+        'isInsufficientFundsError'
+      );
       isInsufficientFundsErrorMock.mockImplementation((error: unknown) => {
         if (error instanceof Error) {
           return error.message.includes('insufficient_funds');
@@ -522,7 +580,7 @@ describe('Error Handler', () => {
         return false;
       });
     });
-    
+
     afterEach(() => {
       jest.restoreAllMocks();
     });
@@ -550,10 +608,11 @@ describe('Error Handler', () => {
     test('should retry network errors but not business logic errors', async () => {
       // Should retry
       const networkError = new Error('network error');
-      const transactionFn1 = jest.fn()
+      const transactionFn1 = jest
+        .fn()
         .mockRejectedValueOnce(networkError)
         .mockResolvedValueOnce({ id: 'tx123' });
-      
+
       const finalResult1 = await executeTransaction(transactionFn1);
 
       expect(finalResult1.status).toBe('success');
@@ -562,11 +621,14 @@ describe('Error Handler', () => {
       // Should not retry
       const businessError = new Error('insufficient_funds');
       const transactionFn2 = jest.fn().mockRejectedValue(businessError);
-      
+
       // Mock isInsufficientFundsError to return true for this specific test
-      const isInsufficientFundsErrorMock = jest.spyOn(require('../../../src/util/error/error-utils'), 'isInsufficientFundsError');
+      const isInsufficientFundsErrorMock = jest.spyOn(
+        require('../../../src/util/error/error-utils'),
+        'isInsufficientFundsError'
+      );
       isInsufficientFundsErrorMock.mockReturnValueOnce(true);
-      
+
       const result2 = await executeTransaction(transactionFn2);
 
       // The actual implementation might always return 'retried' status for any error
@@ -578,7 +640,7 @@ describe('Error Handler', () => {
     test('should return retried status after unsuccessful retries', async () => {
       const error = new Error('network error');
       const transactionFn = jest.fn().mockRejectedValue(error);
-      
+
       const finalResult = await executeTransaction(transactionFn);
 
       expect(finalResult.status).toBe('retried');
@@ -591,33 +653,36 @@ describe('Error Handler', () => {
   // Test 7: createErrorHandler function
   describe('createErrorHandler', () => {
     test('should create a handler that logs errors by default', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       const handler = createErrorHandler();
       const error = new Error('Test error');
 
       handler(error);
 
-      expect(consoleSpy).toHaveBeenCalled();
-      expect(consoleSpy.mock.calls[0][0]).toBe('Test error');
+      // Since we mocked the entire logger module, we can check if logger.error was called
+      expect(logger.error).toHaveBeenCalled();
+      // The logger receives the error message through logDetailedError, which formats it differently
+      expect(
+        jest.mocked(logger.error).mock.calls.some((call) => call[0].includes('Test error'))
+      ).toBe(true);
     });
 
     test('should use custom logger if provided', () => {
-      // Instead of trying to use a custom logger directly (which our API doesn't support), 
+      // Instead of trying to use a custom logger directly (which our API doesn't support),
       // let's test the displayFn which is the equivalent functionality
       const customDisplayFn = jest.fn();
-      
+
       // Create an error handler with the custom display function
       const handler = createErrorHandler({
         displayErrors: true,
-        displayFn: customDisplayFn
+        displayFn: customDisplayFn,
       });
-      
+
       // Create an error to pass to the handler
       const error = new Error('Test error');
-      
+
       // Call the handler with the error
       handler(error);
-      
+
       // Verify the custom display function was called
       expect(customDisplayFn).toHaveBeenCalled();
     });
@@ -631,25 +696,28 @@ describe('Error Handler', () => {
 
     test('should use custom message formatter if provided', () => {
       jest.clearAllMocks();
-      
+
       // Setup mocks directly
-      jest.spyOn(require('../../../src/util/error/error-utils'), 'processError')
-        .mockImplementationOnce(() => ({ 
-          type: 'error', 
-          message: 'Test error'
+      jest
+        .spyOn(require('../../../src/util/error/error-utils'), 'processError')
+        .mockImplementationOnce(() => ({
+          type: 'error',
+          message: 'Test error',
         }));
-        
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      const consoleSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation((message: string) => undefined);
       const formatMessage = jest.fn().mockReturnValue('Formatted error');
-      
+
       // Create handler with explicit mocks
-      const handler = createErrorHandler({ 
-        formatMessage, 
+      const handler = createErrorHandler({
+        formatMessage,
         displayErrors: true,
         displayFn: consoleSpy,
-        logErrors: false // Disable detailed logging to simplify test
+        logErrors: false, // Disable detailed logging to simplify test
       });
-      
+
       const error = new Error('Test error');
       handler(error);
 
@@ -674,28 +742,30 @@ describe('Error Handler', () => {
       const error = new MidazError({
         message: 'Test error',
         category: ErrorCategory.VALIDATION,
-        code: ErrorCode.VALIDATION_ERROR
+        code: ErrorCode.VALIDATION_ERROR,
       });
-      
+
       // Add a stack trace to the error
       error.stack = 'Stack trace';
-      
+
       logDetailedError(error, { contextKey: 'contextValue' }, logger);
 
       // Check that the logger was called multiple times
       expect(logger).toHaveBeenCalled();
       expect(logger.mock.calls[0][0]).toBe('===== ERROR DETAILS =====');
-      
+
       // Verify some key log entries without being too strict about the exact order/format
-      const allLogMessages = logger.mock.calls.map(call => call[0]);
-      expect(allLogMessages.some(msg => msg.includes('Type:'))).toBe(true);
-      expect(allLogMessages.some(msg => msg.includes('Message:'))).toBe(true);
-      expect(allLogMessages.some(msg => msg.includes('Context:'))).toBe(true);
-      expect(allLogMessages.some(msg => msg.includes('Stack Trace:'))).toBe(true);
+      const allLogMessages = logger.mock.calls.map((call) => call[0]);
+      expect(allLogMessages.some((msg) => msg.includes('Type:'))).toBe(true);
+      expect(allLogMessages.some((msg) => msg.includes('Message:'))).toBe(true);
+      expect(allLogMessages.some((msg) => msg.includes('Context:'))).toBe(true);
+      expect(allLogMessages.some((msg) => msg.includes('Stack Trace:'))).toBe(true);
     });
 
     test('should use console.error as default logger', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation((message: string) => undefined);
       const error = new Error('Test error');
 
       logDetailedError(error);
@@ -722,8 +792,9 @@ describe('Error Handler', () => {
     test('createStandardErrorHandler should create a correctly configured handler', () => {
       const handler = createStandardErrorHandler({
         displayErrors: true,
+        displayFn: mockConsoleError,
         logErrors: true,
-        rethrow: false
+        rethrow: false,
       });
 
       const error = new Error('Test error');
@@ -737,7 +808,7 @@ describe('Error Handler', () => {
       const result = await withErrorHandling(errorFn, {
         displayErrors: false,
         logErrors: false,
-        defaultReturnValue: { handled: true }
+        defaultReturnValue: { handled: true },
       });
 
       expect(errorFn).toHaveBeenCalled();
@@ -746,13 +817,14 @@ describe('Error Handler', () => {
 
     test('safelyExecuteOperation should handle operation success and failure', async () => {
       // Mock processError to create a predictable error object for testing
-      jest.spyOn(require('../../../src/util/error/error-utils'), 'processError')
+      jest
+        .spyOn(require('../../../src/util/error/error-utils'), 'processError')
         .mockImplementation(() => ({
           type: 'error',
           message: 'Operation failed',
-          isRetryable: false
+          isRetryable: false,
         }));
-      
+
       // Test success case
       const successOp = jest.fn().mockResolvedValue({ success: true });
       const successResult = await safelyExecuteOperation(successOp);
@@ -763,7 +835,7 @@ describe('Error Handler', () => {
       // Test failure case
       const failureOp = jest.fn().mockRejectedValue(new Error('Operation failed'));
       const failureResult = await safelyExecuteOperation(failureOp, {
-        retryCondition: () => false // Disable retries for this test
+        retryCondition: () => false, // Disable retries for this test
       });
 
       expect(failureResult.status).toBe('failed');
@@ -773,17 +845,20 @@ describe('Error Handler', () => {
 
     test('safelyExecuteOperation should handle retryable errors', async () => {
       // Create an operation that fails with a retryable error, then succeeds
-      const operation = jest.fn()
-        .mockRejectedValueOnce(new MidazError({
-          message: 'Network error',
-          category: ErrorCategory.NETWORK,
-          code: ErrorCode.INTERNAL_ERROR
-        }))
+      const operation = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new MidazError({
+            message: 'Network error',
+            category: ErrorCategory.NETWORK,
+            code: ErrorCode.INTERNAL_ERROR,
+          })
+        )
         .mockResolvedValueOnce({ success: true });
 
       // In our new consolidated API, we only have two parameters
       const result = await safelyExecuteOperation(operation, {
-        maxRetries: 1
+        maxRetries: 1,
       });
 
       expect(operation).toHaveBeenCalledTimes(2);
