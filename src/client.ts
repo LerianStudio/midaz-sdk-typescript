@@ -4,6 +4,8 @@ import { HttpClient } from './util/network/http-client';
 import { RetryPolicy } from './util/network/retry-policy';
 import { Observability } from './util/observability/observability';
 import { ConfigService } from './util/config';
+import { logger } from './util/observability/logger-instance';
+import { AccessManager, AccessManagerConfig } from './util/auth/access-manager';
 
 /**
  * Configuration options for the Midaz client
@@ -108,6 +110,11 @@ export interface MidazConfig {
    * Custom HTTP client
    */
   httpClient?: HttpClient;
+
+  /**
+   * Access Manager configuration for plugin-based authentication
+   */
+  accessManager?: AccessManagerConfig;
 }
 
 /**
@@ -141,6 +148,11 @@ export class MidazClient {
   private readonly observability: Observability;
 
   /**
+   * Access Manager for authentication
+   */
+  private readonly accessManager?: AccessManager;
+
+  /**
    * Creates a new Midaz client with the provided configuration
    *
    */
@@ -153,12 +165,17 @@ export class MidazClient {
 
     // Get ConfigService instance
     const configService = ConfigService.getInstance();
-    
+
     // Get API version from config or ConfigService
     if (!this.config.apiVersion) {
       this.config.apiVersion = configService.getApiUrlConfig().apiVersion;
     }
-    
+
+    // Initialize Access Manager if configured
+    if (this.config.accessManager) {
+      this.accessManager = new AccessManager(this.config.accessManager);
+    }
+
     // Initialize HTTP client
     this.httpClient =
       this.config.httpClient ||
@@ -178,6 +195,12 @@ export class MidazClient {
         debug: this.config.debug,
         observability: this.observability,
       });
+
+    // If Access Manager is enabled, set up authentication interceptor
+    if (this.accessManager?.isEnabled()) {
+      // We can't directly modify the private request method, so we'll intercept the public methods
+      this.setupAuthInterceptors();
+    }
 
     // Initialize entities API with config and observability
     this.entities = new Entity(this.httpClient, this.config, this.observability);
@@ -209,5 +232,61 @@ export class MidazClient {
    */
   public async shutdown(): Promise<void> {
     await this.observability.shutdown();
+  }
+
+  /**
+   * Checks if the client is using plugin-based authentication
+   */
+  public isUsingAccessManager(): boolean {
+    return this.accessManager?.isEnabled() || false;
+  }
+
+  /**
+   * Sets up authentication interceptors for all HTTP methods
+   *
+   * This method wraps the public HTTP client methods to add authentication tokens
+   * from the Access Manager to each request.
+   *
+   * @private
+   */
+  private setupAuthInterceptors(): void {
+    type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
+    const methods: HttpMethod[] = ['get', 'post', 'put', 'patch', 'delete'];
+
+    methods.forEach((method) => {
+      const originalMethod = (this.httpClient[method] as any).bind(this.httpClient);
+      (this.httpClient[method] as any) = async (...args: any[]) => {
+        const options = args[method === 'get' || method === 'delete' ? 1 : 2] || {};
+        options.headers = options.headers || {};
+        const token = await this.getAuthToken();
+        options.headers['Authorization'] = token;
+        if (method === 'get' || method === 'delete') {
+          return originalMethod(args[0], options);
+        } else {
+          return originalMethod(args[0], args[1], options);
+        }
+      };
+    });
+  }
+
+  /**
+   * Gets an authentication token from the Access Manager
+   *
+   * @returns Promise resolving to the authentication token
+   * @private
+   */
+  private async getAuthToken(): Promise<string> {
+    if (!this.accessManager?.isEnabled()) {
+      throw new Error('Access Manager is not enabled');
+    }
+
+    try {
+      return await this.accessManager.getToken();
+    } catch (error) {
+      logger.error('Failed to get authentication token:', error);
+      throw new Error(
+        `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 }

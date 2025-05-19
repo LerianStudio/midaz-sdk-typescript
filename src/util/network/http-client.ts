@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/**
- */
-
 import { createHash } from 'crypto';
 import * as dns from 'dns';
 import { Agent as HttpAgent } from 'http';
@@ -16,6 +12,7 @@ import { errorFromHttpResponse } from '../error';
 import { Observability, Span } from '../observability/observability';
 
 import { RetryPolicy } from './retry-policy';
+import { info } from '../observability/logger-instance';
 
 /**
  * Options for HTTP requests
@@ -294,7 +291,7 @@ export type HttpClientInterface = {
    * to free up resources. After calling this method, the client should not be used.
    */
   destroy(): void;
-}
+};
 
 /**
  * Creates a new HTTP client
@@ -506,7 +503,7 @@ export class HttpClient implements HttpClientInterface {
 
     // Log connection settings if debug is enabled
     if (this.debug) {
-      console.log(`[HttpClient] Initialized with connection settings:`, {
+      info('[HttpClient] Initialized with connection settings', {
         keepAlive: this.keepAlive,
         maxSockets: this.maxSockets,
         keepAliveMsecs: this.keepAliveMsecs,
@@ -801,7 +798,7 @@ export class HttpClient implements HttpClientInterface {
       });
 
       if (this.debug) {
-        console.log(`[HttpClient] Updated connection settings:`, {
+        info('[HttpClient] Updated connection settings', {
           keepAlive: this.keepAlive,
           maxSockets: this.maxSockets,
           keepAliveMsecs: this.keepAliveMsecs,
@@ -912,7 +909,7 @@ export class HttpClient implements HttpClientInterface {
     }
 
     if (this.debug) {
-      console.log(`[HttpClient] Closed ${totalIdle} idle connections`);
+      info('[HttpClient] Closed idle connections', { totalIdle }, 'HttpClient');
     }
 
     return totalIdle;
@@ -930,7 +927,7 @@ export class HttpClient implements HttpClientInterface {
     this.httpsAgent.destroy();
 
     if (this.debug) {
-      console.log(`[HttpClient] Destroyed all connections`);
+      info('[HttpClient] Destroyed all connections', undefined, 'HttpClient');
     }
   }
 
@@ -979,9 +976,9 @@ export class HttpClient implements HttpClientInterface {
 
       // Log request if debug is enabled
       if (this.debug) {
-        console.log(`[HttpClient] ${method} ${urlWithParams}`);
+        info('[HttpClient] Request', { method, url: urlWithParams }, 'HttpClient');
         if (data) {
-          console.log(`[HttpClient] Request body:`, JSON.stringify(data));
+          info('[HttpClient] Request body', { data }, 'HttpClient');
         }
       }
 
@@ -1022,7 +1019,7 @@ export class HttpClient implements HttpClientInterface {
 
       // Log response if debug is enabled
       if (this.debug) {
-        console.log(`[HttpClient] Response:`, response);
+        info('[HttpClient] Response', { response }, 'HttpClient');
       }
 
       span.setStatus('ok');
@@ -1076,10 +1073,11 @@ export class HttpClient implements HttpClientInterface {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...this.headers,
+      ...(options.headers || {}), // Merge headers from options
     };
 
-    // Add API key if available
-    if (this.apiKey) {
+    // Add API key if available and no Authorization header is present in options
+    if (this.apiKey && !options.headers?.['Authorization']) {
       headers['Authorization'] = this.apiKey;
     }
 

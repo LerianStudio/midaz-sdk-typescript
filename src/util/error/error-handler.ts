@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/**
- */
-
 import { ErrorHandlerOptions, ErrorRecoveryOptions, OperationResult } from './error-types';
+import { logger } from '../observability/logger-instance';
 import {
   isAccountEligibilityError,
   isDuplicateTransactionError,
@@ -30,57 +27,57 @@ const DEFAULT_RECOVERY_OPTIONS: ErrorRecoveryOptions = {
 export function logDetailedError(
   error: unknown,
   context?: Record<string, any>,
-  logger: (message: string, ...args: any[]) => void = console.error
+  logFn: (message: string, ...args: any[]) => void = console.error
 ): void {
   // Process the error to get enhanced information
   const errorInfo = processError(error);
 
-  logger('===== ERROR DETAILS =====');
-  logger(`Type: ${errorInfo?.type || 'Unknown'}`);
-  logger(`Message: ${errorInfo?.message || 'No message available'}`);
+  logFn('===== ERROR DETAILS =====');
+  logFn(`Type: ${errorInfo?.type || 'Unknown'}`);
+  logFn(`Message: ${errorInfo?.message || 'No message available'}`);
 
   if (errorInfo?.transactionErrorType) {
-    logger(`Transaction Error Type: ${errorInfo.transactionErrorType}`);
+    logFn(`Transaction Error Type: ${errorInfo.transactionErrorType}`);
   }
 
   if (errorInfo?.statusCode) {
-    logger(`Status Code: ${errorInfo.statusCode}`);
+    logFn(`Status Code: ${errorInfo.statusCode}`);
   }
 
   if (errorInfo?.resource) {
-    logger(
+    logFn(
       `Resource: ${errorInfo.resource}${errorInfo.resourceId ? `/${errorInfo.resourceId}` : ''}`
     );
   }
 
   if (errorInfo?.requestId) {
-    logger(`Request ID: ${errorInfo.requestId}`);
+    logFn(`Request ID: ${errorInfo.requestId}`);
   }
 
   if (errorInfo?.recoveryRecommendation) {
-    logger(`Recovery Recommendation: ${errorInfo.recoveryRecommendation}`);
+    logFn(`Recovery Recommendation: ${errorInfo.recoveryRecommendation}`);
   }
 
-  logger(`Retryable: ${errorInfo?.isRetryable}`);
+  logFn(`Retryable: ${errorInfo?.isRetryable}`);
 
   if (context) {
-    logger('Context:', context);
+    logFn('Context:', context);
   }
 
   // Use error.stack directly if available
   if (error instanceof Error && error.stack) {
-    logger('Stack Trace:');
-    logger(error.stack);
+    logFn('Stack Trace:');
+    logFn(error.stack);
   }
 
-  logger('=========================');
+  logFn('=========================');
 }
 
 /** Creates a standardized error handler with configurable behavior */
 export function createErrorHandler(options?: ErrorHandlerOptions) {
   const {
     displayErrors = true,
-    displayFn = console.error,
+    displayFn = logger.error.bind(logger),
     logErrors = true,
     logLevel = 'error',
     rethrow = false,
@@ -114,17 +111,17 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
         // Handle different log levels appropriately
         switch (logLevel) {
           case 'debug':
-            console.debug(message, ...args);
+            logger.debug(message, ...args);
             break;
           case 'info':
-            console.info(message, ...args);
+            logger.info(message, ...args);
             break;
           case 'warn':
-            console.warn(message, ...args);
+            logger.warn(message, ...args);
             break;
           case 'error':
           default:
-            console.error(message, ...args);
+            logger.error(message, ...args);
             break;
         }
       });

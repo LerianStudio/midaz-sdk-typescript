@@ -84,7 +84,7 @@ function environmentVariableExample() {
   
   // Simulate setting environment variables
   console.log('\nSimulating environment variables...');
-  process.env.MIDAZ_API_KEY = 'test-api-key-from-env';
+  process.env.MIDAZ_AUTH_TOKEN = 'test-auth-token-from-env';
   process.env.MIDAZ_HTTP_TIMEOUT = '60000';
   process.env.MIDAZ_HTTP_DEBUG = 'true';
   
@@ -99,7 +99,7 @@ function environmentVariableExample() {
   console.log(JSON.stringify(updatedHttpConfig, null, 2));
   
   // Clean up environment variables
-  delete process.env.MIDAZ_API_KEY;
+  delete process.env.MIDAZ_AUTH_TOKEN;
   delete process.env.MIDAZ_HTTP_TIMEOUT;
   delete process.env.MIDAZ_HTTP_DEBUG;
   

@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-/**
- */
-
 /** Configuration options for observability */
 export interface ObservabilityOptions {
   /** Enable distributed tracing with spans and propagated context @default false */

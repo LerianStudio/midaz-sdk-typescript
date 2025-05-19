@@ -6,6 +6,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Import Pino adapter
+import { createPinoHandler } from './pino-adapter';
+
 /**
  * Available log levels in order of increasing severity
  *
@@ -76,7 +79,7 @@ export interface LogEntry {
  * Log handlers receive log entries and determine how they are processed
  * (e.g., console output, file storage, sending to a logging service)
  */
-export type LogHandler = (entry: LogEntry) => void;
+export type LogHandler = (level: LogLevel, message: string, metadata?: any) => void;
 
 /**
  * Configuration options for the logger
@@ -172,7 +175,7 @@ export class Logger {
   private enableRequestTracking: boolean;
 
   /**
-   * Current request ID for this logger instance
+   * Current request ID for distributed tracing
    * @private
    */
   private currentRequestId?: string;
@@ -180,13 +183,25 @@ export class Logger {
   /**
    * Creates a new Logger instance
    *
+   * @param options Configuration options for the logger
    */
   constructor(options: LoggerOptions = {}) {
+    // Set instance properties
     this.minLevel = options.minLevel || LogLevel.INFO;
-    this.includeTimestamps = options.includeTimestamps !== false;
-    this.handlers = options.handlers || [this.consoleHandler.bind(this)];
+    this.includeTimestamps = options.includeTimestamps ?? true;
     this.defaultModule = options.defaultModule;
-    this.enableRequestTracking = options.enableRequestTracking !== false;
+    this.enableRequestTracking = options.enableRequestTracking ?? true;
+    this.currentRequestId = '';
+
+    // Initialize handlers
+    this.handlers = [];
+
+    // Add provided handlers or use Pino handler by default
+    if (options.handlers && options.handlers.length > 0) {
+      this.handlers.push(...options.handlers);
+    } else {
+      this.handlers.push(createPinoHandler());
+    }
   }
 
   /**
@@ -264,27 +279,40 @@ export class Logger {
    * It handles level filtering, formatting, and dispatching to handlers.
    *
    */
-  public log(level: LogLevel, message: string, data?: any, module?: string): void {
-    // Skip if level is below minimum
+  private log(level: LogLevel, message: string, data?: any, module?: string): void {
+    // Check if this level should be logged
     if (!this.shouldLog(level)) {
       return;
     }
 
-    const entry: LogEntry = {
-      timestamp: this.includeTimestamps ? new Date().toISOString() : '',
-      level,
-      message,
-      data,
-      module: module || this.defaultModule,
-      requestId: this.enableRequestTracking ? this.currentRequestId : undefined,
-    };
+    // Build metadata object
+    const metadata: any = {};
 
-    // Call all handlers
+    // Add any additional data first
+    if (data) {
+      Object.assign(metadata, data);
+    }
+
+    // Add module name if specified (overwrite if in data)
+    if (module || this.defaultModule) {
+      metadata.module = module || this.defaultModule;
+    }
+
+    // Add request ID if tracking is enabled (overwrite if in data)
+    if (this.enableRequestTracking && this.currentRequestId) {
+      metadata.requestId = this.currentRequestId;
+    }
+
+    // Add timestamp if enabled (overwrite if in data)
+    if (this.includeTimestamps) {
+      metadata.timestamp = new Date().toISOString();
+    }
+
+    // Call each handler
     for (const handler of this.handlers) {
       try {
-        handler(entry);
+        handler(level, message, metadata);
       } catch (error) {
-        // Prevent handler errors from breaking the application
         console.error('Error in log handler:', error);
       }
     }
@@ -440,39 +468,39 @@ export class Logger {
    *
    * @private
    */
-  private consoleHandler(entry: LogEntry): void {
+  private consoleHandler(level: LogLevel, message: string, metadata?: any): void {
     // Format the log message
-    let message = '';
+    let formattedMessage = '';
 
-    if (entry.timestamp) {
-      message += `[${entry.timestamp}] `;
+    if (this.includeTimestamps) {
+      formattedMessage += `[${new Date().toISOString()}] `;
     }
 
-    message += `[${entry.level.toUpperCase()}]`;
+    formattedMessage += `[${level.toUpperCase()}]`;
 
-    if (entry.module) {
-      message += ` [${entry.module}]`;
+    if (metadata?.module) {
+      formattedMessage += ` [${metadata.module}]`;
     }
 
-    if (entry.requestId) {
-      message += ` [${entry.requestId}]`;
+    if (metadata?.requestId) {
+      formattedMessage += ` [${metadata.requestId}]`;
     }
 
-    message += `: ${entry.message}`;
+    formattedMessage += `: ${message}`;
 
     // Log to console with appropriate method
-    switch (entry.level) {
+    switch (level) {
       case LogLevel.DEBUG:
-        console.debug(message, entry.data || '');
+        console.debug(formattedMessage, metadata || '');
         break;
       case LogLevel.INFO:
-        console.info(message, entry.data || '');
+        console.info(formattedMessage, metadata || '');
         break;
       case LogLevel.WARN:
-        console.warn(message, entry.data || '');
+        console.warn(formattedMessage, metadata || '');
         break;
       case LogLevel.ERROR:
-        console.error(message, entry.data || '');
+        console.error(formattedMessage, metadata || '');
         break;
     }
   }
@@ -530,9 +558,15 @@ export function createFileLogger(
     }
 
     // Create a file log handler
-    const fileHandler: LogHandler = (entry: LogEntry) => {
+    const fileHandler: LogHandler = (level: LogLevel, message: string, metadata?: any) => {
       try {
         // Format the log entry as JSON
+        const entry = {
+          timestamp: new Date().toISOString(),
+          level,
+          message,
+          ...metadata
+        };
         const logLine = JSON.stringify(entry) + '\n';
         
         // Append to the file
