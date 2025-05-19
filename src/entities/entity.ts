@@ -4,6 +4,7 @@
 
 import { ApiFactory } from '../api/api-factory';
 import { MidazConfig } from '../client';
+import { logger } from '../util/observability/logger-instance';
 import { ConfigService } from '../util/config';
 import { HttpClient } from '../util/network/http-client';
 import { Observability } from '../util/observability/observability';
@@ -167,7 +168,7 @@ export class Entity {
     });
 
     if (config.debug) {
-      console.debug('Entity services configured with updated settings');
+      logger.debug('Entity services configured with updated settings');
     }
   }
 

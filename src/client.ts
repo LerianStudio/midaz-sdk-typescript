@@ -4,6 +4,7 @@ import { HttpClient } from './util/network/http-client';
 import { RetryPolicy } from './util/network/retry-policy';
 import { Observability } from './util/observability/observability';
 import { ConfigService } from './util/config';
+import { logger } from './util/observability/logger-instance';
 import { AccessManager, AccessManagerConfig } from './util/auth/access-manager';
 
 /**
@@ -282,7 +283,7 @@ export class MidazClient {
     try {
       return await this.accessManager.getToken();
     } catch (error) {
-      console.error('Failed to get authentication token:', error);
+      logger.error('Failed to get authentication token:', error);
       throw new Error(
         `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
