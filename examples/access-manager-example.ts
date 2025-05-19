@@ -29,9 +29,7 @@ async function environmentConfigExample() {
   process.env.MIDAZ_CLIENT_SECRET = 'dd03f916cacf4a98c6a413d9c38ba102dce436a9';
   process.env.PLUGIN_AUTH_TOKEN_ENDPOINT = '/login/oauth/access_token';
   process.env.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS = '60';
-  process.env.PLUGIN_AUTH_GRANT_TYPE = 'password';
-  process.env.PLUGIN_AUTH_USERNAME = 'admin';
-  process.env.PLUGIN_AUTH_PASSWORD = 'admin';
+  process.env.PLUGIN_AUTH_GRANT_TYPE = 'client_credentials';
 
   try {
     const client = new MidazClient({
