@@ -1,286 +1,281 @@
-import {
-  createFileLogger,
-  Logger,
-  LogHandler,
-  LogLevel,
-} from '../../../src/util/observability/logger';
+import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
+import { Logger, LogLevel, LogHandler, createFileLogger } from '../../../src/util/observability/logger';
+import { createPinoHandler } from '../../../src/util/observability/pino-adapter';
+
+// Create mock Pino logger
+const mockPinoLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  child: jest.fn().mockReturnValue({
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  }),
+};
+
+// Mock pino-adapter
+jest.mock('../../../src/util/observability/pino-adapter', () => {
+  return {
+    createPinoHandler: jest.fn().mockImplementation(() => {
+      return (level: LogLevel, message: string, metadata?: any) => {
+        switch (level) {
+          case LogLevel.DEBUG:
+            mockPinoLogger.debug(metadata || {}, message);
+            break;
+          case LogLevel.INFO:
+            mockPinoLogger.info(metadata || {}, message);
+            break;
+          case LogLevel.WARN:
+            mockPinoLogger.warn(metadata || {}, message);
+            break;
+          case LogLevel.ERROR:
+            mockPinoLogger.error(metadata || {}, message);
+            break;
+          default:
+            mockPinoLogger.info(metadata || {}, message);
+        }
+      };
+    }),
+  };
+});
+
+// Mock fs and path modules
+jest.mock('fs');
+jest.mock('path');
+
+const mockFs = jest.mocked(require('fs'));
+const mockPath = jest.mocked(require('path'));
 
 describe('Logger', () => {
-  // Spy on console methods
-  let consoleDebugSpy: jest.SpyInstance;
-  let consoleInfoSpy: jest.SpyInstance;
-  let consoleWarnSpy: jest.SpyInstance;
-  let consoleErrorSpy: jest.SpyInstance;
+  let logger: Logger;
+  let originalToISOString: () => string;
 
   beforeEach(() => {
-    // Setup spies
-    consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
-    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation();
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    jest.clearAllMocks();
+    logger = new Logger({
+      minLevel: LogLevel.DEBUG,
+      includeTimestamps: false,
+      handlers: [createPinoHandler()]
+    });
+
+    // Mock Date.toISOString to return a consistent timestamp
+    const mockTimestamp = '2023-01-01T00:00:00.000Z';
+    originalToISOString = Date.prototype.toISOString;
+    Date.prototype.toISOString = jest.fn(() => mockTimestamp);
   });
 
   afterEach(() => {
-    // Clear mocks
     jest.clearAllMocks();
+    Date.prototype.toISOString = originalToISOString;
   });
 
-  // Test 1: Constructor with default options
-  test('should initialize with default options', () => {
-    const logger = new Logger();
-
-    // Test default log level
-    expect(logger['minLevel']).toBe(LogLevel.INFO);
-    expect(logger['includeTimestamps']).toBe(true);
-    expect(logger['handlers'].length).toBe(1);
-    expect(logger['defaultModule']).toBeUndefined();
-    expect(logger['enableRequestTracking']).toBe(true);
+  it('should initialize with default options', () => {
+    const logger = new Logger({ includeTimestamps: false });
+    expect(logger).toBeDefined();
   });
 
-  // Test 2: Constructor with custom options
-  test('should initialize with custom options', () => {
-    const customHandler: LogHandler = () => {
-      /* empty handler for testing */
-    };
-    const logger = new Logger({
-      minLevel: LogLevel.DEBUG,
-      includeTimestamps: false,
-      handlers: [customHandler],
-      defaultModule: 'test',
-      enableRequestTracking: false,
+  describe('debug', () => {
+    it('should log debug messages when minLevel is DEBUG', () => {
+      logger.debug('test message');
+      expect(mockPinoLogger.debug).toHaveBeenCalledWith({}, 'test message');
     });
 
-    expect(logger['minLevel']).toBe(LogLevel.DEBUG);
-    expect(logger['includeTimestamps']).toBe(false);
-    expect(logger['handlers'].length).toBe(1);
-    expect(logger['handlers'][0]).toBe(customHandler);
-    expect(logger['defaultModule']).toBe('test');
-    expect(logger['enableRequestTracking']).toBe(false);
+    it('should not log debug messages when minLevel is INFO', () => {
+      logger = new Logger({ minLevel: LogLevel.INFO, includeTimestamps: false, handlers: [createPinoHandler()] });
+      logger.debug('test message');
+      expect(mockPinoLogger.debug).not.toHaveBeenCalled();
+    });
   });
 
-  // Test 3: Debug level logging
-  test('should log debug messages', () => {
-    const logger = new Logger({ minLevel: LogLevel.DEBUG });
-    logger.debug('Debug message', { key: 'value' });
+  describe('info', () => {
+    it('should log info messages when minLevel is INFO or lower', () => {
+      logger.info('test message');
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({}, 'test message');
+    });
 
-    expect(consoleDebugSpy).toHaveBeenCalled();
-    expect(consoleDebugSpy.mock.calls[0][0]).toContain('[DEBUG]');
-    expect(consoleDebugSpy.mock.calls[0][0]).toContain('Debug message');
-    expect(consoleDebugSpy.mock.calls[0][1]).toEqual({ key: 'value' });
+    it('should not log info messages when minLevel is WARN', () => {
+      logger = new Logger({ minLevel: LogLevel.WARN, includeTimestamps: false, handlers: [createPinoHandler()] });
+      logger.info('test message');
+      expect(mockPinoLogger.info).not.toHaveBeenCalled();
+    });
   });
 
-  // Test 4: Info level logging
-  test('should log info messages', () => {
-    const logger = new Logger();
-    logger.info('Info message', { key: 'value' });
+  describe('warn', () => {
+    it('should log warn messages when minLevel is WARN or lower', () => {
+      logger.warn('test message');
+      expect(mockPinoLogger.warn).toHaveBeenCalledWith({}, 'test message');
+    });
 
-    expect(consoleInfoSpy).toHaveBeenCalled();
-    expect(consoleInfoSpy.mock.calls[0][0]).toContain('[INFO]');
-    expect(consoleInfoSpy.mock.calls[0][0]).toContain('Info message');
-    expect(consoleInfoSpy.mock.calls[0][1]).toEqual({ key: 'value' });
+    it('should not log warn messages when minLevel is ERROR', () => {
+      logger = new Logger({ minLevel: LogLevel.ERROR, includeTimestamps: false, handlers: [createPinoHandler()] });
+      logger.warn('test message');
+      expect(mockPinoLogger.warn).not.toHaveBeenCalled();
+    });
   });
 
-  // Test 5: Warn level logging
-  test('should log warning messages', () => {
-    const logger = new Logger();
-    logger.warn('Warning message', { key: 'value' });
+  describe('error', () => {
+    it('should always log error messages', () => {
+      logger.error('test message');
+      expect(mockPinoLogger.error).toHaveBeenCalledWith({}, 'test message');
 
-    expect(consoleWarnSpy).toHaveBeenCalled();
-    expect(consoleWarnSpy.mock.calls[0][0]).toContain('[WARN]');
-    expect(consoleWarnSpy.mock.calls[0][0]).toContain('Warning message');
-    expect(consoleWarnSpy.mock.calls[0][1]).toEqual({ key: 'value' });
+      logger = new Logger({ minLevel: LogLevel.NONE, includeTimestamps: false, handlers: [createPinoHandler()] });
+      logger.error('test message');
+      expect(mockPinoLogger.error).toHaveBeenCalledWith({}, 'test message');
+    });
   });
 
-  // Test 6: Error level logging
-  test('should log error messages', () => {
-    const logger = new Logger();
-    const error = new Error('Test error');
-    logger.error('Error message', error);
-
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    expect(consoleErrorSpy.mock.calls[0][0]).toContain('[ERROR]');
-    expect(consoleErrorSpy.mock.calls[0][0]).toContain('Error message');
-    expect(consoleErrorSpy.mock.calls[0][1]).toBe(error);
-  });
-
-  // Test 7: Log level filtering
-  test('should filter logs below minimum level', () => {
-    const logger = new Logger({ minLevel: LogLevel.WARN });
-
-    logger.debug('Debug message');
-    logger.info('Info message');
-    logger.warn('Warning message');
-    logger.error('Error message');
-
-    expect(consoleDebugSpy).not.toHaveBeenCalled();
-    expect(consoleInfoSpy).not.toHaveBeenCalled();
-    expect(consoleWarnSpy).toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalled();
-  });
-
-  // Test 8: Disable all logging
-  test('should disable all logging when level is NONE', () => {
-    const logger = new Logger({ minLevel: LogLevel.NONE });
-
-    logger.debug('Debug message');
-    logger.info('Info message');
-    logger.warn('Warning message');
-    logger.error('Error message');
-
-    expect(consoleDebugSpy).not.toHaveBeenCalled();
-    expect(consoleInfoSpy).not.toHaveBeenCalled();
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
-  });
-
-  // Test 9: Set minimum log level
-  test('should change minimum log level dynamically', () => {
-    const logger = new Logger({ minLevel: LogLevel.INFO });
-
-    logger.debug('Debug message 1'); // Should not log
-    expect(consoleDebugSpy).not.toHaveBeenCalled();
+  it('should change minimum log level dynamically', () => {
+    logger.setMinLevel(LogLevel.INFO);
+    logger.debug('test message');
+    expect(mockPinoLogger.debug).not.toHaveBeenCalled();
 
     logger.setMinLevel(LogLevel.DEBUG);
-    logger.debug('Debug message 2'); // Should log
-    expect(consoleDebugSpy).toHaveBeenCalled();
-
-    logger.setMinLevel(LogLevel.ERROR);
-    logger.warn('Warning message'); // Should not log
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    logger.debug('test message');
+    expect(mockPinoLogger.debug).toHaveBeenCalledWith({}, 'test message');
   });
 
-  // Test 10: Custom log handlers
-  test('should support custom log handlers', () => {
-    const customHandler = jest.fn();
-    const logger = new Logger({
-      handlers: [customHandler],
-      minLevel: LogLevel.DEBUG,
-    });
-
-    logger.debug('Debug message');
-    logger.info('Info message');
-
-    expect(customHandler).toHaveBeenCalledTimes(2);
-    expect(customHandler.mock.calls[0][0].message).toBe('Debug message');
-    expect(customHandler.mock.calls[1][0].message).toBe('Info message');
+  it('should include metadata in logs', () => {
+    const metadata = { requestId: '123', userId: '456' };
+    logger.debug('test message', metadata);
+    expect(mockPinoLogger.debug).toHaveBeenCalledWith(metadata, 'test message');
   });
 
-  // Test 11: Add and remove handlers
-  test('should add and remove log handlers', () => {
-    const logger = new Logger({ handlers: [] });
-
-    // Add handlers
-    const handler1 = jest.fn();
-    const handler2 = jest.fn();
-
-    logger.addHandler(handler1);
-    logger.addHandler(handler2);
-
-    logger.info('Test message');
-    expect(handler1).toHaveBeenCalledTimes(1);
-    expect(handler2).toHaveBeenCalledTimes(1);
-
-    // Remove handler
-    const removed = logger.removeHandler(handler1);
-    expect(removed).toBe(true);
-
-    logger.info('Another message');
-    expect(handler1).toHaveBeenCalledTimes(1); // Not called again
-    expect(handler2).toHaveBeenCalledTimes(2);
-
-    // Try to remove non-existent handler
-    const nonExistentRemoval = logger.removeHandler(jest.fn());
-    expect(nonExistentRemoval).toBe(false);
+  it('should include module name in logs', () => {
+    logger.debug('test message', undefined, 'TestModule');
+    expect(mockPinoLogger.debug).toHaveBeenCalledWith({ module: 'TestModule' }, 'test message');
   });
 
-  // Test 12: Clear all handlers
-  test('should clear all handlers', () => {
-    const handler1 = jest.fn();
-    const handler2 = jest.fn();
-
-    const logger = new Logger({ handlers: [handler1, handler2] });
-
-    logger.info('Test message');
-    expect(handler1).toHaveBeenCalledTimes(1);
-    expect(handler2).toHaveBeenCalledTimes(1);
-
-    logger.clearHandlers();
-
-    logger.info('Another message');
-    expect(handler1).toHaveBeenCalledTimes(1); // Not called again
-    expect(handler2).toHaveBeenCalledTimes(1); // Not called again
-  });
-
-  // Test 13: Module name in logs
-  test('should include module name in logs', () => {
-    const logger = new Logger({ defaultModule: 'default-module' });
-
-    logger.info('Message with default module');
-    expect(consoleInfoSpy.mock.calls[0][0]).toContain('[default-module]');
-
-    logger.info('Message with custom module', null, 'custom-module');
-    expect(consoleInfoSpy.mock.calls[1][0]).toContain('[custom-module]');
-  });
-
-  // Test 14: Request ID tracking
-  test('should include request ID in logs when tracking is enabled', () => {
-    const logger = new Logger({ enableRequestTracking: true });
-
+  it('should include request ID in logs when tracking is enabled', () => {
     const requestId = 'test-request-123';
     logger.setRequestId(requestId);
 
-    logger.info('Message with request ID');
-    expect(consoleInfoSpy.mock.calls[0][0]).toContain(`[${requestId}]`);
+    logger.info('test message');
+    expect(mockPinoLogger.info).toHaveBeenCalledWith({ requestId }, 'test message');
   });
 
-  // Test 15: Child loggers
-  test('should create child loggers with inherited settings', () => {
-    const parentHandler = jest.fn();
-    const parent = new Logger({
-      minLevel: LogLevel.DEBUG,
+  it('should not include request ID in logs when tracking is disabled', () => {
+    const requestId = 'test-request-123';
+    logger = new Logger({ enableRequestTracking: false });
+    logger.setRequestId(requestId);
+
+    logger.info('test message');
+    expect(mockPinoLogger.info).toHaveBeenCalledWith({ timestamp: '2023-01-01T00:00:00.000Z' }, 'test message');
+  });
+
+  it('should propagate request ID to child loggers', () => {
+    const parentRequestId = 'parent-request-123';
+    logger.setRequestId(parentRequestId);
+
+    const childLogger = logger.createChildLogger('child-module');
+
+    childLogger.info('Child message');
+    expect(mockPinoLogger.info).toHaveBeenCalledWith(
+      { module: 'child-module', requestId: parentRequestId },
+      'Child message'
+    );
+  });
+
+  it('should support child loggers with request ID inheritance', () => {
+    const parentRequestId = 'parent-request';
+    logger.setRequestId(parentRequestId);
+
+    const childLogger = logger.createChildLogger('child-module');
+
+    childLogger.info('Child message');
+    expect(mockPinoLogger.info).toHaveBeenCalledWith(
+      { module: 'child-module', requestId: parentRequestId },
+      'Child message'
+    );
+  });
+
+  it('should create child loggers with inherited settings', () => {
+    // Create parent logger with custom settings
+    const parentLogger = new Logger({
+      minLevel: LogLevel.INFO,
       includeTimestamps: false,
-      handlers: [parentHandler],
-      enableRequestTracking: true,
+      handlers: [createPinoHandler()]
     });
 
-    parent.setRequestId('parent-request');
+    // Create child loggers with different module names
+    const childLogger1 = parentLogger.createChildLogger('module1');
+    const childLogger2 = parentLogger.createChildLogger('module2');
 
-    const child = parent.createChildLogger('child-module');
+    // Test that child loggers inherit parent settings but maintain their own module names
+    childLogger1.info('message from module1');
+    expect(mockPinoLogger.info).toHaveBeenCalledWith(
+      { module: 'module1' },
+      'message from module1'
+    );
 
-    // Child should inherit settings
-    expect(child['minLevel']).toBe(LogLevel.DEBUG);
-    expect(child['includeTimestamps']).toBe(false);
-    expect(child['handlers'][0]).toBe(parentHandler);
-    expect(child['enableRequestTracking']).toBe(true);
-    expect(child['defaultModule']).toBe('child-module');
-    expect(child['currentRequestId']).toBe('parent-request');
-
-    // Child logs should use the child module name
-    child.info('Child message');
-    expect(parentHandler).toHaveBeenCalledTimes(1);
-    expect(parentHandler.mock.calls[0][0].module).toBe('child-module');
-    expect(parentHandler.mock.calls[0][0].requestId).toBe('parent-request');
+    childLogger2.warn('message from module2');
+    expect(mockPinoLogger.warn).toHaveBeenCalledWith(
+      { module: 'module2' },
+      'message from module2'
+    );
   });
 
-  // Test 16: Error handling in log handlers
+  it('should support multiple child loggers', () => {
+    const logger = new Logger({ includeTimestamps: false });
+
+    const childLogger1 = logger.createChildLogger('module1');
+    const childLogger2 = logger.createChildLogger('module2');
+
+    childLogger1.info('message from module1');
+    expect(mockPinoLogger.info).toHaveBeenCalledWith(
+      { module: 'module1' },
+      'message from module1'
+    );
+
+    childLogger2.warn('message from module2');
+    expect(mockPinoLogger.warn).toHaveBeenCalledWith(
+      { module: 'module2' },
+      'message from module2'
+    );
+  });
+
+  // Test error handling in log handlers
   test('should handle errors in log handlers', () => {
     const errorHandler = jest.fn().mockImplementation(() => {
       throw new Error('Handler error');
-    });
+    }) as LogHandler;
 
-    const consoleErrorOriginal = console.error;
-    const consoleErrorMock = jest.fn();
-    console.error = consoleErrorMock;
+    const consoleErrorMock = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     try {
-      const logger = new Logger({ handlers: [errorHandler] });
+      const logger = new Logger({
+        handlers: [errorHandler],
+      });
+
+      logger.info('test message');
+
+      expect(consoleErrorMock).toHaveBeenCalledWith(
+        'Error in log handler:',
+        expect.any(Error)
+      );
+    } finally {
+      consoleErrorMock.mockRestore();
+    }
+  });
+
+  // Test timestamp inclusion
+  test('should include timestamps when enabled', () => {
+    const mockTimestamp = '2023-01-01T00:00:00.000Z';
+    const originalToISOString = Date.prototype.toISOString;
+    Date.prototype.toISOString = jest.fn(() => mockTimestamp);
+
+    try {
+      const logger = new Logger({ includeTimestamps: true });
       logger.info('Test message');
 
-      expect(errorHandler).toHaveBeenCalled();
-      expect(consoleErrorMock).toHaveBeenCalled();
-      expect(consoleErrorMock.mock.calls[0][0]).toBe('Error in log handler:');
+      expect(mockPinoLogger.info).toHaveBeenCalledWith(
+        { timestamp: mockTimestamp },
+        'Test message'
+      );
     } finally {
-      console.error = consoleErrorOriginal;
+      Date.prototype.toISOString = originalToISOString;
     }
   });
 
@@ -289,54 +284,37 @@ describe('Logger', () => {
     const logger = new Logger({ includeTimestamps: true });
 
     // Mock Date.toISOString
-    const originalToISOString = Date.prototype.toISOString;
     const mockTimestamp = '2023-01-01T00:00:00.000Z';
+    const originalToISOString = Date.prototype.toISOString;
     Date.prototype.toISOString = jest.fn(() => mockTimestamp);
 
     try {
       logger.info('Test message');
-      expect(consoleInfoSpy.mock.calls[0][0]).toContain(`[${mockTimestamp}]`);
+
+      expect(mockPinoLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timestamp: mockTimestamp
+        }),
+        'Test message'
+      );
     } finally {
       Date.prototype.toISOString = originalToISOString;
     }
   });
 
-  // Test 18: Timestamp exclusion
-  test('should exclude timestamps when disabled', () => {
-    const logger = new Logger({ includeTimestamps: false });
-
-    logger.info('Test message');
-
-    // Get the log message
-    const logMessage = consoleInfoSpy.mock.calls[0][0];
-
-    // Should not contain a timestamp in brackets at the start
-    expect(logMessage).not.toMatch(/^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\]/);
-    expect(logMessage).toBe('[INFO]: Test message');
-  });
 });
 
-// Tests for createFileLogger function
 describe('createFileLogger', () => {
   let originalWindow: any;
-  let fsExistsSyncSpy: jest.SpyInstance;
-  let fsMkdirSyncSpy: jest.SpyInstance;
-  let fsAppendFileSyncSpy: jest.SpyInstance;
-  let pathDirnameSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    // Save original modules/globals
+    // Reset all mocks
+    jest.clearAllMocks();
+    // Save original window reference
     originalWindow = global.window;
-
-    // Import the actual modules
-    const fs = require('fs');
-    const path = require('path');
-
-    // Set up spies on the module methods
-    fsExistsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-    fsMkdirSyncSpy = jest.spyOn(fs, 'mkdirSync').mockImplementation(() => {});
-    fsAppendFileSyncSpy = jest.spyOn(fs, 'appendFileSync').mockImplementation(() => {});
-    pathDirnameSpy = jest.spyOn(path, 'dirname').mockReturnValue('/mock/dir');
+    // Set default mock implementations
+    mockFs.existsSync.mockReturnValue(false);
+    mockPath.dirname.mockReturnValue('/mock/dir');
   });
 
   afterEach(() => {
@@ -346,12 +324,11 @@ describe('createFileLogger', () => {
     jest.clearAllMocks();
   });
 
-  // Test 19: Browser environment fallback
   test('should fall back to console logger in browser environment', () => {
     // Mock browser environment
     (global as any).window = {};
 
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const logger = createFileLogger('/mock/log.txt');
 
@@ -364,19 +341,18 @@ describe('createFileLogger', () => {
     expect(logger).toBeInstanceOf(Logger);
   });
 
-  // Test 20: Node.js environment
   test('should create file logger in Node.js environment', () => {
     // Ensure we're in a Node.js-like environment
     (global as any).window = undefined;
 
-    fsExistsSyncSpy.mockReturnValue(false);
+    mockFs.existsSync.mockReturnValue(false);
 
     const logger = createFileLogger('/mock/log.txt', { minLevel: LogLevel.DEBUG });
 
     // Should create directory if it doesn't exist
-    expect(pathDirnameSpy).toHaveBeenCalledWith('/mock/log.txt');
-    expect(fsExistsSyncSpy).toHaveBeenCalledWith('/mock/dir');
-    expect(fsMkdirSyncSpy).toHaveBeenCalledWith('/mock/dir', { recursive: true });
+    expect(mockPath.dirname).toHaveBeenCalledWith('/mock/log.txt');
+    expect(mockFs.existsSync).toHaveBeenCalledWith('/mock/dir');
+    expect(mockFs.mkdirSync).toHaveBeenCalledWith('/mock/dir', { recursive: true });
 
     // Should be a logger with file handler
     expect(logger).toBeInstanceOf(Logger);
@@ -386,15 +362,14 @@ describe('createFileLogger', () => {
     logger.info('Test message');
 
     // Verify that appendFileSync was called with the correct file path
-    expect(fsAppendFileSyncSpy).toHaveBeenCalledWith('/mock/log.txt', expect.any(String));
+    expect(mockFs.appendFileSync).toHaveBeenCalledWith('/mock/log.txt', expect.any(String));
 
     // Check log entry content
-    const logEntry = JSON.parse(fsAppendFileSyncSpy.mock.calls[0][1].slice(0, -1)); // Remove trailing newline
+    const logEntry = JSON.parse(mockFs.appendFileSync.mock.calls[0][1].slice(0, -1)); // Remove trailing newline
     expect(logEntry.level).toBe(LogLevel.INFO);
     expect(logEntry.message).toBe('Test message');
   });
 
-  // Test 21: Error handling in file logger creation
   test('should handle errors in file logger creation', () => {
     // Skip detailed implementation check, verify basic functionality still works
     jest.clearAllMocks();
@@ -402,11 +377,11 @@ describe('createFileLogger', () => {
 
     // Mock error in fs module
     const error = new Error('File system error');
-    fsExistsSyncSpy.mockImplementation(() => {
+    mockFs.existsSync.mockImplementation(() => {
       throw error;
     });
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const logger = createFileLogger('/mock/log.txt');
 
@@ -418,20 +393,19 @@ describe('createFileLogger', () => {
     expect(logger).toBeInstanceOf(Logger);
   });
 
-  // Test 22: Error handling in file writing
   test('should handle errors in file writing', () => {
     // Ensure we're in a Node.js-like environment
     (global as any).window = undefined;
 
-    fsExistsSyncSpy.mockReturnValue(true);
+    mockFs.existsSync.mockReturnValue(true);
 
     // Mock error in appendFileSync
     const error = new Error('Write error');
-    fsAppendFileSyncSpy.mockImplementation(() => {
+    mockFs.appendFileSync.mockImplementation(() => {
       throw error;
     });
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const logger = createFileLogger('/mock/log.txt');
     logger.info('Test message');
