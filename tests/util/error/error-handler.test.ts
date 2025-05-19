@@ -697,31 +697,33 @@ describe('Error Handler', () => {
     test('should use custom message formatter if provided', () => {
       jest.clearAllMocks();
 
-      // Setup mocks directly
-      jest
-        .spyOn(require('../../../src/util/error/error-utils'), 'processError')
+      // Setup processError mock to return enhanced error info
+      jest.spyOn(require('../../../src/util/error/error-utils'), 'processError')
         .mockImplementationOnce(() => ({
           type: 'error',
           message: 'Test error',
+          originalError: new Error('Test error'),
+          userMessage: 'Test error',
+          technicalDetails: 'Test error',
+          isRetryable: false,
+          shouldShowUser: true
         }));
 
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation((message: string) => undefined);
-      const formatMessage = jest.fn().mockReturnValue('Formatted error');
-
-      // Create handler with explicit mocks
+      // Setup console spy
+      const consoleSpy = jest.fn();
+      
+      // Create error handler with custom message formatter
       const handler = createErrorHandler({
-        formatMessage,
         displayErrors: true,
         displayFn: consoleSpy,
-        logErrors: false, // Disable detailed logging to simplify test
+        formatMessage: (errorInfo) => 'Formatted error'
       });
 
+      // Create and handle test error
       const error = new Error('Test error');
       handler(error);
 
-      // Only check if console received the formatted message
+      // Verify the formatted message was displayed
       expect(consoleSpy).toHaveBeenCalledWith('Formatted error');
     });
 
@@ -763,14 +765,15 @@ describe('Error Handler', () => {
     });
 
     test('should use console.error as default logger', () => {
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation((message: string) => undefined);
-      const error = new Error('Test error');
+      const consoleSpy = jest.fn<void, [string]>();
+      const originalConsoleError = console.error;
+      console.error = consoleSpy;
 
+      const error = new Error('Test error');
       logDetailedError(error);
 
       expect(consoleSpy).toHaveBeenCalled();
+      console.error = originalConsoleError;
     });
   });
 
