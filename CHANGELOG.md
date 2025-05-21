@@ -5,6 +5,12 @@ All notable changes to the Midaz SDK for TypeScript will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.0-beta.1] - 2025-05-21
+
+### 🔧 Maintenance
+- Update CHANGELOG for recent changes
+- Bump development dependencies across one directory
+
 ## [v1.0.0-beta.5] - 2025-05-21
 
 ### 🐛 Bug Fixes
