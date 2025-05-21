@@ -84,8 +84,8 @@ describe('ConfigService', () => {
 
       const config = ConfigService.getInstance().getApiUrlConfig();
       expect(config).toEqual({
-        onboardingUrl: 'http://custom-onboarding.example.com',
-        transactionUrl: 'http://custom-transaction.example.com',
+        onboardingUrl: 'http://custom-onboarding.example.com/v1',
+        transactionUrl: 'http://custom-transaction.example.com/v1',
         apiVersion: 'v1',
       });
     });
