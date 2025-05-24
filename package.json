@@ -3,18 +3,18 @@
   "version": "0.1.0",
   "description": "Official TypeScript SDK for the Midaz financial API - Build powerful financial applications with type-safe, modern JavaScript/TypeScript",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
+      "import": "./dist/esm/index.js",
       "require": "./dist/index.js"
     }
   },
   "sideEffects": false,
   "scripts": {
-    "build": "npm run build:cjs && npm run build:esm && npm run build:types",
+    "build": "npm run clean && npm run build:cjs && npm run build:esm && npm run build:types",
     "build:cjs": "tsc --project tsconfig.json",
     "build:esm": "tsc --project tsconfig.esm.json",
     "build:types": "tsc --project tsconfig.types.json",
@@ -30,7 +30,8 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky install && npm run build",
+    "prepare": "npm run build",
+    "postinstall": "husky install",
     "prepublishOnly": "npm run clean && npm run build && npm run test && npm run lint",
     "docs": "typedoc --options typedoc.json",
     "docs:serve": "npm run docs && npx http-server docs -p 8080 -o",
@@ -110,6 +111,12 @@
     "lint-staged": "^15.3.0",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.0",
+    "@semantic-release/npm": "^14.0.0",
+    "semantic-release": "^24.8.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.2",
     "typedoc": "^0.28.4",
@@ -131,7 +138,7 @@
         "maxSize": "100kb"
       },
       {
-        "path": "./dist/index.esm.js",
+        "path": "./dist/esm/index.js",
         "maxSize": "100kb"
       }
     ]

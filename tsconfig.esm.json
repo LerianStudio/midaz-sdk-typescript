@@ -3,8 +3,7 @@
   "compilerOptions": {
     "module": "esnext",
     "target": "es2020",
-    "outDir": "./dist",
-    "outFile": "./dist/index.esm.js",
+    "outDir": "./dist/esm",
     "declaration": false,
     "sourceMap": true,
     "moduleResolution": "bundler"
