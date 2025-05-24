@@ -6,10 +6,10 @@
  */
 
 import { 
-  isExternalAccount, 
-  isSystemAccount, 
   categorizeAccounts, 
-  groupAccountsByAsset 
+  groupAccountsByAsset, 
+  isExternalAccount, 
+  isSystemAccount 
 } from '../src/util/account';
 
 // Example 1: Identifying External Accounts

@@ -5,26 +5,25 @@
  * to handle pagination, format data, and transform models.
  */
 
-import { BasePaginator, PaginationState, PaginatorConfig } from '../src/util/data/pagination-abstraction';
+import { BasePaginator } from '../src/util/data/pagination-abstraction';
 import { formatBalance } from '../src/util/data/formatting';
 import { ListOptions, ListResponse } from '../src/models/common';
-import { Observability } from '../src/util/observability';
 
 // Simplified interfaces for the example
-interface SimplePaginatorConfig<T> {
+interface SimplePaginatorConfig<_T> {
   fetchFunction: (options: any) => Promise<any>;
   limit: number;
 }
 
 // Custom paginator implementations for the example
-class CursorPaginator<T> extends BasePaginator<T> {
+class CursorPaginator<_T> extends BasePaginator<_T> {
   // Add missing properties needed for our implementation
   protected nextCursor?: string;
   protected prevCursor?: string;
 
-  constructor(options: SimplePaginatorConfig<T>) {
+  constructor(options: SimplePaginatorConfig<_T>) {
     super({
-      fetchPage: async (listOptions: ListOptions): Promise<ListResponse<T>> => {
+      fetchPage: async (listOptions: ListOptions): Promise<ListResponse<_T>> => {
         const response = await options.fetchFunction({
           cursor: listOptions.cursor,
           limit: listOptions.limit || options.limit
@@ -46,7 +45,7 @@ class CursorPaginator<T> extends BasePaginator<T> {
     });
   }
   
-  async next(): Promise<T[]> {
+  async next(): Promise<_T[]> {
     // This is a simplified implementation for the example
     // In a real implementation, you would need more error handling and state management
     
@@ -85,15 +84,15 @@ class CursorPaginator<T> extends BasePaginator<T> {
   }
 }
 
-class OffsetPaginator<T> extends BasePaginator<T> {
+class OffsetPaginator<_T> extends BasePaginator<_T> {
   private offset = 0;
   // Add missing properties needed for our implementation
   protected nextCursor?: string;
   protected prevCursor?: string;
   
-  constructor(options: SimplePaginatorConfig<T>) {
+  constructor(options: SimplePaginatorConfig<_T>) {
     super({
-      fetchPage: async (listOptions: ListOptions): Promise<ListResponse<T>> => {
+      fetchPage: async (listOptions: ListOptions): Promise<ListResponse<_T>> => {
         const response = await options.fetchFunction({
           offset: this.offset,
           limit: listOptions.limit || options.limit
@@ -128,7 +127,7 @@ class OffsetPaginator<T> extends BasePaginator<T> {
     this.offset = 0;
   }
   
-  async next(): Promise<T[]> {
+  async next(): Promise<_T[]> {
     // This is a simplified implementation for the example
     // In a real implementation, you would need more error handling and state management
     
@@ -194,11 +193,11 @@ function formatDate(date: Date, format: string): string {
   }
 }
 
-function formatNumber(value: number, decimals: number = 2): string {
+function formatNumber(value: number, decimals = 2): string {
   return value.toFixed(decimals);
 }
 
-function formatPercentage(value: number, decimals: number = 2): string {
+function formatPercentage(value: number, decimals = 2): string {
   return (value * 100).toFixed(decimals) + '%';
 }
 

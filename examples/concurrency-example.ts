@@ -5,7 +5,7 @@
  * to implement parallel processing with controlled concurrency.
  */
 
-import { workerPool, chunk } from '../src/util/concurrency';
+import { chunk, workerPool } from '../src/util/concurrency';
 
 // Example 1: Basic Worker Pool Usage
 async function basicWorkerPoolExample(): Promise<void> {
@@ -19,9 +19,9 @@ async function basicWorkerPoolExample(): Promise<void> {
   // Process items with a worker pool (3 concurrent operations)
   const results: number[] = await workerPool(
     items,
-    async (item: number, index: number): Promise<number> => {
+    async (item: number, _index: number): Promise<number> => {
       // Simulate a time-consuming operation
-      console.log(`Processing item ${item} (index: ${index})...`);
+      console.log(`Processing item ${item}...`);
       await new Promise(resolve => setTimeout(resolve, 1000));
       return item * 2;
     },
@@ -87,7 +87,7 @@ async function chunkProcessingExample(): Promise<void> {
   console.log(`Processing large dataset with ${largeDataset.length} items`);
   
   // Divide the dataset into chunks of size 10
-  const chunkSize: number = 10;
+  const chunkSize = 10;
   const chunks: string[][] = chunk(largeDataset, chunkSize);
   
   console.log(`Divided into ${chunks.length} chunks of size ${chunkSize}`);
@@ -153,11 +153,11 @@ async function apiBatchProcessingExample(): Promise<void> {
   
   const userDetails: any[] = await workerPool(
     userIds,
-    async (userId: string, index: number): Promise<any> => {
+    async (userId: string, _index: number): Promise<any> => {
       console.log(`Fetching details for ${userId}...`);
       
       // Try up to 3 times
-      for (let attempt: number = 1; attempt <= 3; attempt++) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const details: any = await fetchUserDetails(userId);
           console.log(`Successfully fetched details for ${userId}`);
