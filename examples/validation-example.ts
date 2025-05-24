@@ -6,14 +6,14 @@
  */
 
 import { 
-  ValidationError, 
-  ValidationResult, 
-  validateRequired, 
-  validatePattern, 
+  validate, 
+  validateCountryCode, 
+  validateNotEmpty, 
   validateNumber, 
-  validate,
-  validateNotEmpty,
-  validateCountryCode
+  validatePattern, 
+  validateRequired,
+  ValidationError,
+  ValidationResult
 } from '../src/util/validation';
 
 // Example 1: Basic Field Validation

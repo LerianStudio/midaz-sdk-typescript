@@ -6,12 +6,10 @@
  */
 
 import { 
-  MidazClient, 
-  createDevelopmentConfig, 
+  createModelTransformer,
   createSandboxConfig,
   createVersionTransformerFactory,
-  createModelTransformer,
-  createIdentityTransformer
+  MidazClient
 } from '../src';
 
 // Example model interfaces for different versions

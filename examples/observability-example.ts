@@ -5,8 +5,8 @@
  * to implement tracing, logging, and metrics for monitoring and debugging.
  */
 
-import { Observability, Span, AttributeValue } from '../src/util/observability';
-import { Logger, LogLevel, LoggerOptions } from '../src/util/observability/logger';
+import { AttributeValue, Observability } from '../src/util/observability';
+import { Logger, LogLevel } from '../src/util/observability/logger';
 
 // Example 1: Basic Tracing
 async function basicTracingExample() {
@@ -287,7 +287,7 @@ async function distributedTracingExample() {
   }
   
   // Helper function to simulate a backend service call
-  async function callBackendService(contextCarrier: Record<string, string>) {
+  async function callBackendService(_contextCarrier: Record<string, string>) {
     // In a real scenario, this would be a separate service
     // Initialize observability for the backend service
     const backendObservability = new Observability({

@@ -6,13 +6,13 @@
  */
 
 import { 
-  MidazError, 
   ErrorCategory, 
-  ErrorCode,
+  ErrorCode, 
   isNetworkError,
-  isTimeoutError,
   isNotFoundError,
-  isValidationError
+  isTimeoutError,
+  isValidationError,
+  MidazError
 } from '../src/util/error';
 
 // Example 1: Basic Error Creation and Handling

@@ -242,7 +242,9 @@ describe('Logger', () => {
       throw new Error('Handler error');
     }) as LogHandler;
 
-    const consoleErrorMock = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorMock = jest.spyOn(console, 'error').mockImplementation(() => {
+      // Mock implementation to suppress console output during tests
+    });
 
     try {
       const logger = new Logger({
@@ -328,7 +330,9 @@ describe('createFileLogger', () => {
     // Mock browser environment
     (global as any).window = {};
 
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {
+      // Mock implementation to suppress console output during tests
+    });
 
     const logger = createFileLogger('/mock/log.txt');
 
@@ -381,7 +385,9 @@ describe('createFileLogger', () => {
       throw error;
     });
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // Mock implementation to suppress console output during tests
+    });
 
     const logger = createFileLogger('/mock/log.txt');
 
@@ -405,7 +411,9 @@ describe('createFileLogger', () => {
       throw error;
     });
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // Mock implementation to suppress console output during tests
+    });
 
     const logger = createFileLogger('/mock/log.txt');
     logger.info('Test message');

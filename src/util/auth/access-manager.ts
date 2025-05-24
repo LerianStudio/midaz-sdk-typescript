@@ -70,7 +70,7 @@ export class AccessManager {
 
   private httpClient: AxiosInstance;
   private accessToken: string | null = null;
-  private tokenExpiry: number = 0;
+  private tokenExpiry = 0;
   private refreshToken: string | null = null;
   private tokenRefreshPromise: Promise<string> | null = null;
 

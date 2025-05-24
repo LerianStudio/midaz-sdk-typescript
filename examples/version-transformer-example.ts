@@ -6,11 +6,11 @@
  */
 
 import { 
+  createIdentityTransformer, 
   createModelTransformer, 
-  createVersionTransformerFactory, 
-  createIdentityTransformer,
-  transformResponse,
-  transformRequest
+  createVersionTransformerFactory,
+  transformRequest,
+  transformResponse
 } from '../src/util/data';
 
 // Example 1: Basic Model Transformation
@@ -482,7 +482,7 @@ function apiVersionNegotiationExample() {
     private apiVersion: string;
     private transformer: any;
     
-    constructor(preferredVersion: string = 'v2') {
+    constructor(preferredVersion = 'v2') {
       // Simulate version negotiation with server
       this.apiVersion = this.negotiateVersion(preferredVersion);
       this.transformer = transactionTransformerFactory.getTransformer(this.apiVersion);
