@@ -83,7 +83,7 @@
           }
         ],
         "labels": ["released"],
-        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version}. The release is available on:\n\n- [npm package](https://www.npmjs.com/package/midaz-sdk/v/${nextRelease.version})\n- [GitHub release](${releases.filter(release => release.name == 'GitHub')[0].url})\n\nYour **Midaz TypeScript SDK** is ready! 🚀"
+        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version}. The release is available on:\n\n- [npm package](https://www.npmjs.com/package/midaz-sdk/v/${nextRelease.version})\n- [GitHub release](${(releases.find(r => r.name === 'GitHub') || { url: 'about:blank#github-release-url-not-found' }).url})\n\nYour **Midaz TypeScript SDK** is ready! 🚀"
       }
     ]
   ]

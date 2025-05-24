@@ -89,9 +89,6 @@ jobs:
       - name: Generate documentation
         run: npm run docs
 
-      - name: Install semantic-release plugins
-        run: npm install --save-dev @semantic-release/exec @semantic-release/npm
-
       - name: Semantic Release
         id: semantic_release
         uses: cycjimmy/semantic-release-action@v4
@@ -140,9 +137,9 @@ jobs:
 
       - name: Configure package for GitHub registry
         run: |
-          cp package.json package.json.backup
-          sed 's/"name": "midaz-sdk"/"name": "@lerianstudio\/midaz-sdk"/' package.json > package.json.tmp
-          mv package.json.tmp package.json
+          cp package.json package.json.original.tmp
+          sed 's/"name": "midaz-sdk"/"name": "@lerianstudio\/midaz-sdk"/' package.json > package.json.modified.tmp
+          mv package.json.modified.tmp package.json
 
       - name: Publish to GitHub Packages
         run: npm publish
@@ -150,7 +147,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore original package.json
-        run: mv package.json.backup package.json
+        run: mv package.json.original.tmp package.json
 
   generate_changelog:
     name: 📝 Generate AI-powered Changelog
