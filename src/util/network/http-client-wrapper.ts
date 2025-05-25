@@ -2,10 +2,11 @@
  * HTTP Client Wrapper - Provides backward compatibility while using the universal HTTP client
  */
 
-import { UniversalHttpClient, HttpClientOptions as UniversalOptions, RequestOptions as UniversalRequestOptions, HttpResponse as UniversalHttpResponse } from '../http/universal-http-client';
-import { ConfigService } from '../config';
+import {
+  UniversalHttpClient,
+  RequestOptions as UniversalRequestOptions,
+} from '../http/universal-http-client';
 import { Cache } from '../cache/cache';
-import { errorFromHttpResponse } from '../error';
 import { Observability, Span } from '../observability/observability';
 import { RetryPolicy } from './retry-policy';
 import { createLogger } from '../logger/universal-logger';
@@ -83,7 +84,7 @@ export class HttpClient {
     this.observability = options.observability;
     this.retryPolicy = new RetryPolicy({
       maxRetries: options.maxRetries || 3,
-      initialDelay: options.requestRetryDelay || 1000
+      initialDelay: options.requestRetryDelay || 1000,
     });
     this.circuitBreakerThreshold = options.circuitBreakerThreshold || 5;
     this.circuitBreakerResetTimeout = options.circuitBreakerResetTimeout || 60000;
@@ -142,8 +143,9 @@ export class HttpClient {
     // Generate cache key if caching is enabled
     let cacheKey: string | undefined;
     if (this.cache && !options.bypassCache && method === 'GET') {
-      cacheKey = options.customCacheKey || await this.generateCacheKey(method, url, options.params);
-      
+      cacheKey =
+        options.customCacheKey || (await this.generateCacheKey(method, url, options.params));
+
       // Try to get from cache
       const cachedResponse = await this.cache.get(cacheKey);
       if (cachedResponse) {
@@ -212,7 +214,7 @@ export class HttpClient {
    */
   private cleanHeaders(headers?: Record<string, string | undefined>): Record<string, string> {
     if (!headers) return {};
-    
+
     const cleaned: Record<string, string> = {};
     for (const [key, value] of Object.entries(headers)) {
       if (value !== undefined) {

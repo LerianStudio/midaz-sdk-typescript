@@ -103,15 +103,12 @@ export class Cache<T = any> {
   constructor(options: CacheOptions = {}) {
     // Set default TTL from environment variable or fallback to 60 seconds
     this.ttl =
-      options.ttl ??
-      (getEnv('MIDAZ_CACHE_TTL') ? parseInt(getEnv('MIDAZ_CACHE_TTL')!, 10) : 60000);
+      options.ttl ?? (getEnv('MIDAZ_CACHE_TTL') ? parseInt(getEnv('MIDAZ_CACHE_TTL')!, 10) : 60000);
 
     // Set max entries from environment variable or fallback to 100
     this.maxEntries =
       options.maxEntries ??
-      (getEnv('MIDAZ_CACHE_MAX_ENTRIES')
-        ? parseInt(getEnv('MIDAZ_CACHE_MAX_ENTRIES')!, 10)
-        : 100);
+      (getEnv('MIDAZ_CACHE_MAX_ENTRIES') ? parseInt(getEnv('MIDAZ_CACHE_MAX_ENTRIES')!, 10) : 100);
 
     // Set LRU usage from options or default to true
     this.useLRU = options.useLRU !== false;

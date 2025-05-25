@@ -2,7 +2,11 @@
  * Logger Wrapper - Provides backward compatibility while using the universal logger
  */
 
-import { UniversalLogger, LogLevel as UniversalLogLevel, createLogger as createUniversalLogger, ConsoleOutput, MemoryOutput } from '../logger/universal-logger';
+import {
+  createLogger as createUniversalLogger,
+  UniversalLogger,
+  LogLevel as UniversalLogLevel,
+} from '../logger/universal-logger';
 
 /**
  * Available log levels (backward compatible)
@@ -62,7 +66,10 @@ export class Logger {
 
   constructor(config: LoggerConfig = {}) {
     // Map log level
-    const level = config.level === LogLevel.NONE ? 'silent' : (config.level || LogLevel.INFO) as UniversalLogLevel;
+    const level =
+      config.level === LogLevel.NONE
+        ? 'silent'
+        : ((config.level || LogLevel.INFO) as UniversalLogLevel);
 
     // Create universal logger
     this.universalLogger = createUniversalLogger({
@@ -94,14 +101,14 @@ export class Logger {
    */
   getLevel(): LogLevel {
     const level = this.universalLogger.getLevel();
-    return level === 'silent' ? LogLevel.NONE : level as LogLevel;
+    return level === 'silent' ? LogLevel.NONE : (level as LogLevel);
   }
 
   /**
    * Set log level
    */
   setLevel(level: LogLevel): void {
-    const universalLevel = level === LogLevel.NONE ? 'silent' : level as UniversalLogLevel;
+    const universalLevel = level === LogLevel.NONE ? 'silent' : (level as UniversalLogLevel);
     this.universalLogger.setLevel(universalLevel);
   }
 
@@ -199,7 +206,7 @@ export function getLogger(module?: string): Logger {
  */
 export function configureLogger(config: LoggerConfig): void {
   defaultLogger = new Logger(config);
-  
+
   // Update all existing module loggers with new level
   if (config.level) {
     for (const logger of loggerRegistry.values()) {
@@ -211,8 +218,8 @@ export function configureLogger(config: LoggerConfig): void {
 /**
  * Create console handler (for compatibility)
  */
-export function createConsoleHandler(format: 'json' | 'pretty' = 'pretty'): LogHandler {
-  return (entry: LogEntry) => {
+export function createConsoleHandler(_format: 'json' | 'pretty' = 'pretty'): LogHandler {
+  return (_entry: LogEntry) => {
     // Handled by universal logger's console output
   };
 }
@@ -220,9 +227,12 @@ export function createConsoleHandler(format: 'json' | 'pretty' = 'pretty'): LogH
 /**
  * Create file handler (no-op in browser, for compatibility)
  */
-export function createFileHandler(filepath: string, format: 'json' | 'pretty' = 'json'): LogHandler {
+export function createFileHandler(
+  filepath: string,
+  _format: 'json' | 'pretty' = 'json'
+): LogHandler {
   console.warn('File logging is not supported in browser environments');
-  return (entry: LogEntry) => {
+  return (_entry: LogEntry) => {
     // No-op in browser
   };
 }

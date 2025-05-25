@@ -4,7 +4,7 @@
  */
 
 import { createIdempotencyKey } from '../crypto';
-import { UniversalLogger, createLogger } from '../logger/universal-logger';
+import { createLogger, UniversalLogger } from '../logger/universal-logger';
 
 export interface HttpClientOptions {
   baseURL?: string;
@@ -79,7 +79,11 @@ export class UniversalHttpClient {
     if (options.idempotencyKey) {
       headers['Idempotency-Key'] = options.idempotencyKey;
     } else if (['POST', 'PUT', 'PATCH'].includes(method)) {
-      headers['Idempotency-Key'] = await createIdempotencyKey(method, fullUrl, JSON.stringify(options.body));
+      headers['Idempotency-Key'] = await createIdempotencyKey(
+        method,
+        fullUrl,
+        JSON.stringify(options.body)
+      );
     }
 
     // Create abort controller for timeout
@@ -87,7 +91,7 @@ export class UniversalHttpClient {
     const timeoutId = setTimeout(() => abortController.abort(), timeout);
 
     // Merge signals if one was provided
-    const signal = options.signal 
+    const signal = options.signal
       ? this.mergeSignals(options.signal, abortController.signal)
       : abortController.signal;
 
@@ -107,7 +111,7 @@ export class UniversalHttpClient {
     }
 
     let lastError: Error | undefined;
-    
+
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         this.logger.debug(`HTTP ${method} ${fullUrl}`, { attempt, headers });
@@ -127,9 +131,9 @@ export class UniversalHttpClient {
 
         const data = await this.parseResponse<T>(response);
 
-        this.logger.debug(`HTTP ${method} ${fullUrl} - Success`, { 
+        this.logger.debug(`HTTP ${method} ${fullUrl} - Success`, {
           status: response.status,
-          attempt 
+          attempt,
         });
 
         return {
@@ -165,23 +169,41 @@ export class UniversalHttpClient {
   /**
    * Convenience methods
    */
-  async get<T = any>(url: string, options?: Omit<RequestOptions, 'method'>): Promise<HttpResponse<T>> {
+  async get<T = any>(
+    url: string,
+    options?: Omit<RequestOptions, 'method'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'GET' });
   }
 
-  async post<T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<HttpResponse<T>> {
+  async post<T = any>(
+    url: string,
+    body?: any,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'POST', body });
   }
 
-  async put<T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<HttpResponse<T>> {
+  async put<T = any>(
+    url: string,
+    body?: any,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'PUT', body });
   }
 
-  async patch<T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<HttpResponse<T>> {
+  async patch<T = any>(
+    url: string,
+    body?: any,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'PATCH', body });
   }
 
-  async delete<T = any>(url: string, options?: Omit<RequestOptions, 'method'>): Promise<HttpResponse<T>> {
+  async delete<T = any>(
+    url: string,
+    options?: Omit<RequestOptions, 'method'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'DELETE' });
   }
 
@@ -190,7 +212,7 @@ export class UniversalHttpClient {
    */
   private buildUrl(path: string, params?: Record<string, string | number | boolean>): string {
     const url = path.startsWith('http') ? path : `${this.baseURL}${path}`;
-    
+
     if (!params || Object.keys(params).length === 0) {
       return url;
     }
@@ -212,15 +234,13 @@ export class UniversalHttpClient {
   private buildHeaders(additionalHeaders?: Record<string, string>): Record<string, string> {
     const headers = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       ...this.headers,
       ...additionalHeaders,
     };
 
     // Remove undefined values
-    return Object.fromEntries(
-      Object.entries(headers).filter(([_, value]) => value !== undefined)
-    );
+    return Object.fromEntries(Object.entries(headers).filter(([_, value]) => value !== undefined));
   }
 
   /**
@@ -258,7 +278,7 @@ export class UniversalHttpClient {
    * Delay for retry
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

@@ -25,7 +25,7 @@ class BrowserEnvironmentProvider implements EnvironmentProvider {
 
   constructor(initialConfig?: Record<string, string | undefined>) {
     this.config = initialConfig || {};
-    
+
     // Check for global config object
     if (typeof window !== 'undefined' && (window as any).MIDAZ_CONFIG) {
       this.config = { ...this.config, ...(window as any).MIDAZ_CONFIG };
@@ -96,8 +96,10 @@ export function detectEnvironment(): RuntimeEnvironment {
   }
 
   // Check for Node.js
-  if (typeof (globalThis as any).process !== 'undefined' && 
-      (globalThis as any).process.versions?.node) {
+  if (
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process.versions?.node
+  ) {
     return 'node';
   }
 

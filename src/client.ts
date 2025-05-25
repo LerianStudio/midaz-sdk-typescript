@@ -1,7 +1,6 @@
 import { ClientConfigBuilder } from './client-config-builder';
 import { Entity } from './entities/entity';
 import { HttpClient } from './util/network/http-client';
-import { RetryPolicy } from './util/network/retry-policy';
 import { Observability } from './util/observability/observability';
 import { ConfigService } from './util/config';
 import { logger } from './util/observability/logger-instance';
@@ -183,12 +182,15 @@ export class MidazClient {
         baseURL: this.config.baseUrls?.onboarding || 'http://localhost:3000',
         timeout: this.config.timeout,
         maxRetries: this.config.retries?.maxRetries,
-        retryDelay: this.config.retries?.initialDelay
+        retryDelay: this.config.retries?.initialDelay,
       });
 
     // Set auth token if provided
     if (this.config.authToken || this.config.apiKey) {
-      this.httpClient.setDefaultHeader('Authorization', `Bearer ${this.config.authToken || this.config.apiKey}`);
+      this.httpClient.setDefaultHeader(
+        'Authorization',
+        `Bearer ${this.config.authToken || this.config.apiKey}`
+      );
     }
 
     // If Access Manager is enabled, set up authentication interceptor

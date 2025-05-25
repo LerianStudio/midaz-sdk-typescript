@@ -53,7 +53,7 @@ export class ConsoleOutput implements LogOutput {
   write(entry: LogEntry): void {
     const method = this.getConsoleMethod(entry.level);
     const message = this.formatMessage(entry);
-    
+
     if (entry.error) {
       (console as any)[method](message, entry.error);
     } else {
@@ -79,11 +79,7 @@ export class ConsoleOutput implements LogOutput {
   }
 
   private formatMessage(entry: LogEntry): string {
-    const parts = [
-      `[${entry.timestamp}]`,
-      `[${entry.level.toUpperCase()}]`,
-      entry.message,
-    ];
+    const parts = [`[${entry.timestamp}]`, `[${entry.level.toUpperCase()}]`, entry.message];
 
     if (entry.context && Object.keys(entry.context).length > 0) {
       parts.push(JSON.stringify(entry.context));
@@ -134,11 +130,7 @@ export class JsonFormatter implements LogFormatter {
  */
 export class PrettyFormatter implements LogFormatter {
   format(entry: LogEntry): string {
-    const parts = [
-      `${entry.timestamp}`,
-      `${entry.level.toUpperCase().padEnd(5)}`,
-      entry.message,
-    ];
+    const parts = [`${entry.timestamp}`, `${entry.level.toUpperCase().padEnd(5)}`, entry.message];
 
     if (entry.context && Object.keys(entry.context).length > 0) {
       parts.push(`\n  Context: ${JSON.stringify(entry.context, null, 2)}`);
