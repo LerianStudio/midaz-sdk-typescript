@@ -44,7 +44,10 @@ export class SegmentsServiceImpl implements SegmentsService {
    * Creates a new SegmentsServiceImpl
    *
    */
-  constructor(private readonly segmentApiClient: SegmentApiClient, observability?: Observability) {
+  constructor(
+    private readonly segmentApiClient: SegmentApiClient,
+    observability?: Observability
+  ) {
     // Initialize observability with service name
     this.observability = observability || Observability.getInstance();
   }
