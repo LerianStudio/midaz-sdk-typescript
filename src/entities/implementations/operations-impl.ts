@@ -51,9 +51,7 @@ export class OperationsServiceImpl implements OperationsService {
     observability?: Observability
   ) {
     // Use provided observability or create a new one
-    this.observability =
-      observability ||
-      Observability.getInstance();
+    this.observability = observability || Observability.getInstance();
   }
 
   /**

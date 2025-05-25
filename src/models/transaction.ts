@@ -141,14 +141,17 @@ export interface UpdateTransactionInput {
  */
 export function createTransactionInput(): CreateTransactionInput {
   return {
-    operations: []
+    operations: [],
   };
 }
 
 /**
  * Adds a debit operation to a transaction input
  */
-export function addDebitOperation(transactionInput: CreateTransactionInput, _operation: OperationInput): CreateTransactionInput {
+export function addDebitOperation(
+  transactionInput: CreateTransactionInput,
+  _operation: OperationInput
+): CreateTransactionInput {
   // Add implementation here
   return transactionInput;
 }

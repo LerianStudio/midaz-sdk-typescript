@@ -32,7 +32,7 @@ describe('HttpAssetRateApiClient', () => {
     effectiveAt: new Date().toISOString(),
     expirationAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   // Mocks
@@ -50,12 +50,12 @@ describe('HttpAssetRateApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
@@ -63,23 +63,19 @@ describe('HttpAssetRateApiClient', () => {
       post: jest.fn(),
       put: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
       getBaseUrl: jest.fn().mockReturnValue('https://api.example.com'),
-      buildUrl: jest.fn().mockImplementation((path) => `https://api.example.com${path}`)
+      buildUrl: jest.fn().mockImplementation((path) => `https://api.example.com${path}`),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Reset all mocks
     jest.clearAllMocks();
 
     // Create client instance
-    client = new HttpAssetRateApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
+    client = new HttpAssetRateApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -91,7 +87,12 @@ describe('HttpAssetRateApiClient', () => {
       mockHttpClient.get.mockResolvedValueOnce([mockAssetRate]);
 
       // Act
-      const result = await client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode);
+      const result = await client.getAssetRate(
+        orgId,
+        ledgerId,
+        sourceAssetCode,
+        destinationAssetCode
+      );
 
       // Assert
       expect(result).toEqual(mockAssetRate);
@@ -100,11 +101,11 @@ describe('HttpAssetRateApiClient', () => {
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'assetRate.get.success',
         1,
-        expect.objectContaining({ 
-          organizationId: orgId, 
+        expect.objectContaining({
+          organizationId: orgId,
           ledgerId,
           sourceAssetCode,
-          destinationAssetCode
+          destinationAssetCode,
         })
       );
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
@@ -114,7 +115,7 @@ describe('HttpAssetRateApiClient', () => {
           organizationId: orgId,
           ledgerId,
           sourceAssetCode,
-          destinationAssetCode
+          destinationAssetCode,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -136,7 +137,7 @@ describe('HttpAssetRateApiClient', () => {
           organizationId: orgId,
           ledgerId,
           sourceAssetCode,
-          destinationAssetCode: sourceAssetCode
+          destinationAssetCode: sourceAssetCode,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -145,43 +146,50 @@ describe('HttpAssetRateApiClient', () => {
     it('should throw NotFoundError when rate not found in response', async () => {
       // Arrange
       // Return an empty array or array without the requested rate
-      mockHttpClient.get.mockResolvedValueOnce([{ 
-        ...mockAssetRate, 
-        toAsset: 'JPY' // Different destination asset
-      }]);
+      mockHttpClient.get.mockResolvedValueOnce([
+        {
+          ...mockAssetRate,
+          toAsset: 'JPY', // Different destination asset
+        },
+      ]);
 
       // Act & Assert
-      await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode))
-        .rejects.toThrow(`assetRate '${sourceAssetCode}-${destinationAssetCode}' not found`);
+      await expect(
+        client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode)
+      ).rejects.toThrow(`assetRate '${sourceAssetCode}-${destinationAssetCode}' not found`);
       expect(mockSpan.recordException).toHaveBeenCalled();
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', expect.any(String));
     });
 
     it('should throw error when missing organizationId', async () => {
       // Act & Assert
-      await expect(client.getAssetRate('', ledgerId, sourceAssetCode, destinationAssetCode))
-        .rejects.toThrow('organizationId is required');
+      await expect(
+        client.getAssetRate('', ledgerId, sourceAssetCode, destinationAssetCode)
+      ).rejects.toThrow('organizationId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.getAssetRate(orgId, '', sourceAssetCode, destinationAssetCode))
-        .rejects.toThrow('ledgerId is required');
+      await expect(
+        client.getAssetRate(orgId, '', sourceAssetCode, destinationAssetCode)
+      ).rejects.toThrow('ledgerId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing sourceAssetCode', async () => {
       // Act & Assert
-      await expect(client.getAssetRate(orgId, ledgerId, '', destinationAssetCode))
-        .rejects.toThrow('sourceAssetCode is required');
+      await expect(client.getAssetRate(orgId, ledgerId, '', destinationAssetCode)).rejects.toThrow(
+        'sourceAssetCode is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing destinationAssetCode', async () => {
       // Act & Assert
-      await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, ''))
-        .rejects.toThrow('destinationAssetCode is required');
+      await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, '')).rejects.toThrow(
+        'destinationAssetCode is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -191,8 +199,9 @@ describe('HttpAssetRateApiClient', () => {
       mockHttpClient.get.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode))
-        .rejects.toThrow(`Failed to get asset rate for ${sourceAssetCode}-${destinationAssetCode}`);
+      await expect(
+        client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode)
+      ).rejects.toThrow(`Failed to get asset rate for ${sourceAssetCode}-${destinationAssetCode}`);
       expect(mockSpan.recordException).toHaveBeenCalled();
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', expect.any(String));
     });
@@ -203,13 +212,14 @@ describe('HttpAssetRateApiClient', () => {
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
         message: 'Asset not found',
-        statusCode: 404
+        statusCode: 404,
       });
       mockHttpClient.get.mockRejectedValueOnce(midazError);
 
       // Act & Assert
-      await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode))
-        .rejects.toEqual(midazError);
+      await expect(
+        client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode)
+      ).rejects.toEqual(midazError);
       expect(mockSpan.recordException).toHaveBeenCalledWith(midazError);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', midazError.message);
     });
@@ -223,9 +233,10 @@ describe('HttpAssetRateApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode))
-        .rejects.toThrow('Unexpected error: Unexpected Error: Something went wrong');
-      
+      await expect(
+        client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode)
+      ).rejects.toThrow('Unexpected error: Unexpected Error: Something went wrong');
+
       // Restore the original implementation
       spy.mockRestore();
     });
@@ -237,7 +248,7 @@ describe('HttpAssetRateApiClient', () => {
       toAsset: destinationAssetCode,
       rate: rateValue,
       effectiveAt: new Date().toISOString(),
-      expirationAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      expirationAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
 
     it('should successfully create or update an asset rate', async () => {
@@ -251,15 +262,12 @@ describe('HttpAssetRateApiClient', () => {
       // Assert
       expect(result).toEqual(mockAssetRate);
       expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
-      expect(mockHttpClient.put).toHaveBeenCalledWith(
-        expect.any(String),
-        {
-          toAsset: updateInput.toAsset,
-          rate: updateInput.rate,
-          effectiveAt: updateInput.effectiveAt,
-          expirationAt: updateInput.expirationAt
-        }
-      );
+      expect(mockHttpClient.put).toHaveBeenCalledWith(expect.any(String), {
+        toAsset: updateInput.toAsset,
+        rate: updateInput.rate,
+        effectiveAt: updateInput.effectiveAt,
+        expirationAt: updateInput.expirationAt,
+      });
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'assetRate.createOrUpdate.success',
         1,
@@ -267,7 +275,7 @@ describe('HttpAssetRateApiClient', () => {
           organizationId: orgId,
           ledgerId,
           fromAsset: updateInput.fromAsset,
-          toAsset: updateInput.toAsset
+          toAsset: updateInput.toAsset,
         })
       );
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
@@ -277,7 +285,7 @@ describe('HttpAssetRateApiClient', () => {
           organizationId: orgId,
           ledgerId,
           fromAsset: updateInput.fromAsset,
-          toAsset: updateInput.toAsset
+          toAsset: updateInput.toAsset,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -309,23 +317,26 @@ describe('HttpAssetRateApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput))
-        .rejects.toThrow(validationError);
+      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput)).rejects.toThrow(
+        validationError
+      );
       expect(mockHttpClient.put).not.toHaveBeenCalled();
       expect(mockSpan.recordException).toHaveBeenCalledWith(validationError);
     });
 
     it('should throw error when missing organizationId', async () => {
       // Act & Assert
-      await expect(client.createOrUpdateAssetRate('', ledgerId, updateInput))
-        .rejects.toThrow('organizationId is required');
+      await expect(client.createOrUpdateAssetRate('', ledgerId, updateInput)).rejects.toThrow(
+        'organizationId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.createOrUpdateAssetRate(orgId, '', updateInput))
-        .rejects.toThrow('ledgerId is required');
+      await expect(client.createOrUpdateAssetRate(orgId, '', updateInput)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -336,8 +347,9 @@ describe('HttpAssetRateApiClient', () => {
       (validateUpdateAssetRateInput as jest.Mock).mockReturnValueOnce({ valid: true });
 
       // Act & Assert
-      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput))
-        .rejects.toThrow('Failed to create or update asset rate');
+      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput)).rejects.toThrow(
+        'Failed to create or update asset rate'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', expect.any(String));
     });
@@ -348,14 +360,15 @@ describe('HttpAssetRateApiClient', () => {
         category: ErrorCategory.VALIDATION,
         code: ErrorCode.VALIDATION_ERROR,
         message: 'Invalid data',
-        statusCode: 400
+        statusCode: 400,
       });
       mockHttpClient.put.mockRejectedValueOnce(midazError);
       (validateUpdateAssetRateInput as jest.Mock).mockReturnValueOnce({ valid: true });
 
       // Act & Assert
-      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput))
-        .rejects.toEqual(midazError);
+      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput)).rejects.toEqual(
+        midazError
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(midazError);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', midazError.message);
     });
@@ -369,9 +382,10 @@ describe('HttpAssetRateApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput))
-        .rejects.toThrow('Unexpected error: Unexpected Error: Something went wrong');
-      
+      await expect(client.createOrUpdateAssetRate(orgId, ledgerId, updateInput)).rejects.toThrow(
+        'Unexpected error: Unexpected Error: Something went wrong'
+      );
+
       // Restore the original implementation
       spy.mockRestore();
     });
@@ -382,13 +396,15 @@ describe('HttpAssetRateApiClient', () => {
       it('should build the correct asset rate URL', async () => {
         // Use getAssetRate to indirectly test the private method
         mockHttpClient.get.mockResolvedValueOnce([mockAssetRate]);
-        
+
         await client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode);
-        
+
         // Check that the URL was built correctly
         expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
         expect(mockHttpClient.get).toHaveBeenCalledWith(
-          expect.stringContaining(`/organizations/${orgId}/ledgers/${ledgerId}/assets/${sourceAssetCode}/rates`)
+          expect.stringContaining(
+            `/organizations/${orgId}/ledgers/${ledgerId}/assets/${sourceAssetCode}/rates`
+          )
         );
       });
     });
@@ -396,15 +412,19 @@ describe('HttpAssetRateApiClient', () => {
     describe('validateRequiredParams', () => {
       it('should validate required parameters and throw error if missing', async () => {
         // Test with missing parameters indirectly through getAssetRate
-        await expect(client.getAssetRate('', ledgerId, sourceAssetCode, destinationAssetCode))
-          .rejects.toThrow('organizationId is required');
-        await expect(client.getAssetRate(orgId, '', sourceAssetCode, destinationAssetCode))
-          .rejects.toThrow('ledgerId is required');
-        await expect(client.getAssetRate(orgId, ledgerId, '', destinationAssetCode))
-          .rejects.toThrow('sourceAssetCode is required');
-        await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, ''))
-          .rejects.toThrow('destinationAssetCode is required');
-        
+        await expect(
+          client.getAssetRate('', ledgerId, sourceAssetCode, destinationAssetCode)
+        ).rejects.toThrow('organizationId is required');
+        await expect(
+          client.getAssetRate(orgId, '', sourceAssetCode, destinationAssetCode)
+        ).rejects.toThrow('ledgerId is required');
+        await expect(
+          client.getAssetRate(orgId, ledgerId, '', destinationAssetCode)
+        ).rejects.toThrow('sourceAssetCode is required');
+        await expect(client.getAssetRate(orgId, ledgerId, sourceAssetCode, '')).rejects.toThrow(
+          'destinationAssetCode is required'
+        );
+
         // Verify the error is recorded on the span
         expect(mockSpan.recordException).toHaveBeenCalled();
       });
@@ -414,19 +434,19 @@ describe('HttpAssetRateApiClient', () => {
       it('should record metrics with the observability provider', async () => {
         // Use a public method to indirectly test the private recordMetrics method
         mockHttpClient.get.mockResolvedValueOnce([mockAssetRate]);
-        
+
         // Act
         await client.getAssetRate(orgId, ledgerId, sourceAssetCode, destinationAssetCode);
-        
+
         // Assert
         expect(mockObservability.recordMetric).toHaveBeenCalledWith(
           'assetRate.get.success',
           1,
-          expect.objectContaining({ 
-            organizationId: orgId, 
+          expect.objectContaining({
+            organizationId: orgId,
             ledgerId,
             sourceAssetCode,
-            destinationAssetCode
+            destinationAssetCode,
           })
         );
         expect(mockObservability.recordMetric).toHaveBeenCalledWith(
@@ -436,7 +456,7 @@ describe('HttpAssetRateApiClient', () => {
             organizationId: orgId,
             ledgerId,
             sourceAssetCode,
-            destinationAssetCode
+            destinationAssetCode,
           })
         );
       });

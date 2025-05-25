@@ -1055,7 +1055,9 @@ async function displayBalances(
             // Format and display the balance
             const formattedBalance = formatAccountBalance(balance);
             console.log(
-              `      ${account ? account.name : balance.accountId}: ${formattedBalance.displayString}`
+              `      ${account ? account.name : balance.accountId}: ${
+                formattedBalance.displayString
+              }`
             );
           } catch (error) {
             // Fallback display if formatting fails

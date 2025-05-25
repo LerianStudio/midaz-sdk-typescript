@@ -50,7 +50,7 @@ export class UrlBuilder {
 
   /**
    * Gets the API version for requests
-   * 
+   *
    * @returns The API version
    */
   public getApiVersion(): string {
@@ -68,7 +68,7 @@ export class UrlBuilder {
 
   /**
    * Builds the versioned API URL
-   * 
+   *
    * @returns URL with version path
    */
   private getVersionedUrl(baseUrl: string): string {

@@ -3,18 +3,25 @@
  */
 
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import { validateCreateSegmentInput, validateUpdateSegmentInput } from '../../../src/models/validators/segment-validator';
+import {
+  validateCreateSegmentInput,
+  validateUpdateSegmentInput,
+} from '../../../src/models/validators/segment-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { validate } from '../../../src/util/validation';
 import { HttpSegmentApiClient } from '../../../src/api/http/http-segment-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
-import { CreateSegmentInput, Segment, UpdateSegmentInput } from '../../../src/api/interfaces/segment-api-client';
+import {
+  CreateSegmentInput,
+  Segment,
+  UpdateSegmentInput,
+} from '../../../src/api/interfaces/segment-api-client';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/segment-validator');
 jest.mock('../../../src/util/validation', () => ({
-  validate: jest.fn()
+  validate: jest.fn(),
 }));
 
 describe('HttpSegmentApiClient', () => {
@@ -34,7 +41,7 @@ describe('HttpSegmentApiClient', () => {
     status: { code: StatusCode.ACTIVE, timestamp: new Date().toISOString() },
     metadata: { category: 'test' },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   // Mock segment list response
@@ -43,8 +50,8 @@ describe('HttpSegmentApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -62,25 +69,25 @@ describe('HttpSegmentApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
       buildSegmentUrl: jest.fn().mockImplementation((orgId, ledgerId) => {
         return `/organizations/${orgId}/ledgers/${ledgerId}/segments`;
-      })
+      }),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Reset all mocks
@@ -90,11 +97,7 @@ describe('HttpSegmentApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpSegmentApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
+    client = new HttpSegmentApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -120,7 +123,7 @@ describe('HttpSegmentApiClient', () => {
         1,
         expect.objectContaining({
           orgId,
-          ledgerId
+          ledgerId,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -135,10 +138,7 @@ describe('HttpSegmentApiClient', () => {
       await client.listSegments(orgId, ledgerId, options);
 
       // Assert
-      expect(mockHttpClient.get).toHaveBeenCalledWith(
-        expect.any(String),
-        { params: options }
-      );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(expect.any(String), { params: options });
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('limit', 10);
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('offset', 20);
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('hasFilters', true);
@@ -188,7 +188,7 @@ describe('HttpSegmentApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          segmentId
+          segmentId,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -229,7 +229,7 @@ describe('HttpSegmentApiClient', () => {
       name: 'New Segment',
       parentSegmentId: parentSegmentId,
       status: StatusCode.ACTIVE,
-      metadata: { category: 'new' }
+      metadata: { category: 'new' },
     };
 
     it('should successfully create a segment', async () => {
@@ -253,7 +253,7 @@ describe('HttpSegmentApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          segmentName: createInput.name
+          segmentName: createInput.name,
         })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('segmentName', createInput.name);
@@ -269,20 +269,26 @@ describe('HttpSegmentApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.createSegment(orgId, ledgerId, createInput)).rejects.toThrow('Validation error');
+      await expect(client.createSegment(orgId, ledgerId, createInput)).rejects.toThrow(
+        'Validation error'
+      );
       expect(mockHttpClient.post).not.toHaveBeenCalled();
       expect(mockSpan.recordException).toHaveBeenCalledWith(validationError);
     });
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.createSegment('', ledgerId, createInput)).rejects.toThrow('orgId is required');
+      await expect(client.createSegment('', ledgerId, createInput)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.createSegment(orgId, '', createInput)).rejects.toThrow('ledgerId is required');
+      await expect(client.createSegment(orgId, '', createInput)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -302,7 +308,7 @@ describe('HttpSegmentApiClient', () => {
     const updateInput: UpdateSegmentInput = {
       name: 'Updated Segment',
       status: StatusCode.INACTIVE,
-      metadata: { category: 'updated' }
+      metadata: { category: 'updated' },
     };
 
     it('should successfully update a segment', async () => {
@@ -310,8 +316,11 @@ describe('HttpSegmentApiClient', () => {
       const updatedSegment = {
         ...mockSegment,
         name: updateInput.name,
-        status: { code: updateInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() },
-        metadata: updateInput.metadata
+        status: {
+          code: updateInput.status || StatusCode.INACTIVE,
+          timestamp: new Date().toISOString(),
+        },
+        metadata: updateInput.metadata,
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedSegment);
 
@@ -332,7 +341,7 @@ describe('HttpSegmentApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          segmentId
+          segmentId,
         })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('updatedName', updateInput.name);
@@ -361,9 +370,12 @@ describe('HttpSegmentApiClient', () => {
     it('should handle partial updates with only status', async () => {
       // Arrange
       const partialInput: UpdateSegmentInput = { status: StatusCode.INACTIVE };
-      const updatedSegment = { 
-        ...mockSegment, 
-        status: { code: partialInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() } 
+      const updatedSegment = {
+        ...mockSegment,
+        status: {
+          code: partialInput.status || StatusCode.INACTIVE,
+          timestamp: new Date().toISOString(),
+        },
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedSegment);
 
@@ -403,26 +415,34 @@ describe('HttpSegmentApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.updateSegment(orgId, ledgerId, segmentId, updateInput)).rejects.toThrow('Validation error');
+      await expect(client.updateSegment(orgId, ledgerId, segmentId, updateInput)).rejects.toThrow(
+        'Validation error'
+      );
       expect(mockHttpClient.patch).not.toHaveBeenCalled();
       expect(mockSpan.recordException).toHaveBeenCalledWith(validationError);
     });
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.updateSegment('', ledgerId, segmentId, updateInput)).rejects.toThrow('orgId is required');
+      await expect(client.updateSegment('', ledgerId, segmentId, updateInput)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.updateSegment(orgId, '', segmentId, updateInput)).rejects.toThrow('ledgerId is required');
+      await expect(client.updateSegment(orgId, '', segmentId, updateInput)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing segmentId', async () => {
       // Act & Assert
-      await expect(client.updateSegment(orgId, ledgerId, '', updateInput)).rejects.toThrow('id is required');
+      await expect(client.updateSegment(orgId, ledgerId, '', updateInput)).rejects.toThrow(
+        'id is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -432,7 +452,9 @@ describe('HttpSegmentApiClient', () => {
       mockHttpClient.patch.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.updateSegment(orgId, ledgerId, segmentId, updateInput)).rejects.toThrow('API Error');
+      await expect(client.updateSegment(orgId, ledgerId, segmentId, updateInput)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -457,7 +479,7 @@ describe('HttpSegmentApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          segmentId
+          segmentId,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -465,13 +487,17 @@ describe('HttpSegmentApiClient', () => {
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.deleteSegment('', ledgerId, segmentId)).rejects.toThrow('orgId is required');
+      await expect(client.deleteSegment('', ledgerId, segmentId)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.deleteSegment(orgId, '', segmentId)).rejects.toThrow('ledgerId is required');
+      await expect(client.deleteSegment(orgId, '', segmentId)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -497,10 +523,14 @@ describe('HttpSegmentApiClient', () => {
     describe('validateRequiredParams', () => {
       it('should validate required parameters and throw error if missing', async () => {
         // Test with missing parameters indirectly through getSegment
-        await expect(client.getSegment('', ledgerId, segmentId)).rejects.toThrow('orgId is required');
-        await expect(client.getSegment(orgId, '', segmentId)).rejects.toThrow('ledgerId is required');
+        await expect(client.getSegment('', ledgerId, segmentId)).rejects.toThrow(
+          'orgId is required'
+        );
+        await expect(client.getSegment(orgId, '', segmentId)).rejects.toThrow(
+          'ledgerId is required'
+        );
         await expect(client.getSegment(orgId, ledgerId, '')).rejects.toThrow('id is required');
-        
+
         // Verify the error is recorded on the span
         expect(mockSpan.recordException).toHaveBeenCalled();
       });
@@ -510,10 +540,10 @@ describe('HttpSegmentApiClient', () => {
       it('should record metrics with the observability provider', async () => {
         // Use a public method to indirectly test the private recordMetrics method
         mockHttpClient.get.mockResolvedValueOnce(mockSegment);
-        
+
         // Act
         await client.getSegment(orgId, ledgerId, segmentId);
-        
+
         // Assert
         expect(mockObservability.recordMetric).toHaveBeenCalledWith(
           'segments.get',
@@ -521,7 +551,7 @@ describe('HttpSegmentApiClient', () => {
           expect.objectContaining({
             orgId,
             ledgerId,
-            segmentId
+            segmentId,
           })
         );
       });
@@ -529,13 +559,9 @@ describe('HttpSegmentApiClient', () => {
       it('should handle empty tags', async () => {
         // Access the private method using type assertion for testing
         (client as any).recordMetrics('test.metric', 1);
-        
+
         // Assert
-        expect(mockObservability.recordMetric).toHaveBeenCalledWith(
-          'test.metric',
-          1,
-          {}
-        );
+        expect(mockObservability.recordMetric).toHaveBeenCalledWith('test.metric', 1, {});
       });
     });
   });

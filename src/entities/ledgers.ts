@@ -7,7 +7,7 @@ import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../models/ledger';
 
 /**
  * Service for managing ledgers
- * 
+ *
  * Ledgers are the core financial record-keeping systems that contain
  * accounts, transactions, and balances.
  *

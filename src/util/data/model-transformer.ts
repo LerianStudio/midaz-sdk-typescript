@@ -3,9 +3,9 @@
 
 import { ApiResponse } from '../../models/common';
 
-/** 
+/**
  * Interface for transforming models between client and API formats
- * 
+ *
  * @template TClient - Client-side model type
  * @template TApi - API model type
  */
@@ -17,7 +17,7 @@ export interface ModelTransformer<TClient, TApi> {
   toClientModel(model: TApi): TClient;
 }
 
-/** 
+/**
  * Creates a model transformer with the given transformation functions
  *
  * @template TClient - Client-side model type
@@ -33,7 +33,7 @@ export function createModelTransformer<TClient, TApi>(
   };
 }
 
-/** 
+/**
  * Transforms API responses to client models (single, array, or paginated)
  *
  * @template TClient - Client-side model type
@@ -71,7 +71,7 @@ export function transformResponse<TClient, TApi>(
   return response as any;
 }
 
-/** 
+/**
  * Transforms a request from client format to API format
  *
  * @template TClient - Client-side model type

@@ -2,7 +2,11 @@
  */
 
 import { MidazClient as _MidazClient } from '../client';
-import { createTransactionBatch as _createTransactionBatch, TransactionBatchResult as _TransactionBatchResult, TransactionBatchOptions } from './transaction-batch';
+import {
+  createTransactionBatch as _createTransactionBatch,
+  TransactionBatchResult as _TransactionBatchResult,
+  TransactionBatchOptions,
+} from './transaction-batch';
 import { CreateTransactionInput as _CreateTransactionInput } from './transaction';
 
 /**
@@ -11,25 +15,25 @@ import { CreateTransactionInput as _CreateTransactionInput } from './transaction
 export class TransactionBatch {
   private transactions: Array<() => Promise<any>> = [];
   private options: TransactionBatchOptions;
-  
+
   constructor(options: TransactionBatchOptions = {}) {
     this.options = options;
   }
-  
+
   /**
    * Add a transaction function to the batch
    */
   add(transactionFn: () => Promise<any>): void {
     this.transactions.push(transactionFn);
   }
-  
+
   /**
    * Get all transaction functions
    */
   getTransactions(): Array<() => Promise<any>> {
     return this.transactions;
   }
-  
+
   /**
    * Get the options for this batch
    */
@@ -40,7 +44,7 @@ export class TransactionBatch {
 
 /**
  * Creates a new transaction batch
- * 
+ *
  * @returns A new TransactionBatch instance
  */
 export function createBatch(options: TransactionBatchOptions = {}): TransactionBatch {
@@ -49,26 +53,26 @@ export function createBatch(options: TransactionBatchOptions = {}): TransactionB
 
 /**
  * Executes a transaction batch
- * 
+ *
  * @returns Array of results from the batch execution
  */
 export async function executeBatch(batch: TransactionBatch): Promise<any[]> {
   const results: any[] = [];
-  
+
   for (const txFn of batch.getTransactions()) {
     try {
       const result = await txFn();
-      results.push({ 
-        status: 'success', 
-        result
+      results.push({
+        status: 'success',
+        result,
       });
     } catch (error) {
-      results.push({ 
+      results.push({
         status: 'failed',
-        error
+        error,
       });
     }
   }
-  
+
   return results;
 }

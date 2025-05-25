@@ -47,7 +47,7 @@ describe('HttpBalanceApiClient', () => {
     allowSending: true,
     allowReceiving: true,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   // Mock balance list response
@@ -56,8 +56,8 @@ describe('HttpBalanceApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -75,19 +75,19 @@ describe('HttpBalanceApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
@@ -97,7 +97,7 @@ describe('HttpBalanceApiClient', () => {
       getBaseUrl: jest.fn().mockImplementation((type) => {
         return `/api/${type}`;
       }),
-      getApiVersion: jest.fn().mockReturnValue(apiVersion)
+      getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Reset all mocks
@@ -109,12 +109,8 @@ describe('HttpBalanceApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpBalanceApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
-    
+    client = new HttpBalanceApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
+
     // Access the protected apiVersion property by using type assertion
     (client as any).apiVersion = apiVersion;
 
@@ -189,7 +185,7 @@ describe('HttpBalanceApiClient', () => {
       // Arrange
       const emptyResponse: ListResponse<Balance> = {
         items: [],
-        meta: { total: 0, count: 0 }
+        meta: { total: 0, count: 0 },
       };
       mockHttpClient.get.mockResolvedValueOnce(emptyResponse);
 
@@ -254,19 +250,25 @@ describe('HttpBalanceApiClient', () => {
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.listAccountBalances('', ledgerId, accountId)).rejects.toThrow('orgId is required');
+      await expect(client.listAccountBalances('', ledgerId, accountId)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.listAccountBalances(orgId, '', accountId)).rejects.toThrow('ledgerId is required');
+      await expect(client.listAccountBalances(orgId, '', accountId)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing accountId', async () => {
       // Act & Assert
-      await expect(client.listAccountBalances(orgId, ledgerId, '')).rejects.toThrow('accountId is required');
+      await expect(client.listAccountBalances(orgId, ledgerId, '')).rejects.toThrow(
+        'accountId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -276,7 +278,9 @@ describe('HttpBalanceApiClient', () => {
       mockHttpClient.get.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.listAccountBalances(orgId, ledgerId, accountId)).rejects.toThrow('API Error');
+      await expect(client.listAccountBalances(orgId, ledgerId, accountId)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -285,7 +289,7 @@ describe('HttpBalanceApiClient', () => {
       // Arrange
       const emptyResponse: ListResponse<Balance> = {
         items: [],
-        meta: { total: 0, count: 0 }
+        meta: { total: 0, count: 0 },
       };
       mockHttpClient.get.mockResolvedValueOnce(emptyResponse);
 
@@ -357,22 +361,24 @@ describe('HttpBalanceApiClient', () => {
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
         message: 'Balance not found',
-        statusCode: 404
+        statusCode: 404,
       });
       mockHttpClient.get.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.getBalance(orgId, ledgerId, balanceId)).rejects.toThrow('Balance not found');
+      await expect(client.getBalance(orgId, ledgerId, balanceId)).rejects.toThrow(
+        'Balance not found'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
 
     it('should handle balance with undefined available or onHold', async () => {
       // Arrange
-      const incompleteBalance = { 
-        ...mockBalance, 
-        available: undefined as unknown as number, 
-        onHold: undefined as unknown as number 
+      const incompleteBalance = {
+        ...mockBalance,
+        available: undefined as unknown as number,
+        onHold: undefined as unknown as number,
       };
       mockHttpClient.get.mockResolvedValueOnce(incompleteBalance);
 
@@ -398,15 +404,15 @@ describe('HttpBalanceApiClient', () => {
   describe('updateBalance', () => {
     const updateInput: UpdateBalanceInput = {
       allowSending: false,
-      allowReceiving: true
+      allowReceiving: true,
     };
 
     it('should successfully update a balance', async () => {
       // Arrange
-      const updatedBalance = { 
-        ...mockBalance, 
-        allowSending: false, 
-        allowReceiving: true 
+      const updatedBalance = {
+        ...mockBalance,
+        allowSending: false,
+        allowReceiving: true,
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedBalance);
       (validateUpdateBalanceInput as jest.Mock).mockReturnValueOnce({ valid: true });
@@ -445,25 +451,33 @@ describe('HttpBalanceApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.updateBalance(orgId, ledgerId, balanceId, updateInput)).rejects.toThrow('Validation error');
+      await expect(client.updateBalance(orgId, ledgerId, balanceId, updateInput)).rejects.toThrow(
+        'Validation error'
+      );
       expect(mockHttpClient.patch).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.updateBalance('', ledgerId, balanceId, updateInput)).rejects.toThrow('orgId is required');
+      await expect(client.updateBalance('', ledgerId, balanceId, updateInput)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.updateBalance(orgId, '', balanceId, updateInput)).rejects.toThrow('ledgerId is required');
+      await expect(client.updateBalance(orgId, '', balanceId, updateInput)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing balanceId', async () => {
       // Act & Assert
-      await expect(client.updateBalance(orgId, ledgerId, '', updateInput)).rejects.toThrow('id is required');
+      await expect(client.updateBalance(orgId, ledgerId, '', updateInput)).rejects.toThrow(
+        'id is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -473,7 +487,9 @@ describe('HttpBalanceApiClient', () => {
       mockHttpClient.patch.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.updateBalance(orgId, ledgerId, balanceId, updateInput)).rejects.toThrow('API Error');
+      await expect(client.updateBalance(orgId, ledgerId, balanceId, updateInput)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -548,13 +564,17 @@ describe('HttpBalanceApiClient', () => {
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.deleteBalance('', ledgerId, balanceId)).rejects.toThrow('orgId is required');
+      await expect(client.deleteBalance('', ledgerId, balanceId)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.deleteBalance(orgId, '', balanceId)).rejects.toThrow('ledgerId is required');
+      await expect(client.deleteBalance(orgId, '', balanceId)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -580,12 +600,12 @@ describe('HttpBalanceApiClient', () => {
     it('should validate required parameters and throw error if missing', async () => {
       // The validateRequiredParams method is private, but we can test it indirectly
       // through the public methods that use it
-      
+
       // Test with missing parameters
       await expect(client.getBalance('', ledgerId, balanceId)).rejects.toThrow('orgId is required');
       await expect(client.getBalance(orgId, '', balanceId)).rejects.toThrow('ledgerId is required');
       await expect(client.getBalance(orgId, ledgerId, '')).rejects.toThrow('id is required');
-      
+
       // Verify the error is recorded on the span
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -593,19 +613,19 @@ describe('HttpBalanceApiClient', () => {
     it('should record metrics with the observability provider', async () => {
       // Use a public method to indirectly test the private recordMetrics method
       mockHttpClient.get.mockResolvedValueOnce(mockBalance);
-      
+
       // Act
       await client.getBalance(orgId, ledgerId, balanceId);
-      
+
       // Assert
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'balance.available',
         10000,
-        expect.objectContaining({ 
-          orgId, 
+        expect.objectContaining({
+          orgId,
           ledgerId,
           balanceId,
-          accountId 
+          accountId,
         })
       );
     });

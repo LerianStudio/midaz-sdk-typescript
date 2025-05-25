@@ -3,7 +3,11 @@
  * @description Provides a mock implementation of the Observability class for unit tests
  */
 
-import { Observability, ObservabilityOptions, Span } from '../../../src/util/observability/observability';
+import {
+  Observability,
+  ObservabilityOptions,
+  Span,
+} from '../../../src/util/observability/observability';
 import { OpenTelemetryProvider } from '../../../src/util/observability/observability-otel';
 
 /**
@@ -12,7 +16,7 @@ import { OpenTelemetryProvider } from '../../../src/util/observability/observabi
 export class MockSpan implements Span {
   public attributes: Record<string, any> = {};
   public exceptions: unknown[] = [];
-  public status: { code: 'OK' | 'ERROR', message?: string } = { code: 'OK' };
+  public status: { code: 'OK' | 'ERROR'; message?: string } = { code: 'OK' };
   public ended = false;
 
   setAttribute(key: string, value: string | number | boolean): void {
@@ -23,10 +27,10 @@ export class MockSpan implements Span {
     this.exceptions.push(error);
   }
 
-  setStatus(status: "ok" | "error", message?: string): void {
-    this.status = { 
-      code: status === 'ok' ? 'OK' : 'ERROR', 
-      message 
+  setStatus(status: 'ok' | 'error', message?: string): void {
+    this.status = {
+      code: status === 'ok' ? 'OK' : 'ERROR',
+      message,
     };
   }
 
@@ -41,8 +45,8 @@ export class MockSpan implements Span {
 export class MockOpenTelemetryProvider {
   public readonly options: ObservabilityOptions;
   public spans: MockSpan[] = [];
-  public metrics: Array<{ name: string, value: number, attributes: Record<string, any> }> = [];
-  public logs: Array<{ level: string, message: string, attributes: Record<string, any> }> = [];
+  public metrics: Array<{ name: string; value: number; attributes: Record<string, any> }> = [];
+  public logs: Array<{ level: string; message: string; attributes: Record<string, any> }> = [];
 
   constructor(options: ObservabilityOptions) {
     this.options = options;
@@ -75,8 +79,8 @@ export class MockOpenTelemetryProvider {
  */
 export class MockObservability extends Observability {
   public mockSpans: MockSpan[] = [];
-  public mockMetrics: Array<{ name: string, value: number, attributes: Record<string, any> }> = [];
-  public mockLogs: Array<{ level: string, message: string, attributes: Record<string, any> }> = [];
+  public mockMetrics: Array<{ name: string; value: number; attributes: Record<string, any> }> = [];
+  public mockLogs: Array<{ level: string; message: string; attributes: Record<string, any> }> = [];
   public mockProvider: MockOpenTelemetryProvider;
 
   constructor(options: Partial<ObservabilityOptions> = {}) {
@@ -85,9 +89,9 @@ export class MockObservability extends Observability {
       enableMetrics: true,
       enableLogging: true,
       serviceName: 'test-service',
-      ...options
+      ...options,
     });
-    
+
     // Create and store the mock provider
     this.mockProvider = new MockOpenTelemetryProvider(this.options);
   }

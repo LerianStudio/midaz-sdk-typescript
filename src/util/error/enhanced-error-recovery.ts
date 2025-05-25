@@ -2,16 +2,8 @@
  */
 
 import { executeOperation } from './error-handler';
-import {
-  ErrorRecoveryOptions,
-  OperationResult,
-  TransactionErrorCategory
-} from './error-types';
-import {
-  categorizeTransactionError,
-  isRetryableError,
-  processError
-} from './error-utils';
+import { ErrorRecoveryOptions, OperationResult, TransactionErrorCategory } from './error-types';
+import { categorizeTransactionError, isRetryableError, processError } from './error-utils';
 
 /**
  * Extended options for enhanced error recovery
@@ -27,10 +19,7 @@ export interface EnhancedRecoveryOptions extends ErrorRecoveryOptions {
    * Function that transforms the operation for a fallback attempt
    * Used to modify parameters based on previous error (e.g., reduce amount on insufficient funds)
    */
-  transformOperation?: (
-    error: unknown,
-    attempt: number
-  ) => (() => Promise<any>) | null;
+  transformOperation?: (error: unknown, attempt: number) => (() => Promise<any>) | null;
 
   /**
    * Whether to automatically handle duplicate operations as success
@@ -103,12 +92,12 @@ export interface EnhancedOperationResult<T> extends OperationResult<T> {
 
 /**
  * Executes an operation with enhanced error recovery
- * 
+ *
  * This function extends the standard error recovery with intelligent
  * strategies like operation transformation, fallbacks, and verification.
- * 
+ *
  * @returns Promise resolving to an enhanced operation result
- * 
+ *
  * @example
  * ```typescript
  * // Execute a financial operation with fallback strategy
@@ -130,7 +119,7 @@ export interface EnhancedOperationResult<T> extends OperationResult<T> {
  *     }
  *   }
  * );
- * 
+ *
  * if (result.status === 'success' || result.verifiedSuccess) {
  *   console.log('Operation succeeded!');
  *   if (result.usedFallback) {
@@ -160,15 +149,24 @@ export async function withEnhancedRecovery<T>(
     verifyOperation: options?.verifyOperation ?? (() => Promise.resolve(false)),
     maxVerificationAttempts: options?.maxVerificationAttempts ?? 3,
     verificationDelay: options?.verificationDelay ?? 1000,
-    onRetry: options?.onRetry ?? ((_error: unknown, _attempt: number) => {
-      // Default no-op retry handler
-    }),
-    onExhausted: options?.onExhausted ?? ((_error: unknown, _attempts: number) => {
-      // Default no-op exhaustion handler
-    }),
-    backoffStrategy: options?.backoffStrategy ?? ((attempt: number, initialDelay: number, opts: ErrorRecoveryOptions) => {
-      return Math.min(initialDelay * Math.pow(opts.backoffFactor || 2, attempt), opts.maxDelay || 10000);
-    })
+    onRetry:
+      options?.onRetry ??
+      ((_error: unknown, _attempt: number) => {
+        // Default no-op retry handler
+      }),
+    onExhausted:
+      options?.onExhausted ??
+      ((_error: unknown, _attempts: number) => {
+        // Default no-op exhaustion handler
+      }),
+    backoffStrategy:
+      options?.backoffStrategy ??
+      ((attempt: number, initialDelay: number, opts: ErrorRecoveryOptions) => {
+        return Math.min(
+          initialDelay * Math.pow(opts.backoffFactor || 2, attempt),
+          opts.maxDelay || 10000
+        );
+      }),
   };
 
   // Initialize result with tracking for recovery steps
@@ -179,9 +177,9 @@ export async function withEnhancedRecovery<T>(
     fallbackAttempts: 0,
     usedFallback: false,
     verifiedSuccess: false,
-    recoverySteps: []
+    recoverySteps: [],
   };
-  
+
   // Ensure recoverySteps is defined
   if (!result.recoverySteps) {
     result.recoverySteps = [];
@@ -197,13 +195,15 @@ export async function withEnhancedRecovery<T>(
       backoffFactor: mergedOptions.backoffFactor,
       retryCondition: mergedOptions.retryCondition,
       onRetry: (error, attempt) => {
-        result.recoverySteps?.push(`Standard retry ${attempt}: ${(error as Error)?.message || 'Unknown error'}`);
+        result.recoverySteps?.push(
+          `Standard retry ${attempt}: ${(error as Error)?.message || 'Unknown error'}`
+        );
         if (mergedOptions.onRetry) {
           mergedOptions.onRetry(error, attempt);
         }
       },
       onExhausted: mergedOptions.onExhausted,
-      backoffStrategy: mergedOptions.backoffStrategy
+      backoffStrategy: mergedOptions.backoffStrategy,
     });
 
     // Update our result with standard operation results
@@ -221,32 +221,43 @@ export async function withEnhancedRecovery<T>(
     }
 
     // If standard recovery failed, handle with fallback strategy if enabled
-    if (standardResult.status === 'failed' && standardResult.error && mergedOptions.fallbackAttempts > 0) {
+    if (
+      standardResult.status === 'failed' &&
+      standardResult.error &&
+      mergedOptions.fallbackAttempts > 0
+    ) {
       result.usedFallback = true;
-      
+
       // Categorize the error to determine appropriate recovery strategy
       const errorCategory = categorizeTransactionError(standardResult.error);
       result.recoveryStrategy = `fallback-${errorCategory}`;
-      
+
       // Try fallback attempts with transformed operations
       for (let attempt = 1; attempt <= mergedOptions.fallbackAttempts; attempt++) {
         result.fallbackAttempts = attempt;
-        
+
         // Transform the operation based on the error
-        const transformedOperation = mergedOptions.transformOperation(standardResult.error, attempt);
-        
+        const transformedOperation = mergedOptions.transformOperation(
+          standardResult.error,
+          attempt
+        );
+
         // Skip if no transformation returned
         if (!transformedOperation) {
-          result.recoverySteps.push(`Fallback ${attempt}: No transformation available for ${errorCategory}`);
+          result.recoverySteps.push(
+            `Fallback ${attempt}: No transformation available for ${errorCategory}`
+          );
           continue;
         }
-        
-        result.recoverySteps.push(`Fallback ${attempt}: Attempting with transformed operation for ${errorCategory}`);
-        
+
+        result.recoverySteps.push(
+          `Fallback ${attempt}: Attempting with transformed operation for ${errorCategory}`
+        );
+
         try {
           // Execute the transformed operation
           const fallbackResult = await transformedOperation();
-          
+
           // Success with fallback
           result.result = fallbackResult;
           result.status = 'success';
@@ -254,50 +265,64 @@ export async function withEnhancedRecovery<T>(
           return result;
         } catch (fallbackError) {
           // Log the fallback error
-          result.recoverySteps.push(`Fallback ${attempt}: Failed with error: ${(fallbackError as Error)?.message || 'Unknown error'}`);
-          
+          result.recoverySteps.push(
+            `Fallback ${attempt}: Failed with error: ${
+              (fallbackError as Error)?.message || 'Unknown error'
+            }`
+          );
+
           // Update error to most recent one
           result.error = processError(fallbackError);
         }
       }
     }
-    
+
     // If we get here, both standard and fallback strategies failed
     // If verification is enabled, check if operation actually completed
     if (mergedOptions.usePolledVerification && mergedOptions.verifyOperation) {
       result.recoverySteps.push('Starting operation verification despite error');
-      
+
       for (let attempt = 1; attempt <= mergedOptions.maxVerificationAttempts; attempt++) {
         result.recoverySteps.push(`Verification attempt ${attempt}`);
-        
+
         try {
           const verified = await mergedOptions.verifyOperation();
-          
+
           if (verified) {
             result.verifiedSuccess = true;
             result.status = 'success';
-            result.recoverySteps.push('Verification succeeded: Operation completed successfully despite error');
+            result.recoverySteps.push(
+              'Verification succeeded: Operation completed successfully despite error'
+            );
             return result;
           }
-          
+
           // Wait before next verification attempt
           if (attempt < mergedOptions.maxVerificationAttempts) {
-            await new Promise(resolve => setTimeout(resolve, mergedOptions.verificationDelay));
+            await new Promise((resolve) => setTimeout(resolve, mergedOptions.verificationDelay));
           }
         } catch (verificationError) {
-          result.recoverySteps.push(`Verification attempt ${attempt} failed: ${(verificationError as Error)?.message || 'Unknown error'}`);
+          result.recoverySteps.push(
+            `Verification attempt ${attempt} failed: ${
+              (verificationError as Error)?.message || 'Unknown error'
+            }`
+          );
         }
       }
-      
+
       result.recoverySteps.push('Verification failed: Operation did not complete');
     }
-    
+
     // All recovery strategies have failed
     return result;
   } catch (unexpectedError) {
     // Handle any unexpected errors from the recovery process itself
     result.error = processError(unexpectedError);
-    result.recoverySteps.push(`Unexpected error in recovery process: ${(unexpectedError as Error)?.message || 'Unknown error'}`);
+    result.recoverySteps.push(
+      `Unexpected error in recovery process: ${
+        (unexpectedError as Error)?.message || 'Unknown error'
+      }`
+    );
     return result;
   }
 }
@@ -305,9 +330,9 @@ export async function withEnhancedRecovery<T>(
 /**
  * Executes a financial transaction with enhanced error recovery and
  * specialized handling for common financial transaction errors
- * 
+ *
  * @returns Promise resolving to an enhanced operation result
- * 
+ *
  * @example
  * ```typescript
  * // Execute a payment transaction with smart recovery
@@ -327,7 +352,7 @@ export async function withEnhancedRecovery<T>(
  *     }
  *   }
  * );
- * 
+ *
  * if (result.status === 'success') {
  *   console.log('Payment processed successfully');
  *   if (result.usedFallback) {
@@ -351,7 +376,7 @@ export async function executeTransactionWithRecovery<T>(
     // Don't retry business logic errors
     retryCondition: (error) => {
       const errorCategory = categorizeTransactionError(error);
-      
+
       // Don't retry these business logic errors
       if (
         errorCategory === TransactionErrorCategory.INSUFFICIENT_FUNDS ||
@@ -361,24 +386,24 @@ export async function executeTransactionWithRecovery<T>(
       ) {
         return false;
       }
-      
+
       // Use standard retry condition for other errors
       return isRetryableError(error);
     },
     // Handle duplicates as success by default for idempotent transactions
     handleDuplicatesAsSuccess: true,
-    ...options
+    ...options,
   };
-  
+
   // Enhanced recovery specifically for financial transactions
   return await withEnhancedRecovery(transactionFn, mergedOptions);
 }
 
 /**
  * Creates an operation verification function for transaction status
- * 
+ *
  * @returns Function for use with usePolledVerification
- * 
+ *
  * @example
  * ```typescript
  * // Create a verification function for a transaction
@@ -387,7 +412,7 @@ export async function executeTransactionWithRecovery<T>(
  *     .then(() => true)
  *     .catch(() => false)
  * );
- * 
+ *
  * // Use it with enhanced recovery
  * const result = await executeTransactionWithRecovery(
  *   () => client.entities.transactions.createTransaction(orgId, ledgerId, paymentTx),
@@ -404,7 +429,7 @@ export function createTransactionVerification(
   return async () => {
     try {
       return await checkFn();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {
       return false;
     }

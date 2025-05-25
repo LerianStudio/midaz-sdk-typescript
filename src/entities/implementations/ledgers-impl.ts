@@ -15,10 +15,7 @@ export class LedgersServiceImpl implements LedgersService {
   private readonly observability: Observability;
 
   /** Creates a new LedgersServiceImpl */
-  constructor(
-    private readonly apiClient: LedgerApiClient,
-    observability?: Observability
-  ) {
+  constructor(private readonly apiClient: LedgerApiClient, observability?: Observability) {
     this.observability = observability || Observability.getInstance();
   }
 
