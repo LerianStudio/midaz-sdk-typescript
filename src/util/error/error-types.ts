@@ -192,7 +192,7 @@ export class MidazError extends Error {
    * Original error
    * The underlying error that caused this error, if applicable
    */
-  public readonly cause?: Error;
+  public readonly cause?: Error | unknown;
 
   /**
    * Creates a new MidazError
@@ -207,7 +207,7 @@ export class MidazError extends Error {
     resourceId?: string;
     statusCode?: number;
     requestId?: string;
-    cause?: Error;
+    cause?: Error | unknown;
   }) {
     // Create sanitizer for error messages
     const sanitizer = Sanitizer.getInstance();
