@@ -37,7 +37,7 @@ export function extractItems<T>(response: T[] | ListResponse<T> | undefined | nu
     if (response.items && Array.isArray(response.items)) {
       return response.items;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
   } catch (_) {
     // If response is not an object or accessing response.items fails, return empty array
     return [];
@@ -112,7 +112,7 @@ export function createSafeAccessor<T>() {
     try {
       const value = accessor(obj);
       return value === undefined || value === null ? defaultValue : value;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
     } catch (_) {
       return defaultValue;
     }
