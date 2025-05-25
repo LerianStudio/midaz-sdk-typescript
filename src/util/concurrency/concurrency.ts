@@ -225,9 +225,7 @@ export function chunk<T>(array: T[], size = 10): T[][] {
   // Use environment variable for default chunk size if available
   const chunkSize =
     size ||
-    (getEnv('MIDAZ_DEFAULT_CHUNK_SIZE')
-      ? parseInt(getEnv('MIDAZ_DEFAULT_CHUNK_SIZE')!, 10)
-      : 10);
+    (getEnv('MIDAZ_DEFAULT_CHUNK_SIZE') ? parseInt(getEnv('MIDAZ_DEFAULT_CHUNK_SIZE')!, 10) : 10);
 
   // Handle edge cases
   if (!array.length) {

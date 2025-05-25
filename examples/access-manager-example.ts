@@ -23,22 +23,30 @@ async function environmentConfigExample() {
   console.log('\n=== Environment-based Configuration Example ===');
 
   // Set environment variables (in practice, these would be set externally)
-  process.env.PLUGIN_AUTH_ENABLED = 'true';
-  process.env.PLUGIN_AUTH_ADDRESS = 'http://localhost:4000/v1';
-  process.env.MIDAZ_CLIENT_ID = '9670e0ca55a29a466d31';
-  process.env.MIDAZ_CLIENT_SECRET = 'dd03f916cacf4a98c6a413d9c38ba102dce436a9';
-  process.env.PLUGIN_AUTH_TOKEN_ENDPOINT = '/login/oauth/access_token';
-  process.env.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS = '60';
-  process.env.PLUGIN_AUTH_GRANT_TYPE = 'client_credentials';
+  if (typeof process !== 'undefined' && process.env) {
+    process.env.PLUGIN_AUTH_ENABLED = 'true';
+    process.env.PLUGIN_AUTH_ADDRESS = 'http://localhost:4000/v1';
+    process.env.MIDAZ_CLIENT_ID = '9670e0ca55a29a466d31';
+    process.env.MIDAZ_CLIENT_SECRET = 'dd03f916cacf4a98c6a413d9c38ba102dce436a9';
+    process.env.PLUGIN_AUTH_TOKEN_ENDPOINT = '/login/oauth/access_token';
+    process.env.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS = '60';
+    process.env.PLUGIN_AUTH_GRANT_TYPE = 'client_credentials';
+  }
 
   try {
     const client = new MidazClient({
       environment: 'production',
       accessManager: {
         enabled: true,
-        address: process.env.PLUGIN_AUTH_ADDRESS!,
-        clientId: process.env.MIDAZ_CLIENT_ID!,
-        clientSecret: process.env.MIDAZ_CLIENT_SECRET!,
+        address:
+          (typeof process !== 'undefined' && process.env?.PLUGIN_AUTH_ADDRESS) ||
+          'http://localhost:4000/v1',
+        clientId:
+          (typeof process !== 'undefined' && process.env?.MIDAZ_CLIENT_ID) ||
+          '9670e0ca55a29a466d31',
+        clientSecret:
+          (typeof process !== 'undefined' && process.env?.MIDAZ_CLIENT_SECRET) ||
+          'dd03f916cacf4a98c6a413d9c38ba102dce436a9',
       },
     });
 
@@ -263,7 +271,9 @@ async function main() {
   } catch (error) {
     console.error('\n❌ ERROR RUNNING EXAMPLES:');
     console.error(error);
-    process.exit(1);
+    if (typeof process !== 'undefined' && process.exit) {
+      process.exit(1);
+    }
   }
 }
 

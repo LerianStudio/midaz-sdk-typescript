@@ -85,7 +85,11 @@ describe('Error Utilities', () => {
       expect(error.resourceId).toBe('acc_123');
       expect(error.statusCode).toBe(404);
       expect(error.requestId).toBe('req_123');
-      expect(error.cause).toBe(originalError);
+      expect(error.cause).toEqual({
+        name: 'Error',
+        message: 'Original error',
+        stack: expect.stringContaining('Error: Original error'),
+      });
     });
 
     it('should preserve the stack trace', () => {

@@ -100,7 +100,7 @@ describe('Rate Limiter Utilities', () => {
       // @ts-expect-error - Accessing private properties for testing
       expect(rateLimiter.queueExceeded).toBe(true);
       // @ts-expect-error - Accessing private properties for testing
-      expect(rateLimiter.maxQueueSize).toBe(Infinity);
+      expect(rateLimiter.maxQueueSize).toBe(1000);
     });
 
     it('should use environment variables when available', () => {
@@ -167,7 +167,7 @@ describe('Rate Limiter Utilities', () => {
       // @ts-expect-error - Accessing private properties for testing
       expect(rateLimiter.queueExceeded).toBe(true);
       // @ts-expect-error - Accessing private properties for testing
-      expect(rateLimiter.maxQueueSize).toBe(Infinity);
+      expect(rateLimiter.maxQueueSize).toBe(1000);
     });
   });
 

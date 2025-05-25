@@ -84,9 +84,9 @@ async function main() {
 
     // Set up observability and logging
     const logger = new Logger({
-      minLevel: LogLevel.DEBUG,
-      defaultModule: 'workflow',
-      includeTimestamps: true,
+      level: LogLevel.INFO, // Change to INFO to reduce verbosity
+      module: 'workflow',
+      format: 'pretty',
     });
 
     // Initialize global observability
@@ -111,6 +111,13 @@ async function main() {
     const client = new MidazClient({
       apiKey: 'teste', // Auth is off, so no matter what is here
       apiVersion: 'v1', // Specify API version explicitly
+      baseUrls: {
+        onboarding: 'http://localhost:3000',
+        transaction: 'http://localhost:3001',
+      },
+      observability: {
+        enableLogging: false, // Disable client logging to reduce verbosity
+      },
     });
 
     // Create a workflow span to track the entire process
@@ -290,6 +297,19 @@ async function main() {
       Observability.recordMetric('workflow.completed', 1, { success: 'true' });
 
       console.log('\n=== WORKFLOW COMPLETED SUCCESSFULLY ===');
+
+      // Clean shutdown of client and observability
+      if (client && typeof client.shutdown === 'function') {
+        await client.shutdown();
+      }
+
+      // Ensure all telemetry is flushed
+      await Observability.getInstance().shutdown();
+
+      // Exit cleanly
+      if (typeof process !== 'undefined' && process.exit) {
+        process.exit(0);
+      }
     } catch (error) {
       // Record the current step where the error occurred
       // Get the current step value directly instead of using getAttribute
@@ -308,9 +328,6 @@ async function main() {
       // Complete duration measurement and end span
       workflowSpan.setAttribute('endTime', Date.now());
       workflowSpan.end();
-
-      // Ensure all telemetry is flushed
-      await Observability.getInstance().shutdown();
     }
   } catch (error) {
     console.error('\n❌ WORKFLOW ERROR:');
@@ -600,9 +617,13 @@ async function createInitialDeposits(
       // Add deposit transactions to the batch
       for (const account of ledgerAssetAccounts) {
         // Create deposit transaction (from external account to user account)
-        const depositAmount = account.assetCode === 'BTC' ? 0.5 : 1000; // Different amounts based on asset
+        // Calculate deposit amount based on asset and scale
+        const depositAmount =
+          account.assetCode === 'BTC'
+            ? 500000000 // 5 BTC (5 * 10^8 satoshis)
+            : 100000; // $1000.00 (1000 * 100 cents)
         const depositTx = createDepositTransaction(
-          `external/${account.assetCode}`,
+          `@external/${account.assetCode}`,
           account.id,
           depositAmount,
           account.assetCode,
@@ -706,7 +727,12 @@ async function createAdditionalTransactions(
       const otherAccount = otherAccounts[Math.floor(Math.random() * otherAccounts.length)];
 
       // Create a credit/debit pair using the SDK utility
-      const creditAmount = assetCode === 'BTC' ? 0.05 : 25;
+      // Calculate amount based on asset and scale
+      const creditAmount =
+        assetCode === 'BTC'
+          ? 100000 // 0.001 BTC (0.001 * 10^8 satoshis)
+          : 250; // $2.50 (2.50 * 100 cents)
+      const scale = account.decimalPlaces || 0; // Use the asset's decimal places
       const { creditTx, debitTx } = createCreditDebitPair(
         otherAccount.id,
         account.id,
@@ -716,7 +742,8 @@ async function createAdditionalTransactions(
         {
           pairId: `pair-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           createdBy: 'workflow-script',
-        }
+        },
+        scale
       );
 
       // Execute both transactions as a pair with error recovery
@@ -809,12 +836,13 @@ async function demonstrateTransactionPatterns(
       const result = await createUserTransfer(
         sourceAccount.id,
         destinationAccount.id,
-        50, // $50 transfer
+        500, // $5.00 transfer
         'USD',
         {
           client,
           organizationId,
           ledgerId: operatingLedgerId,
+          scale: sourceAccount.decimalPlaces || 2, // Use account's decimal places
           metadata: {
             transferType: 'user-initiated',
             purpose: 'demonstration',
@@ -842,12 +870,13 @@ async function demonstrateTransactionPatterns(
     try {
       const result = await createMultiAccountTransfer(
         accountChain,
-        30, // $30 through the chain
+        300, // $3.00 through the chain
         'USD',
         {
           client,
           organizationId,
           ledgerId: operatingLedgerId,
+          scale: operatingUsdAccounts[0].decimalPlaces || 2, // Use account's decimal places
           metadata: {
             transferType: 'chain',
             purpose: 'settlement',
@@ -878,13 +907,14 @@ async function demonstrateTransactionPatterns(
       const result = await createRecurringPayment(
         payer.id,
         payee.id,
-        9.99, // $9.99 subscription fee
+        99, // $0.99 subscription fee
         'USD',
         'subscription-monthly',
         {
           client,
           organizationId,
           ledgerId: operatingLedgerId,
+          scale: payer.decimalPlaces || 2, // Use account's decimal places
           metadata: {
             frequency: 'monthly',
             paymentNumber: 1,
@@ -947,13 +977,11 @@ async function displayBalances(
   async function displayLedgerBalances(ledgerId: string, ledgerName: string) {
     console.log(`  ${ledgerName} Ledger Balances:`);
 
-    // Create a logger but don't output to console when not needed
-    // We want to create it for demonstration but without console output
+    // Create a logger with higher level to reduce verbosity
     const logger = new Logger({
-      minLevel: LogLevel.DEBUG,
-      defaultModule: 'balance-display',
-      // Use empty handlers array to disable console output but keep the logger working
-      handlers: [],
+      level: LogLevel.ERROR, // Only show errors
+      module: 'balance-display',
+      format: 'json',
     });
 
     // Create a span for balance loading operation
@@ -964,7 +992,7 @@ async function displayBalances(
     });
 
     try {
-      logger.info(`Fetching balances for ledger ${ledgerName}`, { ledgerId });
+      // Removed verbose info logging
 
       // Use pagination to handle potentially large numbers of balances
       const paginator = createPaginator<any>({
@@ -987,9 +1015,7 @@ async function displayBalances(
         async () => {
           await paginator.forEachPage(async (balances) => {
             pageCount++;
-            logger.info(`Processing balance page ${pageCount}`, {
-              itemCount: balances.length,
-            });
+            // Removed verbose page processing logging
             allBalances.push(...balances);
 
             // Record metrics for each page received
@@ -1022,11 +1048,7 @@ async function displayBalances(
       span.setAttribute('pageCount', pageCount);
       span.setAttribute('lastFetchTimestamp', paginationState.lastFetchTimestamp || 0);
 
-      logger.info(`Retrieved ${allBalances.length} balances in ${pageCount} pages`, {
-        ledgerId,
-        ledgerName,
-        paginationState,
-      });
+      // Removed verbose retrieval summary logging
 
       // Group by asset for easier reading
       const balancesByAsset: Record<string, any[]> = {};
@@ -1196,10 +1218,11 @@ async function createAccount(
  * @param error - The error to handle (can be any type)
  */
 function handleError(error: any): void {
-  // Create logger for error handling
+  // Create logger for error handling with minimal output
   const logger = new Logger({
-    minLevel: LogLevel.ERROR,
-    defaultModule: 'error-handler',
+    level: LogLevel.ERROR,
+    module: 'error-handler',
+    format: 'json', // Use JSON format to avoid console output
   });
 
   // Create error span
@@ -1270,8 +1293,8 @@ main().catch((error) => {
   // Create a dedicated logger for top-level errors
   // This ensures even catastrophic failures are properly logged
   const logger = new Logger({
-    minLevel: LogLevel.ERROR,
-    defaultModule: 'main-error-handler',
+    level: LogLevel.ERROR,
+    module: 'main-error-handler',
   });
 
   // Log the error with full context
@@ -1290,6 +1313,9 @@ main().catch((error) => {
     .finally(() => {
       // Exit with non-zero code to indicate failure
       // This is important for CI/CD systems and orchestration tools
-      process.exit(1);
+      // Only exit if running in Node.js environment
+      if (typeof process !== 'undefined' && process.exit) {
+        process.exit(1);
+      }
     });
 });

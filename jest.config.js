@@ -25,7 +25,7 @@ module.exports = {
       tsconfig: 'tsconfig.json'
     }]
   },
-  setupFiles: ['dotenv/config'],
+  setupFiles: ['dotenv/config', '<rootDir>/tests/setup.ts'],
   // Skip type checking during tests
   globals: {
     'ts-jest': {

@@ -176,7 +176,6 @@ export function formatBalanceSafely(
 
     // Use the SDK's formatBalance with proper scaling
     return formatBalance(numValue, Math.max(1, numScale || 1), options);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     // Fallback in case of any errors
     return options?.currency ? `0.00 ${options.currency}` : '0.00';
@@ -277,7 +276,6 @@ export function formatAccountBalance(
     };
 
     return result;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     // Return a fallback format if something goes wrong
     let accountId = 'Unknown';
@@ -291,7 +289,6 @@ export function formatAccountBalance(
           assetCodeFromId = parts[1];
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {
       // Ignore errors in error handler
     }

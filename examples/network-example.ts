@@ -5,7 +5,7 @@
  * to make HTTP requests with advanced features like retries, timeouts, and error handling.
  */
 
-import { HttpClient, RetryPolicy } from '../src/util/network';
+import { HttpClient } from '../src/util/network';
 import { ErrorCategory, MidazError } from '../src/util/error';
 
 // Example 1: Basic HTTP Client Usage
@@ -14,11 +14,8 @@ async function basicHttpClientExample() {
 
   // Create an HTTP client with default settings
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 10000, // 10 seconds
-    debug: true, // Enable debug logging
   });
 
   try {
@@ -71,17 +68,14 @@ async function advancedHttpClientExample() {
 
   // Create an HTTP client with advanced configuration
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 15000, // 15 seconds
     headers: {
       'X-API-Key': 'demo-api-key',
       'User-Agent': 'Midaz-SDK-Example/1.0',
     },
-    keepAlive: true,
+    keepAliveEnabled: true,
     maxSockets: 5,
-    debug: true,
   });
 
   try {
@@ -118,12 +112,12 @@ async function errorHandlingExample() {
 
   // Create an HTTP client with retry configuration
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 5000,
-    // Set retry policy configuration
-    retryPolicy: new RetryPolicy({
+    // Set retry policy configuration inline
+    maxRetries: 3,
+    retryDelay: 1000,
+    /* retryPolicy: new RetryPolicy({
       maxRetries: 3,
       initialDelay: 1000,
       maxDelay: 5000,
@@ -136,8 +130,7 @@ async function errorHandlingExample() {
         }
         return false;
       },
-    }),
-    debug: true,
+    }), */
   });
 
   try {
@@ -159,11 +152,8 @@ async function errorHandlingExample() {
 
   // Create a client that will simulate network errors
   const unreliableClient = new HttpClient({
-    baseUrls: {
-      default: 'https://this-domain-does-not-exist-123456789.com',
-    },
+    baseURL: 'https://this-domain-does-not-exist-123456789.com',
     timeout: 3000,
-    debug: true,
   });
 
   try {
@@ -189,11 +179,8 @@ async function requestCancellationExample() {
 
   // Create an HTTP client
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 30000, // Long timeout
-    debug: true,
   });
 
   // Create an AbortController
@@ -241,6 +228,8 @@ async function runExamples() {
 }
 
 // Execute if this file is run directly
-if (require.main === module) {
+// Note: In a pure TypeScript/ESM environment, this check is handled differently
+// For Node.js execution:
+if (typeof require !== 'undefined' && require.main === module) {
   runExamples();
 }

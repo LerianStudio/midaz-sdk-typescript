@@ -501,7 +501,6 @@ export function validateDateRange(
 
     endTimestamp =
       typeof endDate === 'string' ? new Date(endDate).getTime() : (endDate as Date).getTime();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     return {
       valid: false,

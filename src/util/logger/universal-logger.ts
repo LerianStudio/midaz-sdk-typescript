@@ -3,6 +3,8 @@
  * Replaces pino with a lightweight, cross-platform logging solution
  */
 
+import { Sanitizer, SanitizerConfig } from '../security/sanitizer';
+
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent';
 
 export interface LogContext {
@@ -23,6 +25,7 @@ export interface LoggerOptions {
   context?: LogContext;
   output?: LogOutput;
   format?: LogFormatter;
+  sanitizer?: Sanitizer | SanitizerConfig | boolean;
 }
 
 export interface LogOutput {
@@ -53,7 +56,7 @@ export class ConsoleOutput implements LogOutput {
   write(entry: LogEntry): void {
     const method = this.getConsoleMethod(entry.level);
     const message = this.formatMessage(entry);
-    
+
     if (entry.error) {
       (console as any)[method](message, entry.error);
     } else {
@@ -79,11 +82,7 @@ export class ConsoleOutput implements LogOutput {
   }
 
   private formatMessage(entry: LogEntry): string {
-    const parts = [
-      `[${entry.timestamp}]`,
-      `[${entry.level.toUpperCase()}]`,
-      entry.message,
-    ];
+    const parts = [`[${entry.timestamp}]`, `[${entry.level.toUpperCase()}]`, entry.message];
 
     if (entry.context && Object.keys(entry.context).length > 0) {
       parts.push(JSON.stringify(entry.context));
@@ -134,11 +133,7 @@ export class JsonFormatter implements LogFormatter {
  */
 export class PrettyFormatter implements LogFormatter {
   format(entry: LogEntry): string {
-    const parts = [
-      `${entry.timestamp}`,
-      `${entry.level.toUpperCase().padEnd(5)}`,
-      entry.message,
-    ];
+    const parts = [`${entry.timestamp}`, `${entry.level.toUpperCase().padEnd(5)}`, entry.message];
 
     if (entry.context && Object.keys(entry.context).length > 0) {
       parts.push(`\n  Context: ${JSON.stringify(entry.context, null, 2)}`);
@@ -164,6 +159,7 @@ export class UniversalLogger {
   private context: LogContext;
   private output: LogOutput;
   private formatter: LogFormatter;
+  private sanitizer?: Sanitizer;
 
   constructor(options: LoggerOptions = {}) {
     this.level = options.level || 'info';
@@ -171,6 +167,23 @@ export class UniversalLogger {
     this.context = options.context || {};
     this.output = options.output || new ConsoleOutput();
     this.formatter = options.format || new PrettyFormatter();
+
+    // Setup sanitizer
+    if (options.sanitizer === false) {
+      // Explicitly disabled
+      this.sanitizer = undefined;
+    } else if (options.sanitizer instanceof Sanitizer) {
+      this.sanitizer = options.sanitizer;
+    } else if (options.sanitizer === true || options.sanitizer === undefined) {
+      // Default enabled in production
+      const isProduction = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production';
+      if (isProduction || options.sanitizer === true) {
+        this.sanitizer = Sanitizer.getInstance();
+      }
+    } else {
+      // SanitizerConfig provided
+      this.sanitizer = Sanitizer.getInstance(options.sanitizer);
+    }
   }
 
   /**
@@ -188,12 +201,25 @@ export class UniversalLogger {
       return;
     }
 
+    // Sanitize the log data if sanitizer is enabled
+    let sanitizedMessage = message;
+    let sanitizedContext = { ...this.context, ...context };
+    let sanitizedError = error;
+
+    if (this.sanitizer) {
+      sanitizedMessage = this.sanitizer.sanitize(message, 'message');
+      sanitizedContext = this.sanitizer.sanitize(sanitizedContext);
+      if (error) {
+        sanitizedError = this.sanitizer.sanitizeError(error);
+      }
+    }
+
     const entry: LogEntry = {
       level,
-      message,
+      message: sanitizedMessage,
       timestamp: new Date().toISOString(),
-      context: { ...this.context, ...context },
-      error,
+      context: sanitizedContext,
+      error: sanitizedError,
     };
 
     if (this.name) {
@@ -213,6 +239,7 @@ export class UniversalLogger {
       context: { ...this.context, ...context },
       output: this.output,
       format: this.formatter,
+      sanitizer: this.sanitizer || false,
     });
   }
 
