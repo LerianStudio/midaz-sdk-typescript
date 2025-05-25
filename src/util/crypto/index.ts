@@ -34,6 +34,24 @@ export async function sha256(input: string): Promise<string> {
     return uint8ArrayToHex(new Uint8Array(hashBuffer));
   }
 
+  // Try Node.js crypto module if available
+  if (
+    typeof global !== 'undefined' &&
+    global.process &&
+    global.process.versions &&
+    global.process.versions.node
+  ) {
+    try {
+      // Use dynamic import to avoid bundling issues
+      const crypto = await import('crypto');
+      const hash = crypto.createHash('sha256');
+      hash.update(input);
+      return hash.digest('hex');
+    } catch {
+      // If import fails, continue to error
+    }
+  }
+
   // Fallback for older environments - use a pure JS implementation
   // For production, you might want to include a lightweight SHA-256 library
   throw new Error(
