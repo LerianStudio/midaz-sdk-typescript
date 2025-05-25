@@ -248,7 +248,7 @@ export function sanitizeError(error: any, config: SanitizerConfig = {}): any {
   if (error.stack && typeof error.stack === 'string') {
     sanitized.stack = error.stack
       .split('\n')
-      .map((line: string) => line.replace(/\/[^:]+\/src\//g, '/src/'))
+      .map((line: string) => line.replace(/\/[^/:]+\/src\//g, '/src/'))
       .join('\n');
   }
 
