@@ -37,6 +37,18 @@ export interface CacheOptions {
    * @default true
    */
   useLRU?: boolean;
+
+  /**
+   * Whether to automatically clean up expired entries periodically
+   * @default false
+   */
+  autoCleanup?: boolean;
+
+  /**
+   * Interval for automatic cleanup in milliseconds
+   * @default 300000 (5 minutes)
+   */
+  cleanupInterval?: number;
 }
 
 /**
@@ -97,6 +109,12 @@ export class Cache<T = any> {
   private useLRU: boolean;
 
   /**
+   * Timer for automatic cleanup
+   * @private
+   */
+  private cleanupTimer?: ReturnType<typeof setTimeout>;
+
+  /**
    * Creates a new cache
    *
    */
@@ -112,6 +130,12 @@ export class Cache<T = any> {
 
     // Set LRU usage from options or default to true
     this.useLRU = options.useLRU !== false;
+
+    // Set up automatic cleanup if enabled
+    if (options.autoCleanup) {
+      const cleanupInterval = options.cleanupInterval || 300000; // 5 minutes default
+      this.startAutoCleanup(cleanupInterval);
+    }
   }
 
   /**
@@ -268,6 +292,55 @@ export class Cache<T = any> {
         this.cache.delete(randomKey);
       }
     }
+  }
+
+  /**
+   * Cleans up expired entries from the cache
+   * This helps prevent memory bloat from expired entries that haven't been accessed
+   */
+  public cleanup(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    // Find all expired entries
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.expiresAt < now) {
+        keysToDelete.push(key);
+      }
+    }
+
+    // Delete expired entries
+    for (const key of keysToDelete) {
+      this.delete(key);
+    }
+  }
+
+  /**
+   * Starts automatic cleanup of expired entries
+   * @private
+   */
+  private startAutoCleanup(interval: number): void {
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup();
+    }, interval);
+  }
+
+  /**
+   * Stops automatic cleanup
+   */
+  public stopAutoCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer as any);
+      this.cleanupTimer = undefined;
+    }
+  }
+
+  /**
+   * Destroys the cache and cleans up resources
+   */
+  public destroy(): void {
+    this.stopAutoCleanup();
+    this.clear();
   }
 }
 

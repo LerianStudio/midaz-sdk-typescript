@@ -3,6 +3,8 @@
  * Replaces pino with a lightweight, cross-platform logging solution
  */
 
+import { Sanitizer, SanitizerConfig } from '../security/sanitizer';
+
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent';
 
 export interface LogContext {
@@ -23,6 +25,7 @@ export interface LoggerOptions {
   context?: LogContext;
   output?: LogOutput;
   format?: LogFormatter;
+  sanitizer?: Sanitizer | SanitizerConfig | boolean;
 }
 
 export interface LogOutput {
@@ -156,6 +159,7 @@ export class UniversalLogger {
   private context: LogContext;
   private output: LogOutput;
   private formatter: LogFormatter;
+  private sanitizer?: Sanitizer;
 
   constructor(options: LoggerOptions = {}) {
     this.level = options.level || 'info';
@@ -163,6 +167,23 @@ export class UniversalLogger {
     this.context = options.context || {};
     this.output = options.output || new ConsoleOutput();
     this.formatter = options.format || new PrettyFormatter();
+
+    // Setup sanitizer
+    if (options.sanitizer === false) {
+      // Explicitly disabled
+      this.sanitizer = undefined;
+    } else if (options.sanitizer instanceof Sanitizer) {
+      this.sanitizer = options.sanitizer;
+    } else if (options.sanitizer === true || options.sanitizer === undefined) {
+      // Default enabled in production
+      const isProduction = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production';
+      if (isProduction || options.sanitizer === true) {
+        this.sanitizer = Sanitizer.getInstance();
+      }
+    } else {
+      // SanitizerConfig provided
+      this.sanitizer = Sanitizer.getInstance(options.sanitizer);
+    }
   }
 
   /**
@@ -180,12 +201,25 @@ export class UniversalLogger {
       return;
     }
 
+    // Sanitize the log data if sanitizer is enabled
+    let sanitizedMessage = message;
+    let sanitizedContext = { ...this.context, ...context };
+    let sanitizedError = error;
+
+    if (this.sanitizer) {
+      sanitizedMessage = this.sanitizer.sanitize(message, 'message');
+      sanitizedContext = this.sanitizer.sanitize(sanitizedContext);
+      if (error) {
+        sanitizedError = this.sanitizer.sanitizeError(error);
+      }
+    }
+
     const entry: LogEntry = {
       level,
-      message,
+      message: sanitizedMessage,
       timestamp: new Date().toISOString(),
-      context: { ...this.context, ...context },
-      error,
+      context: sanitizedContext,
+      error: sanitizedError,
     };
 
     if (this.name) {
@@ -205,6 +239,7 @@ export class UniversalLogger {
       context: { ...this.context, ...context },
       output: this.output,
       format: this.formatter,
+      sanitizer: this.sanitizer || false,
     });
   }
 

@@ -354,6 +354,8 @@ async function runExamples() {
 }
 
 // Execute if this file is run directly
-if (require.main === module) {
+// Note: In a pure TypeScript/ESM environment, this check is handled differently
+// For Node.js execution:
+if (typeof require !== 'undefined' && require.main === module) {
   runExamples();
 }

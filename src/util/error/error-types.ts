@@ -1,6 +1,8 @@
 /**
  */
 
+import { Sanitizer } from '../security/sanitizer';
+
 /**
  * Error categories for Midaz API errors
  *
@@ -207,16 +209,28 @@ export class MidazError extends Error {
     requestId?: string;
     cause?: Error;
   }) {
-    super(params.message);
+    // Create sanitizer for error messages
+    const sanitizer = Sanitizer.getInstance();
+
+    // Sanitize the message to prevent exposure of sensitive data
+    const sanitizedMessage = sanitizer.sanitize(params.message, 'message') as string;
+
+    super(sanitizedMessage);
     this.category = params.category;
     this.code = params.code;
-    this.message = params.message;
+    this.message = sanitizedMessage;
     this.operation = params.operation;
     this.resource = params.resource;
     this.resourceId = params.resourceId;
     this.statusCode = params.statusCode;
     this.requestId = params.requestId;
-    this.cause = params.cause;
+
+    // Sanitize the cause error if present
+    if (params.cause) {
+      this.cause = sanitizer.sanitizeError(params.cause);
+    } else {
+      this.cause = params.cause;
+    }
 
     // Ensure the name property is set correctly
     this.name = 'MidazError';

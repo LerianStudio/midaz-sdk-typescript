@@ -48,6 +48,12 @@ export interface WorkerPoolOptions<_T> {
    * @default false
    */
   continueOnError?: boolean;
+
+  /**
+   * AbortSignal to cancel the worker pool
+   * Allows cancellation of all active workers
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -131,6 +137,7 @@ export async function workerPool<T>(
         /* empty error handler */
       }),
     continueOnError: options.continueOnError ?? false,
+    signal: options.signal ?? (undefined as any), // Optional signal
   };
 
   // Process sequentially if concurrency is 1
@@ -164,6 +171,11 @@ async function processSequentially<T>(
 
   // Process items sequentially
   for (let i = 0; i < items.length; i++) {
+    // Check for cancellation
+    if (options.signal?.aborted) {
+      throw new Error('Worker pool cancelled');
+    }
+
     try {
       const result = await worker(items[i], i);
       if (options.preserveOrder) {
@@ -204,11 +216,19 @@ async function processBatches<T>(
 
   // Process items in batches
   for (let i = 0; i < items.length; i += options.concurrency) {
+    // Check for cancellation
+    if (options.signal?.aborted) {
+      throw new Error('Worker pool cancelled');
+    }
+
     const batch = items.slice(i, i + options.concurrency);
     const batchPromises = batch.map((item, batchIndex) => {
       const index = i + batchIndex;
       return worker(item, index)
         .then((result) => {
+          if (options.signal?.aborted) {
+            throw new Error('Worker pool cancelled');
+          }
           if (options.preserveOrder) {
             results[index] = result;
           } else {
@@ -258,10 +278,23 @@ async function processWithThrottling<T>(
   let activeCount = 0;
   let itemIndex = 0;
   let errorOccurred = false;
+  let cancelled = false;
 
   return new Promise((resolve, reject) => {
+    // Set up abort signal handler if provided
+    if (options.signal) {
+      options.signal.addEventListener('abort', () => {
+        cancelled = true;
+        reject(new Error('Worker pool cancelled'));
+      });
+    }
+
     // Function to process the next item
     const processNext = () => {
+      if (cancelled) {
+        return;
+      }
+
       if (errorOccurred && !options.continueOnError) {
         return;
       }
@@ -281,10 +314,12 @@ async function processWithThrottling<T>(
 
       worker(items[currentIndex], currentIndex)
         .then((result) => {
+          if (cancelled) return;
           results[currentIndex] = result;
           options.onSuccess(result, currentIndex);
         })
         .catch((error) => {
+          if (cancelled) return;
           options.onError(error, currentIndex);
           if (!options.continueOnError) {
             errorOccurred = true;
@@ -296,11 +331,13 @@ async function processWithThrottling<T>(
           activeCount--;
 
           // Start the next item
-          processNext();
+          if (!cancelled) {
+            processNext();
+          }
         });
 
       // Start more items if below concurrency limit
-      if (activeCount < options.concurrency && itemIndex < items.length) {
+      if (!cancelled && activeCount < options.concurrency && itemIndex < items.length) {
         setTimeout(processNext, options.batchDelay);
       }
     };
@@ -320,4 +357,44 @@ async function processWithThrottling<T>(
  */
 function _sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Worker pool controller for better resource management
+ * Provides a way to create and manage worker pools with cleanup
+ */
+export class WorkerPoolController {
+  private abortController: AbortController;
+
+  constructor() {
+    this.abortController = new AbortController();
+  }
+
+  /**
+   * Creates a new worker pool with cancellation support
+   */
+  async execute<T>(
+    items: T[],
+    worker: (item: T, index: number) => Promise<any>,
+    options: WorkerPoolOptions<T> = {}
+  ): Promise<any[]> {
+    return workerPool(items, worker, {
+      ...options,
+      signal: this.abortController.signal,
+    });
+  }
+
+  /**
+   * Cancels all active workers in the pool
+   */
+  cancel(): void {
+    this.abortController.abort();
+  }
+
+  /**
+   * Destroys the controller and cancels any active workers
+   */
+  destroy(): void {
+    this.cancel();
+  }
 }

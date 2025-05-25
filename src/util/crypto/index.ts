@@ -28,28 +28,10 @@ export function uint8ArrayToHex(array: Uint8Array): string {
 export async function sha256(input: string): Promise<string> {
   const msgBuffer = stringToUint8Array(input);
 
-  // Try Web Crypto API first (available in browsers and modern Node.js)
+  // Try Web Crypto API (available in browsers and modern Node.js)
   if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
     const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgBuffer);
     return uint8ArrayToHex(new Uint8Array(hashBuffer));
-  }
-
-  // Try Node.js crypto module if available
-  if (
-    typeof global !== 'undefined' &&
-    global.process &&
-    global.process.versions &&
-    global.process.versions.node
-  ) {
-    try {
-      // Use dynamic import to avoid bundling issues
-      const crypto = await import('crypto');
-      const hash = crypto.createHash('sha256');
-      hash.update(input);
-      return hash.digest('hex');
-    } catch {
-      // If import fails, continue to error
-    }
   }
 
   // Fallback for older environments - use a pure JS implementation
