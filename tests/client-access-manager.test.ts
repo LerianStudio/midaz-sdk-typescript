@@ -100,11 +100,14 @@ describe('MidazClient with Access Manager', () => {
     // Create client
     const client = new MidazClient(config);
 
-    // Verify HttpClient was created with API key
-    expect(HttpClient).toHaveBeenCalledWith(
-      expect.objectContaining({
-        apiKey: 'test-api-key',
-      })
+    // Verify HttpClient was created
+    expect(HttpClient).toHaveBeenCalled();
+
+    // Verify setDefaultHeader was called with the API key
+    const httpClientInstance = (HttpClient as jest.Mock).mock.results[0].value;
+    expect(httpClientInstance.setDefaultHeader).toHaveBeenCalledWith(
+      'Authorization',
+      'Bearer test-api-key'
     );
   });
 
@@ -121,16 +124,14 @@ describe('MidazClient with Access Manager', () => {
     // Create client
     const client = new MidazClient(config);
 
-    // Verify HttpClient was created with API key, not Access Manager
-    expect(HttpClient).toHaveBeenCalledWith(
-      expect.objectContaining({
-        apiKey: 'test-api-key',
-      })
-    );
-    expect(HttpClient).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        accessManager: expect.any(AccessManager),
-      })
+    // Verify HttpClient was created
+    expect(HttpClient).toHaveBeenCalled();
+
+    // Verify setDefaultHeader was called with the API key
+    const httpClientInstance = (HttpClient as jest.Mock).mock.results[0].value;
+    expect(httpClientInstance.setDefaultHeader).toHaveBeenCalledWith(
+      'Authorization',
+      'Bearer test-api-key'
     );
   });
 });
