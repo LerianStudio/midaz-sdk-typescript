@@ -31,7 +31,7 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build",
-    "postinstall": "husky install",
+    "postinstall": "husky install || exit 0",
     "prepublishOnly": "npm run clean && npm run build && npm run test && npm run lint",
     "docs": "typedoc --options typedoc.json",
     "docs:serve": "npm run docs && npx http-server docs -p 8080 -o",
