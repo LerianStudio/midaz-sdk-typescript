@@ -20,8 +20,8 @@ declare global {
       }
     | undefined;
 
-  const window: Window & typeof globalThis | undefined;
-  const self: Window & typeof globalThis | undefined;
+  const window: (Window & typeof globalThis) | undefined;
+  const self: (Window & typeof globalThis) | undefined;
 }
 
 export {};

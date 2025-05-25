@@ -38,9 +38,15 @@ async function environmentConfigExample() {
       environment: 'production',
       accessManager: {
         enabled: true,
-        address: (typeof process !== 'undefined' && process.env?.PLUGIN_AUTH_ADDRESS) || 'http://localhost:4000/v1',
-        clientId: (typeof process !== 'undefined' && process.env?.MIDAZ_CLIENT_ID) || '9670e0ca55a29a466d31',
-        clientSecret: (typeof process !== 'undefined' && process.env?.MIDAZ_CLIENT_SECRET) || 'dd03f916cacf4a98c6a413d9c38ba102dce436a9',
+        address:
+          (typeof process !== 'undefined' && process.env?.PLUGIN_AUTH_ADDRESS) ||
+          'http://localhost:4000/v1',
+        clientId:
+          (typeof process !== 'undefined' && process.env?.MIDAZ_CLIENT_ID) ||
+          '9670e0ca55a29a466d31',
+        clientSecret:
+          (typeof process !== 'undefined' && process.env?.MIDAZ_CLIENT_SECRET) ||
+          'dd03f916cacf4a98c6a413d9c38ba102dce436a9',
       },
     });
 

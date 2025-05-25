@@ -5,7 +5,6 @@
 
 // Polyfill crypto for Node.js environments
 if (typeof globalThis.crypto === 'undefined') {
-   
   const crypto = require('crypto');
 
   // @ts-expect-error - Adding crypto polyfill to globalThis

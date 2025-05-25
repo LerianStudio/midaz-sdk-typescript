@@ -20,6 +20,7 @@
     "test": "jest --passWithNoTests",
     "lint": "eslint src tests examples --fix --max-warnings=1000",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
     "docs": "typedoc",
     "benchmark": "node scripts/run-benchmarks.js",
     "example:workflow": "npx ts-node --project tsconfig.examples.json examples/workflow.ts",

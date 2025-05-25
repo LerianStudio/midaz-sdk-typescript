@@ -429,7 +429,6 @@ export function createTransactionVerification(
   return async () => {
     try {
       return await checkFn();
-       
     } catch (_) {
       return false;
     }

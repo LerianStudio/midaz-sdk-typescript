@@ -297,15 +297,15 @@ async function main() {
       Observability.recordMetric('workflow.completed', 1, { success: 'true' });
 
       console.log('\n=== WORKFLOW COMPLETED SUCCESSFULLY ===');
-      
+
       // Clean shutdown of client and observability
       if (client && typeof client.shutdown === 'function') {
         await client.shutdown();
       }
-      
+
       // Ensure all telemetry is flushed
       await Observability.getInstance().shutdown();
-      
+
       // Exit cleanly
       if (typeof process !== 'undefined' && process.exit) {
         process.exit(0);
