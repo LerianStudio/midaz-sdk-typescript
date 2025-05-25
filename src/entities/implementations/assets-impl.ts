@@ -18,7 +18,10 @@ export class AssetsServiceImpl implements AssetsService {
   /**
    * Creates a new AssetsServiceImpl
    */
-  constructor(private readonly apiClient: AssetApiClient, observability?: Observability) {
+  constructor(
+    private readonly apiClient: AssetApiClient,
+    observability?: Observability
+  ) {
     // Initialize observability with service name
     this.observability = observability || Observability.getInstance();
   }

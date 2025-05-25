@@ -22,7 +22,10 @@ export class TransactionsServiceImpl implements TransactionsService {
    * Creates a new TransactionsServiceImpl
    *
    */
-  constructor(private readonly apiClient: TransactionApiClient, observability?: Observability) {
+  constructor(
+    private readonly apiClient: TransactionApiClient,
+    observability?: Observability
+  ) {
     // Initialize observability with service name
     this.observability = observability || Observability.getInstance();
   }
