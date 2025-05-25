@@ -14,9 +14,7 @@ async function basicHttpClientExample() {
 
   // Create an HTTP client with default settings
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 10000, // 10 seconds
     debug: true, // Enable debug logging
   });
@@ -71,9 +69,7 @@ async function advancedHttpClientExample() {
 
   // Create an HTTP client with advanced configuration
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 15000, // 15 seconds
     headers: {
       'X-API-Key': 'demo-api-key',
@@ -118,9 +114,7 @@ async function errorHandlingExample() {
 
   // Create an HTTP client with retry configuration
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 5000,
     // Set retry policy configuration
     retryPolicy: new RetryPolicy({
@@ -159,9 +153,7 @@ async function errorHandlingExample() {
 
   // Create a client that will simulate network errors
   const unreliableClient = new HttpClient({
-    baseUrls: {
-      default: 'https://this-domain-does-not-exist-123456789.com',
-    },
+    baseURL: 'https://this-domain-does-not-exist-123456789.com',
     timeout: 3000,
     debug: true,
   });
@@ -189,9 +181,7 @@ async function requestCancellationExample() {
 
   // Create an HTTP client
   const httpClient = new HttpClient({
-    baseUrls: {
-      default: 'https://jsonplaceholder.typicode.com',
-    },
+    baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 30000, // Long timeout
     debug: true,
   });

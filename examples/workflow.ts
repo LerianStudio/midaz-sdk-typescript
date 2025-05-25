@@ -84,7 +84,7 @@ async function main() {
 
     // Set up observability and logging
     const logger = new Logger({
-      minLevel: LogLevel.DEBUG,
+      level: LogLevel.DEBUG,
       defaultModule: 'workflow',
       includeTimestamps: true,
     });
@@ -950,7 +950,7 @@ async function displayBalances(
     // Create a logger but don't output to console when not needed
     // We want to create it for demonstration but without console output
     const logger = new Logger({
-      minLevel: LogLevel.DEBUG,
+      level: LogLevel.DEBUG,
       defaultModule: 'balance-display',
       // Use empty handlers array to disable console output but keep the logger working
       handlers: [],
@@ -1198,7 +1198,7 @@ async function createAccount(
 function handleError(error: any): void {
   // Create logger for error handling
   const logger = new Logger({
-    minLevel: LogLevel.ERROR,
+    level: LogLevel.ERROR,
     defaultModule: 'error-handler',
   });
 
@@ -1270,7 +1270,7 @@ main().catch((error) => {
   // Create a dedicated logger for top-level errors
   // This ensures even catastrophic failures are properly logged
   const logger = new Logger({
-    minLevel: LogLevel.ERROR,
+    level: LogLevel.ERROR,
     defaultModule: 'main-error-handler',
   });
 

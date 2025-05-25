@@ -144,7 +144,7 @@ function structuredLoggingExample() {
 
   // Initialize a logger with custom settings
   const logger = new Logger({
-    minLevel: LogLevel.DEBUG,
+    level: LogLevel.DEBUG,
     includeTimestamps: true,
   });
 
