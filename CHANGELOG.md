@@ -1,3 +1,17 @@
+## [1.1.0-develop.2](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.1...v1.1.0-develop.2) (2025-05-25)
+
+
+### ✨ Features
+
+* refactor to pure TypeScript SDK implementation ([#47](https://github.com/LerianStudio/midaz-sdk-typescript/issues/47)) ([aeec1f5](https://github.com/LerianStudio/midaz-sdk-typescript/commit/aeec1f5418c8ebd6aedcbaf705282209f725add8))
+* **sdk:** transform to pure TypeScript SDK without Node.js dependencies ([d4e54f5](https://github.com/LerianStudio/midaz-sdk-typescript/commit/d4e54f5ec8553b042ec6b6054c794b9096ecd86b))
+
+
+### 🔨 Maintenance
+
+* **deps-dev:** bump typedoc from 0.28.3 to 0.28.4 ([94db8eb](https://github.com/LerianStudio/midaz-sdk-typescript/commit/94db8ebd6648bbbf599c9dc5e01ca9e9ffca302c))
+* **sdk:** bump version to 2.0.0-develop.1 for pure TypeScript SDK ([840c68c](https://github.com/LerianStudio/midaz-sdk-typescript/commit/840c68c473d37332a0a716e60e794999175080df))
+
 ## [1.1.0-develop.1](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.0.0...v1.1.0-develop.1) (2025-05-25)
 
 ### ✨ Features
