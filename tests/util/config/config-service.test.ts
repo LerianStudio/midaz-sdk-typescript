@@ -69,10 +69,9 @@ describe('ConfigService', () => {
   describe('getApiUrlConfig', () => {
     it('should return default values when no environment variables are set', () => {
       const config = ConfigService.getInstance().getApiUrlConfig();
-      console.log(config);
       expect(config).toEqual({
-        onboardingUrl: 'http://localhost:3000/v1',
-        transactionUrl: 'http://localhost:3001/v1',
+        onboardingUrl: 'http://localhost:3000',
+        transactionUrl: 'http://localhost:3001',
         apiVersion: 'v1',
       });
     });
