@@ -48,7 +48,8 @@ module.exports = [
     },
     rules: {
       'no-console': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
+      'no-unused-vars': 'off', // Turn off base rule
+      '@typescript-eslint/no-unused-vars': 'warn', // Use TypeScript version as warning
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
