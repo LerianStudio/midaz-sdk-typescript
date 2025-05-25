@@ -5,7 +5,7 @@
 
 // Polyfill crypto for Node.js environments
 if (typeof globalThis.crypto === 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const crypto = require('crypto');
 
   // @ts-expect-error - Adding crypto polyfill to globalThis
