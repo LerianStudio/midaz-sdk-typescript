@@ -2,6 +2,7 @@
  */
 
 import { MidazConfig } from '../client';
+import { getEnv } from '../util/runtime/environment';
 
 /**
  * UrlBuilder provides centralized URL construction logic for all API endpoints.
@@ -27,11 +28,11 @@ export class UrlBuilder {
     this.apiVersion = config.apiVersion || 'v1';
 
     // Use environment variables if available
-    if (process.env.MIDAZ_ONBOARDING_URL) {
-      this.baseUrls.onboarding = process.env.MIDAZ_ONBOARDING_URL;
+    if (getEnv('MIDAZ_ONBOARDING_URL')) {
+      this.baseUrls.onboarding = getEnv('MIDAZ_ONBOARDING_URL')!;
     }
-    if (process.env.MIDAZ_TRANSACTION_URL) {
-      this.baseUrls.transaction = process.env.MIDAZ_TRANSACTION_URL;
+    if (getEnv('MIDAZ_TRANSACTION_URL')) {
+      this.baseUrls.transaction = getEnv('MIDAZ_TRANSACTION_URL')!;
     }
 
     // Set default base URLs if not provided

@@ -180,21 +180,16 @@ export class MidazClient {
     this.httpClient =
       this.config.httpClient ||
       new HttpClient({
-        baseUrls: this.config.baseUrls,
+        baseURL: this.config.baseUrls?.onboarding || 'http://localhost:3000',
         timeout: this.config.timeout,
-        apiKey: this.config.authToken || this.config.apiKey,
-        retryPolicy: this.config.retries
-          ? new RetryPolicy({
-              maxRetries: this.config.retries.maxRetries,
-              initialDelay: this.config.retries.initialDelay,
-              maxDelay: this.config.retries.maxDelay,
-              retryableStatusCodes: this.config.retries.retryableStatusCodes,
-              retryCondition: this.config.retries.retryCondition,
-            })
-          : undefined,
-        debug: this.config.debug,
-        observability: this.observability,
+        maxRetries: this.config.retries?.maxRetries,
+        retryDelay: this.config.retries?.initialDelay
       });
+
+    // Set auth token if provided
+    if (this.config.authToken || this.config.apiKey) {
+      this.httpClient.setDefaultHeader('Authorization', `Bearer ${this.config.authToken || this.config.apiKey}`);
+    }
 
     // If Access Manager is enabled, set up authentication interceptor
     if (this.accessManager?.isEnabled()) {
@@ -283,7 +278,7 @@ export class MidazClient {
     try {
       return await this.accessManager.getToken();
     } catch (error) {
-      logger.error('Failed to get authentication token:', error);
+      logger.error('Failed to get authentication token:', error as Error);
       throw new Error(
         `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

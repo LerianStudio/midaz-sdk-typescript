@@ -3,6 +3,7 @@
 
 import { ListMetadata as _ListMetadata, ListOptions, ListResponse } from '../../models/common';
 import { Observability, Span } from '../../util/observability/observability';
+import { getEnv } from '../runtime/environment';
 
 /**
  * Generic paginator interface for all entity types
@@ -211,11 +212,11 @@ export abstract class BasePaginator<T> implements Paginator<T> {
       config.observability ||
       new Observability({
         serviceName: config.serviceName || 'midaz-paginator',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
           : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
           : false,
       });
   }

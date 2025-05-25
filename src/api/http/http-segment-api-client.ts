@@ -16,6 +16,7 @@ import {
   UpdateSegmentInput,
 } from '../interfaces/segment-api-client';
 import { UrlBuilder } from '../url-builder';
+import { getEnv } from '../../util/runtime/environment';
 
 /**
  * HTTP implementation of the SegmentApiClient interface
@@ -40,11 +41,11 @@ export class HttpSegmentApiClient implements SegmentApiClient {
       observability ||
       new Observability({
         serviceName: 'midaz-segment-api-client',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
           : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
           : false,
       });
   }

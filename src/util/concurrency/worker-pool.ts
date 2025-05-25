@@ -1,6 +1,8 @@
 /**
  */
 
+import { getEnv } from '../runtime/environment';
+
 /**
  * Configuration options for the worker pool
  *
@@ -53,17 +55,17 @@ export interface WorkerPoolOptions<_T> {
  * @internal
  */
 const _DEFAULT_WORKER_POOL_OPTIONS = {
-  concurrency: process.env.MIDAZ_WORKER_POOL_CONCURRENCY
-    ? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY, 10)
+  concurrency: getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')
+    ? parseInt(getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')!, 10)
     : 10,
-  preserveOrder: process.env.MIDAZ_WORKER_POOL_PRESERVE_ORDER
-    ? process.env.MIDAZ_WORKER_POOL_PRESERVE_ORDER.toLowerCase() === 'true'
+  preserveOrder: getEnv('MIDAZ_WORKER_POOL_PRESERVE_ORDER')
+    ? getEnv('MIDAZ_WORKER_POOL_PRESERVE_ORDER')?.toLowerCase() === 'true'
     : true,
-  batchDelay: process.env.MIDAZ_WORKER_POOL_BATCH_DELAY
-    ? parseInt(process.env.MIDAZ_WORKER_POOL_BATCH_DELAY, 10)
+  batchDelay: getEnv('MIDAZ_WORKER_POOL_BATCH_DELAY')
+    ? parseInt(getEnv('MIDAZ_WORKER_POOL_BATCH_DELAY')!, 10)
     : 0,
-  continueOnError: process.env.MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR
-    ? process.env.MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR.toLowerCase() === 'true'
+  continueOnError: getEnv('MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR')
+    ? getEnv('MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR')?.toLowerCase() === 'true'
     : false,
 };
 
@@ -115,7 +117,7 @@ export async function workerPool<T>(
   // Merge options with defaults
   const mergedOptions: Required<WorkerPoolOptions<T>> = {
     concurrency:
-      options.concurrency ?? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY || '10', 10),
+      options.concurrency ?? parseInt(getEnv('MIDAZ_WORKER_POOL_CONCURRENCY') || '10', 10),
     preserveOrder: options.preserveOrder ?? true,
     batchDelay: options.batchDelay ?? 0,
     onSuccess:

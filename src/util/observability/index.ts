@@ -16,4 +16,4 @@ export {
 } from './observability-otel';
 
 // Export from logger.ts
-export { LogLevel, LogEntry, LogHandler, LoggerOptions, Logger, createFileLogger } from './logger';
+export { LogLevel, LogEntry, LogHandler, LoggerConfig as LoggerOptions, Logger, createFileHandler as createFileLogger } from './logger';

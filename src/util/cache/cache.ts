@@ -1,3 +1,5 @@
+import { getEnv } from '../runtime/environment';
+
 /**
  * Cache entry with expiration
  * @internal
@@ -102,13 +104,13 @@ export class Cache<T = any> {
     // Set default TTL from environment variable or fallback to 60 seconds
     this.ttl =
       options.ttl ??
-      (process.env.MIDAZ_CACHE_TTL ? parseInt(process.env.MIDAZ_CACHE_TTL, 10) : 60000);
+      (getEnv('MIDAZ_CACHE_TTL') ? parseInt(getEnv('MIDAZ_CACHE_TTL')!, 10) : 60000);
 
     // Set max entries from environment variable or fallback to 100
     this.maxEntries =
       options.maxEntries ??
-      (process.env.MIDAZ_CACHE_MAX_ENTRIES
-        ? parseInt(process.env.MIDAZ_CACHE_MAX_ENTRIES, 10)
+      (getEnv('MIDAZ_CACHE_MAX_ENTRIES')
+        ? parseInt(getEnv('MIDAZ_CACHE_MAX_ENTRIES')!, 10)
         : 100);
 
     // Set LRU usage from options or default to true

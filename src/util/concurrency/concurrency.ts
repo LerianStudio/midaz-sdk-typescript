@@ -1,3 +1,5 @@
+import { getEnv } from '../runtime/environment';
+
 /**
  * Configuration options for the worker pool
  */
@@ -20,11 +22,11 @@ export interface WorkerPoolOptions {
  * @internal
  */
 const DEFAULT_WORKER_POOL_OPTIONS: WorkerPoolOptions = {
-  concurrency: process.env.MIDAZ_WORKER_POOL_CONCURRENCY
-    ? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY, 10)
+  concurrency: getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')
+    ? parseInt(getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')!, 10)
     : 5,
-  ordered: process.env.MIDAZ_WORKER_POOL_ORDERED
-    ? process.env.MIDAZ_WORKER_POOL_ORDERED.toLowerCase() === 'true'
+  ordered: getEnv('MIDAZ_WORKER_POOL_ORDERED')
+    ? getEnv('MIDAZ_WORKER_POOL_ORDERED')?.toLowerCase() === 'true'
     : true,
 };
 
@@ -223,8 +225,8 @@ export function chunk<T>(array: T[], size = 10): T[][] {
   // Use environment variable for default chunk size if available
   const chunkSize =
     size ||
-    (process.env.MIDAZ_DEFAULT_CHUNK_SIZE
-      ? parseInt(process.env.MIDAZ_DEFAULT_CHUNK_SIZE, 10)
+    (getEnv('MIDAZ_DEFAULT_CHUNK_SIZE')
+      ? parseInt(getEnv('MIDAZ_DEFAULT_CHUNK_SIZE')!, 10)
       : 10);
 
   // Handle edge cases

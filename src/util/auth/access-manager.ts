@@ -5,7 +5,8 @@
  * external identity providers, eliminating the need for hardcoded tokens.
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+// Using fetch API instead of axios for browser compatibility
+import { getEnv } from '../runtime/environment';
 
 /**
  * Access Manager configuration options
@@ -68,7 +69,7 @@ export class AccessManager {
   private tokenEndpoint: string;
   private refreshThresholdSeconds: number;
 
-  private httpClient: AxiosInstance;
+  // Removed httpClient - using fetch API directly
   private accessToken: string | null = null;
   private tokenExpiry = 0;
   private refreshToken: string | null = null;
@@ -85,11 +86,7 @@ export class AccessManager {
     this.tokenEndpoint = config.tokenEndpoint || '/oauth/token';
     this.refreshThresholdSeconds = config.refreshThresholdSeconds || 300;
 
-    // Initialize HTTP client for auth service communication
-    this.httpClient = axios.create({
-      baseURL: this.address,
-      timeout: 10000,
-    });
+    // No longer needed - using fetch API directly
   }
 
   /**
@@ -145,30 +142,40 @@ export class AccessManager {
   private async fetchToken(): Promise<string> {
     try {
       const now = Math.floor(Date.now() / 1000);
-      const requestConfig: AxiosRequestConfig = {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(`${this.address}${this.tokenEndpoint}`, {
         method: 'POST',
-        url: this.tokenEndpoint,
         headers: {
           'Content-Type': 'application/json',
         },
-        data: {
+        body: JSON.stringify({
           grantType: 'client_credentials',
           clientId: this.clientId,
           clientSecret: this.clientSecret,
-        },
-      };
+        }),
+        signal: controller.signal,
+      });
 
-      const response = await this.httpClient.request<TokenResponse>(requestConfig);
+      clearTimeout(timeoutId);
 
-      if (!response.data || !response.data.accessToken) {
+      if (!response.ok) {
+        throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as TokenResponse;
+
+      if (!data || !data.accessToken) {
         throw new Error('Invalid token response from auth service');
       }
 
-      this.accessToken = response.data.accessToken;
-      this.tokenExpiry = now + response.data.expiresIn;
+      this.accessToken = data.accessToken;
+      this.tokenExpiry = now + data.expiresIn;
 
-      if (response.data.refreshToken) {
-        this.refreshToken = response.data.refreshToken;
+      if (data.refreshToken) {
+        this.refreshToken = data.refreshToken;
       }
 
       return this.accessToken;
@@ -191,26 +198,10 @@ export class AccessManager {
    */
   static fromEnvironment(): AccessManager {
     // Access environment variables directly
-
-    // Use the private methods through a wrapper to avoid TypeScript errors
-    const getEnv = (name: string, defaultValue = ''): string => {
-      return process.env[name] || defaultValue;
-    };
-
-    const getBooleanEnv = (name: string, defaultValue: boolean): boolean => {
-      const value = process.env[name];
-      return value ? value.toLowerCase() === 'true' : defaultValue;
-    };
-
-    const getNumberEnv = (name: string, defaultValue: number): number => {
-      const value = process.env[name];
-      return value ? parseInt(value, 10) : defaultValue;
-    };
-
-    const enabled = getBooleanEnv('PLUGIN_AUTH_ENABLED', false);
-    const address = getEnv('PLUGIN_AUTH_ADDRESS', '');
-    const clientId = getEnv('MIDAZ_CLIENT_ID', '');
-    const clientSecret = getEnv('MIDAZ_CLIENT_SECRET', '');
+    const enabled = getEnv('PLUGIN_AUTH_ENABLED')?.toLowerCase() === 'true';
+    const address = getEnv('PLUGIN_AUTH_ADDRESS') || '';
+    const clientId = getEnv('MIDAZ_CLIENT_ID') || '';
+    const clientSecret = getEnv('MIDAZ_CLIENT_SECRET') || '';
 
     if (enabled && (!address || !clientId || !clientSecret)) {
       throw new Error(
@@ -224,8 +215,10 @@ export class AccessManager {
       address,
       clientId,
       clientSecret,
-      tokenEndpoint: getEnv('PLUGIN_AUTH_TOKEN_ENDPOINT', '/oauth/token'),
-      refreshThresholdSeconds: getNumberEnv('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS', 300),
+      tokenEndpoint: getEnv('PLUGIN_AUTH_TOKEN_ENDPOINT') || '/oauth/token',
+      refreshThresholdSeconds: getEnv('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS')
+        ? parseInt(getEnv('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS')!, 10)
+        : 300,
     });
   }
 }

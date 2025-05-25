@@ -221,9 +221,9 @@ export class MidazError extends Error {
     // Ensure the name property is set correctly
     this.name = 'MidazError';
 
-    // Maintains proper stack trace in V8 engines
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, MidazError);
+    // Maintains proper stack trace in V8 engines (Node.js only)
+    if (typeof (Error as any).captureStackTrace === 'function') {
+      (Error as any).captureStackTrace(this, MidazError);
     }
   }
 }
