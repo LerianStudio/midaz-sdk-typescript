@@ -5,7 +5,7 @@
  * to make HTTP requests with advanced features like retries, timeouts, and error handling.
  */
 
-import { HttpClient, RetryPolicy } from '../src/util/network';
+import { HttpClient } from '../src/util/network';
 import { ErrorCategory, MidazError } from '../src/util/error';
 
 // Example 1: Basic HTTP Client Usage
@@ -16,7 +16,6 @@ async function basicHttpClientExample() {
   const httpClient = new HttpClient({
     baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 10000, // 10 seconds
-    debug: true, // Enable debug logging
   });
 
   try {
@@ -75,9 +74,8 @@ async function advancedHttpClientExample() {
       'X-API-Key': 'demo-api-key',
       'User-Agent': 'Midaz-SDK-Example/1.0',
     },
-    keepAlive: true,
+    keepAliveEnabled: true,
     maxSockets: 5,
-    debug: true,
   });
 
   try {
@@ -116,8 +114,10 @@ async function errorHandlingExample() {
   const httpClient = new HttpClient({
     baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 5000,
-    // Set retry policy configuration
-    retryPolicy: new RetryPolicy({
+    // Set retry policy configuration inline
+    maxRetries: 3,
+    retryDelay: 1000,
+    /* retryPolicy: new RetryPolicy({
       maxRetries: 3,
       initialDelay: 1000,
       maxDelay: 5000,
@@ -130,8 +130,7 @@ async function errorHandlingExample() {
         }
         return false;
       },
-    }),
-    debug: true,
+    }), */
   });
 
   try {
@@ -155,7 +154,6 @@ async function errorHandlingExample() {
   const unreliableClient = new HttpClient({
     baseURL: 'https://this-domain-does-not-exist-123456789.com',
     timeout: 3000,
-    debug: true,
   });
 
   try {
@@ -183,7 +181,6 @@ async function requestCancellationExample() {
   const httpClient = new HttpClient({
     baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 30000, // Long timeout
-    debug: true,
   });
 
   // Create an AbortController

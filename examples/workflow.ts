@@ -85,8 +85,8 @@ async function main() {
     // Set up observability and logging
     const logger = new Logger({
       level: LogLevel.DEBUG,
-      defaultModule: 'workflow',
-      includeTimestamps: true,
+      module: 'workflow',
+      format: 'pretty',
     });
 
     // Initialize global observability
@@ -951,9 +951,9 @@ async function displayBalances(
     // We want to create it for demonstration but without console output
     const logger = new Logger({
       level: LogLevel.DEBUG,
-      defaultModule: 'balance-display',
-      // Use empty handlers array to disable console output but keep the logger working
-      handlers: [],
+      module: 'balance-display',
+      // Use format to control output
+      format: 'json',
     });
 
     // Create a span for balance loading operation
@@ -1199,7 +1199,7 @@ function handleError(error: any): void {
   // Create logger for error handling
   const logger = new Logger({
     level: LogLevel.ERROR,
-    defaultModule: 'error-handler',
+    module: 'error-handler',
   });
 
   // Create error span
@@ -1271,7 +1271,7 @@ main().catch((error) => {
   // This ensures even catastrophic failures are properly logged
   const logger = new Logger({
     level: LogLevel.ERROR,
-    defaultModule: 'main-error-handler',
+    module: 'main-error-handler',
   });
 
   // Log the error with full context

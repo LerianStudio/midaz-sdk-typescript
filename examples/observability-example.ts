@@ -145,7 +145,7 @@ function structuredLoggingExample() {
   // Initialize a logger with custom settings
   const logger = new Logger({
     level: LogLevel.DEBUG,
-    includeTimestamps: true,
+    format: 'pretty',
   });
 
   // Log messages at different levels
