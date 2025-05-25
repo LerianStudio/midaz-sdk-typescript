@@ -114,7 +114,7 @@ export interface ClientConfigBuilder {
    * Set a custom HTTP client
    */
   withHttpClient(httpClient: HttpClient): ClientConfigBuilder;
-  
+
   /**
    * Configure Access Manager for plugin-based authentication
    */
@@ -209,7 +209,7 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
     this.config.httpClient = httpClient;
     return this;
   }
-  
+
   withAccessManager(config: AccessManagerConfig): ClientConfigBuilder {
     // Validate required properties to prevent misconfiguration
     if (config.enabled === undefined) {
@@ -224,7 +224,7 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
     if (!config.clientSecret) {
       throw new Error('AccessManagerConfig: "clientSecret" property is required');
     }
-    
+
     // Assign the validated config
     this.config.accessManager = config;
     return this;
@@ -284,15 +284,13 @@ export function createClientConfigWithToken(authToken: string): ClientConfigBuil
  * Creates a client configuration builder with Access Manager authentication
  * @returns A new client configuration builder with Access Manager configured
  */
-export function createClientConfigWithAccessManager(
-  config: {
-    address: string;
-    clientId: string;
-    clientSecret: string;
-    tokenEndpoint?: string;
-    refreshThresholdSeconds?: number;
-  }
-): ClientConfigBuilder {
+export function createClientConfigWithAccessManager(config: {
+  address: string;
+  clientId: string;
+  clientSecret: string;
+  tokenEndpoint?: string;
+  refreshThresholdSeconds?: number;
+}): ClientConfigBuilder {
   return new ClientConfigBuilderImpl().withAccessManager({
     enabled: true,
     address: config.address,

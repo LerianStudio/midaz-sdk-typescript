@@ -5,7 +5,7 @@ import {
   fetchAllPages,
   fetchAllItems,
   paginateItems,
-  Paginator
+  Paginator,
 } from '../../src/util/data/pagination';
 import { ListOptions, ListResponse } from '../../src/models/common';
 
@@ -41,8 +41,8 @@ describe('Pagination Utilities', () => {
           nextCursor,
           total: mockItems.length,
           count: items.length,
-          prevCursor: cursor > 0 ? (start - limit).toString() : undefined
-        }
+          prevCursor: cursor > 0 ? (start - limit).toString() : undefined,
+        },
       });
     });
   };
@@ -53,7 +53,7 @@ describe('Pagination Utilities', () => {
       const mockFetch = createMockFetch(3);
       const paginator = new Paginator({
         fetchPage: mockFetch,
-        pageSize: 3
+        pageSize: 3,
       });
 
       // First page
@@ -96,7 +96,7 @@ describe('Pagination Utilities', () => {
       const paginator = new Paginator({
         fetchPage: mockFetch,
         pageSize: 3,
-        maxItems: 5
+        maxItems: 5,
       });
 
       // First page
@@ -121,7 +121,7 @@ describe('Pagination Utilities', () => {
       const paginator = new Paginator({
         fetchPage: mockFetch,
         pageSize: 2,
-        maxPages: 2
+        maxPages: 2,
       });
 
       // First page
@@ -144,11 +144,11 @@ describe('Pagination Utilities', () => {
     it('should call onPage callback for each page', async () => {
       const mockFetch = createMockFetch(3);
       const onPageMock = jest.fn();
-      
+
       const paginator = new Paginator({
         fetchPage: mockFetch,
         pageSize: 3,
-        onPage: onPageMock
+        onPage: onPageMock,
       });
 
       // Fetch all pages
@@ -165,7 +165,7 @@ describe('Pagination Utilities', () => {
       const mockFetch = createMockFetch(5);
       const paginator = new Paginator({
         fetchPage: mockFetch,
-        pageSize: 5
+        pageSize: 5,
       });
 
       // Fetch first page
@@ -191,7 +191,7 @@ describe('Pagination Utilities', () => {
       const mockFetch = createMockFetch(3);
       const pages = paginateItems<any>({
         fetchPage: mockFetch,
-        pageSize: 3
+        pageSize: 3,
       });
 
       const allPages: any[][] = [];
@@ -212,7 +212,7 @@ describe('Pagination Utilities', () => {
       const pages = paginateItems<any>({
         fetchPage: mockFetch,
         pageSize: 3,
-        maxItems: 5
+        maxItems: 5,
       });
 
       const allPages: any[][] = [];
@@ -231,7 +231,7 @@ describe('Pagination Utilities', () => {
       const mockFetch = createMockFetch(3);
       const allItems = await fetchAllItems({
         fetchPage: mockFetch,
-        pageSize: 3
+        pageSize: 3,
       });
 
       expect(allItems).toHaveLength(10);
@@ -245,7 +245,7 @@ describe('Pagination Utilities', () => {
       const allItems = await fetchAllItems({
         fetchPage: mockFetch,
         pageSize: 3,
-        maxItems: 7
+        maxItems: 7,
       });
 
       expect(allItems).toHaveLength(9); // Will fetch 9 items because it completes the page
@@ -257,7 +257,7 @@ describe('Pagination Utilities', () => {
       const allItems = await fetchAllItems({
         fetchPage: mockFetch,
         pageSize: 3,
-        maxPages: 2
+        maxPages: 2,
       });
 
       expect(allItems).toHaveLength(6);

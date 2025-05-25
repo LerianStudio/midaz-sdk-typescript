@@ -24,9 +24,7 @@ export class TransactionsServiceImpl implements TransactionsService {
    */
   constructor(private readonly apiClient: TransactionApiClient, observability?: Observability) {
     // Initialize observability with service name
-    this.observability =
-      observability ||
-      Observability.getInstance();
+    this.observability = observability || Observability.getInstance();
   }
 
   /**
@@ -281,7 +279,10 @@ export class TransactionsServiceImpl implements TransactionsService {
 /**
  * @inheritdoc
  */
-export class TransactionPaginatorImpl extends BasePaginator<Transaction> implements TransactionPaginator {
+export class TransactionPaginatorImpl
+  extends BasePaginator<Transaction>
+  implements TransactionPaginator
+{
   /**
    * Organization ID
    */
@@ -316,8 +317,8 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
       serviceName: 'transaction-paginator',
       spanAttributes: {
         orgId,
-        ledgerId
-      }
+        ledgerId,
+      },
     };
 
     super(config);
@@ -340,7 +341,7 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
    */
   public async next(): Promise<Transaction[]> {
     const span = this.createSpan('next');
-    
+
     try {
       // Check if there are more transactions to retrieve
       if (!(await this.hasNext())) {
@@ -348,13 +349,13 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
         span.setStatus('ok');
         return [];
       }
-      
+
       // Prepare options with cursor
       const paginationOpts = {
         ...this.options,
         cursor: this.nextCursor,
       };
-      
+
       // Make the API request
       this.lastFetchTimestamp = Date.now();
       const response = await this.apiClient.listTransactions(
@@ -362,7 +363,7 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
         this.ledgerId,
         paginationOpts
       );
-      
+
       // Update pagination state
       this.nextCursor = response.meta?.nextCursor;
       this.hasMorePages = !!this.nextCursor;
@@ -374,13 +375,13 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
       this.observability.recordMetric('transactions.paginator.fetch', 1, {
         orgId: this.orgId,
         ledgerId: this.ledgerId,
-        count: response.items.length
+        count: response.items.length,
       });
-      
+
       span.setAttribute('transactionCount', response.items.length);
       span.setAttribute('hasMore', this.hasMorePages);
       span.setStatus('ok');
-      
+
       return this.currentPage || [];
     } catch (error) {
       span.recordException(error as Error);
@@ -393,10 +394,10 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
 
   /**
    * Gets all transactions
-   * 
+   *
    * Retrieves all transactions that match the filters, handling
    * pagination automatically.
-   * 
+   *
    * @returns Promise resolving to all matching transactions
    */
   public async getAllTransactions(): Promise<Transaction[]> {
@@ -405,9 +406,9 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
 
   /**
    * Process transactions by category
-   * 
+   *
    * Processes all transactions and groups them by category
-   * 
+   *
    * @returns Map of categories to transaction counts
    */
   public async categorizeTransactions(
@@ -415,29 +416,29 @@ export class TransactionPaginatorImpl extends BasePaginator<Transaction> impleme
   ): Promise<Map<string, number>> {
     const span = this.createSpan('categorizeTransactions');
     const categoryMap = new Map<string, number>();
-    
+
     try {
       await this.forEachItem(async (transaction) => {
         // Determine category (using a simplified approach for this example)
         const category = transaction.type || 'uncategorized';
-        
+
         // Update category count
         const currentCount = categoryMap.get(category) || 0;
         categoryMap.set(category, currentCount + 1);
-        
+
         // Call the handler
         await categoryHandler(transaction, category);
       });
-      
+
       // Record metrics
       for (const [category, count] of categoryMap.entries()) {
         this.observability.recordMetric('transactions.category', count, {
           orgId: this.orgId,
           ledgerId: this.ledgerId,
-          category
+          category,
         });
       }
-      
+
       span.setAttribute('categoryCount', categoryMap.size);
       span.setStatus('ok');
       return categoryMap;

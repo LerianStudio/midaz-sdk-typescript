@@ -176,7 +176,7 @@ export function formatBalanceSafely(
 
     // Use the SDK's formatBalance with proper scaling
     return formatBalance(numValue, Math.max(1, numScale || 1), options);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     // Fallback in case of any errors
     return options?.currency ? `0.00 ${options.currency}` : '0.00';
@@ -238,22 +238,27 @@ export function formatAccountBalance(
     const hasAvailable = Object.prototype.hasOwnProperty.call(balance, 'available');
     const hasScale = Object.prototype.hasOwnProperty.call(balance, 'scale');
     const hasOnHold = Object.prototype.hasOwnProperty.call(balance, 'onHold');
-    
+
     const availableFormatted = formatBalanceSafely(
-      hasAvailable ? balance.available : 0, 
-      hasScale ? balance.scale : 100, 
+      hasAvailable ? balance.available : 0,
+      hasScale ? balance.scale : 100,
       { locale: options?.locale }
     );
 
     const onHoldFormatted = formatBalanceSafely(
-      hasOnHold ? balance.onHold : 0, 
-      hasScale ? balance.scale : 100, 
+      hasOnHold ? balance.onHold : 0,
+      hasScale ? balance.scale : 100,
       { locale: options?.locale }
     );
 
     // Extract asset code from accountId if not present
     let assetCode = balance.assetCode;
-    if (!assetCode && balance.accountId && balance.accountId.includes && balance.accountId.includes('/')) {
+    if (
+      !assetCode &&
+      balance.accountId &&
+      balance.accountId.includes &&
+      balance.accountId.includes('/')
+    ) {
       const parts = balance.accountId.split('/');
       if (parts.length > 1) {
         assetCode = parts[1];
@@ -272,12 +277,12 @@ export function formatAccountBalance(
     };
 
     return result;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     // Return a fallback format if something goes wrong
     let accountId = 'Unknown';
     let assetCodeFromId = 'Unknown';
-    
+
     try {
       accountId = balance.accountId || 'Unknown';
       if (accountId && accountId.includes && accountId.includes('/')) {
@@ -286,11 +291,11 @@ export function formatAccountBalance(
           assetCodeFromId = parts[1];
         }
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {
       // Ignore errors in error handler
     }
-    
+
     return {
       assetCode: assetCodeFromId,
       accountId: accountId,

@@ -8,7 +8,7 @@ import {
   isDuplicateTransactionError,
   isInsufficientFundsError,
   MidazError,
-  processApiError
+  processApiError,
 } from '../../src/util/error';
 import { categorizeTransactionError } from '../../src/util/error/error-utils';
 
@@ -22,7 +22,7 @@ describe('Error Handling Utilities', () => {
         resource: 'account',
         resourceId: 'acc_123',
         statusCode: 400,
-        requestId: 'req_456'
+        requestId: 'req_456',
       });
 
       const processed = processApiError(error);
@@ -34,7 +34,7 @@ describe('Error Handling Utilities', () => {
         resourceId: 'acc_123',
         statusCode: 400,
         requestId: 'req_456',
-        originalError: error
+        originalError: error,
       });
     });
 
@@ -45,7 +45,7 @@ describe('Error Handling Utilities', () => {
       expect(processed).toMatchObject({
         type: 'Error',
         message: 'Something went wrong',
-        originalError: error
+        originalError: error,
       });
     });
 
@@ -60,7 +60,7 @@ describe('Error Handling Utilities', () => {
         type: 'server_error',
         message: 'API error',
         statusCode: 500,
-        originalError: error
+        originalError: error,
       });
     });
 
@@ -71,7 +71,7 @@ describe('Error Handling Utilities', () => {
       expect(processed).toMatchObject({
         type: 'unknown',
         message: 'Simple string error',
-        originalError: error
+        originalError: error,
       });
     });
 
@@ -79,7 +79,7 @@ describe('Error Handling Utilities', () => {
       const error = {
         message: 'Object error',
         statusCode: 403,
-        code: 'forbidden'
+        code: 'forbidden',
       };
 
       const processed = processApiError(error);
@@ -88,14 +88,14 @@ describe('Error Handling Utilities', () => {
         type: 'forbidden',
         message: 'Object error',
         statusCode: 403,
-        originalError: error
+        originalError: error,
       });
     });
 
     it('should process object with error property', () => {
       const error = {
         error: 'Error message in error property',
-        status: 404
+        status: 404,
       };
 
       const processed = processApiError(error);
@@ -103,7 +103,7 @@ describe('Error Handling Utilities', () => {
       expect(processed).toMatchObject({
         message: 'Error message in error property',
         statusCode: 404,
-        originalError: error
+        originalError: error,
       });
     });
 
@@ -114,7 +114,7 @@ describe('Error Handling Utilities', () => {
       expect(processed).toMatchObject({
         type: 'unknown',
         message: 'An unknown error occurred',
-        originalError: error
+        originalError: error,
       });
     });
 
@@ -122,12 +122,12 @@ describe('Error Handling Utilities', () => {
       const validationDetails = { field: 'amount', message: 'Must be positive' };
       const originalError = new Error('Validation error');
       (originalError as any).details = validationDetails;
-      
+
       const error = new MidazError({
         category: ErrorCategory.VALIDATION,
         code: ErrorCode.VALIDATION_ERROR,
         message: 'Validation failed',
-        cause: originalError
+        cause: originalError,
       });
 
       const processed = processApiError(error);
@@ -141,7 +141,7 @@ describe('Error Handling Utilities', () => {
         code: ErrorCode.NOT_FOUND,
         message: 'Not found',
         resource: 'transaction',
-        resourceId: 'tx_123'
+        resourceId: 'tx_123',
       });
 
       const processed = processApiError(error);
@@ -153,7 +153,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.AUTHENTICATION,
         code: ErrorCode.AUTHENTICATION_ERROR,
-        message: 'Auth failed'
+        message: 'Auth failed',
       });
 
       const processed = processApiError(error);
@@ -165,19 +165,19 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.AUTHORIZATION,
         code: ErrorCode.PERMISSION_ERROR,
-        message: 'Permission denied'
+        message: 'Permission denied',
       });
 
       const processed = processApiError(error);
 
-      expect(processed.message).toBe('You don\'t have permission to perform this operation');
+      expect(processed.message).toBe("You don't have permission to perform this operation");
     });
 
     it('should customize message for rate limit errors', () => {
       const error = new MidazError({
         category: ErrorCategory.LIMIT_EXCEEDED,
         code: ErrorCode.RATE_LIMIT_EXCEEDED,
-        message: 'Too many requests'
+        message: 'Too many requests',
       });
 
       const processed = processApiError(error);
@@ -191,7 +191,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.VALIDATION,
         code: ErrorCode.VALIDATION_ERROR,
-        message: 'Technical validation error message'
+        message: 'Technical validation error message',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -205,7 +205,7 @@ describe('Error Handling Utilities', () => {
         code: ErrorCode.NOT_FOUND,
         message: 'Resource not found',
         resource: 'account',
-        resourceId: 'acc_123'
+        resourceId: 'acc_123',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -217,7 +217,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.AUTHENTICATION,
         code: ErrorCode.AUTHENTICATION_ERROR,
-        message: 'Authentication failed'
+        message: 'Authentication failed',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -229,31 +229,33 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.AUTHORIZATION,
         code: ErrorCode.PERMISSION_ERROR,
-        message: 'Permission denied'
+        message: 'Permission denied',
       });
 
       const message = getUserFriendlyErrorMessage(error);
 
-      expect(message).toBe('You don\'t have permission to perform this action.');
+      expect(message).toBe("You don't have permission to perform this action.");
     });
 
     it('should return user-friendly message for conflict errors', () => {
       const error = new MidazError({
         category: ErrorCategory.CONFLICT,
         code: ErrorCode.ALREADY_EXISTS,
-        message: 'Resource already exists'
+        message: 'Resource already exists',
       });
 
       const message = getUserFriendlyErrorMessage(error);
 
-      expect(message).toBe('This operation conflicts with the current state. The resource may have been modified.');
+      expect(message).toBe(
+        'This operation conflicts with the current state. The resource may have been modified.'
+      );
     });
 
     it('should return user-friendly message for rate limit errors', () => {
       const error = new MidazError({
         category: ErrorCategory.LIMIT_EXCEEDED,
         code: ErrorCode.RATE_LIMIT_EXCEEDED,
-        message: 'Rate limit exceeded'
+        message: 'Rate limit exceeded',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -265,7 +267,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.TIMEOUT,
         code: ErrorCode.TIMEOUT,
-        message: 'Operation timed out'
+        message: 'Operation timed out',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -277,7 +279,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.NETWORK,
         code: ErrorCode.INTERNAL_ERROR,
-        message: 'Network error'
+        message: 'Network error',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -289,7 +291,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.INTERNAL,
         code: ErrorCode.INTERNAL_ERROR,
-        message: 'Internal server error'
+        message: 'Internal server error',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -301,7 +303,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INTERNAL_ERROR,
-        message: 'Transaction failed due to insufficient balance'
+        message: 'Transaction failed due to insufficient balance',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -313,7 +315,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INTERNAL_ERROR,
-        message: 'Transaction failed'
+        message: 'Transaction failed',
       });
 
       const message = getUserFriendlyErrorMessage(error);
@@ -344,7 +346,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INSUFFICIENT_BALANCE,
-        message: 'Insufficient funds for this transaction'
+        message: 'Insufficient funds for this transaction',
       });
 
       const category = categorizeTransactionError(error);
@@ -356,7 +358,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INSUFFICIENT_BALANCE,
-        message: 'Account has insufficient balance'
+        message: 'Account has insufficient balance',
       });
 
       const category = categorizeTransactionError(error);
@@ -368,7 +370,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.ACCOUNT_ELIGIBILITY_ERROR,
-        message: 'Account is frozen and cannot process transactions'
+        message: 'Account is frozen and cannot process transactions',
       });
 
       const category = categorizeTransactionError(error);
@@ -380,7 +382,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.ACCOUNT_ELIGIBILITY_ERROR,
-        message: 'Account is inactive'
+        message: 'Account is inactive',
       });
 
       const category = categorizeTransactionError(error);
@@ -392,7 +394,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.CONFLICT,
         code: ErrorCode.IDEMPOTENCY_ERROR,
-        message: 'Duplicate transaction with the same idempotency key'
+        message: 'Duplicate transaction with the same idempotency key',
       });
 
       const category = categorizeTransactionError(error);
@@ -404,7 +406,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.LIMIT_EXCEEDED,
         code: ErrorCode.RATE_LIMIT_EXCEEDED,
-        message: 'Transaction limit exceeded'
+        message: 'Transaction limit exceeded',
       });
 
       const category = categorizeTransactionError(error);
@@ -416,7 +418,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.VALIDATION,
         code: ErrorCode.ASSET_MISMATCH,
-        message: 'Asset mismatch between accounts'
+        message: 'Asset mismatch between accounts',
       });
 
       const category = categorizeTransactionError(error);
@@ -428,11 +430,11 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INSUFFICIENT_BALANCE,
-        message: 'Insufficient balance would result in negative balance'
+        message: 'Insufficient balance would result in negative balance',
       });
-      
+
       const category = categorizeTransactionError(error);
-      
+
       expect(category).toBe('insufficient_funds');
     });
 
@@ -440,7 +442,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.VALIDATION,
         code: ErrorCode.VALIDATION_ERROR,
-        message: 'Invalid transaction data'
+        message: 'Invalid transaction data',
       });
 
       const category = categorizeTransactionError(error);
@@ -452,7 +454,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
-        message: 'Account not found'
+        message: 'Account not found',
       });
 
       const category = categorizeTransactionError(error);
@@ -464,7 +466,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.AUTHORIZATION,
         code: ErrorCode.PERMISSION_ERROR,
-        message: 'Not authorized to create transactions'
+        message: 'Not authorized to create transactions',
       });
 
       const category = categorizeTransactionError(error);
@@ -476,7 +478,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INTERNAL_ERROR,
-        message: 'Transaction rejected'
+        message: 'Transaction rejected',
       });
 
       const category = categorizeTransactionError(error);
@@ -488,7 +490,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.INTERNAL,
         code: ErrorCode.INTERNAL_ERROR,
-        message: 'Internal server error'
+        message: 'Internal server error',
       });
 
       const category = categorizeTransactionError(error);
@@ -502,7 +504,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INSUFFICIENT_BALANCE,
-        message: 'Insufficient funds for this transaction'
+        message: 'Insufficient funds for this transaction',
       });
 
       const result = isInsufficientFundsError(error);
@@ -514,7 +516,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.VALIDATION,
         code: ErrorCode.VALIDATION_ERROR,
-        message: 'Invalid transaction data'
+        message: 'Invalid transaction data',
       });
 
       const result = isInsufficientFundsError(error);
@@ -528,7 +530,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.CONFLICT,
         code: ErrorCode.IDEMPOTENCY_ERROR,
-        message: 'Duplicate transaction with the same idempotency key'
+        message: 'Duplicate transaction with the same idempotency key',
       });
 
       const result = isDuplicateTransactionError(error);
@@ -540,7 +542,7 @@ describe('Error Handling Utilities', () => {
       const error = new MidazError({
         category: ErrorCategory.VALIDATION,
         code: ErrorCode.VALIDATION_ERROR,
-        message: 'Invalid transaction data'
+        message: 'Invalid transaction data',
       });
 
       const result = isDuplicateTransactionError(error);

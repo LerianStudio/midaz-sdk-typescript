@@ -135,7 +135,9 @@ export class HttpBalanceApiClient implements BalanceApiClient {
       this.validateRequiredParams(span, { orgId, ledgerId, accountId });
 
       // Build the URL for account balances
-      const baseUrl = `${this.urlBuilder.getBaseUrl('transaction')}/${this.urlBuilder.getApiVersion()}`;
+      const baseUrl = `${this.urlBuilder.getBaseUrl(
+        'transaction'
+      )}/${this.urlBuilder.getApiVersion()}`;
       const url = `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances`;
 
       const result = await this.httpClient.get<ListResponse<Balance>>(url, {

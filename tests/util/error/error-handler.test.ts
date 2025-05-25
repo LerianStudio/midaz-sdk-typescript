@@ -698,7 +698,8 @@ describe('Error Handler', () => {
       jest.clearAllMocks();
 
       // Setup processError mock to return enhanced error info
-      jest.spyOn(require('../../../src/util/error/error-utils'), 'processError')
+      jest
+        .spyOn(require('../../../src/util/error/error-utils'), 'processError')
         .mockImplementationOnce(() => ({
           type: 'error',
           message: 'Test error',
@@ -706,17 +707,17 @@ describe('Error Handler', () => {
           userMessage: 'Test error',
           technicalDetails: 'Test error',
           isRetryable: false,
-          shouldShowUser: true
+          shouldShowUser: true,
         }));
 
       // Setup console spy
       const consoleSpy = jest.fn();
-      
+
       // Create error handler with custom message formatter
       const handler = createErrorHandler({
         displayErrors: true,
         displayFn: consoleSpy,
-        formatMessage: (errorInfo) => 'Formatted error'
+        formatMessage: (errorInfo) => 'Formatted error',
       });
 
       // Create and handle test error

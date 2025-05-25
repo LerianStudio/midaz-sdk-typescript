@@ -7,7 +7,7 @@ jest.mock('pino', () => {
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
   };
   return jest.fn(() => mockPino);
 });
@@ -49,10 +49,7 @@ describe('PinoAdapter', () => {
     handler(LogLevel.INFO, 'Test message', metadata);
 
     const pino = require('pino')();
-    expect(pino.info).toHaveBeenCalledWith(
-      metadata,
-      'Test message'
-    );
+    expect(pino.info).toHaveBeenCalledWith(metadata, 'Test message');
   });
 
   it('should include request ID when provided', () => {
@@ -62,10 +59,7 @@ describe('PinoAdapter', () => {
     handler(LogLevel.INFO, 'Test message', metadata);
 
     const pino = require('pino')();
-    expect(pino.info).toHaveBeenCalledWith(
-      metadata,
-      'Test message'
-    );
+    expect(pino.info).toHaveBeenCalledWith(metadata, 'Test message');
   });
 
   it('should not log when level is NONE', () => {

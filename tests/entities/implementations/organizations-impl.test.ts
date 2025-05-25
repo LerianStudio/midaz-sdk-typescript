@@ -5,7 +5,11 @@
 
 import { OrganizationsServiceImpl } from '../../../src/entities/implementations/organizations-impl';
 import { OrganizationApiClient } from '../../../src/api/interfaces/organization-api-client';
-import { CreateOrganizationInput, Organization, UpdateOrganizationInput } from '../../../src/models/organization';
+import {
+  CreateOrganizationInput,
+  Organization,
+  UpdateOrganizationInput,
+} from '../../../src/models/organization';
 import { ListResponse, StatusCode } from '../../../src/models/common';
 import { Observability } from '../../../src/util/observability/observability';
 import { ValidationError } from '../../../src/util/validation';
@@ -19,11 +23,11 @@ jest.mock('../../../src/util/observability/observability', () => {
           setAttribute: jest.fn(),
           recordException: jest.fn(),
           setStatus: jest.fn(),
-          end: jest.fn()
+          end: jest.fn(),
         }),
-        recordMetric: jest.fn()
+        recordMetric: jest.fn(),
       };
-    })
+    }),
   };
 });
 
@@ -38,7 +42,7 @@ jest.mock('../../../src/models/validators/organization-validator', () => {
     }),
     validateUpdateOrganizationInput: jest.fn().mockImplementation((_input) => {
       return { valid: true };
-    })
+    }),
   };
 });
 
@@ -51,39 +55,39 @@ describe('OrganizationsServiceImpl', () => {
   // Test data
   const organizationId = 'org_123';
   const organizationName = 'Test Organization';
-  
+
   const mockOrganization: Organization = {
     id: organizationId,
     legalName: organizationName,
-    legalDocument: "123456789",
+    legalDocument: '123456789',
     doingBusinessAs: organizationName,
     status: {
       code: StatusCode.ACTIVE,
-      timestamp: '2023-01-01T00:00:00Z'
+      timestamp: '2023-01-01T00:00:00Z',
     },
     address: {
-      line1: "123 Main St",
-      city: "San Francisco",
-      state: "CA",
-      zipCode: "94105",
-      country: "US"
+      line1: '123 Main St',
+      city: 'San Francisco',
+      state: 'CA',
+      zipCode: '94105',
+      country: 'US',
     },
     createdAt: '2023-01-01T00:00:00Z',
-    updatedAt: '2023-01-01T00:00:00Z'
+    updatedAt: '2023-01-01T00:00:00Z',
   };
-  
+
   const mockOrganizationsList: ListResponse<Organization> = {
     items: [mockOrganization],
     meta: {
       total: 1,
-      count: 1
-    }
+      count: 1,
+    },
   };
 
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create a mock OrganizationApiClient
     organizationApiClient = {
       listOrganizations: jest.fn().mockImplementation((_options) => {
@@ -104,25 +108,25 @@ describe('OrganizationsServiceImpl', () => {
       deleteOrganization: jest.fn().mockImplementation((id) => {
         if (!id) throw new ValidationError('Organization ID is required');
         return Promise.resolve();
-      })
+      }),
     } as unknown as jest.Mocked<OrganizationApiClient>;
-    
+
     // Create mock Observability
     mockObservability = {
       startSpan: jest.fn().mockReturnValue({
         setAttribute: jest.fn(),
         recordException: jest.fn(),
         setStatus: jest.fn(),
-        end: jest.fn()
+        end: jest.fn(),
       }),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
-    
+
     // Create config for reference
     _config = {
-      environment: 'sandbox'
+      environment: 'sandbox',
     };
-    
+
     // Create the service instance
     organizationsService = new OrganizationsServiceImpl(organizationApiClient, mockObservability);
   });
@@ -131,41 +135,40 @@ describe('OrganizationsServiceImpl', () => {
     it('should list organizations successfully', async () => {
       // Execute
       const result = await organizationsService.listOrganizations();
-      
+
       // Verify
       expect(organizationApiClient.listOrganizations).toHaveBeenCalled();
       expect(result).toEqual(mockOrganizationsList);
     });
-    
+
     it('should apply list options when provided', async () => {
       // Setup
       const listOptions = {
         limit: 10,
         offset: 0,
         filter: {
-          status: 'ACTIVE'
+          status: 'ACTIVE',
         },
         sort: {
           field: 'createdAt',
-          order: 'DESC'
-        }
+          order: 'DESC',
+        },
       };
-      
+
       // Execute
       await organizationsService.listOrganizations(listOptions);
-      
+
       // Verify
       expect(organizationApiClient.listOrganizations).toHaveBeenCalledWith(listOptions);
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const errorMessage = 'API Error';
       organizationApiClient.listOrganizations.mockRejectedValueOnce(new Error(errorMessage));
-      
+
       // Execute & Verify
-      await expect(organizationsService.listOrganizations())
-        .rejects.toThrow(errorMessage);
+      await expect(organizationsService.listOrganizations()).rejects.toThrow(errorMessage);
     });
   });
 
@@ -173,31 +176,33 @@ describe('OrganizationsServiceImpl', () => {
     it('should get an organization by ID successfully', async () => {
       // Execute
       const result = await organizationsService.getOrganization(organizationId);
-      
+
       // Verify
       expect(organizationApiClient.getOrganization).toHaveBeenCalledWith(organizationId);
       expect(result).toEqual(mockOrganization);
     });
-    
+
     it('should delegate validation to the API client', async () => {
       // Setup
       const validationError = new Error('Organization ID is required');
       organizationApiClient.getOrganization.mockRejectedValueOnce(validationError);
-      
+
       // Execute & Verify
-      await expect(organizationsService.getOrganization(''))
-        .rejects.toThrow('Organization ID is required');
+      await expect(organizationsService.getOrganization('')).rejects.toThrow(
+        'Organization ID is required'
+      );
       expect(organizationApiClient.getOrganization).toHaveBeenCalledWith('');
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const errorMessage = 'API Error';
       organizationApiClient.getOrganization.mockRejectedValueOnce(new Error(errorMessage));
-      
+
       // Execute & Verify
-      await expect(organizationsService.getOrganization(organizationId))
-        .rejects.toThrow(errorMessage);
+      await expect(organizationsService.getOrganization(organizationId)).rejects.toThrow(
+        errorMessage
+      );
     });
   });
 
@@ -206,57 +211,59 @@ describe('OrganizationsServiceImpl', () => {
       // Setup
       const createInput: CreateOrganizationInput = {
         legalName: organizationName,
-        legalDocument: "123456789",
+        legalDocument: '123456789',
         doingBusinessAs: organizationName,
         status: StatusCode.ACTIVE,
         address: {
-          line1: "123 Main St",
-          city: "San Francisco",
-          state: "CA",
-          zipCode: "94105",
-          country: "US"
-        }
+          line1: '123 Main St',
+          city: 'San Francisco',
+          state: 'CA',
+          zipCode: '94105',
+          country: 'US',
+        },
       };
-      
+
       // Execute
       const result = await organizationsService.createOrganization(createInput);
-      
+
       // Verify
       expect(organizationApiClient.createOrganization).toHaveBeenCalledWith(createInput);
       expect(result).toEqual(mockOrganization);
     });
-    
+
     it('should throw a validation error for invalid input', async () => {
       // Setup
       const invalidInput = {} as CreateOrganizationInput;
-      
+
       // Execute & Verify
-      await expect(organizationsService.createOrganization(invalidInput))
-        .rejects.toThrow('Organization name is required');
+      await expect(organizationsService.createOrganization(invalidInput)).rejects.toThrow(
+        'Organization name is required'
+      );
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const createInput: CreateOrganizationInput = {
         legalName: organizationName,
-        legalDocument: "123456789",
+        legalDocument: '123456789',
         doingBusinessAs: organizationName,
         status: StatusCode.ACTIVE,
         address: {
-          line1: "123 Main St",
-          city: "San Francisco",
-          state: "CA",
-          zipCode: "94105",
-          country: "US"
-        }
+          line1: '123 Main St',
+          city: 'San Francisco',
+          state: 'CA',
+          zipCode: '94105',
+          country: 'US',
+        },
       };
-      
+
       const errorMessage = 'API Error';
       organizationApiClient.createOrganization.mockRejectedValueOnce(new Error(errorMessage));
-      
+
       // Execute & Verify
-      await expect(organizationsService.createOrganization(createInput))
-        .rejects.toThrow(errorMessage);
+      await expect(organizationsService.createOrganization(createInput)).rejects.toThrow(
+        errorMessage
+      );
     });
   });
 
@@ -264,43 +271,48 @@ describe('OrganizationsServiceImpl', () => {
     it('should update an organization successfully', async () => {
       // Setup
       const updateInput: UpdateOrganizationInput = {
-        legalName: 'Updated Organization'
+        legalName: 'Updated Organization',
       };
-      
+
       // Execute
       const result = await organizationsService.updateOrganization(organizationId, updateInput);
-      
+
       // Verify
-      expect(organizationApiClient.updateOrganization).toHaveBeenCalledWith(organizationId, updateInput);
+      expect(organizationApiClient.updateOrganization).toHaveBeenCalledWith(
+        organizationId,
+        updateInput
+      );
       expect(result).toEqual(mockOrganization);
     });
-    
+
     it('should delegate validation to the API client', async () => {
       // Setup
       const updateInput: UpdateOrganizationInput = {
-        legalName: 'Updated Organization'
+        legalName: 'Updated Organization',
       };
       const validationError = new Error('Organization ID is required');
       organizationApiClient.updateOrganization.mockRejectedValueOnce(validationError);
-      
+
       // Execute & Verify
-      await expect(organizationsService.updateOrganization('', updateInput))
-        .rejects.toThrow('Organization ID is required');
+      await expect(organizationsService.updateOrganization('', updateInput)).rejects.toThrow(
+        'Organization ID is required'
+      );
       expect(organizationApiClient.updateOrganization).toHaveBeenCalledWith('', updateInput);
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const updateInput: UpdateOrganizationInput = {
-        legalName: 'Updated Organization'
+        legalName: 'Updated Organization',
       };
-      
+
       const errorMessage = 'API Error';
       organizationApiClient.updateOrganization.mockRejectedValueOnce(new Error(errorMessage));
-      
+
       // Execute & Verify
-      await expect(organizationsService.updateOrganization(organizationId, updateInput))
-        .rejects.toThrow(errorMessage);
+      await expect(
+        organizationsService.updateOrganization(organizationId, updateInput)
+      ).rejects.toThrow(errorMessage);
     });
   });
 
@@ -308,30 +320,32 @@ describe('OrganizationsServiceImpl', () => {
     it('should delete an organization successfully', async () => {
       // Execute
       await organizationsService.deleteOrganization(organizationId);
-      
+
       // Verify
       expect(organizationApiClient.deleteOrganization).toHaveBeenCalledWith(organizationId);
     });
-    
+
     it('should delegate validation to the API client', async () => {
       // Setup
       const validationError = new Error('Organization ID is required');
       organizationApiClient.deleteOrganization.mockRejectedValueOnce(validationError);
-      
+
       // Execute & Verify
-      await expect(organizationsService.deleteOrganization(''))
-        .rejects.toThrow('Organization ID is required');
+      await expect(organizationsService.deleteOrganization('')).rejects.toThrow(
+        'Organization ID is required'
+      );
       expect(organizationApiClient.deleteOrganization).toHaveBeenCalledWith('');
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const errorMessage = 'API Error';
       organizationApiClient.deleteOrganization.mockRejectedValueOnce(new Error(errorMessage));
-      
+
       // Execute & Verify
-      await expect(organizationsService.deleteOrganization(organizationId))
-        .rejects.toThrow(errorMessage);
+      await expect(organizationsService.deleteOrganization(organizationId)).rejects.toThrow(
+        errorMessage
+      );
     });
   });
 });

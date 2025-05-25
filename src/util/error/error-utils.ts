@@ -329,8 +329,8 @@ export function categorizeTransactionError(error: unknown, uppercase = false): s
     error instanceof Error
       ? error.message.toLowerCase()
       : typeof error === 'string'
-        ? error.toLowerCase()
-        : '';
+      ? error.toLowerCase()
+      : '';
 
   if (
     message.includes('insufficient') &&

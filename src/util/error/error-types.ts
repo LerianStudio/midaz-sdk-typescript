@@ -89,7 +89,7 @@ export enum ErrorCode {
 
 /**
  * Transaction error categories
- * 
+ *
  * Specific error types for financial transactions
  */
 export enum TransactionErrorCategory {
@@ -261,34 +261,34 @@ export interface EnhancedErrorInfo {
 
   /** Transaction-specific error classification */
   transactionErrorType?: TransactionErrorCategory;
-  
+
   /** Error recovery recommendation */
   recoveryRecommendation?: string;
-  
+
   /** UI-friendly error message */
   userMessage: string;
-  
+
   /** Technical error details for logging */
   technicalDetails: string;
-  
+
   /** Whether the error is retryable */
   isRetryable: boolean;
-  
+
   /** Whether to show this error to the end user */
   shouldShowUser: boolean;
 
   /** Type of operation that was being performed (added for enhanced error recovery) */
   operationType?: string;
-  
+
   /** Number of recovery attempts made (added for enhanced error recovery) */
   recoveryAttempts?: number;
-  
+
   /** Whether this was a network error (added for enhanced error recovery) */
   isNetworkError?: boolean;
-  
+
   /** Detailed diagnostics about the error (added for enhanced error recovery) */
   diagnostics?: string;
-  
+
   /** Steps taken during recovery process (added for enhanced error recovery) */
   recoverySteps?: string[];
 }
@@ -306,7 +306,11 @@ export interface ErrorRecoveryOptions {
   /** Multiplier to apply to delay after each retry */
   backoffFactor?: number;
   /** Optional custom backoff strategy function */
-  backoffStrategy?: (attempt: number, initialDelay: number, options: ErrorRecoveryOptions) => number;
+  backoffStrategy?: (
+    attempt: number,
+    initialDelay: number,
+    options: ErrorRecoveryOptions
+  ) => number;
   /** Custom function to determine if an error is retryable */
   retryCondition?: (error: unknown) => boolean;
   /** Optional callback to run before each retry attempt */
@@ -335,25 +339,25 @@ export interface OperationResult<T> {
 export interface ErrorHandlerOptions {
   /** Whether to display errors to the user */
   displayErrors?: boolean;
-  
+
   /** Function to display errors to the user */
   displayFn?: (message: string) => void;
-  
+
   /** Whether to log errors */
   logErrors?: boolean;
-  
+
   /** Log level for error logging */
   logLevel?: 'debug' | 'info' | 'warn' | 'error';
-  
+
   /** Whether to rethrow errors after handling */
   rethrow?: boolean;
-  
+
   /** Default return value when not rethrowing errors */
   defaultReturnValue?: any;
-  
+
   /** Custom error message formatter */
   formatMessage?: (errorInfo: EnhancedErrorInfo) => string;
-  
+
   /** Whether to include stack traces in logs */
   includeStackTrace?: boolean;
 }

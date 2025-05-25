@@ -3,8 +3,15 @@
  */
 
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import { CreatePortfolioInput, Portfolio, UpdatePortfolioInput } from '../../../src/models/portfolio';
-import { validateCreatePortfolioInput, validateUpdatePortfolioInput } from '../../../src/models/validators/portfolio-validator';
+import {
+  CreatePortfolioInput,
+  Portfolio,
+  UpdatePortfolioInput,
+} from '../../../src/models/portfolio';
+import {
+  validateCreatePortfolioInput,
+  validateUpdatePortfolioInput,
+} from '../../../src/models/validators/portfolio-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpPortfolioApiClient } from '../../../src/api/http/http-portfolio-api-client';
@@ -40,7 +47,7 @@ describe('HttpPortfolioApiClient', () => {
     ledgerId: ledgerId,
     status: { code: StatusCode.ACTIVE, timestamp: new Date().toISOString() },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   // Mock portfolio list response
@@ -49,8 +56,8 @@ describe('HttpPortfolioApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -68,19 +75,19 @@ describe('HttpPortfolioApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
@@ -91,7 +98,7 @@ describe('HttpPortfolioApiClient', () => {
         }
         return url;
       }),
-      getApiVersion: jest.fn().mockReturnValue(apiVersion)
+      getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Reset all mocks
@@ -103,12 +110,8 @@ describe('HttpPortfolioApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpPortfolioApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
-    
+    client = new HttpPortfolioApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
+
     // Access the protected apiVersion property by using type assertion
     (client as any).apiVersion = apiVersion;
 
@@ -197,13 +200,17 @@ describe('HttpPortfolioApiClient', () => {
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.getPortfolio('', ledgerId, portfolioId)).rejects.toThrow('orgId is required');
+      await expect(client.getPortfolio('', ledgerId, portfolioId)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.getPortfolio(orgId, '', portfolioId)).rejects.toThrow('ledgerId is required');
+      await expect(client.getPortfolio(orgId, '', portfolioId)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -219,12 +226,14 @@ describe('HttpPortfolioApiClient', () => {
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
         message: 'Portfolio not found',
-        statusCode: 404
+        statusCode: 404,
       });
       mockHttpClient.get.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.getPortfolio(orgId, ledgerId, portfolioId)).rejects.toThrow('Portfolio not found');
+      await expect(client.getPortfolio(orgId, ledgerId, portfolioId)).rejects.toThrow(
+        'Portfolio not found'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -233,7 +242,7 @@ describe('HttpPortfolioApiClient', () => {
   describe('createPortfolio', () => {
     const createInput: CreatePortfolioInput = {
       name: 'New Portfolio',
-      entityId: entityId
+      entityId: entityId,
     };
 
     it('should successfully create a portfolio', async () => {
@@ -251,10 +260,10 @@ describe('HttpPortfolioApiClient', () => {
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'portfolios.create',
         1,
-        expect.objectContaining({ 
-          orgId, 
+        expect.objectContaining({
+          orgId,
           ledgerId,
-          portfolioName: createInput.name
+          portfolioName: createInput.name,
         })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('portfolioName', createInput.name);
@@ -270,19 +279,25 @@ describe('HttpPortfolioApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.createPortfolio(orgId, ledgerId, createInput)).rejects.toThrow('Validation error');
+      await expect(client.createPortfolio(orgId, ledgerId, createInput)).rejects.toThrow(
+        'Validation error'
+      );
       expect(mockHttpClient.post).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.createPortfolio('', ledgerId, createInput)).rejects.toThrow('orgId is required');
+      await expect(client.createPortfolio('', ledgerId, createInput)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.createPortfolio(orgId, '', createInput)).rejects.toThrow('ledgerId is required');
+      await expect(client.createPortfolio(orgId, '', createInput)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -292,7 +307,9 @@ describe('HttpPortfolioApiClient', () => {
       mockHttpClient.post.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.createPortfolio(orgId, ledgerId, createInput)).rejects.toThrow('API Error');
+      await expect(client.createPortfolio(orgId, ledgerId, createInput)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -302,15 +319,18 @@ describe('HttpPortfolioApiClient', () => {
     const updateInput: UpdatePortfolioInput = {
       name: 'Updated Portfolio',
       status: StatusCode.INACTIVE,
-      metadata: { type: 'Investment' }
+      metadata: { type: 'Investment' },
     };
 
     it('should successfully update a portfolio', async () => {
       // Arrange
-      const updatedPortfolio = { 
-        ...mockPortfolio, 
-        name: updateInput.name, 
-        status: { code: updateInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() } 
+      const updatedPortfolio = {
+        ...mockPortfolio,
+        name: updateInput.name,
+        status: {
+          code: updateInput.status || StatusCode.INACTIVE,
+          timestamp: new Date().toISOString(),
+        },
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedPortfolio);
       (validateUpdatePortfolioInput as jest.Mock).mockReturnValueOnce({ valid: true });
@@ -340,25 +360,33 @@ describe('HttpPortfolioApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.updatePortfolio(orgId, ledgerId, portfolioId, updateInput)).rejects.toThrow('Validation error');
+      await expect(
+        client.updatePortfolio(orgId, ledgerId, portfolioId, updateInput)
+      ).rejects.toThrow('Validation error');
       expect(mockHttpClient.patch).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.updatePortfolio('', ledgerId, portfolioId, updateInput)).rejects.toThrow('orgId is required');
+      await expect(client.updatePortfolio('', ledgerId, portfolioId, updateInput)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.updatePortfolio(orgId, '', portfolioId, updateInput)).rejects.toThrow('ledgerId is required');
+      await expect(client.updatePortfolio(orgId, '', portfolioId, updateInput)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing portfolioId', async () => {
       // Act & Assert
-      await expect(client.updatePortfolio(orgId, ledgerId, '', updateInput)).rejects.toThrow('id is required');
+      await expect(client.updatePortfolio(orgId, ledgerId, '', updateInput)).rejects.toThrow(
+        'id is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -368,11 +396,13 @@ describe('HttpPortfolioApiClient', () => {
       mockHttpClient.patch.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.updatePortfolio(orgId, ledgerId, portfolioId, updateInput)).rejects.toThrow('API Error');
+      await expect(
+        client.updatePortfolio(orgId, ledgerId, portfolioId, updateInput)
+      ).rejects.toThrow('API Error');
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
-    
+
     it('should handle partial updates with only name', async () => {
       // Arrange
       const partialInput: UpdatePortfolioInput = { name: 'Renamed Portfolio' };
@@ -393,9 +423,9 @@ describe('HttpPortfolioApiClient', () => {
     it('should handle partial updates with only status', async () => {
       // Arrange
       const partialInput: UpdatePortfolioInput = { status: StatusCode.INACTIVE };
-      const updatedPortfolio = { 
-        ...mockPortfolio, 
-        status: { code: partialInput.status!, timestamp: new Date().toISOString() } 
+      const updatedPortfolio = {
+        ...mockPortfolio,
+        status: { code: partialInput.status!, timestamp: new Date().toISOString() },
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedPortfolio);
 
@@ -449,13 +479,17 @@ describe('HttpPortfolioApiClient', () => {
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.deletePortfolio('', ledgerId, portfolioId)).rejects.toThrow('orgId is required');
+      await expect(client.deletePortfolio('', ledgerId, portfolioId)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.deletePortfolio(orgId, '', portfolioId)).rejects.toThrow('ledgerId is required');
+      await expect(client.deletePortfolio(orgId, '', portfolioId)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -471,7 +505,9 @@ describe('HttpPortfolioApiClient', () => {
       mockHttpClient.delete.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.deletePortfolio(orgId, ledgerId, portfolioId)).rejects.toThrow('API Error');
+      await expect(client.deletePortfolio(orgId, ledgerId, portfolioId)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -481,12 +517,16 @@ describe('HttpPortfolioApiClient', () => {
     it('should validate required parameters and throw error if missing', async () => {
       // The validateRequiredParams method is private, but we can test it indirectly
       // through the public methods that use it
-      
+
       // Test with missing parameters
-      await expect(client.getPortfolio('', ledgerId, portfolioId)).rejects.toThrow('orgId is required');
-      await expect(client.getPortfolio(orgId, '', portfolioId)).rejects.toThrow('ledgerId is required');
+      await expect(client.getPortfolio('', ledgerId, portfolioId)).rejects.toThrow(
+        'orgId is required'
+      );
+      await expect(client.getPortfolio(orgId, '', portfolioId)).rejects.toThrow(
+        'ledgerId is required'
+      );
       await expect(client.getPortfolio(orgId, ledgerId, '')).rejects.toThrow('id is required');
-      
+
       // Verify the error is recorded on the span
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -494,18 +534,18 @@ describe('HttpPortfolioApiClient', () => {
     it('should record metrics with the observability provider', async () => {
       // Use a public method to indirectly test the private recordMetrics method
       mockHttpClient.get.mockResolvedValueOnce(mockPortfolio);
-      
+
       // Act
       await client.getPortfolio(orgId, ledgerId, portfolioId);
-      
+
       // Assert
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'portfolios.get',
         1,
-        expect.objectContaining({ 
-          orgId, 
+        expect.objectContaining({
+          orgId,
           ledgerId,
-          portfolioId 
+          portfolioId,
         })
       );
     });

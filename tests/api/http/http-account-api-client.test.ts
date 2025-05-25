@@ -4,7 +4,10 @@
 
 import { Account, CreateAccountInput, UpdateAccountInput } from '../../../src/models/account';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import { validateCreateAccountInput, validateUpdateAccountInput } from '../../../src/models/validators/account-validator';
+import {
+  validateCreateAccountInput,
+  validateUpdateAccountInput,
+} from '../../../src/models/validators/account-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpAccountApiClient } from '../../../src/api/http/http-account-api-client';
@@ -39,7 +42,7 @@ describe('HttpAccountApiClient', () => {
     status: { code: StatusCode.ACTIVE, timestamp: new Date().toISOString() },
     type: 'deposit',
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   // Mock account list response
@@ -48,8 +51,8 @@ describe('HttpAccountApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -67,19 +70,19 @@ describe('HttpAccountApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
@@ -90,7 +93,7 @@ describe('HttpAccountApiClient', () => {
         }
         return url;
       }),
-      getApiVersion: jest.fn().mockReturnValue(apiVersion)
+      getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Set default behavior for validation mock
@@ -99,11 +102,7 @@ describe('HttpAccountApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpAccountApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
+    client = new HttpAccountApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -124,7 +123,7 @@ describe('HttpAccountApiClient', () => {
         expect.any(String),
         expect.objectContaining({
           params: undefined,
-          headers: expect.objectContaining({ 'X-API-Version': apiVersion })
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -143,7 +142,7 @@ describe('HttpAccountApiClient', () => {
         expect.any(String),
         expect.objectContaining({
           params: options,
-          headers: expect.objectContaining({ 'X-API-Version': apiVersion })
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
         })
       );
     });
@@ -184,7 +183,7 @@ describe('HttpAccountApiClient', () => {
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          headers: expect.objectContaining({ 'X-API-Version': apiVersion })
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -211,12 +210,14 @@ describe('HttpAccountApiClient', () => {
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
         message: 'Account not found',
-        statusCode: 404
+        statusCode: 404,
       });
       mockHttpClient.get.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.getAccount(orgId, ledgerId, accountId)).rejects.toThrow('Account not found');
+      await expect(client.getAccount(orgId, ledgerId, accountId)).rejects.toThrow(
+        'Account not found'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -226,7 +227,7 @@ describe('HttpAccountApiClient', () => {
     const createInput: CreateAccountInput = {
       name: 'New Account',
       assetCode: 'USD',
-      type: 'deposit'
+      type: 'deposit',
     };
 
     it('should successfully create an account', async () => {
@@ -244,7 +245,7 @@ describe('HttpAccountApiClient', () => {
         expect.any(String),
         createInput,
         expect.objectContaining({
-          headers: expect.objectContaining({ 'X-API-Version': apiVersion })
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -252,17 +253,19 @@ describe('HttpAccountApiClient', () => {
 
     it('should throw error when validation fails', async () => {
       // Arrange
-      const _validationError = { 
-        valid: false, 
-        message: 'Validation error', 
-        fieldErrors: { name: ['Name is required'] }
+      const _validationError = {
+        valid: false,
+        message: 'Validation error',
+        fieldErrors: { name: ['Name is required'] },
       };
       validateMock.mockImplementation(() => {
         throw new Error('Validation error');
       });
 
       // Act & Assert
-      await expect(client.createAccount(orgId, ledgerId, createInput)).rejects.toThrow('Validation error');
+      await expect(client.createAccount(orgId, ledgerId, createInput)).rejects.toThrow(
+        'Validation error'
+      );
     });
 
     it('should throw error when missing orgId', async () => {
@@ -290,7 +293,7 @@ describe('HttpAccountApiClient', () => {
 
   describe('updateAccount', () => {
     const updateInput: UpdateAccountInput = {
-      name: 'Updated Account'
+      name: 'Updated Account',
     };
 
     it('should successfully update an account', async () => {
@@ -308,7 +311,7 @@ describe('HttpAccountApiClient', () => {
         expect.any(String),
         updateInput,
         expect.objectContaining({
-          headers: expect.objectContaining({ 'X-API-Version': apiVersion })
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -319,14 +322,16 @@ describe('HttpAccountApiClient', () => {
       const _validationError = {
         valid: false,
         message: 'Validation error',
-        fieldErrors: { name: ['Name cannot be empty'] }
+        fieldErrors: { name: ['Name cannot be empty'] },
       };
       validateMock.mockImplementation(() => {
         throw new Error('Validation error');
       });
 
       // Act & Assert
-      await expect(client.updateAccount(orgId, ledgerId, accountId, updateInput)).rejects.toThrow('Validation error');
+      await expect(client.updateAccount(orgId, ledgerId, accountId, updateInput)).rejects.toThrow(
+        'Validation error'
+      );
     });
 
     it('should throw error when missing orgId', async () => {
@@ -351,7 +356,9 @@ describe('HttpAccountApiClient', () => {
       mockHttpClient.patch.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.updateAccount(orgId, ledgerId, accountId, updateInput)).rejects.toThrow('API Error');
+      await expect(client.updateAccount(orgId, ledgerId, accountId, updateInput)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -370,7 +377,7 @@ describe('HttpAccountApiClient', () => {
       expect(mockHttpClient.delete).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          headers: expect.objectContaining({ 'X-API-Version': apiVersion })
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');

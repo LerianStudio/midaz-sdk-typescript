@@ -536,10 +536,7 @@ export interface FileLoggerOptions {
  *
  * @returns A logger instance that writes to the specified file
  */
-export function createFileLogger(
-  filePath: string,
-  options: FileLoggerOptions = {}
-): Logger {
+export function createFileLogger(filePath: string, options: FileLoggerOptions = {}): Logger {
   // Default options
   const { minLevel = LogLevel.INFO, ..._rest } = options;
 
@@ -565,10 +562,10 @@ export function createFileLogger(
           timestamp: new Date().toISOString(),
           level,
           message,
-          ...metadata
+          ...metadata,
         };
         const logLine = JSON.stringify(entry) + '\n';
-        
+
         // Append to the file
         fs.appendFileSync(filePath, logLine);
       } catch (error) {

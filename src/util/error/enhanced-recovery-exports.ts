@@ -20,7 +20,7 @@ export const executeWithVerification = async (
   return withEnhancedRecovery(operation, {
     usePolledVerification: true,
     verifyOperation: createTransactionVerification(verifyFn),
-    ...options
+    ...options,
   });
 };
 

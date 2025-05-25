@@ -1,15 +1,15 @@
 /**
  * Midaz SDK API Versioning Example
- * 
+ *
  * This example demonstrates how to use the SDK with different API versions
  * and how to create version-specific transformers.
  */
 
-import { 
+import {
   createModelTransformer,
   createSandboxConfig,
   createVersionTransformerFactory,
-  MidazClient
+  MidazClient,
 } from '../src';
 
 // Example model interfaces for different versions
@@ -46,14 +46,10 @@ async function main() {
   // PART 1: Using different API versions in the client
 
   // Create a client using API v1 (default)
-  const v1Client = new MidazClient(
-    createSandboxConfig('your-api-key')
-  );
+  const v1Client = new MidazClient(createSandboxConfig('your-api-key'));
 
   // Create a client using API v2
-  const v2Client = new MidazClient(
-    createSandboxConfig('your-api-key', 'v2')
-  );
+  const v2Client = new MidazClient(createSandboxConfig('your-api-key', 'v2'));
 
   // You can check which version a client is using
   console.log(`v1Client API Version: ${v1Client.getConfig().apiVersion}`);
@@ -115,16 +111,14 @@ async function main() {
 
   // Function to get the appropriate transformer for a client's API version
   function getTransformerForClient(client: MidazClient) {
-    return transactionTransformerFactory.getTransformer(
-      client.getConfig().apiVersion || 'v1'
-    );
+    return transactionTransformerFactory.getTransformer(client.getConfig().apiVersion || 'v1');
   }
 
   // Example transaction in client format
   const clientTransaction: Transaction = {
     id: 'tx_123',
     description: 'Example transaction',
-    amount: 100.50,
+    amount: 100.5,
     currency: 'USD',
     timestamp: new Date().toISOString(),
   };

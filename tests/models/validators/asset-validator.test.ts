@@ -1,7 +1,7 @@
-import { 
-  validateCreateAssetInput, 
-  validateUpdateAssetInput, 
-  validateUpdateAssetRateInput 
+import {
+  validateCreateAssetInput,
+  validateUpdateAssetInput,
+  validateUpdateAssetRateInput,
 } from '../../../src/models/validators/asset-validator';
 import { CreateAssetInput, UpdateAssetInput } from '../../../src/models/asset';
 import { UpdateAssetRateInput } from '../../../src/models/asset-rate';
@@ -15,11 +15,11 @@ describe('Asset Validator', () => {
       const validInput: CreateAssetInput = {
         name: 'US Dollar',
         code: 'USD',
-        type: 'currency'
+        type: 'currency',
       };
-      
+
       const result = validateCreateAssetInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -30,11 +30,11 @@ describe('Asset Validator', () => {
       const validInput: CreateAssetInput = {
         name: 'Bitcoin',
         code: 'BTC',
-        type: 'crypto'
+        type: 'crypto',
       };
-      
+
       const result = validateCreateAssetInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -48,12 +48,12 @@ describe('Asset Validator', () => {
         type: 'currency',
         metadata: {
           symbol: '$',
-          decimalPlaces: 2
-        }
+          decimalPlaces: 2,
+        },
       };
-      
+
       const result = validateCreateAssetInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -63,11 +63,11 @@ describe('Asset Validator', () => {
     it('shouldFailValidationForMissingName', () => {
       const invalidInput: CreateAssetInput = {
         code: 'USD',
-        type: 'currency'
+        type: 'currency',
       } as CreateAssetInput; // Cast to bypass TypeScript checks
-      
+
       const result = validateCreateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.name).toBeDefined();
       expect(result.message).toContain('name');
@@ -77,11 +77,11 @@ describe('Asset Validator', () => {
     it('shouldFailValidationForMissingCode', () => {
       const invalidInput: CreateAssetInput = {
         name: 'US Dollar',
-        type: 'currency'
+        type: 'currency',
       } as CreateAssetInput; // Cast to bypass TypeScript checks
-      
+
       const result = validateCreateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.code).toBeDefined();
       expect(result.message).toContain('code');
@@ -93,11 +93,11 @@ describe('Asset Validator', () => {
       const invalidInput: CreateAssetInput = {
         name: longName,
         code: 'USD',
-        type: 'currency'
+        type: 'currency',
       };
-      
+
       const result = validateCreateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.name).toBeDefined();
       expect(result.message).toContain('256 characters');
@@ -108,11 +108,11 @@ describe('Asset Validator', () => {
       const invalidInput: CreateAssetInput = {
         name: 'US Dollar',
         code: 'USD',
-        type: 'invalid-type' as any
+        type: 'invalid-type' as any,
       };
-      
+
       const result = validateCreateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.type).toBeDefined();
       expect(result.message).toContain('Asset type');
@@ -123,11 +123,11 @@ describe('Asset Validator', () => {
       const invalidInput: CreateAssetInput = {
         name: 'US Dollar',
         code: 'US$', // Contains special characters, should be only uppercase letters and numbers
-        type: 'currency'
+        type: 'currency',
       };
-      
+
       const result = validateCreateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.code).toBeDefined();
       expect(result.message).toContain('Currency code');
@@ -138,11 +138,11 @@ describe('Asset Validator', () => {
       const invalidInput: CreateAssetInput = {
         name: 'US Dollar',
         code: 'usd', // Lowercase, should be uppercase
-        type: 'currency'
+        type: 'currency',
       };
-      
+
       const result = validateCreateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.code).toBeDefined();
       expect(result.message).toContain('Currency code');
@@ -151,7 +151,7 @@ describe('Asset Validator', () => {
     // Test 10: Null input should fail validation
     it('shouldFailValidationForNullInput', () => {
       const result = validateCreateAssetInput(null as unknown as CreateAssetInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.message).toContain('required');
     });
@@ -159,7 +159,7 @@ describe('Asset Validator', () => {
     // Test 11: Undefined input should fail validation
     it('shouldFailValidationForUndefinedInput', () => {
       const result = validateCreateAssetInput(undefined as unknown as CreateAssetInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.message).toContain('required');
     });
@@ -170,11 +170,11 @@ describe('Asset Validator', () => {
     // Test 1: Valid update with name should pass validation
     it('shouldPassValidationForValidUpdateWithName', () => {
       const validInput: UpdateAssetInput = {
-        name: 'Updated US Dollar'
+        name: 'Updated US Dollar',
       };
-      
+
       const result = validateUpdateAssetInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -183,11 +183,11 @@ describe('Asset Validator', () => {
     // Test 2: Valid update with status should pass validation
     it('shouldPassValidationForValidUpdateWithStatus', () => {
       const validInput: UpdateAssetInput = {
-        status: StatusCode.ACTIVE
+        status: StatusCode.ACTIVE,
       };
-      
+
       const result = validateUpdateAssetInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -198,12 +198,12 @@ describe('Asset Validator', () => {
       const validInput: UpdateAssetInput = {
         metadata: {
           symbol: '$',
-          decimalPlaces: 2
-        }
+          decimalPlaces: 2,
+        },
       };
-      
+
       const result = validateUpdateAssetInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -216,12 +216,12 @@ describe('Asset Validator', () => {
         status: StatusCode.ACTIVE,
         metadata: {
           symbol: '$',
-          decimalPlaces: 2
-        }
+          decimalPlaces: 2,
+        },
       };
-      
+
       const result = validateUpdateAssetInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -230,9 +230,9 @@ describe('Asset Validator', () => {
     // Test 5: Empty update should fail validation
     it('shouldFailValidationForEmptyUpdate', () => {
       const invalidInput: UpdateAssetInput = {};
-      
+
       const result = validateUpdateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.message).toContain('At least one field');
     });
@@ -240,11 +240,11 @@ describe('Asset Validator', () => {
     // Test 6: Empty name should fail validation
     it('shouldFailValidationForEmptyName', () => {
       const invalidInput: UpdateAssetInput = {
-        name: ''
+        name: '',
       };
-      
+
       const result = validateUpdateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.name).toBeDefined();
       expect(result.message).toContain('name');
@@ -254,11 +254,11 @@ describe('Asset Validator', () => {
     it('shouldFailValidationForNameTooLong', () => {
       const longName = 'A'.repeat(257); // Create a name that's 257 characters long
       const invalidInput: UpdateAssetInput = {
-        name: longName
+        name: longName,
       };
-      
+
       const result = validateUpdateAssetInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.name).toBeDefined();
       expect(result.message).toContain('256 characters');
@@ -269,11 +269,11 @@ describe('Asset Validator', () => {
       // Note: The current implementation doesn't validate status values
       // This test is updated to reflect the actual behavior
       const invalidInput: UpdateAssetInput = {
-        status: 'NONEXISTENT_STATUS' as any
+        status: 'NONEXISTENT_STATUS' as any,
       };
-      
+
       const result = validateUpdateAssetInput(invalidInput);
-      
+
       // Since status validation is not implemented, the result is valid
       expect(result.valid).toBe(true);
     });
@@ -281,7 +281,7 @@ describe('Asset Validator', () => {
     // Test 9: Null input should fail validation
     it('shouldFailValidationForNullInput', () => {
       const result = validateUpdateAssetInput(null as unknown as UpdateAssetInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.message).toContain('required');
     });
@@ -289,7 +289,7 @@ describe('Asset Validator', () => {
     // Test 10: Undefined input should fail validation
     it('shouldFailValidationForUndefinedInput', () => {
       const result = validateUpdateAssetInput(undefined as unknown as UpdateAssetInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.message).toContain('required');
     });
@@ -304,11 +304,11 @@ describe('Asset Validator', () => {
         toAsset: 'EUR',
         rate: 0.92,
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       };
-      
+
       const result = validateUpdateAssetRateInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -321,11 +321,11 @@ describe('Asset Validator', () => {
         toAsset: 'EUR',
         rate: 0.92,
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       };
-      
+
       const result = validateUpdateAssetRateInput(validInput);
-      
+
       expect(result.valid).toBe(true);
       expect(result.fieldErrors).toBeUndefined();
       expect(result.message || '').toBe('');
@@ -337,11 +337,11 @@ describe('Asset Validator', () => {
         toAsset: 'EUR',
         rate: 0.92,
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       } as UpdateAssetRateInput; // Cast to bypass TypeScript checks
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.fromAsset).toBeDefined();
       expect(result.message).toContain('fromAsset');
@@ -353,11 +353,11 @@ describe('Asset Validator', () => {
         fromAsset: 'USD',
         rate: 0.92,
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       } as UpdateAssetRateInput; // Cast to bypass TypeScript checks
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.toAsset).toBeDefined();
       expect(result.message).toContain('toAsset');
@@ -369,11 +369,11 @@ describe('Asset Validator', () => {
         fromAsset: 'USD',
         toAsset: 'EUR',
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       } as UpdateAssetRateInput; // Cast to bypass TypeScript checks
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.rate).toBeDefined();
       expect(result.message).toContain('rate');
@@ -386,11 +386,11 @@ describe('Asset Validator', () => {
         toAsset: 'EUR',
         rate: 0,
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       };
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.rate).toBeDefined();
       expect(result.message).toContain('rate cannot be zero');
@@ -403,11 +403,11 @@ describe('Asset Validator', () => {
         toAsset: 'EUR',
         rate: -0.92,
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       };
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.rate).toBeDefined();
       expect(result.message).toContain('rate must be at least 0');
@@ -420,11 +420,11 @@ describe('Asset Validator', () => {
         toAsset: 'EUR',
         rate: 0.92,
         effectiveAt: '2023-09-16T00:00:00Z',
-        expirationAt: '2023-09-15T00:00:00Z'
+        expirationAt: '2023-09-15T00:00:00Z',
       };
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.expirationAt).toBeDefined();
       expect(result.message).toContain('effectiveAt must be before expirationAt');
@@ -437,11 +437,11 @@ describe('Asset Validator', () => {
         toAsset: 'EUR',
         rate: 0.92,
         effectiveAt: 'invalid-date' as any,
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       };
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.effectiveAt).toBeDefined();
       expect(result.message).toContain('valid date');
@@ -456,11 +456,11 @@ describe('Asset Validator', () => {
         toAsset: 'USD',
         rate: 0.92,
         effectiveAt: '2023-09-15T00:00:00Z',
-        expirationAt: '2023-09-16T00:00:00Z'
+        expirationAt: '2023-09-16T00:00:00Z',
       };
-      
+
       const result = validateUpdateAssetRateInput(invalidInput);
-      
+
       // Since same asset code validation is not implemented, the result is valid
       expect(result.valid).toBe(true);
     });
@@ -468,7 +468,7 @@ describe('Asset Validator', () => {
     // Test 11: Null input should fail validation
     it('shouldFailValidationForNullInput', () => {
       const result = validateUpdateAssetRateInput(null as unknown as UpdateAssetRateInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.message).toContain('required');
     });
@@ -476,7 +476,7 @@ describe('Asset Validator', () => {
     // Test 12: Undefined input should fail validation
     it('shouldFailValidationForUndefinedInput', () => {
       const result = validateUpdateAssetRateInput(undefined as unknown as UpdateAssetRateInput);
-      
+
       expect(result.valid).toBe(false);
       expect(result.message).toContain('required');
     });

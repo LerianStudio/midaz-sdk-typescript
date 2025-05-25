@@ -2,14 +2,14 @@
  * @file Tests for error recovery scenarios in the Midaz SDK
  * This file tests how the system handles various error conditions
  */
-import { 
-  ErrorCategory, 
+import {
+  ErrorCategory,
   ErrorCode,
   executeTransaction,
-  isRetryableError, 
-  MidazError, 
+  isRetryableError,
+  MidazError,
   TransactionErrorCategory,
-  withErrorRecovery
+  withErrorRecovery,
 } from '../../../src/util/error';
 import { standardErrors } from '../../../src/util/error/error-types';
 
@@ -61,11 +61,13 @@ describe('Error Recovery Scenarios', () => {
       const onRetry = jest.fn();
       const onExhausted = jest.fn();
 
-      await expect(withErrorRecovery(networkErrorOperation, {
-        maxRetries: 3,
-        onRetry,
-        onExhausted
-      })).rejects.toThrow('persistent network error');
+      await expect(
+        withErrorRecovery(networkErrorOperation, {
+          maxRetries: 3,
+          onRetry,
+          onExhausted,
+        })
+      ).rejects.toThrow('persistent network error');
 
       expect(networkErrorOperation).toHaveBeenCalledTimes(4); // Initial + 3 retries
       expect(onRetry).toHaveBeenCalledTimes(3);
@@ -84,9 +86,9 @@ describe('Error Recovery Scenarios', () => {
       });
 
       const customBackoff = jest.fn().mockReturnValue(100);
-      
+
       const result = await withErrorRecovery(operation, {
-        backoffStrategy: customBackoff
+        backoffStrategy: customBackoff,
       });
 
       expect(result).toBe('success');
@@ -96,17 +98,20 @@ describe('Error Recovery Scenarios', () => {
 
     it('should use custom retry condition if provided', async () => {
       // Create errors that would normally be retried
-      const networkErrorOperation = jest.fn()
+      const networkErrorOperation = jest
+        .fn()
         .mockRejectedValueOnce(new Error('network error'))
         .mockResolvedValueOnce('success');
 
       // Custom condition that always returns false (never retry)
       const customCondition = jest.fn().mockReturnValue(false);
-      
+
       // Should fail immediately without retrying
-      await expect(withErrorRecovery(networkErrorOperation, {
-        retryCondition: customCondition
-      })).rejects.toThrow('network error');
+      await expect(
+        withErrorRecovery(networkErrorOperation, {
+          retryCondition: customCondition,
+        })
+      ).rejects.toThrow('network error');
 
       expect(networkErrorOperation).toHaveBeenCalledTimes(1); // No retries
       expect(customCondition).toHaveBeenCalledTimes(1);
@@ -118,16 +123,16 @@ describe('Error Recovery Scenarios', () => {
       // Mock a successful transaction
       const transaction = jest.fn().mockResolvedValue({
         id: 'tx123',
-        status: 'completed'
+        status: 'completed',
       });
 
       const result = await executeTransaction(transaction);
-      
+
       // Updated expectation for new API
       expect(result.status).toBe('success');
       expect(result.result).toEqual({
         id: 'tx123',
-        status: 'completed'
+        status: 'completed',
       });
       expect(transaction).toHaveBeenCalledTimes(1);
     });
@@ -136,14 +141,14 @@ describe('Error Recovery Scenarios', () => {
       // Create a duplicate error using the standard error template
       const error = new MidazError({
         ...standardErrors.conflict.idempotencyKey,
-        message: 'Duplicate transaction'
+        message: 'Duplicate transaction',
       });
-      
+
       // Mock a transaction that throws a duplicate error
       const transaction = jest.fn().mockRejectedValue(error);
 
       const result = await executeTransaction(transaction);
-      
+
       // Updated expectation for new API
       expect(result.status).toBe('duplicate');
       expect(result.error).toBeDefined();
@@ -160,18 +165,18 @@ describe('Error Recovery Scenarios', () => {
         } else {
           return Promise.resolve({
             id: 'tx789',
-            status: 'completed'
+            status: 'completed',
           });
         }
       });
 
       const result = await executeTransaction(transaction);
-      
+
       // Updated expectation for new API
       expect(result.status).toBe('success');
       expect(result.result).toEqual({
         id: 'tx789',
-        status: 'completed'
+        status: 'completed',
       });
       expect(result.attempts).toBe(3);
       expect(transaction).toHaveBeenCalledTimes(3);
@@ -183,7 +188,7 @@ describe('Error Recovery Scenarios', () => {
         message: 'Insufficient funds',
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.INSUFFICIENT_BALANCE,
-        statusCode: 400
+        statusCode: 400,
       });
 
       const transaction = jest.fn().mockRejectedValue(error);
@@ -205,7 +210,7 @@ describe('Error Recovery Scenarios', () => {
 
       // Updated expectation for new API - no longer throws, returns result with status
       const result = await executeTransaction(transaction, { maxRetries: 2 });
-      
+
       expect(result.status).toBe('retried');
       expect(result.result).toBeNull();
       expect(result.error).toBeDefined();
@@ -214,18 +219,18 @@ describe('Error Recovery Scenarios', () => {
     });
 
     it('should handle account frozen errors', async () => {
-      // Create an account frozen error 
+      // Create an account frozen error
       const error = new MidazError({
         message: 'Account is frozen',
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.ACCOUNT_ELIGIBILITY_ERROR,
-        statusCode: 422
+        statusCode: 422,
       });
 
       const transaction = jest.fn().mockRejectedValue(error);
-      
+
       const result = await executeTransaction(transaction);
-      
+
       expect(result.status).toBe('failed');
       expect(result.result).toBeNull();
       expect(result.error).toBeDefined();
@@ -240,13 +245,13 @@ describe('Error Recovery Scenarios', () => {
         message: 'Asset mismatch between accounts',
         category: ErrorCategory.UNPROCESSABLE,
         code: ErrorCode.ASSET_MISMATCH,
-        statusCode: 422
+        statusCode: 422,
       });
 
       const transaction = jest.fn().mockRejectedValue(error);
-      
+
       const result = await executeTransaction(transaction);
-      
+
       expect(result.status).toBe('failed');
       expect(result.result).toBeNull();
       expect(result.error).toBeDefined();
@@ -265,22 +270,22 @@ describe('Error Recovery Scenarios', () => {
             message: 'Request timed out',
             category: ErrorCategory.TIMEOUT,
             code: ErrorCode.TIMEOUT,
-            statusCode: 504
+            statusCode: 504,
           });
         } else {
           return Promise.resolve({
             id: 'tx456',
-            status: 'completed'
+            status: 'completed',
           });
         }
       });
-      
+
       const result = await executeTransaction(transaction);
-      
+
       expect(result.status).toBe('success');
       expect(result.result).toEqual({
         id: 'tx456',
-        status: 'completed'
+        status: 'completed',
       });
       expect(result.attempts).toBe(3);
       expect(transaction).toHaveBeenCalledTimes(3);
@@ -296,22 +301,22 @@ describe('Error Recovery Scenarios', () => {
             message: 'Rate limit exceeded',
             category: ErrorCategory.LIMIT_EXCEEDED,
             code: ErrorCode.RATE_LIMIT_EXCEEDED,
-            statusCode: 429
+            statusCode: 429,
           });
         } else {
           return Promise.resolve({
             id: 'tx555',
-            status: 'completed'
+            status: 'completed',
           });
         }
       });
-      
+
       const result = await executeTransaction(transaction);
-      
+
       expect(result.status).toBe('success');
       expect(result.result).toEqual({
         id: 'tx555',
-        status: 'completed'
+        status: 'completed',
       });
       expect(result.attempts).toBe(3);
       expect(transaction).toHaveBeenCalledTimes(3);
@@ -327,30 +332,46 @@ describe('Error Recovery Scenarios', () => {
     });
 
     it('should classify MidazErrors by category', () => {
-      expect(isRetryableError(new MidazError({
-        message: 'Network error',
-        category: ErrorCategory.NETWORK,
-        code: ErrorCode.INTERNAL_ERROR,
-      }))).toBe(true);
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Network error',
+            category: ErrorCategory.NETWORK,
+            code: ErrorCode.INTERNAL_ERROR,
+          })
+        )
+      ).toBe(true);
 
-      expect(isRetryableError(new MidazError({
-        message: 'Timeout',
-        category: ErrorCategory.TIMEOUT,
-        code: ErrorCode.TIMEOUT,
-      }))).toBe(true);
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Timeout',
+            category: ErrorCategory.TIMEOUT,
+            code: ErrorCode.TIMEOUT,
+          })
+        )
+      ).toBe(true);
 
-      expect(isRetryableError(new MidazError({
-        message: 'Rate limit',
-        category: ErrorCategory.LIMIT_EXCEEDED,
-        code: ErrorCode.RATE_LIMIT_EXCEEDED,
-      }))).toBe(true);
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Rate limit',
+            category: ErrorCategory.LIMIT_EXCEEDED,
+            code: ErrorCode.RATE_LIMIT_EXCEEDED,
+          })
+        )
+      ).toBe(true);
 
       // Business logic errors should not be retryable
-      expect(isRetryableError(new MidazError({
-        message: 'Validation error',
-        category: ErrorCategory.VALIDATION,
-        code: ErrorCode.VALIDATION_ERROR,
-      }))).toBe(false);
+      expect(
+        isRetryableError(
+          new MidazError({
+            message: 'Validation error',
+            category: ErrorCategory.VALIDATION,
+            code: ErrorCode.VALIDATION_ERROR,
+          })
+        )
+      ).toBe(false);
     });
 
     it('should not classify null or undefined as retryable', () => {

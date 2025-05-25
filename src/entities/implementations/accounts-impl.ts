@@ -18,10 +18,7 @@ export class AccountsServiceImpl implements AccountsService {
   /**
    * Creates a new AccountsServiceImpl
    */
-  constructor(
-    private readonly accountApiClient: AccountApiClient,
-    observability?: Observability
-  ) {
+  constructor(private readonly accountApiClient: AccountApiClient, observability?: Observability) {
     this.observability = observability || Observability.getInstance();
   }
 

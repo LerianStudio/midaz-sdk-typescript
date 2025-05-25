@@ -25,7 +25,7 @@ export interface PinoLoggerOptions {
 
 /**
  * Creates a Pino-based log handler
- * 
+ *
  * @param options Pino logger configuration options
  * @returns A log handler that uses Pino for logging
  */
@@ -33,7 +33,7 @@ export function createPinoHandler(options: PinoLoggerOptions = {}): LogHandler {
   const {
     name = 'midaz-sdk',
     prettyPrint = process.env.NODE_ENV !== 'production',
-    baseFields = {}
+    baseFields = {},
   } = options;
 
   // Create Pino logger instance
@@ -46,14 +46,14 @@ export function createPinoHandler(options: PinoLoggerOptions = {}): LogHandler {
           options: {
             colorize: true,
             translateTime: 'SYS:standard',
-            ignore: 'pid,hostname'
-          }
+            ignore: 'pid,hostname',
+          },
         }
       : undefined,
     base: {
       env: process.env.NODE_ENV || 'development',
-      ...baseFields
-    }
+      ...baseFields,
+    },
   });
 
   // Map our log levels to Pino levels
@@ -62,13 +62,13 @@ export function createPinoHandler(options: PinoLoggerOptions = {}): LogHandler {
     [LogLevel.INFO]: 'info',
     [LogLevel.WARN]: 'warn',
     [LogLevel.ERROR]: 'error',
-    [LogLevel.NONE]: 'silent'
+    [LogLevel.NONE]: 'silent',
   };
 
   // Return the handler function
   return (level: LogLevel, message: string, metadata?: any) => {
     const pinoLevel = levelMap[level];
-    
+
     // Log through Pino
     switch (pinoLevel) {
       case 'debug':

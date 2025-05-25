@@ -13,7 +13,7 @@ import {
   createClientConfigBuilder,
   createLocalConfig,
   createSandboxConfig,
-  MidazClient
+  MidazClient,
 } from '../src';
 
 /**
@@ -83,10 +83,10 @@ async function factoryExample() {
  */
 async function configServiceBasicExample() {
   console.log('\n=== EXAMPLE 3: CONFIG SERVICE BASICS ===');
-  
+
   // Reset any previous configurations
   ConfigService.reset();
-  
+
   // Configure global settings using ConfigService
   ConfigService.configure({
     apiUrls: {
@@ -108,20 +108,20 @@ async function configServiceBasicExample() {
       debug: true,
     },
   });
-  
+
   // Create client with minimal configuration - it will use the global config
   const _client = new MidazClient({
     apiKey: 'your-api-key',
     apiVersion: 'v1', // Specify API version explicitly
   });
-  
+
   console.log('Client created with ConfigService');
-  
+
   // Get the current configuration
   const configService = ConfigService.getInstance();
   const apiUrlConfig = configService.getApiUrlConfig();
   const observabilityConfig = configService.getObservabilityConfig();
-  
+
   console.log('API URLs from ConfigService:', apiUrlConfig);
   console.log('Observability settings from ConfigService:', {
     serviceName: observabilityConfig.serviceName,
@@ -135,10 +135,10 @@ async function configServiceBasicExample() {
  */
 async function configServiceCompleteExample() {
   console.log('\n=== EXAMPLE 4: COMPLETE CONFIG SERVICE EXAMPLE ===');
-  
+
   // Reset any previous configurations
   ConfigService.reset();
-  
+
   // Configure the SDK using the ConfigService with comprehensive settings
   ConfigService.configure({
     // Set observability configuration
@@ -147,13 +147,13 @@ async function configServiceCompleteExample() {
       enableMetrics: true,
       serviceName: 'my-example-service',
     },
-    
+
     // Set API URLs (without version suffix)
     apiUrls: {
       onboardingUrl: 'https://custom-onboarding-api.example.com',
       transactionUrl: 'https://custom-transaction-api.example.com',
     },
-    
+
     // Set retry policy
     retryPolicy: {
       maxRetries: 5,
@@ -161,7 +161,7 @@ async function configServiceCompleteExample() {
       maxDelay: 2000,
       retryableStatusCodes: [429, 500, 503],
     },
-    
+
     // Set HTTP client configuration
     httpClient: {
       timeout: 10000,
@@ -169,22 +169,22 @@ async function configServiceCompleteExample() {
       maxSockets: 20,
     },
   });
-  
+
   // Create a client - configuration will be applied automatically
   const _client = new MidazClient({
     apiKey: 'your-api-key',
     apiVersion: 'v2', // Using v2 API version for example
   });
-  
+
   console.log('Client created with comprehensive configuration');
-  
+
   // Get and display the complete configuration
   const configService = ConfigService.getInstance();
   const observabilityConfig = configService.getObservabilityConfig();
   const apiUrlConfig = configService.getApiUrlConfig();
   const retryPolicyConfig = configService.getRetryPolicyConfig();
   const httpClientConfig = configService.getHttpClientConfig();
-  
+
   console.log('Current configuration:');
   console.log('Observability:', {
     serviceName: observabilityConfig.serviceName,
@@ -209,10 +209,10 @@ async function configServiceCompleteExample() {
  */
 async function configureEnvironmentsExample() {
   console.log('\n=== EXAMPLE 5: ENVIRONMENT-SPECIFIC CONFIGURATIONS ===');
-  
+
   // Reset previous configuration
   ConfigService.reset();
-  
+
   // Configure for development environment
   console.log('Configuring for development environment');
   ConfigService.configure({
@@ -230,12 +230,12 @@ async function configureEnvironmentsExample() {
       debug: true,
     },
   });
-  
+
   const _devClient = new MidazClient({
     apiKey: 'dev-api-key',
     apiVersion: 'v1', // Using v1 API version for development
   });
-  
+
   // Reset and configure for production environment
   console.log('\nConfiguring for production environment');
   ConfigService.reset();
@@ -255,12 +255,12 @@ async function configureEnvironmentsExample() {
       timeout: 60000,
     },
   });
-  
+
   const _prodClient = new MidazClient({
     apiKey: 'prod-api-key',
     apiVersion: 'v1', // Using v1 API version for production
   });
-  
+
   console.log('Clients created for both environments');
 }
 
@@ -269,19 +269,19 @@ async function configureEnvironmentsExample() {
  */
 async function accessConfigValuesExample() {
   console.log('\n=== EXAMPLE 6: ACCESSING SPECIFIC CONFIG VALUES ===');
-  
+
   // Reset previous configuration
   ConfigService.reset();
-  
+
   // Get the current configuration service instance
   const configService = ConfigService.getInstance();
-  
+
   // Get specific configuration values
   const serviceName = configService.getObservabilityConfig().serviceName;
   const apiUrl = configService.getApiUrlConfig().onboardingUrl;
   const maxRetries = configService.getRetryPolicyConfig().maxRetries;
   const timeout = configService.getHttpClientConfig().timeout;
-  
+
   console.log('Service Name:', serviceName);
   console.log('API URL:', apiUrl);
   console.log('Max Retries:', maxRetries);
@@ -299,7 +299,7 @@ async function main() {
     console.log('\n--- Traditional Configuration Options ---');
     await builderExample();
     await factoryExample();
-    
+
     // ConfigService-based configuration approaches
     console.log('\n--- ConfigService Configuration Options ---');
     await configServiceBasicExample();

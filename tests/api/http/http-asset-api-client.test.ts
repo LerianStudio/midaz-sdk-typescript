@@ -4,7 +4,10 @@
 
 import { Asset, CreateAssetInput, UpdateAssetInput } from '../../../src/models/asset';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import { validateCreateAssetInput, validateUpdateAssetInput } from '../../../src/models/validators/asset-validator';
+import {
+  validateCreateAssetInput,
+  validateUpdateAssetInput,
+} from '../../../src/models/validators/asset-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpAssetApiClient } from '../../../src/api/http/http-asset-api-client';
@@ -38,7 +41,7 @@ describe('HttpAssetApiClient', () => {
     status: { code: StatusCode.ACTIVE, timestamp: new Date().toISOString() },
     type: 'currency',
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   // Mock asset list response
@@ -47,8 +50,8 @@ describe('HttpAssetApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -66,19 +69,19 @@ describe('HttpAssetApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
@@ -88,7 +91,7 @@ describe('HttpAssetApiClient', () => {
           url += `/${assetId}`;
         }
         return url;
-      })
+      }),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Set default behavior for validation mock
@@ -97,11 +100,7 @@ describe('HttpAssetApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpAssetApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
+    client = new HttpAssetApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -121,7 +120,7 @@ describe('HttpAssetApiClient', () => {
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          params: undefined
+          params: undefined,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -139,7 +138,7 @@ describe('HttpAssetApiClient', () => {
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          params: options
+          params: options,
         })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('limit', 10);
@@ -179,9 +178,7 @@ describe('HttpAssetApiClient', () => {
       // Assert
       expect(result).toEqual(mockAsset);
       expect(mockUrlBuilder.buildAssetUrl).toHaveBeenCalledWith(orgId, ledgerId, assetId);
-      expect(mockHttpClient.get).toHaveBeenCalledWith(
-        expect.any(String)
-      );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(expect.any(String));
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
@@ -206,12 +203,16 @@ describe('HttpAssetApiClient', () => {
       await client.getAsset(orgId, ledgerId, assetId);
 
       // Assert
-      expect(mockObservability.recordMetric).toHaveBeenCalledWith('assets.get', 1, expect.objectContaining({
-        orgId,
-        ledgerId,
-        assetId,
-        assetCode: 'TEST'
-      }));
+      expect(mockObservability.recordMetric).toHaveBeenCalledWith(
+        'assets.get',
+        1,
+        expect.objectContaining({
+          orgId,
+          ledgerId,
+          assetId,
+          assetCode: 'TEST',
+        })
+      );
     });
 
     it('should throw error when missing orgId', async () => {
@@ -235,7 +236,7 @@ describe('HttpAssetApiClient', () => {
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
         message: 'Asset not found',
-        statusCode: 404
+        statusCode: 404,
       });
       mockHttpClient.get.mockRejectedValueOnce(error);
 
@@ -250,7 +251,7 @@ describe('HttpAssetApiClient', () => {
     const createInput: CreateAssetInput = {
       name: 'New Asset',
       code: 'NEW',
-      type: 'currency'
+      type: 'currency',
     };
 
     it('should successfully create an asset', async () => {
@@ -263,10 +264,7 @@ describe('HttpAssetApiClient', () => {
       // Assert
       expect(result).toEqual(mockAsset);
       expect(mockUrlBuilder.buildAssetUrl).toHaveBeenCalledWith(orgId, ledgerId);
-      expect(mockHttpClient.post).toHaveBeenCalledWith(
-        expect.any(String),
-        createInput
-      );
+      expect(mockHttpClient.post).toHaveBeenCalledWith(expect.any(String), createInput);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
@@ -289,7 +287,7 @@ describe('HttpAssetApiClient', () => {
       // Arrange
       mockHttpClient.post.mockResolvedValueOnce({
         ...mockAsset,
-        id: 'new-asset-123'
+        id: 'new-asset-123',
       });
 
       // Act
@@ -306,7 +304,9 @@ describe('HttpAssetApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.createAsset(orgId, ledgerId, createInput)).rejects.toThrow('Validation error');
+      await expect(client.createAsset(orgId, ledgerId, createInput)).rejects.toThrow(
+        'Validation error'
+      );
     });
 
     it('should throw error when missing orgId', async () => {
@@ -333,7 +333,7 @@ describe('HttpAssetApiClient', () => {
 
   describe('updateAsset', () => {
     const updateInput: UpdateAssetInput = {
-      name: 'Updated Asset'
+      name: 'Updated Asset',
     };
 
     it('should successfully update an asset', async () => {
@@ -346,10 +346,7 @@ describe('HttpAssetApiClient', () => {
       // Assert
       expect(result).toEqual({ ...mockAsset, name: 'Updated Asset' });
       expect(mockUrlBuilder.buildAssetUrl).toHaveBeenCalledWith(orgId, ledgerId, assetId);
-      expect(mockHttpClient.patch).toHaveBeenCalledWith(
-        expect.any(String),
-        updateInput
-      );
+      expect(mockHttpClient.patch).toHaveBeenCalledWith(expect.any(String), updateInput);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
@@ -368,7 +365,7 @@ describe('HttpAssetApiClient', () => {
       // Arrange
       mockHttpClient.patch.mockResolvedValueOnce({
         ...mockAsset,
-        metadata: { test: 'value' }
+        metadata: { test: 'value' },
       });
 
       // Act
@@ -382,7 +379,7 @@ describe('HttpAssetApiClient', () => {
       // Arrange
       mockHttpClient.patch.mockResolvedValueOnce({
         ...mockAsset,
-        status: { code: StatusCode.INACTIVE, timestamp: new Date().toISOString() }
+        status: { code: StatusCode.INACTIVE, timestamp: new Date().toISOString() },
       });
 
       // Act
@@ -399,7 +396,9 @@ describe('HttpAssetApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.updateAsset(orgId, ledgerId, assetId, updateInput)).rejects.toThrow('Validation error');
+      await expect(client.updateAsset(orgId, ledgerId, assetId, updateInput)).rejects.toThrow(
+        'Validation error'
+      );
     });
 
     it('should throw error when missing orgId', async () => {
@@ -423,7 +422,9 @@ describe('HttpAssetApiClient', () => {
       mockHttpClient.patch.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.updateAsset(orgId, ledgerId, assetId, updateInput)).rejects.toThrow('API Error');
+      await expect(client.updateAsset(orgId, ledgerId, assetId, updateInput)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', 'API Error');
     });
@@ -439,9 +440,7 @@ describe('HttpAssetApiClient', () => {
 
       // Assert
       expect(mockUrlBuilder.buildAssetUrl).toHaveBeenCalledWith(orgId, ledgerId, assetId);
-      expect(mockHttpClient.delete).toHaveBeenCalledWith(
-        expect.any(String)
-      );
+      expect(mockHttpClient.delete).toHaveBeenCalledWith(expect.any(String));
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
@@ -453,11 +452,15 @@ describe('HttpAssetApiClient', () => {
       await client.deleteAsset(orgId, ledgerId, assetId);
 
       // Assert
-      expect(mockObservability.recordMetric).toHaveBeenCalledWith('assets.delete', 1, expect.objectContaining({
-        orgId,
-        ledgerId,
-        assetId
-      }));
+      expect(mockObservability.recordMetric).toHaveBeenCalledWith(
+        'assets.delete',
+        1,
+        expect.objectContaining({
+          orgId,
+          ledgerId,
+          assetId,
+        })
+      );
     });
 
     it('should throw error when missing orgId', async () => {

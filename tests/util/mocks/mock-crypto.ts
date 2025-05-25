@@ -24,10 +24,10 @@ export const mockCrypto = {
        */
       digest: (_encoding?: string) => {
         return 'mock-idempotency-key';
-      }
+      },
     };
     return hash;
-  }
+  },
 };
 
 export default mockCrypto;

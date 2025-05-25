@@ -2,7 +2,10 @@
  * @file Tests for MidazClient with Access Manager integration
  */
 import { MidazClient } from '../src/client';
-import { createClientConfigBuilder, createClientConfigWithAccessManager } from '../src/client-config-builder';
+import {
+  createClientConfigBuilder,
+  createClientConfigWithAccessManager,
+} from '../src/client-config-builder';
 import { AccessManager } from '../src/util/auth/access-manager';
 import { HttpClient } from '../src/util/network/http-client';
 
@@ -22,9 +25,9 @@ describe('MidazClient with Access Manager', () => {
       enabled: true,
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
-      clientSecret: 'test-client-secret'
+      clientSecret: 'test-client-secret',
     }) as jest.Mocked<AccessManager>;
-    
+
     mockAccessManager.getToken = jest.fn().mockResolvedValue('access-manager-token');
     mockAccessManager.isEnabled = jest.fn().mockReturnValue(true);
 
@@ -38,10 +41,10 @@ describe('MidazClient with Access Manager', () => {
     const config = createClientConfigWithAccessManager({
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
-      clientSecret: 'test-client-secret'
+      clientSecret: 'test-client-secret',
     })
-    .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
-    .build();
+      .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
+      .build();
 
     // Create client
     const client = new MidazClient(config);
@@ -57,10 +60,10 @@ describe('MidazClient with Access Manager', () => {
     const config = createClientConfigWithAccessManager({
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
-      clientSecret: 'test-client-secret'
+      clientSecret: 'test-client-secret',
     })
-    .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
-    .build();
+      .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
+      .build();
 
     // Create client
     const client = new MidazClient(config);
@@ -78,10 +81,10 @@ describe('MidazClient with Access Manager', () => {
     const config = createClientConfigWithAccessManager({
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
-      clientSecret: 'test-client-secret'
+      clientSecret: 'test-client-secret',
     })
-    .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
-    .build();
+      .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
+      .build();
 
     // Should still create client without errors
     const client = new MidazClient(config);
@@ -92,8 +95,7 @@ describe('MidazClient with Access Manager', () => {
 
   it('should use API key authentication when Access Manager is not provided', () => {
     // Create config with API key
-    const config = createClientConfigBuilder('test-api-key')
-      .build();
+    const config = createClientConfigBuilder('test-api-key').build();
 
     // Create client
     const client = new MidazClient(config);
@@ -101,7 +103,7 @@ describe('MidazClient with Access Manager', () => {
     // Verify HttpClient was created with API key
     expect(HttpClient).toHaveBeenCalledWith(
       expect.objectContaining({
-        apiKey: 'test-api-key'
+        apiKey: 'test-api-key',
       })
     );
   });
@@ -111,7 +113,7 @@ describe('MidazClient with Access Manager', () => {
     const config = createClientConfigWithAccessManager({
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
-      clientSecret: 'test-client-secret'
+      clientSecret: 'test-client-secret',
     })
       .withApiKey('test-api-key') // This should override the Access Manager
       .build();
@@ -122,12 +124,12 @@ describe('MidazClient with Access Manager', () => {
     // Verify HttpClient was created with API key, not Access Manager
     expect(HttpClient).toHaveBeenCalledWith(
       expect.objectContaining({
-        apiKey: 'test-api-key'
+        apiKey: 'test-api-key',
       })
     );
     expect(HttpClient).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        accessManager: expect.any(AccessManager)
+        accessManager: expect.any(AccessManager),
       })
     );
   });

@@ -15,7 +15,7 @@ import { UpdateAssetRateInput } from '../asset-rate';
 
 /**
  * Validates a CreateAssetInput object
- * 
+ *
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateCreateAssetInput(input: CreateAssetInput): ValidationResult {
@@ -34,15 +34,15 @@ export function validateCreateAssetInput(input: CreateAssetInput): ValidationRes
   // Validate non-empty fields and length
   if (input.name) {
     results.push(validateNotEmpty(input.name, 'name'));
-    
+
     // Add validation for name length
     if (input.name.length > 256) {
       results.push({
         valid: false,
         message: 'Asset name cannot exceed 256 characters',
         fieldErrors: {
-          name: ['Asset name cannot exceed 256 characters']
-        }
+          name: ['Asset name cannot exceed 256 characters'],
+        },
       });
     }
   }
@@ -61,22 +61,15 @@ export function validateCreateAssetInput(input: CreateAssetInput): ValidationRes
 
   // Validate asset type if provided
   if (input.type) {
-    const validTypes = [
-      'currency',
-      'crypto',
-      'security',
-      'commodity',
-      'loyalty',
-      'custom',
-    ];
+    const validTypes = ['currency', 'crypto', 'security', 'commodity', 'loyalty', 'custom'];
 
     if (!validTypes.includes(input.type.toLowerCase())) {
       results.push({
         valid: false,
         message: `Asset type must be one of: ${validTypes.join(', ')}`,
         fieldErrors: {
-          type: [`Asset type must be one of: ${validTypes.join(', ')}`]
-        }
+          type: [`Asset type must be one of: ${validTypes.join(', ')}`],
+        },
       });
     }
   }
@@ -86,7 +79,7 @@ export function validateCreateAssetInput(input: CreateAssetInput): ValidationRes
 
 /**
  * Validates an UpdateAssetInput object
- * 
+ *
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationResult {
@@ -103,24 +96,20 @@ export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationRes
         valid: false,
         message: 'Asset name cannot be empty',
         fieldErrors: {
-          name: ['Asset name cannot be empty']
-        }
+          name: ['Asset name cannot be empty'],
+        },
       };
     }
   }
 
   // Validate that at least one field is being updated
-  if (
-    !input.name &&
-    !input.status &&
-    !input.metadata
-  ) {
+  if (!input.name && !input.status && !input.metadata) {
     return {
       valid: false,
       message: 'At least one field must be updated',
       fieldErrors: {
-        input: ['At least one field must be updated']
-      }
+        input: ['At least one field must be updated'],
+      },
     };
   }
 
@@ -134,19 +123,19 @@ export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationRes
         valid: false,
         message: 'Asset name cannot be empty',
         fieldErrors: {
-          name: ['Asset name cannot be empty']
-        }
+          name: ['Asset name cannot be empty'],
+        },
       });
     }
-    
+
     // Add validation for name length
     if (input.name.length > 256) {
       results.push({
         valid: false,
         message: 'Asset name cannot exceed 256 characters',
         fieldErrors: {
-          name: ['Asset name cannot exceed 256 characters']
-        }
+          name: ['Asset name cannot exceed 256 characters'],
+        },
       });
     }
   }
@@ -156,7 +145,7 @@ export function validateUpdateAssetInput(input: UpdateAssetInput): ValidationRes
 
 /**
  * Validates an UpdateAssetRateInput object
- * 
+ *
  * @returns ValidationResult indicating if the input is valid
  */
 export function validateUpdateAssetRateInput(input: UpdateAssetRateInput): ValidationResult {
@@ -210,37 +199,40 @@ export function validateUpdateAssetRateInput(input: UpdateAssetRateInput): Valid
   if (input.effectiveAt && input.expirationAt) {
     const effectiveDate = new Date(input.effectiveAt);
     const expirationDate = new Date(input.expirationAt);
-    
+
     // Check if dates are valid
     if (isNaN(effectiveDate.getTime())) {
       results.push({
         valid: false,
         message: 'effectiveAt must be a valid date',
         fieldErrors: {
-          effectiveAt: ['Must be a valid date format']
-        }
+          effectiveAt: ['Must be a valid date format'],
+        },
       });
     }
-    
+
     if (isNaN(expirationDate.getTime())) {
       results.push({
         valid: false,
         message: 'expirationAt must be a valid date',
         fieldErrors: {
-          expirationAt: ['Must be a valid date format']
-        }
+          expirationAt: ['Must be a valid date format'],
+        },
       });
     }
-    
+
     // Check if expiration is after effective date
-    if (!isNaN(effectiveDate.getTime()) && !isNaN(expirationDate.getTime()) &&
-        effectiveDate >= expirationDate) {
+    if (
+      !isNaN(effectiveDate.getTime()) &&
+      !isNaN(expirationDate.getTime()) &&
+      effectiveDate >= expirationDate
+    ) {
       results.push({
         valid: false,
         message: 'effectiveAt must be before expirationAt',
         fieldErrors: {
-          expirationAt: ['Expiration date must be after effective date']
-        }
+          expirationAt: ['Expiration date must be after effective date'],
+        },
       });
     }
   }
