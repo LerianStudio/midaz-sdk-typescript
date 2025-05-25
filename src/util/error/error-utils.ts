@@ -15,6 +15,7 @@ import {
   MidazError,
   TransactionErrorCategory,
 } from './error-types';
+import { Sanitizer } from '../security/sanitizer';
 
 /**
  * Type guard for MidazError
@@ -826,6 +827,9 @@ export function newAccountEligibilityError(
  * @returns Enhanced error information
  */
 export function processError(error: unknown): EnhancedErrorInfo {
+  // Create sanitizer for error processing
+  const sanitizer = Sanitizer.getInstance();
+
   // Initialize with default values
   const processed: EnhancedErrorInfo = {
     type: 'unknown',
@@ -841,14 +845,14 @@ export function processError(error: unknown): EnhancedErrorInfo {
   if (isMidazError(error)) {
     processed.type = error.category;
     processed.code = error.code;
-    processed.message = error.message;
+    processed.message = sanitizer.sanitize(error.message, 'message') as string;
     processed.statusCode = error.statusCode;
     processed.resource = error.resource;
     processed.resourceId = error.resourceId;
     processed.requestId = error.requestId;
-    processed.technicalDetails = `[${error.category}/${error.code}] ${error.message}`;
+    processed.technicalDetails = `[${error.category}/${error.code}] ${sanitizer.sanitize(error.message, 'message')}`;
     // Set user message explicitly for the test case
-    processed.userMessage = error.message;
+    processed.userMessage = sanitizer.sanitize(error.message, 'userMessage') as string;
 
     if (error.resource) {
       processed.technicalDetails += ` (Resource: ${error.resource}${
@@ -883,9 +887,9 @@ export function processError(error: unknown): EnhancedErrorInfo {
   }
   // Process standard Error object
   else if (error instanceof Error) {
-    processed.message = error.message;
+    processed.message = sanitizer.sanitize(error.message, 'message') as string;
     processed.type = error.name || 'error';
-    processed.technicalDetails = error.message;
+    processed.technicalDetails = sanitizer.sanitize(error.message, 'technicalDetails') as string;
 
     // Try to extract more details if available
     const anyError = error as any;
@@ -895,26 +899,28 @@ export function processError(error: unknown): EnhancedErrorInfo {
 
     // Include stack trace in technical details if available
     if (error.stack) {
-      processed.technicalDetails = error.stack;
+      processed.technicalDetails = sanitizer.sanitize(error.stack, 'stack') as string;
     }
   }
   // Process string error
   else if (typeof error === 'string') {
-    processed.message = error;
-    processed.technicalDetails = error;
+    processed.message = sanitizer.sanitize(error, 'message') as string;
+    processed.technicalDetails = sanitizer.sanitize(error, 'technicalDetails') as string;
   }
   // Process object error
   else if (error && typeof error === 'object') {
     const anyError = error as any;
-    if (anyError.message) processed.message = anyError.message;
-    if (anyError.error) processed.message = anyError.error;
+    if (anyError.message)
+      processed.message = sanitizer.sanitize(anyError.message, 'message') as string;
+    if (anyError.error) processed.message = sanitizer.sanitize(anyError.error, 'message') as string;
     if (anyError.statusCode) processed.statusCode = anyError.statusCode;
     if (anyError.status) processed.statusCode = anyError.status;
     if (anyError.code) {
       processed.code = anyError.code;
       processed.type = anyError.code;
     }
-    processed.technicalDetails = JSON.stringify(error);
+    // Sanitize the object before stringifying to avoid exposing sensitive data
+    processed.technicalDetails = JSON.stringify(sanitizer.sanitize(error));
   }
 
   // Add domain-specific processing
@@ -955,6 +961,9 @@ export function errorFromHttpResponse(
   method?: string,
   url?: string
 ): MidazError {
+  // Create sanitizer for HTTP error processing
+  const sanitizer = Sanitizer.getInstance();
+
   // Extract error information from response body if available
   let errorMessage = 'Request failed';
   let errorDetails: Record<string, any> = {};
@@ -963,18 +972,18 @@ export function errorFromHttpResponse(
     // Handle standard error object format
     if (typeof responseBody === 'object' && responseBody.error) {
       if (typeof responseBody.error === 'string') {
-        errorMessage = responseBody.error;
+        errorMessage = sanitizer.sanitize(responseBody.error, 'message') as string;
       } else if (typeof responseBody.error === 'object') {
         if (responseBody.error.message) {
-          errorMessage = responseBody.error.message;
+          errorMessage = sanitizer.sanitize(responseBody.error.message, 'message') as string;
         }
-        errorDetails = responseBody.error;
+        errorDetails = sanitizer.sanitize(responseBody.error) as Record<string, any>;
       }
     }
     // Handle error message directly in response
     else if (typeof responseBody === 'object' && responseBody.message) {
-      errorMessage = responseBody.message;
-      errorDetails = responseBody;
+      errorMessage = sanitizer.sanitize(responseBody.message, 'message') as string;
+      errorDetails = sanitizer.sanitize(responseBody) as Record<string, any>;
     }
     // Handle string response
     else if (typeof responseBody === 'string') {
@@ -988,7 +997,7 @@ export function errorFromHttpResponse(
       } catch (_) {
         // If it's not JSON, use as error message if it looks like an error
         if (responseBody.toLowerCase().includes('error')) {
-          errorMessage = responseBody;
+          errorMessage = sanitizer.sanitize(responseBody, 'message') as string;
         }
       }
     }

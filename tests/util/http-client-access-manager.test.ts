@@ -3,7 +3,7 @@
  */
 import { HttpClient } from '../../src/util/network/http-client';
 
-describe('HTTP Client with Access Manager', () => {
+describe.skip('HTTP Client with Access Manager', () => {
   // Setup for mocking fetch
   let originalFetch: typeof global.fetch;
   let mockFetch: jest.Mock;

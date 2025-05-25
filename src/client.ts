@@ -1,11 +1,12 @@
 import { ClientConfigBuilder } from './client-config-builder';
 import { Entity } from './entities/entity';
 import { HttpClient } from './util/network/http-client';
-import { RetryPolicy } from './util/network/retry-policy';
 import { Observability } from './util/observability/observability';
 import { ConfigService } from './util/config';
 import { logger } from './util/observability/logger-instance';
 import { AccessManager, AccessManagerConfig } from './util/auth/access-manager';
+import { ConfigValidator } from './util/config/config-validator';
+import { createLogger } from './util/logger/universal-logger';
 
 /**
  * Configuration options for the Midaz client
@@ -115,6 +116,142 @@ export interface MidazConfig {
    * Access Manager configuration for plugin-based authentication
    */
   accessManager?: AccessManagerConfig;
+
+  /**
+   * Security configuration
+   */
+  security?: {
+    /**
+     * Whether to enforce HTTPS connections (default: false for backward compatibility)
+     * Set to true when MIDAZ backend supports SSL
+     */
+    enforceHttps?: boolean;
+
+    /**
+     * Explicitly allow insecure HTTP connections (default: true for backward compatibility)
+     * Set to false to block HTTP connections when enforceHttps is false
+     */
+    allowInsecureHttp?: boolean;
+
+    /**
+     * Certificate validation options (only applicable for HTTPS connections)
+     */
+    certificateValidation?: {
+      /**
+       * Whether to validate certificates (default: true)
+       */
+      enabled?: boolean;
+
+      /**
+       * Reject requests with invalid certificates (default: true)
+       */
+      rejectUnauthorized?: boolean;
+
+      /**
+       * Custom CA certificates (for environments that support it)
+       */
+      ca?: string[];
+
+      /**
+       * Minimum TLS version (default: TLSv1.2)
+       */
+      minVersion?: 'TLSv1.2' | 'TLSv1.3';
+    };
+
+    /**
+     * Connection pool configuration
+     */
+    connectionPool?: {
+      /**
+       * Maximum concurrent connections per host (default: 6)
+       */
+      maxConnectionsPerHost?: number;
+
+      /**
+       * Maximum total concurrent connections (default: 20)
+       */
+      maxTotalConnections?: number;
+
+      /**
+       * Maximum queue size per host (default: 100)
+       */
+      maxQueueSize?: number;
+
+      /**
+       * Request timeout in milliseconds (default: 30000)
+       */
+      requestTimeout?: number;
+
+      /**
+       * Enable request coalescing for identical GET requests (default: true)
+       */
+      enableCoalescing?: boolean;
+
+      /**
+       * Time window for request coalescing in milliseconds (default: 100)
+       */
+      coalescingWindow?: number;
+    };
+
+    /**
+     * Circuit breaker configuration
+     */
+    circuitBreaker?: {
+      /**
+       * Number of failures before opening circuit (default: 5)
+       */
+      failureThreshold?: number;
+
+      /**
+       * Success threshold to close circuit (default: 2)
+       */
+      successThreshold?: number;
+
+      /**
+       * Timeout before attempting to close circuit in ms (default: 60000)
+       */
+      timeout?: number;
+
+      /**
+       * Time window for counting failures in ms (default: 60000)
+       */
+      rollingWindow?: number;
+    };
+
+    /**
+     * Per-endpoint circuit breaker configurations
+     * Key is the endpoint pattern, value is the circuit breaker config
+     */
+    endpointCircuitBreakers?: Record<
+      string,
+      {
+        failureThreshold?: number;
+        successThreshold?: number;
+        timeout?: number;
+        rollingWindow?: number;
+      }
+    >;
+
+    /**
+     * Timeout budget configuration
+     */
+    timeoutBudget?: {
+      /**
+       * Whether to enable timeout budget tracking (default: true)
+       */
+      enabled?: boolean;
+
+      /**
+       * Minimum timeout per request in milliseconds (default: 1000)
+       */
+      minRequestTimeout?: number;
+
+      /**
+       * Buffer time between retries in milliseconds (default: 100)
+       */
+      bufferTime?: number;
+    };
+  };
 }
 
 /**
@@ -160,6 +297,24 @@ export class MidazClient {
     // Convert builder to config if necessary
     this.config = 'build' in configOrBuilder ? configOrBuilder.build() : configOrBuilder;
 
+    // Validate configuration
+    const validationResult = ConfigValidator.validate(this.config);
+    if (!validationResult.valid) {
+      const errorMessage = ConfigValidator.formatErrors(validationResult);
+      throw new Error(`Invalid configuration:\n${errorMessage}`);
+    }
+
+    // Log warnings if any
+    if (validationResult.warnings.length > 0) {
+      const configLogger = createLogger({ name: 'midaz-client-config' });
+      const warningMessage = ConfigValidator.formatErrors({
+        valid: true,
+        errors: [],
+        warnings: validationResult.warnings,
+      });
+      configLogger.warn(`Configuration warnings:\n${warningMessage}`);
+    }
+
     // Initialize observability
     this.observability = new Observability(this.config.observability);
 
@@ -183,12 +338,23 @@ export class MidazClient {
         baseURL: this.config.baseUrls?.onboarding || 'http://localhost:3000',
         timeout: this.config.timeout,
         maxRetries: this.config.retries?.maxRetries,
-        retryDelay: this.config.retries?.initialDelay
+        retryDelay: this.config.retries?.initialDelay,
+        enforceHttps: this.config.security?.enforceHttps,
+        allowInsecureHttp: this.config.security?.allowInsecureHttp,
+        certificateValidation: this.config.security?.certificateValidation,
+        connectionPool: this.config.security?.connectionPool,
+        circuitBreaker: this.config.security?.circuitBreaker,
+        endpointCircuitBreakers: this.config.security?.endpointCircuitBreakers,
+        enableTimeoutBudget: this.config.security?.timeoutBudget?.enabled,
+        minRequestTimeout: this.config.security?.timeoutBudget?.minRequestTimeout,
       });
 
     // Set auth token if provided
     if (this.config.authToken || this.config.apiKey) {
-      this.httpClient.setDefaultHeader('Authorization', `Bearer ${this.config.authToken || this.config.apiKey}`);
+      this.httpClient.setDefaultHeader(
+        'Authorization',
+        `Bearer ${this.config.authToken || this.config.apiKey}`
+      );
     }
 
     // If Access Manager is enabled, set up authentication interceptor
@@ -283,5 +449,25 @@ export class MidazClient {
         `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  }
+
+  /**
+   * Destroys the client and cleans up all resources
+   * Call this method when you're done using the client to prevent memory leaks
+   */
+  public async destroy(): Promise<void> {
+    // Shutdown HTTP client
+    if (this.httpClient && typeof this.httpClient.shutdown === 'function') {
+      await this.httpClient.shutdown();
+    }
+
+    // Shutdown observability provider
+    if (this.observability && typeof this.observability.shutdown === 'function') {
+      await this.observability.shutdown();
+    }
+
+    // Clean up global singletons if no other clients are using them
+    Observability.destroy();
+    ConfigService.reset();
   }
 }

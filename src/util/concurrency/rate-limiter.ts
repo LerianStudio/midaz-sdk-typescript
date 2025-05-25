@@ -138,7 +138,7 @@ export class RateLimiter {
         ? options.maxQueueSize
         : getEnv('MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE')
           ? parseInt(getEnv('MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE')!, 10)
-          : Infinity;
+          : 1000; // Default to 1000 instead of Infinity to prevent memory leaks
   }
 
   /**

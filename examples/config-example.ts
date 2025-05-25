@@ -84,9 +84,11 @@ function environmentVariableExample() {
 
   // Simulate setting environment variables
   console.log('\nSimulating environment variables...');
-  process.env.MIDAZ_AUTH_TOKEN = 'test-auth-token-from-env';
-  process.env.MIDAZ_HTTP_TIMEOUT = '60000';
-  process.env.MIDAZ_HTTP_DEBUG = 'true';
+  if (typeof process !== 'undefined' && process.env) {
+    process.env.MIDAZ_AUTH_TOKEN = 'test-auth-token-from-env';
+    process.env.MIDAZ_HTTP_TIMEOUT = '60000';
+    process.env.MIDAZ_HTTP_DEBUG = 'true';
+  }
 
   // Reset the config service to pick up new environment variables
   ConfigService.reset();
@@ -99,9 +101,11 @@ function environmentVariableExample() {
   console.log(JSON.stringify(updatedHttpConfig, null, 2));
 
   // Clean up environment variables
-  delete process.env.MIDAZ_AUTH_TOKEN;
-  delete process.env.MIDAZ_HTTP_TIMEOUT;
-  delete process.env.MIDAZ_HTTP_DEBUG;
+  if (typeof process !== 'undefined' && process.env) {
+    delete process.env.MIDAZ_AUTH_TOKEN;
+    delete process.env.MIDAZ_HTTP_TIMEOUT;
+    delete process.env.MIDAZ_HTTP_DEBUG;
+  }
 
   // Reset the config service again
   ConfigService.reset();

@@ -4,7 +4,12 @@
  */
 
 import { createIdempotencyKey } from '../crypto';
-import { UniversalLogger, createLogger } from '../logger/universal-logger';
+import { createLogger, UniversalLogger } from '../logger/universal-logger';
+import { sanitizeHeaders } from '../security/sanitizer';
+import { ConnectionPool, ConnectionPoolOptions } from './connection-pool';
+import { TimeoutBudget } from '../timeout/timeout-budget';
+import { MetricsCollector } from '../monitoring/metrics';
+import { CorrelationManager } from '../tracing/correlation';
 
 export interface HttpClientOptions {
   baseURL?: string;
@@ -13,6 +18,17 @@ export interface HttpClientOptions {
   retries?: number;
   retryDelay?: number;
   logger?: UniversalLogger;
+  enforceHttps?: boolean; // Whether to enforce HTTPS (default: true in production)
+  allowInsecureHttp?: boolean; // Explicitly allow HTTP (for development/testing)
+  certificateValidation?: {
+    enabled?: boolean; // Whether to validate certificates (default: true)
+    rejectUnauthorized?: boolean; // Reject requests with invalid certificates (default: true)
+    ca?: string[]; // Custom CA certificates (for environments that support it)
+    minVersion?: 'TLSv1.2' | 'TLSv1.3'; // Minimum TLS version (default: TLSv1.2)
+  };
+  connectionPool?: ConnectionPoolOptions; // Connection pool configuration
+  enableTimeoutBudget?: boolean; // Whether to use timeout budget tracking (default: true)
+  minRequestTimeout?: number; // Minimum timeout per request when using budget (default: 1000)
 }
 
 export interface RequestOptions {
@@ -24,6 +40,7 @@ export interface RequestOptions {
   retries?: number;
   idempotencyKey?: string;
   signal?: AbortSignal;
+  timeoutBudget?: TimeoutBudget; // Optional timeout budget for retry tracking
 }
 
 export interface HttpResponse<T = any> {
@@ -55,6 +72,14 @@ export class UniversalHttpClient {
   private retries: number;
   private retryDelay: number;
   private logger: UniversalLogger;
+  private enforceHttps: boolean;
+  private allowInsecureHttp: boolean;
+  private certificateValidation?: HttpClientOptions['certificateValidation'];
+  private connectionPool: ConnectionPool;
+  private enableTimeoutBudget: boolean;
+  private minRequestTimeout: number;
+  private metrics: MetricsCollector;
+  private correlationManager: CorrelationManager;
 
   constructor(options: HttpClientOptions = {}) {
     this.baseURL = options.baseURL || '';
@@ -63,6 +88,25 @@ export class UniversalHttpClient {
     this.retries = options.retries || 3;
     this.retryDelay = options.retryDelay || 1000;
     this.logger = options.logger || createLogger({ name: 'http-client' });
+
+    // Default to NOT enforcing HTTPS since MIDAZ backend doesn't support SSL yet
+    // Users can explicitly enable HTTPS enforcement when the backend is ready
+    this.enforceHttps = options.enforceHttps || false;
+    this.allowInsecureHttp = options.allowInsecureHttp !== false; // Default to true for backward compatibility
+    this.certificateValidation = options.certificateValidation;
+
+    // Initialize connection pool
+    this.connectionPool = new ConnectionPool(options.connectionPool);
+
+    // Initialize timeout budget settings
+    this.enableTimeoutBudget = options.enableTimeoutBudget !== false;
+    this.minRequestTimeout = options.minRequestTimeout || 1000;
+
+    // Initialize metrics collector
+    this.metrics = MetricsCollector.getInstance();
+
+    // Initialize correlation manager
+    this.correlationManager = CorrelationManager.getInstance();
   }
 
   /**
@@ -72,48 +116,98 @@ export class UniversalHttpClient {
     const fullUrl = this.buildUrl(url, options.params);
     const method = options.method || 'GET';
     const headers = this.buildHeaders(options.headers);
-    const timeout = options.timeout || this.timeout;
+    const baseTimeout = options.timeout || this.timeout;
     const retries = options.retries !== undefined ? options.retries : this.retries;
+
+    // Create or use existing timeout budget
+    const timeoutBudget =
+      options.timeoutBudget ||
+      (this.enableTimeoutBudget
+        ? new TimeoutBudget({
+            totalTimeout: baseTimeout * (retries + 1), // Total budget for all attempts
+            minRequestTimeout: this.minRequestTimeout,
+          })
+        : null);
+
+    // Log certificate validation settings for HTTPS requests
+    if (fullUrl.startsWith('https://') && this.certificateValidation) {
+      this.logger.debug('HTTPS request with certificate validation settings', {
+        url: fullUrl,
+        certificateValidation: {
+          enabled: this.certificateValidation.enabled !== false,
+          rejectUnauthorized: this.certificateValidation.rejectUnauthorized !== false,
+          minVersion: this.certificateValidation.minVersion || 'TLSv1.2',
+        },
+      });
+    }
 
     // Add idempotency key if needed
     if (options.idempotencyKey) {
       headers['Idempotency-Key'] = options.idempotencyKey;
     } else if (['POST', 'PUT', 'PATCH'].includes(method)) {
-      headers['Idempotency-Key'] = await createIdempotencyKey(method, fullUrl, JSON.stringify(options.body));
-    }
-
-    // Create abort controller for timeout
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), timeout);
-
-    // Merge signals if one was provided
-    const signal = options.signal 
-      ? this.mergeSignals(options.signal, abortController.signal)
-      : abortController.signal;
-
-    const requestOptions: RequestInit = {
-      method,
-      headers,
-      signal,
-    };
-
-    // Add body if present
-    if (options.body !== undefined) {
-      if (headers['Content-Type'] === 'application/json') {
-        requestOptions.body = JSON.stringify(options.body);
-      } else {
-        requestOptions.body = options.body;
-      }
+      headers['Idempotency-Key'] = await createIdempotencyKey(
+        method,
+        fullUrl,
+        JSON.stringify(options.body)
+      );
     }
 
     let lastError: Error | undefined;
-    
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        this.logger.debug(`HTTP ${method} ${fullUrl}`, { attempt, headers });
 
-        const response = await fetch(fullUrl, requestOptions);
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      // Check timeout budget
+      if (timeoutBudget && !timeoutBudget.hasRemainingBudget()) {
+        throw new Error(`Timeout budget exhausted after ${attempt} attempts`);
+      }
+
+      // Calculate timeout for this attempt
+      const attemptTimeout = timeoutBudget
+        ? timeoutBudget.getNextTimeout(baseTimeout)
+        : baseTimeout;
+
+      if (attemptTimeout === 0) {
+        throw new Error('Insufficient timeout budget for request');
+      }
+
+      // Create abort controller for this attempt
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), attemptTimeout);
+
+      // Merge signals
+      const signal = options.signal
+        ? this.mergeSignals(options.signal, abortController.signal)
+        : abortController.signal;
+
+      const requestOptions: RequestInit = {
+        method,
+        headers,
+        signal,
+      };
+
+      // Add body if present
+      if (options.body !== undefined) {
+        if (headers['Content-Type'] === 'application/json') {
+          requestOptions.body = JSON.stringify(options.body);
+        } else {
+          requestOptions.body = options.body;
+        }
+      }
+      try {
+        this.logger.debug(`HTTP ${method} ${fullUrl}`, {
+          attempt,
+          headers: sanitizeHeaders(headers),
+          timeout: attemptTimeout,
+          budgetRemaining: timeoutBudget?.getRemainingBudget(),
+        });
+
+        const requestTimer = this.metrics.timer('http_request_duration');
+        const response = await this.connectionPool.fetch(fullUrl, requestOptions);
         clearTimeout(timeoutId);
+        const duration = requestTimer.end();
+
+        // Record metrics
+        const path = new URL(fullUrl).pathname;
+        this.metrics.recordHttpRequest(method, path, response.status, duration);
 
         if (!response.ok) {
           const errorBody = await this.parseErrorResponse(response);
@@ -127,9 +221,9 @@ export class UniversalHttpClient {
 
         const data = await this.parseResponse<T>(response);
 
-        this.logger.debug(`HTTP ${method} ${fullUrl} - Success`, { 
+        this.logger.debug(`HTTP ${method} ${fullUrl} - Success`, {
           status: response.status,
-          attempt 
+          attempt,
         });
 
         return {
@@ -142,6 +236,13 @@ export class UniversalHttpClient {
         clearTimeout(timeoutId);
         lastError = error as Error;
 
+        // Record error metrics
+        this.metrics.increment('http_errors_total', 1, {
+          method,
+          error: lastError.name || 'unknown',
+          attempt: String(attempt),
+        });
+
         this.logger.warn(`HTTP ${method} ${fullUrl} - Failed`, {
           attempt,
           error: lastError.message,
@@ -152,36 +253,62 @@ export class UniversalHttpClient {
           throw error;
         }
 
-        // Don't retry if this was the last attempt
+        // Don't retry if this was the last attempt or out of budget
         if (attempt < retries) {
-          await this.delay(this.retryDelay * (attempt + 1));
+          const delayTime = this.retryDelay * (attempt + 1);
+
+          // Check if we have budget for the delay
+          if (timeoutBudget && timeoutBudget.getRemainingBudget() < delayTime) {
+            throw new Error('Insufficient timeout budget for retry delay');
+          }
+
+          await this.delay(delayTime);
         }
       }
     }
 
-    throw lastError || new Error('Request failed after all retries');
+    const finalError = lastError || new Error('Request failed after all retries');
+    throw this.correlationManager ? this.correlationManager.enhanceError(finalError) : finalError;
   }
 
   /**
    * Convenience methods
    */
-  async get<T = any>(url: string, options?: Omit<RequestOptions, 'method'>): Promise<HttpResponse<T>> {
+  async get<T = any>(
+    url: string,
+    options?: Omit<RequestOptions, 'method'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'GET' });
   }
 
-  async post<T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<HttpResponse<T>> {
+  async post<T = any>(
+    url: string,
+    body?: any,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'POST', body });
   }
 
-  async put<T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<HttpResponse<T>> {
+  async put<T = any>(
+    url: string,
+    body?: any,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'PUT', body });
   }
 
-  async patch<T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<HttpResponse<T>> {
+  async patch<T = any>(
+    url: string,
+    body?: any,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'PATCH', body });
   }
 
-  async delete<T = any>(url: string, options?: Omit<RequestOptions, 'method'>): Promise<HttpResponse<T>> {
+  async delete<T = any>(
+    url: string,
+    options?: Omit<RequestOptions, 'method'>
+  ): Promise<HttpResponse<T>> {
     return this.request<T>(url, { ...options, method: 'DELETE' });
   }
 
@@ -189,8 +316,21 @@ export class UniversalHttpClient {
    * Build full URL with query parameters
    */
   private buildUrl(path: string, params?: Record<string, string | number | boolean>): string {
-    const url = path.startsWith('http') ? path : `${this.baseURL}${path}`;
-    
+    let url = path.startsWith('http') ? path : `${this.baseURL}${path}`;
+
+    // Only enforce HTTPS if explicitly enabled
+    if (this.enforceHttps && url.startsWith('http://')) {
+      this.logger.info('Upgrading HTTP URL to HTTPS due to enforceHttps setting', {
+        originalUrl: url,
+      });
+      url = url.replace(/^http:\/\//, 'https://');
+    }
+
+    // Only warn about insecure connections if HTTPS enforcement is enabled but not upgrading
+    if (url.startsWith('http://') && this.enforceHttps && this.allowInsecureHttp) {
+      this.logger.warn('Using insecure HTTP connection despite enforceHttps setting', { url });
+    }
+
     if (!params || Object.keys(params).length === 0) {
       return url;
     }
@@ -212,15 +352,13 @@ export class UniversalHttpClient {
   private buildHeaders(additionalHeaders?: Record<string, string>): Record<string, string> {
     const headers = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       ...this.headers,
       ...additionalHeaders,
     };
 
     // Remove undefined values
-    return Object.fromEntries(
-      Object.entries(headers).filter(([_, value]) => value !== undefined)
-    );
+    return Object.fromEntries(Object.entries(headers).filter(([_, value]) => value !== undefined));
   }
 
   /**
@@ -258,7 +396,7 @@ export class UniversalHttpClient {
    * Delay for retry
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -291,6 +429,28 @@ export class UniversalHttpClient {
 
   getDefaultHeaders(): Record<string, string> {
     return { ...this.headers };
+  }
+
+  /**
+   * Gets connection pool statistics
+   */
+  getConnectionPoolStats() {
+    return this.connectionPool.getStats();
+  }
+
+  /**
+   * Resets the connection pool
+   */
+  resetConnectionPool(): void {
+    this.connectionPool.reset();
+  }
+
+  /**
+   * Destroys the HTTP client and cleans up resources
+   */
+  destroy(): void {
+    this.connectionPool.destroy();
+    // Note: Don't destroy metrics here as it's a singleton shared across clients
   }
 }
 

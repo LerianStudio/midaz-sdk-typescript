@@ -762,18 +762,26 @@ export async function createRecurringPayment(
  * - A credit transaction from source to destination account
  * - A debit transaction for a (possibly different) amount from destination back to source
  *
+ * @param sourceAccountId - The account ID to debit from
+ * @param destinationAccountId - The account ID to credit to
+ * @param amount - The amount to transfer
+ * @param assetCode - The asset code (e.g., 'USD', 'EUR', 'BTC')
+ * @param description - Optional description for the transactions
+ * @param metadata - Optional metadata to include in both transactions
+ * @param scale - The decimal scale for the amount (default: 0)
  * @returns Object containing the credit and debit transaction inputs
  *
  * @example
  * ```typescript
- * // Create a credit/debit transaction pair
+ * // Create a credit/debit transaction pair for USD with 2 decimal places
  * const { creditTx, debitTx } = createCreditDebitPair(
  *   'acc_source',
  *   'acc_destination',
- *   100, // $100 transaction
+ *   10000, // $100.00 (represented as cents)
  *   'USD',
  *   'Payment between accounts',
- *   { batchId: 'batch_123', createdBy: 'workflow-script' }
+ *   { batchId: 'batch_123', createdBy: 'workflow-script' },
+ *   2 // scale of 2 for USD
  * );
  *
  * // Now these can be executed separately or together with executeTransactionPair
@@ -785,7 +793,8 @@ export function createCreditDebitPair(
   amount: number,
   assetCode: string,
   description?: string,
-  metadata: Record<string, any> = {}
+  metadata: Record<string, any> = {},
+  scale = 0
 ): { creditTx: CreateTransactionInput; debitTx: CreateTransactionInput } {
   // Create default descriptions if not provided
   const creditDescription =
@@ -805,7 +814,7 @@ export function createCreditDebitPair(
     destinationAccountId,
     amount,
     assetCode,
-    0,
+    scale,
     creditDescription,
     { ...commonMetadata, transactionType: 'credit' }
   );
@@ -817,7 +826,7 @@ export function createCreditDebitPair(
     sourceAccountId,
     amount,
     assetCode,
-    0,
+    scale,
     debitDescription,
     { ...commonMetadata, transactionType: 'debit' }
   );

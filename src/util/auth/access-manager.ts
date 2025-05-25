@@ -165,7 +165,7 @@ export class AccessManager {
         throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json() as TokenResponse;
+      const data = (await response.json()) as TokenResponse;
 
       if (!data || !data.accessToken) {
         throw new Error('Invalid token response from auth service');
