@@ -1,3 +1,10 @@
+## [1.1.0-develop.4](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.3...v1.1.0-develop.4) (2025-05-26)
+
+
+### 🐛 Bug Fixes
+
+* **format:** apply prettier formatting to correlation.ts ([822fc2d](https://github.com/LerianStudio/midaz-sdk-typescript/commit/822fc2d8c29298679e5131fdc9e9d5873b71d666))
+
 ## [1.1.0-develop.3](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.2...v1.1.0-develop.3) (2025-05-26)
 
 
