@@ -1,3 +1,10 @@
+## [1.1.0-develop.10](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.9...v1.1.0-develop.10) (2025-05-26)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** add missing bot credentials to AI changelog step ([95401c0](https://github.com/LerianStudio/midaz-sdk-typescript/commit/95401c0cb27fa16ceea908acf29a08c4b0289f1e))
+
 ## [1.1.0-develop.9](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.8...v1.1.0-develop.9) (2025-05-26)
 
 
