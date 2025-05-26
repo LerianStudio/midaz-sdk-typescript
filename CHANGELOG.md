@@ -1,3 +1,10 @@
+## [1.1.0-develop.8](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.7...v1.1.0-develop.8) (2025-05-26)
+
+
+### ✨ Features
+
+* **exports:** add AccountType and concurrency utilities to public API ([03549ba](https://github.com/LerianStudio/midaz-sdk-typescript/commit/03549baf6b8c12236b69f8f3c0adf11c62cda594))
+
 ## [1.1.0-develop.7](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.6...v1.1.0-develop.7) (2025-05-26)
 
 
