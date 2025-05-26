@@ -35,6 +35,3 @@ export { CorrelationManager, TraceContext, CorrelationContext } from './util/tra
 
 // Validation
 export { ConfigValidator } from './util/config/config-validator';
-
-// Helpers
-// export * from './util/helpers'; // Commented out - file doesn't exist

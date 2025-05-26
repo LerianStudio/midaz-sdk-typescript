@@ -19,7 +19,7 @@ export interface CorrelationContext {
   sessionId?: string;
   requestId?: string;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null | undefined>;
 }
 
 /**
@@ -61,7 +61,7 @@ export class CorrelationManager {
       sessionId?: string;
       requestId?: string;
       traceContext?: TraceContext;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, string | number | boolean | null | undefined>;
     } = {}
   ): Promise<CorrelationContext> {
     const correlationId = await this.generateCorrelationId();
@@ -120,7 +120,7 @@ export class CorrelationManager {
   /**
    * Adds metadata to the current context
    */
-  addMetadata(key: string, value: any): void {
+  addMetadata(key: string, value: string | number | boolean | null | undefined): void {
     if (this.currentContext) {
       if (!this.currentContext.metadata) {
         this.currentContext.metadata = {};
@@ -132,7 +132,7 @@ export class CorrelationManager {
   /**
    * Formats context for logging
    */
-  formatForLogging(context?: CorrelationContext): Record<string, any> {
+  formatForLogging(context?: CorrelationContext): Record<string, string | number | boolean | null | undefined> {
     const ctx = context || this.currentContext;
     if (!ctx) return {};
 
@@ -204,7 +204,7 @@ export class CorrelationManager {
         context.traceContext = {
           traceId: parts[1],
           spanId: parts[2],
-          flags: parseInt(parts[3], 16),
+          flags: Number.isFinite(parseInt(parts[3], 16)) ? parseInt(parts[3], 16) : 0,
         };
 
         // Parse trace state (baggage)
@@ -231,16 +231,28 @@ export class CorrelationManager {
     const ctx = context || this.currentContext;
     if (!ctx) return error;
 
-    // Add correlation info to error
-    (error as any).correlationId = ctx.correlationId;
-    (error as any).traceId = ctx.traceContext?.traceId;
-    (error as any).spanId = ctx.traceContext?.spanId;
-    (error as any).userId = ctx.userId;
-    (error as any).sessionId = ctx.sessionId;
-    (error as any).requestId = ctx.requestId;
-    (error as any).correlationTimestamp = ctx.timestamp;
+    // Create a correlated error with proper typing
+    interface CorrelatedError extends Error {
+      correlationId?: string;
+      traceId?: string;
+      spanId?: string;
+      userId?: string;
+      sessionId?: string;
+      requestId?: string;
+      correlationTimestamp?: number;
+    }
 
-    return error;
+    // Add correlation info to error
+    const correlatedError = error as CorrelatedError;
+    correlatedError.correlationId = ctx.correlationId;
+    correlatedError.traceId = ctx.traceContext?.traceId;
+    correlatedError.spanId = ctx.traceContext?.spanId;
+    correlatedError.userId = ctx.userId;
+    correlatedError.sessionId = ctx.sessionId;
+    correlatedError.requestId = ctx.requestId;
+    correlatedError.correlationTimestamp = ctx.timestamp;
+
+    return correlatedError;
   }
 
   /**
@@ -286,7 +298,8 @@ export class CorrelationManager {
    * Cleans up old contexts (older than 1 hour)
    */
   private cleanupOldContexts(): void {
-    const oneHourAgo = Date.now() - 3600000;
+    const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+    const oneHourAgo = Date.now() - ONE_HOUR_IN_MS;
     const toDelete: string[] = [];
 
     for (const [id, context] of this.contextStorage.entries()) {
@@ -305,10 +318,10 @@ export class CorrelationManager {
  * Decorator for adding correlation to methods
  */
 export function Correlated(options?: { propagate?: boolean }) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       const correlationManager = CorrelationManager.getInstance();
 
       // Create or propagate context
@@ -316,7 +329,7 @@ export function Correlated(options?: { propagate?: boolean }) {
       if (!context || !options?.propagate) {
         context = await correlationManager.createContext({
           metadata: {
-            method: `${target.constructor.name}.${propertyKey}`,
+            method: `${target.constructor.name}.${String(propertyKey)}`,
           },
         });
       }
@@ -325,7 +338,13 @@ export function Correlated(options?: { propagate?: boolean }) {
         return await originalMethod.apply(this, args);
       } catch (error) {
         // Enhance error with correlation
-        throw correlationManager.enhanceError(error as Error, context);
+        let errorToEnhance: Error;
+        if (error instanceof Error) {
+          errorToEnhance = error;
+        } else {
+          errorToEnhance = new Error(String(error));
+        }
+        throw correlationManager.enhanceError(errorToEnhance, context);
       }
     };
 
