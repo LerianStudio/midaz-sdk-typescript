@@ -132,7 +132,9 @@ export class CorrelationManager {
   /**
    * Formats context for logging
    */
-  formatForLogging(context?: CorrelationContext): Record<string, string | number | boolean | null | undefined> {
+  formatForLogging(
+    context?: CorrelationContext
+  ): Record<string, string | number | boolean | null | undefined> {
     const ctx = context || this.currentContext;
     if (!ctx) return {};
 
