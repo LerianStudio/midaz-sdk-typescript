@@ -4,7 +4,7 @@
 ### 🐛 Bug Fixes
 
 * **dependabot:** remove YAML aliases to fix parsing error ([7b279df](https://github.com/LerianStudio/midaz-sdk-typescript/commit/7b279df27fc8605fb1b4b1b883175908608e7209))
-
+* 
 ## [1.1.0-develop.10](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.9...v1.1.0-develop.10) (2025-05-26)
 
 
