@@ -1,3 +1,10 @@
+## [1.1.0-develop.3](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.2...v1.1.0-develop.3) (2025-05-26)
+
+
+### ♻️ Code Refactoring
+
+* apply code review improvements from PR [#48](https://github.com/LerianStudio/midaz-sdk-typescript/issues/48) ([5c090b3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/5c090b3dadfad6aebf88c2c92b398bd662bf4c62))
+
 ## [1.1.0-develop.2](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.1...v1.1.0-develop.2) (2025-05-25)
 
 
