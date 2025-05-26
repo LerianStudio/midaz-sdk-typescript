@@ -1,3 +1,10 @@
+## [1.1.0-develop.7](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.6...v1.1.0-develop.7) (2025-05-26)
+
+
+### 🐛 Bug Fixes
+
+* **release:** simplify GitHub release URL template to fix syntax error ([bd343e7](https://github.com/LerianStudio/midaz-sdk-typescript/commit/bd343e77b737655030bc0dfbab46c605f604df4e))
+
 ## [1.1.0-develop.6](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.5...v1.1.0-develop.6) (2025-05-26)
 
 
