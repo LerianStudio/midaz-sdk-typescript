@@ -1,3 +1,10 @@
+## [1.1.0-develop.9](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.8...v1.1.0-develop.9) (2025-05-26)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** remove codecov upload and fix workflow formatting ([4e7a8ee](https://github.com/LerianStudio/midaz-sdk-typescript/commit/4e7a8ee066fa3632838a3b1e88dcafa4c1da0095))
+
 ## [1.1.0-develop.8](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.7...v1.1.0-develop.8) (2025-05-26)
 
 
