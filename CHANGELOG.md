@@ -1,3 +1,10 @@
+## [1.1.0-develop.5](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.4...v1.1.0-develop.5) (2025-05-26)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** add missing test:coverage script and lint:check command ([692f5f4](https://github.com/LerianStudio/midaz-sdk-typescript/commit/692f5f4d299b2091c6d1a17d74a5399d8b1624a4))
+
 ## [1.1.0-develop.4](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.3...v1.1.0-develop.4) (2025-05-26)
 
 
