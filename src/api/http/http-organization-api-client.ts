@@ -17,6 +17,7 @@ import {
   UpdateOrganizationInput,
 } from '../interfaces/organization-api-client';
 import { UrlBuilder } from '../url-builder';
+import { getEnv } from '../../util/runtime/environment';
 
 /**
  * HTTP implementation of the OrganizationApiClient interface
@@ -41,11 +42,11 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
       observability ||
       new Observability({
         serviceName: 'midaz-organization-api-client',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
           : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
           : false,
       });
   }

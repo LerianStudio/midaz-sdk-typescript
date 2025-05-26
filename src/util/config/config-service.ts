@@ -1,3 +1,5 @@
+import { getEnv } from '../runtime/environment';
+
 /**
  * Configuration options for observability
  */
@@ -289,10 +291,12 @@ export class ConfigService {
    * @returns The API URL configuration
    */
   public getApiUrlConfig(): ApiUrlConfig {
+    const apiVersion = this.getEnv('MIDAZ_API_VERSION', 'v1'); // Declaração da variável apiVersion
+
     const defaults: ApiUrlConfig = {
-      onboardingUrl: this.getEnv('MIDAZ_ONBOARDING_URL', 'http://localhost:3000'),
-      transactionUrl: this.getEnv('MIDAZ_TRANSACTION_URL', 'http://localhost:3001'),
-      apiVersion: this.getEnv('MIDAZ_API_VERSION', 'v1'),
+      onboardingUrl: `${this.getEnv('MIDAZ_ONBOARDING_URL', 'http://localhost:3000')}/${apiVersion}`,
+      transactionUrl: `${this.getEnv('MIDAZ_TRANSACTION_URL', 'http://localhost:3001')}/${apiVersion}`,
+      apiVersion: apiVersion,
     };
 
     return {
@@ -370,7 +374,7 @@ export class ConfigService {
    * @private
    */
   private getEnv(name: string, defaultValue = ''): string {
-    return process.env[name] || defaultValue;
+    return getEnv(name) || defaultValue;
   }
 
   /**
@@ -379,7 +383,7 @@ export class ConfigService {
    * @private
    */
   private getBooleanEnv(name: string, defaultValue: boolean): boolean {
-    const value = process.env[name];
+    const value = getEnv(name);
     return value ? value.toLowerCase() === 'true' : defaultValue;
   }
 
@@ -389,7 +393,7 @@ export class ConfigService {
    * @private
    */
   private getNumberEnv(name: string, defaultValue: number): number {
-    const value = process.env[name];
+    const value = getEnv(name);
     return value ? parseInt(value, 10) : defaultValue;
   }
 
@@ -399,7 +403,7 @@ export class ConfigService {
    * @private
    */
   private getArrayEnv(name: string, defaultValue: number[]): number[] {
-    const value = process.env[name];
-    return value ? value.split(',').map((item) => parseInt(item.trim(), 10)) : defaultValue;
+    const value = getEnv(name);
+    return value ? value.split(',').map((item: string) => parseInt(item.trim(), 10)) : defaultValue;
   }
 }

@@ -3,13 +3,12 @@
  * @description Unit tests for the TransactionsService implementation and TransactionPaginator
  */
 
-import { TransactionPaginatorImpl, TransactionsServiceImpl } from '../../../src/entities/implementations/transactions-impl';
+import {
+  TransactionPaginatorImpl,
+  TransactionsServiceImpl,
+} from '../../../src/entities/implementations/transactions-impl';
 import { MidazConfig } from '../../../src/client';
-import { 
-  CreateTransactionInput,
-  Operation,
-  Transaction
-} from '../../../src/models/transaction';
+import { CreateTransactionInput, Operation, Transaction } from '../../../src/models/transaction';
 import { ListResponse } from '../../../src/models/common';
 import { Observability } from '../../../src/util/observability';
 import { TransactionApiClient } from '../../../src/api/interfaces/transaction-api-client';
@@ -23,11 +22,11 @@ jest.mock('../../../src/util/observability/observability', () => {
           setAttribute: jest.fn(),
           recordException: jest.fn(),
           setStatus: jest.fn(),
-          end: jest.fn()
+          end: jest.fn(),
         }),
-        recordMetric: jest.fn()
+        recordMetric: jest.fn(),
       };
-    })
+    }),
   };
 });
 
@@ -40,18 +39,18 @@ describe('TransactionsServiceImpl', () => {
   const orgId = 'org_123';
   const ledgerId = 'ldg_456';
   const transactionId = 'txn_789';
-  
+
   const mockOperation: Operation = {
     id: 'op_123',
     accountId: 'acc_123',
     amount: {
       value: '100.00',
       assetCode: 'USD',
-      scale: 2
+      scale: 2,
     },
-    type: 'DEBIT'
+    type: 'DEBIT',
   };
-  
+
   const mockTransaction: Transaction = {
     id: transactionId,
     amount: 100,
@@ -59,7 +58,7 @@ describe('TransactionsServiceImpl', () => {
     assetCode: 'USD',
     status: {
       code: 'COMPLETED',
-      timestamp: '2023-01-01T00:00:00Z'
+      timestamp: '2023-01-01T00:00:00Z',
     },
     ledgerId: ledgerId,
     organizationId: orgId,
@@ -71,45 +70,45 @@ describe('TransactionsServiceImpl', () => {
         amount: {
           value: '100.00',
           assetCode: 'USD',
-          scale: 2
+          scale: 2,
         },
-        type: 'CREDIT'
-      }
+        type: 'CREDIT',
+      },
     ],
     createdAt: '2023-01-01T00:00:00Z',
-    updatedAt: '2023-01-01T00:00:00Z'
+    updatedAt: '2023-01-01T00:00:00Z',
   };
-  
+
   const mockTransactionsList: ListResponse<Transaction> = {
     items: [mockTransaction],
     meta: {
       total: 1,
-      count: 1
-    }
+      count: 1,
+    },
   };
 
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create a mock TransactionApiClient
     mockTransactionApiClient = {
       listTransactions: jest.fn(),
       getTransaction: jest.fn(),
-      createTransaction: jest.fn()
+      createTransaction: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
-    
+
     // Create a mock Observability instance
     observability = {
       startSpan: jest.fn().mockReturnValue({
         setAttribute: jest.fn(),
         recordException: jest.fn(),
         setStatus: jest.fn(),
-        end: jest.fn()
+        end: jest.fn(),
       }),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
-    
+
     // Create the service instance
     transactionsService = new TransactionsServiceImpl(mockTransactionApiClient, observability);
   });
@@ -118,10 +117,10 @@ describe('TransactionsServiceImpl', () => {
     it('should list transactions successfully', async () => {
       // Setup
       mockTransactionApiClient.listTransactions.mockResolvedValueOnce(mockTransactionsList);
-      
+
       // Execute
       const result = await transactionsService.listTransactions(orgId, ledgerId);
-      
+
       // Verify
       expect(mockTransactionApiClient.listTransactions).toHaveBeenCalledWith(
         orgId,
@@ -130,19 +129,19 @@ describe('TransactionsServiceImpl', () => {
       );
       expect(result).toEqual(mockTransactionsList);
     });
-    
+
     it('should apply list options when provided', async () => {
       // Setup
-      const listOptions = { 
-        limit: 5, 
+      const listOptions = {
+        limit: 5,
         offset: 10,
-        filter: { status: 'COMPLETED' }
+        filter: { status: 'COMPLETED' },
       };
       mockTransactionApiClient.listTransactions.mockResolvedValueOnce(mockTransactionsList);
-      
+
       // Execute
       const result = await transactionsService.listTransactions(orgId, ledgerId, listOptions);
-      
+
       // Verify
       expect(mockTransactionApiClient.listTransactions).toHaveBeenCalledWith(
         orgId,
@@ -151,30 +150,32 @@ describe('TransactionsServiceImpl', () => {
       );
       expect(result).toEqual(mockTransactionsList);
     });
-    
+
     it('should delegate validation to the API client', async () => {
       // Setup
       const validationError = new Error('Organization ID is required');
       mockTransactionApiClient.listTransactions.mockRejectedValueOnce(validationError);
-      
+
       // Execute & Verify
-      await expect(transactionsService.listTransactions('', ledgerId))
-        .rejects.toThrow('Organization ID is required');
+      await expect(transactionsService.listTransactions('', ledgerId)).rejects.toThrow(
+        'Organization ID is required'
+      );
       expect(mockTransactionApiClient.listTransactions).toHaveBeenCalledWith(
         '',
         ledgerId,
         undefined
       );
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const apiError = new Error('API Error');
       mockTransactionApiClient.listTransactions.mockRejectedValueOnce(apiError);
-      
+
       // Execute & Verify
-      await expect(transactionsService.listTransactions(orgId, ledgerId))
-        .rejects.toThrow('API Error');
+      await expect(transactionsService.listTransactions(orgId, ledgerId)).rejects.toThrow(
+        'API Error'
+      );
     });
   });
 
@@ -182,10 +183,10 @@ describe('TransactionsServiceImpl', () => {
     it('should get a transaction by ID successfully', async () => {
       // Setup
       mockTransactionApiClient.getTransaction.mockResolvedValueOnce(mockTransaction);
-      
+
       // Execute
       const result = await transactionsService.getTransaction(orgId, ledgerId, transactionId);
-      
+
       // Verify
       expect(mockTransactionApiClient.getTransaction).toHaveBeenCalledWith(
         orgId,
@@ -194,30 +195,32 @@ describe('TransactionsServiceImpl', () => {
       );
       expect(result).toEqual(mockTransaction);
     });
-    
+
     it('should delegate validation to the API client', async () => {
       // Setup
       const validationError = new Error('Organization ID is required');
       mockTransactionApiClient.getTransaction.mockRejectedValueOnce(validationError);
-      
+
       // Execute & Verify
-      await expect(transactionsService.getTransaction('', ledgerId, transactionId))
-        .rejects.toThrow('Organization ID is required');
+      await expect(transactionsService.getTransaction('', ledgerId, transactionId)).rejects.toThrow(
+        'Organization ID is required'
+      );
       expect(mockTransactionApiClient.getTransaction).toHaveBeenCalledWith(
         '',
         ledgerId,
         transactionId
       );
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const apiError = new Error('API Error');
       mockTransactionApiClient.getTransaction.mockRejectedValueOnce(apiError);
-      
+
       // Execute & Verify
-      await expect(transactionsService.getTransaction(orgId, ledgerId, transactionId))
-        .rejects.toThrow('API Error');
+      await expect(
+        transactionsService.getTransaction(orgId, ledgerId, transactionId)
+      ).rejects.toThrow('API Error');
     });
   });
 
@@ -232,8 +235,8 @@ describe('TransactionsServiceImpl', () => {
             amount: {
               value: '100.00',
               assetCode: 'USD',
-              scale: 2
-            }
+              scale: 2,
+            },
           },
           {
             accountId: 'acc_456',
@@ -241,17 +244,17 @@ describe('TransactionsServiceImpl', () => {
             amount: {
               value: '100.00',
               assetCode: 'USD',
-              scale: 2
-            }
-          }
-        ]
+              scale: 2,
+            },
+          },
+        ],
       };
-      
+
       mockTransactionApiClient.createTransaction.mockResolvedValueOnce(mockTransaction);
-      
+
       // Execute
       const result = await transactionsService.createTransaction(orgId, ledgerId, createInput);
-      
+
       // Verify
       expect(mockTransactionApiClient.createTransaction).toHaveBeenCalledWith(
         orgId,
@@ -260,7 +263,7 @@ describe('TransactionsServiceImpl', () => {
       );
       expect(result).toEqual(mockTransaction);
     });
-    
+
     it('should delegate validation to the API client', async () => {
       // Setup
       const createInput: CreateTransactionInput = {
@@ -271,8 +274,8 @@ describe('TransactionsServiceImpl', () => {
             amount: {
               value: '100.00',
               assetCode: 'USD',
-              scale: 2
-            }
+              scale: 2,
+            },
           },
           {
             accountId: 'acc_456',
@@ -280,25 +283,26 @@ describe('TransactionsServiceImpl', () => {
             amount: {
               value: '100.00',
               assetCode: 'USD',
-              scale: 2
-            }
-          }
-        ]
+              scale: 2,
+            },
+          },
+        ],
       };
-      
+
       const validationError = new Error('Validation failed');
       mockTransactionApiClient.createTransaction.mockRejectedValueOnce(validationError);
-      
+
       // Execute & Verify
-      await expect(transactionsService.createTransaction('', ledgerId, createInput))
-        .rejects.toThrow('Validation failed');
+      await expect(
+        transactionsService.createTransaction('', ledgerId, createInput)
+      ).rejects.toThrow('Validation failed');
       expect(mockTransactionApiClient.createTransaction).toHaveBeenCalledWith(
         '',
         ledgerId,
         createInput
       );
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const createInput: CreateTransactionInput = {
@@ -309,8 +313,8 @@ describe('TransactionsServiceImpl', () => {
             amount: {
               value: '100.00',
               assetCode: 'USD',
-              scale: 2
-            }
+              scale: 2,
+            },
           },
           {
             accountId: 'acc_456',
@@ -318,17 +322,18 @@ describe('TransactionsServiceImpl', () => {
             amount: {
               value: '100.00',
               assetCode: 'USD',
-              scale: 2
-            }
-          }
-        ]
+              scale: 2,
+            },
+          },
+        ],
       };
       const apiError = new Error('API Error');
       mockTransactionApiClient.createTransaction.mockRejectedValueOnce(apiError);
-      
+
       // Execute & Verify
-      await expect(transactionsService.createTransaction(orgId, ledgerId, createInput))
-        .rejects.toThrow('API Error');
+      await expect(
+        transactionsService.createTransaction(orgId, ledgerId, createInput)
+      ).rejects.toThrow('API Error');
     });
   });
 });
@@ -337,12 +342,12 @@ describe('TransactionPaginatorImpl', () => {
   let mockTransactionApiClient: jest.Mocked<TransactionApiClient>;
   let paginator: TransactionPaginatorImpl;
   let observability: jest.Mocked<Observability>;
-  
+
   // Test data
   const orgId = 'org_123';
   const ledgerId = 'ldg_456';
   const transactionId = 'txn_789';
-  
+
   const mockTransaction: Transaction = {
     id: transactionId,
     amount: 100,
@@ -350,7 +355,7 @@ describe('TransactionPaginatorImpl', () => {
     assetCode: 'USD',
     status: {
       code: 'COMPLETED',
-      timestamp: '2023-01-01T00:00:00Z'
+      timestamp: '2023-01-01T00:00:00Z',
     },
     ledgerId: ledgerId,
     organizationId: orgId,
@@ -361,9 +366,9 @@ describe('TransactionPaginatorImpl', () => {
         amount: {
           value: '100.00',
           assetCode: 'USD',
-          scale: 2
+          scale: 2,
         },
-        type: 'DEBIT'
+        type: 'DEBIT',
       },
       {
         id: 'op_456',
@@ -371,37 +376,37 @@ describe('TransactionPaginatorImpl', () => {
         amount: {
           value: '100.00',
           assetCode: 'USD',
-          scale: 2
+          scale: 2,
         },
-        type: 'CREDIT'
-      }
+        type: 'CREDIT',
+      },
     ],
     createdAt: '2023-01-01T00:00:00Z',
-    updatedAt: '2023-01-01T00:00:00Z'
+    updatedAt: '2023-01-01T00:00:00Z',
   };
-  
+
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create a mock TransactionApiClient
     mockTransactionApiClient = {
       listTransactions: jest.fn(),
       getTransaction: jest.fn(),
-      createTransaction: jest.fn()
+      createTransaction: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
-    
+
     // Create a mock Observability instance
     observability = {
       startSpan: jest.fn().mockReturnValue({
         setAttribute: jest.fn(),
         recordException: jest.fn(),
         setStatus: jest.fn(),
-        end: jest.fn()
+        end: jest.fn(),
       }),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
-    
+
     // Create the paginator
     paginator = new TransactionPaginatorImpl(
       mockTransactionApiClient,
@@ -410,7 +415,7 @@ describe('TransactionPaginatorImpl', () => {
       { limit: 1 },
       observability
     );
-    
+
     // Mock the private properties for testing
     Object.defineProperties(paginator, {
       currentResponse: {
@@ -418,44 +423,44 @@ describe('TransactionPaginatorImpl', () => {
           items: [mockTransaction],
           meta: {
             total: 100,
-            count: 1
-          }
+            count: 1,
+          },
         },
-        writable: true
+        writable: true,
       },
       currentPage: {
         value: [mockTransaction],
-        writable: true
+        writable: true,
       },
       hasMorePages: {
         value: true,
-        writable: true
+        writable: true,
       },
       nextCursor: {
         value: 'next_cursor',
-        writable: true
-      }
+        writable: true,
+      },
     });
   });
-  
+
   describe('hasNext', () => {
     it('should return true if there are more pages', async () => {
       // Execute & Verify
       expect(await paginator.hasNext()).toBe(true);
     });
-    
+
     it('should return false if there are no more pages', async () => {
       // Setup
       Object.defineProperty(paginator, 'hasMorePages', {
         value: false,
-        writable: true
+        writable: true,
       });
-      
+
       // Execute & Verify
       expect(await paginator.hasNext()).toBe(false);
     });
   });
-  
+
   describe('next', () => {
     it('should return the next page of transactions', async () => {
       // Setup
@@ -465,43 +470,42 @@ describe('TransactionPaginatorImpl', () => {
         meta: {
           total: 100,
           count: 1,
-          nextCursor: 'another_cursor'
-        }
+          nextCursor: 'another_cursor',
+        },
       });
-      
+
       // Execute
       const result = await paginator.next();
-      
+
       // Verify
-      expect(mockTransactionApiClient.listTransactions).toHaveBeenCalledWith(
-        orgId,
-        ledgerId,
-        { limit: 1, cursor: 'next_cursor' }
-      );
+      expect(mockTransactionApiClient.listTransactions).toHaveBeenCalledWith(orgId, ledgerId, {
+        limit: 1,
+        cursor: 'next_cursor',
+      });
       expect(result).toEqual(mockTransactions);
-      
+
       // Check that the private properties were updated correctly
       expect(paginator['nextCursor']).toBe('another_cursor');
       expect(paginator['hasMorePages']).toBe(true);
     });
-    
+
     it('should return an empty array if there are no more pages', async () => {
       // Setup
       Object.defineProperty(paginator, 'hasMorePages', {
         value: false,
-        writable: true
+        writable: true,
       });
-      
+
       // Execute & Verify
       const result = await paginator.next();
       expect(result).toEqual([]);
     });
-    
+
     it('should handle API errors', async () => {
       // Setup
       const apiError = new Error('API Error');
       mockTransactionApiClient.listTransactions.mockRejectedValueOnce(apiError);
-      
+
       // Execute & Verify
       await expect(paginator.next()).rejects.toThrow('API Error');
     });

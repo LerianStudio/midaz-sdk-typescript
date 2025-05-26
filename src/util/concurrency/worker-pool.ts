@@ -1,6 +1,8 @@
 /**
  */
 
+import { getEnv } from '../runtime/environment';
+
 /**
  * Configuration options for the worker pool
  *
@@ -46,6 +48,12 @@ export interface WorkerPoolOptions<_T> {
    * @default false
    */
   continueOnError?: boolean;
+
+  /**
+   * AbortSignal to cancel the worker pool
+   * Allows cancellation of all active workers
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -53,17 +61,17 @@ export interface WorkerPoolOptions<_T> {
  * @internal
  */
 const _DEFAULT_WORKER_POOL_OPTIONS = {
-  concurrency: process.env.MIDAZ_WORKER_POOL_CONCURRENCY
-    ? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY, 10)
+  concurrency: getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')
+    ? parseInt(getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')!, 10)
     : 10,
-  preserveOrder: process.env.MIDAZ_WORKER_POOL_PRESERVE_ORDER
-    ? process.env.MIDAZ_WORKER_POOL_PRESERVE_ORDER.toLowerCase() === 'true'
+  preserveOrder: getEnv('MIDAZ_WORKER_POOL_PRESERVE_ORDER')
+    ? getEnv('MIDAZ_WORKER_POOL_PRESERVE_ORDER')?.toLowerCase() === 'true'
     : true,
-  batchDelay: process.env.MIDAZ_WORKER_POOL_BATCH_DELAY
-    ? parseInt(process.env.MIDAZ_WORKER_POOL_BATCH_DELAY, 10)
+  batchDelay: getEnv('MIDAZ_WORKER_POOL_BATCH_DELAY')
+    ? parseInt(getEnv('MIDAZ_WORKER_POOL_BATCH_DELAY')!, 10)
     : 0,
-  continueOnError: process.env.MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR
-    ? process.env.MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR.toLowerCase() === 'true'
+  continueOnError: getEnv('MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR')
+    ? getEnv('MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR')?.toLowerCase() === 'true'
     : false,
 };
 
@@ -115,7 +123,7 @@ export async function workerPool<T>(
   // Merge options with defaults
   const mergedOptions: Required<WorkerPoolOptions<T>> = {
     concurrency:
-      options.concurrency ?? parseInt(process.env.MIDAZ_WORKER_POOL_CONCURRENCY || '10', 10),
+      options.concurrency ?? parseInt(getEnv('MIDAZ_WORKER_POOL_CONCURRENCY') || '10', 10),
     preserveOrder: options.preserveOrder ?? true,
     batchDelay: options.batchDelay ?? 0,
     onSuccess:
@@ -129,6 +137,7 @@ export async function workerPool<T>(
         /* empty error handler */
       }),
     continueOnError: options.continueOnError ?? false,
+    signal: options.signal ?? (undefined as any), // Optional signal
   };
 
   // Process sequentially if concurrency is 1
@@ -162,6 +171,11 @@ async function processSequentially<T>(
 
   // Process items sequentially
   for (let i = 0; i < items.length; i++) {
+    // Check for cancellation
+    if (options.signal?.aborted) {
+      throw new Error('Worker pool cancelled');
+    }
+
     try {
       const result = await worker(items[i], i);
       if (options.preserveOrder) {
@@ -202,11 +216,19 @@ async function processBatches<T>(
 
   // Process items in batches
   for (let i = 0; i < items.length; i += options.concurrency) {
+    // Check for cancellation
+    if (options.signal?.aborted) {
+      throw new Error('Worker pool cancelled');
+    }
+
     const batch = items.slice(i, i + options.concurrency);
     const batchPromises = batch.map((item, batchIndex) => {
       const index = i + batchIndex;
       return worker(item, index)
         .then((result) => {
+          if (options.signal?.aborted) {
+            throw new Error('Worker pool cancelled');
+          }
           if (options.preserveOrder) {
             results[index] = result;
           } else {
@@ -256,10 +278,23 @@ async function processWithThrottling<T>(
   let activeCount = 0;
   let itemIndex = 0;
   let errorOccurred = false;
+  let cancelled = false;
 
   return new Promise((resolve, reject) => {
+    // Set up abort signal handler if provided
+    if (options.signal) {
+      options.signal.addEventListener('abort', () => {
+        cancelled = true;
+        reject(new Error('Worker pool cancelled'));
+      });
+    }
+
     // Function to process the next item
     const processNext = () => {
+      if (cancelled) {
+        return;
+      }
+
       if (errorOccurred && !options.continueOnError) {
         return;
       }
@@ -279,10 +314,12 @@ async function processWithThrottling<T>(
 
       worker(items[currentIndex], currentIndex)
         .then((result) => {
+          if (cancelled) return;
           results[currentIndex] = result;
           options.onSuccess(result, currentIndex);
         })
         .catch((error) => {
+          if (cancelled) return;
           options.onError(error, currentIndex);
           if (!options.continueOnError) {
             errorOccurred = true;
@@ -294,11 +331,13 @@ async function processWithThrottling<T>(
           activeCount--;
 
           // Start the next item
-          processNext();
+          if (!cancelled) {
+            processNext();
+          }
         });
 
       // Start more items if below concurrency limit
-      if (activeCount < options.concurrency && itemIndex < items.length) {
+      if (!cancelled && activeCount < options.concurrency && itemIndex < items.length) {
         setTimeout(processNext, options.batchDelay);
       }
     };
@@ -318,4 +357,44 @@ async function processWithThrottling<T>(
  */
 function _sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Worker pool controller for better resource management
+ * Provides a way to create and manage worker pools with cleanup
+ */
+export class WorkerPoolController {
+  private abortController: AbortController;
+
+  constructor() {
+    this.abortController = new AbortController();
+  }
+
+  /**
+   * Creates a new worker pool with cancellation support
+   */
+  async execute<T>(
+    items: T[],
+    worker: (item: T, index: number) => Promise<any>,
+    options: WorkerPoolOptions<T> = {}
+  ): Promise<any[]> {
+    return workerPool(items, worker, {
+      ...options,
+      signal: this.abortController.signal,
+    });
+  }
+
+  /**
+   * Cancels all active workers in the pool
+   */
+  cancel(): void {
+    this.abortController.abort();
+  }
+
+  /**
+   * Destroys the controller and cancels any active workers
+   */
+  destroy(): void {
+    this.cancel();
+  }
 }

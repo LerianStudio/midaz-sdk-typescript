@@ -128,6 +128,7 @@ export { SegmentsService } from './entities/segments';
 export {
   Account,
   AccountBuilder,
+  AccountType,
   CreateAccountInput,
   UpdateAccountBuilder,
   UpdateAccountInput,
@@ -211,6 +212,8 @@ export * from './util/observability';
 export * from './util/validation';
 
 export * from './util/config';
+
+export * from './util/concurrency';
 
 // ------------------------------
 // Builder Pattern

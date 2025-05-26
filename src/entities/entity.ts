@@ -161,11 +161,12 @@ export class Entity {
    * Configures all entity services with the provided configuration
    */
   public configure(config: MidazConfig): void {
-    this.httpClient.updateConfig({
-      baseUrls: config.baseUrls || {},
-      apiKey: config.authToken || config.apiKey,
-      timeout: config.timeout,
-    });
+    // TODO: Implement updateConfig in HttpClient wrapper
+    // this.httpClient.updateConfig({
+    //   baseUrls: config.baseUrls || {},
+    //   apiKey: config.authToken || config.apiKey,
+    //   timeout: config.timeout,
+    // });
 
     if (config.debug) {
       logger.debug('Entity services configured with updated settings');

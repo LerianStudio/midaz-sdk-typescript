@@ -1,6 +1,8 @@
 /**
  */
 
+import { Sanitizer } from '../security/sanitizer';
+
 /**
  * Error categories for Midaz API errors
  *
@@ -89,7 +91,7 @@ export enum ErrorCode {
 
 /**
  * Transaction error categories
- * 
+ *
  * Specific error types for financial transactions
  */
 export enum TransactionErrorCategory {
@@ -190,7 +192,7 @@ export class MidazError extends Error {
    * Original error
    * The underlying error that caused this error, if applicable
    */
-  public readonly cause?: Error;
+  public readonly cause?: Error | unknown;
 
   /**
    * Creates a new MidazError
@@ -205,25 +207,37 @@ export class MidazError extends Error {
     resourceId?: string;
     statusCode?: number;
     requestId?: string;
-    cause?: Error;
+    cause?: Error | unknown;
   }) {
-    super(params.message);
+    // Create sanitizer for error messages
+    const sanitizer = Sanitizer.getInstance();
+
+    // Sanitize the message to prevent exposure of sensitive data
+    const sanitizedMessage = sanitizer.sanitize(params.message, 'message') as string;
+
+    super(sanitizedMessage);
     this.category = params.category;
     this.code = params.code;
-    this.message = params.message;
+    this.message = sanitizedMessage;
     this.operation = params.operation;
     this.resource = params.resource;
     this.resourceId = params.resourceId;
     this.statusCode = params.statusCode;
     this.requestId = params.requestId;
-    this.cause = params.cause;
+
+    // Sanitize the cause error if present
+    if (params.cause) {
+      this.cause = sanitizer.sanitizeError(params.cause);
+    } else {
+      this.cause = params.cause;
+    }
 
     // Ensure the name property is set correctly
     this.name = 'MidazError';
 
-    // Maintains proper stack trace in V8 engines
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, MidazError);
+    // Maintains proper stack trace in V8 engines (Node.js only)
+    if (typeof (Error as any).captureStackTrace === 'function') {
+      (Error as any).captureStackTrace(this, MidazError);
     }
   }
 }
@@ -261,34 +275,34 @@ export interface EnhancedErrorInfo {
 
   /** Transaction-specific error classification */
   transactionErrorType?: TransactionErrorCategory;
-  
+
   /** Error recovery recommendation */
   recoveryRecommendation?: string;
-  
+
   /** UI-friendly error message */
   userMessage: string;
-  
+
   /** Technical error details for logging */
   technicalDetails: string;
-  
+
   /** Whether the error is retryable */
   isRetryable: boolean;
-  
+
   /** Whether to show this error to the end user */
   shouldShowUser: boolean;
 
   /** Type of operation that was being performed (added for enhanced error recovery) */
   operationType?: string;
-  
+
   /** Number of recovery attempts made (added for enhanced error recovery) */
   recoveryAttempts?: number;
-  
+
   /** Whether this was a network error (added for enhanced error recovery) */
   isNetworkError?: boolean;
-  
+
   /** Detailed diagnostics about the error (added for enhanced error recovery) */
   diagnostics?: string;
-  
+
   /** Steps taken during recovery process (added for enhanced error recovery) */
   recoverySteps?: string[];
 }
@@ -306,7 +320,11 @@ export interface ErrorRecoveryOptions {
   /** Multiplier to apply to delay after each retry */
   backoffFactor?: number;
   /** Optional custom backoff strategy function */
-  backoffStrategy?: (attempt: number, initialDelay: number, options: ErrorRecoveryOptions) => number;
+  backoffStrategy?: (
+    attempt: number,
+    initialDelay: number,
+    options: ErrorRecoveryOptions
+  ) => number;
   /** Custom function to determine if an error is retryable */
   retryCondition?: (error: unknown) => boolean;
   /** Optional callback to run before each retry attempt */
@@ -335,25 +353,25 @@ export interface OperationResult<T> {
 export interface ErrorHandlerOptions {
   /** Whether to display errors to the user */
   displayErrors?: boolean;
-  
+
   /** Function to display errors to the user */
   displayFn?: (message: string) => void;
-  
+
   /** Whether to log errors */
   logErrors?: boolean;
-  
+
   /** Log level for error logging */
   logLevel?: 'debug' | 'info' | 'warn' | 'error';
-  
+
   /** Whether to rethrow errors after handling */
   rethrow?: boolean;
-  
+
   /** Default return value when not rethrowing errors */
   defaultReturnValue?: any;
-  
+
   /** Custom error message formatter */
   formatMessage?: (errorInfo: EnhancedErrorInfo) => string;
-  
+
   /** Whether to include stack traces in logs */
   includeStackTrace?: boolean;
 }

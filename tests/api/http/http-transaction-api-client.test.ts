@@ -15,7 +15,7 @@ import { UrlBuilder } from '../../../src/api/url-builder';
 // Mock dependencies
 jest.mock('../../../src/models/validators/transaction-validator');
 jest.mock('../../../src/util/validation', () => ({
-  validate: jest.fn()
+  validate: jest.fn(),
 }));
 
 describe('HttpTransactionApiClient', () => {
@@ -33,9 +33,9 @@ describe('HttpTransactionApiClient', () => {
     amount: {
       value: 100,
       assetCode: 'USD',
-      scale: 2
+      scale: 2,
     },
-    metadata: { category: 'test' }
+    metadata: { category: 'test' },
   };
 
   // Mock transaction data
@@ -51,7 +51,7 @@ describe('HttpTransactionApiClient', () => {
     metadata: { purpose: 'test' },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    description: 'Test transaction'
+    description: 'Test transaction',
   };
 
   // Mock transaction list response
@@ -60,8 +60,8 @@ describe('HttpTransactionApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -79,19 +79,19 @@ describe('HttpTransactionApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
@@ -105,7 +105,7 @@ describe('HttpTransactionApiClient', () => {
         }
         return url;
       }),
-      getApiVersion: jest.fn().mockReturnValue('v1')
+      getApiVersion: jest.fn().mockReturnValue('v1'),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Reset all mocks
@@ -115,11 +115,7 @@ describe('HttpTransactionApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpTransactionApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
+    client = new HttpTransactionApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -141,8 +137,8 @@ describe('HttpTransactionApiClient', () => {
         expect.objectContaining({
           params: undefined,
           headers: expect.objectContaining({
-            'X-API-Version': 'v1'
-          })
+            'X-API-Version': 'v1',
+          }),
         })
       );
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
@@ -150,7 +146,7 @@ describe('HttpTransactionApiClient', () => {
         1,
         expect.objectContaining({
           orgId,
-          ledgerId
+          ledgerId,
         })
       );
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
@@ -158,7 +154,7 @@ describe('HttpTransactionApiClient', () => {
         1,
         expect.objectContaining({
           orgId,
-          ledgerId
+          ledgerId,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -176,7 +172,7 @@ describe('HttpTransactionApiClient', () => {
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          params: options
+          params: options,
         })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('hasParams', true);
@@ -216,13 +212,17 @@ describe('HttpTransactionApiClient', () => {
 
       // Assert
       expect(result).toEqual(mockTransaction);
-      expect(mockUrlBuilder.buildTransactionUrl).toHaveBeenCalledWith(orgId, ledgerId, transactionId);
+      expect(mockUrlBuilder.buildTransactionUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId
+      );
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         `/organizations/${orgId}/ledgers/${ledgerId}/transactions/${transactionId}`,
         expect.objectContaining({
           headers: expect.objectContaining({
-            'X-API-Version': 'v1'
-          })
+            'X-API-Version': 'v1',
+          }),
         })
       );
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
@@ -231,7 +231,7 @@ describe('HttpTransactionApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          transactionId
+          transactionId,
         })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
@@ -239,13 +239,17 @@ describe('HttpTransactionApiClient', () => {
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.getTransaction('', ledgerId, transactionId)).rejects.toThrow('orgId is required');
+      await expect(client.getTransaction('', ledgerId, transactionId)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.getTransaction(orgId, '', transactionId)).rejects.toThrow('ledgerId is required');
+      await expect(client.getTransaction(orgId, '', transactionId)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -261,7 +265,9 @@ describe('HttpTransactionApiClient', () => {
       mockHttpClient.get.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.getTransaction(orgId, ledgerId, transactionId)).rejects.toThrow('API Error');
+      await expect(client.getTransaction(orgId, ledgerId, transactionId)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
@@ -274,8 +280,8 @@ describe('HttpTransactionApiClient', () => {
       amount: {
         value: 100,
         assetCode: 'USD',
-        scale: 2
-      }
+        scale: 2,
+      },
     };
 
     const createInput: CreateTransactionInput = {
@@ -284,7 +290,7 @@ describe('HttpTransactionApiClient', () => {
       assetCode: 'USD',
       description: 'Test transaction',
       metadata: { purpose: 'test' },
-      operations: [mockOperationInput]
+      operations: [mockOperationInput],
     };
 
     it('should successfully create a transaction', async () => {
@@ -296,14 +302,19 @@ describe('HttpTransactionApiClient', () => {
 
       // Assert
       expect(result).toEqual(mockTransaction);
-      expect(mockUrlBuilder.buildTransactionUrl).toHaveBeenCalledWith(orgId, ledgerId, undefined, true);
+      expect(mockUrlBuilder.buildTransactionUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        undefined,
+        true
+      );
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         `/organizations/${orgId}/ledgers/${ledgerId}/transactions?flag=true`,
         expect.anything(), // We don't care about the exact transformation for the test
         expect.objectContaining({
           headers: expect.objectContaining({
-            'X-API-Version': 'v1'
-          })
+            'X-API-Version': 'v1',
+          }),
         })
       );
       expect(validate).toHaveBeenCalledWith(createInput, validateCreateTransactionInput);
@@ -314,11 +325,14 @@ describe('HttpTransactionApiClient', () => {
           orgId,
           ledgerId,
           description: createInput.description,
-          operationCount: createInput.operations.length
+          operationCount: createInput.operations.length,
         })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('description', createInput.description);
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('operationCount', createInput.operations.length);
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith(
+        'operationCount',
+        createInput.operations.length
+      );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
@@ -336,7 +350,7 @@ describe('HttpTransactionApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          assetCode: createInput.assetCode
+          assetCode: createInput.assetCode,
         })
       );
     });
@@ -350,19 +364,25 @@ describe('HttpTransactionApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.createTransaction(orgId, ledgerId, createInput)).rejects.toThrow('Validation error');
+      await expect(client.createTransaction(orgId, ledgerId, createInput)).rejects.toThrow(
+        'Validation error'
+      );
       expect(mockHttpClient.post).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.createTransaction('', ledgerId, createInput)).rejects.toThrow('orgId is required');
+      await expect(client.createTransaction('', ledgerId, createInput)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
-      await expect(client.createTransaction(orgId, '', createInput)).rejects.toThrow('ledgerId is required');
+      await expect(client.createTransaction(orgId, '', createInput)).rejects.toThrow(
+        'ledgerId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -372,7 +392,9 @@ describe('HttpTransactionApiClient', () => {
       mockHttpClient.post.mockRejectedValueOnce(error);
 
       // Act & Assert
-      await expect(client.createTransaction(orgId, ledgerId, createInput)).rejects.toThrow('API Error');
+      await expect(client.createTransaction(orgId, ledgerId, createInput)).rejects.toThrow(
+        'API Error'
+      );
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });

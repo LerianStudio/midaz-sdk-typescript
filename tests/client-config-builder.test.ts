@@ -12,7 +12,7 @@ import {
   createProductionConfig,
   createProductionConfigWithAccessManager,
   createLocalConfig,
-  createLocalConfigWithAccessManager
+  createLocalConfigWithAccessManager,
 } from '../src/client-config-builder';
 import { AccessManager } from '../src/util/auth/access-manager';
 
@@ -40,7 +40,7 @@ describe('ClientConfigBuilder', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       };
 
       const builder = createClientConfigWithAccessManager(accessManagerConfig);
@@ -61,7 +61,7 @@ describe('ClientConfigBuilder', () => {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret',
         tokenEndpoint: '/custom/token',
-        refreshThresholdSeconds: 600
+        refreshThresholdSeconds: 600,
       };
 
       const builder = createClientConfigWithAccessManager(accessManagerConfig);
@@ -91,7 +91,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         const builder = createDevelopmentConfigWithAccessManager(accessManagerConfig);
@@ -122,7 +122,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         const builder = createSandboxConfigWithAccessManager(accessManagerConfig);
@@ -153,7 +153,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         const builder = createProductionConfigWithAccessManager(accessManagerConfig);
@@ -184,7 +184,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         const builder = createLocalConfigWithAccessManager(accessManagerConfig);
@@ -204,7 +204,7 @@ describe('ClientConfigBuilder', () => {
   describe('ClientConfigBuilder methods', () => {
     it('should allow setting Access Manager after creation', () => {
       const builder = createClientConfigBuilder('test-api-key');
-      
+
       // Create an AccessManagerConfig object instead of an AccessManager instance
       const accessManagerConfig = {
         enabled: true,
@@ -212,12 +212,12 @@ describe('ClientConfigBuilder', () => {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret',
         tokenEndpoint: '/oauth/token',
-        refreshThresholdSeconds: 300
+        refreshThresholdSeconds: 300,
       };
-      
+
       // Create the AccessManager using the config
       const accessManager = new AccessManager(accessManagerConfig);
-      
+
       // In the real implementation, we don't actually remove the API key
       // when setting Access Manager, so we'll test that both can coexist
       builder.withAccessManager(accessManagerConfig);
@@ -235,11 +235,11 @@ describe('ClientConfigBuilder', () => {
         enabled: true,
         address: 'https://auth.example.com',
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret'
+        clientSecret: 'test-client-secret',
       };
 
       const builder = createClientConfigWithAccessManager(accessManagerConfig);
-      
+
       builder.withApiKey('new-api-key');
       const config = builder.build();
 
@@ -247,7 +247,7 @@ describe('ClientConfigBuilder', () => {
       // Access Manager is still present in the config
       expect(config.accessManager).toBeDefined();
     });
-    
+
     describe('withAccessManager validation', () => {
       let builder: ClientConfigBuilder;
 
@@ -260,7 +260,7 @@ describe('ClientConfigBuilder', () => {
           // enabled is missing
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         expect(() => {
@@ -274,7 +274,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           // address is missing
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         expect(() => {
@@ -286,9 +286,9 @@ describe('ClientConfigBuilder', () => {
       it('should throw error when address property is empty', () => {
         const invalidConfig = {
           enabled: true,
-          address: '',  // empty address
+          address: '', // empty address
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         expect(() => {
@@ -301,7 +301,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           address: 'https://auth.example.com',
           // clientId is missing
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         expect(() => {
@@ -314,8 +314,8 @@ describe('ClientConfigBuilder', () => {
         const invalidConfig = {
           enabled: true,
           address: 'https://auth.example.com',
-          clientId: '',  // empty clientId
-          clientSecret: 'test-client-secret'
+          clientId: '', // empty clientId
+          clientSecret: 'test-client-secret',
         };
 
         expect(() => {
@@ -327,7 +327,7 @@ describe('ClientConfigBuilder', () => {
         const invalidConfig = {
           enabled: true,
           address: 'https://auth.example.com',
-          clientId: 'test-client-id'
+          clientId: 'test-client-id',
           // clientSecret is missing
         };
 
@@ -342,7 +342,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: ''  // empty clientSecret
+          clientSecret: '', // empty clientSecret
         };
 
         expect(() => {
@@ -355,7 +355,7 @@ describe('ClientConfigBuilder', () => {
           enabled: true,
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         expect(() => {
@@ -368,7 +368,7 @@ describe('ClientConfigBuilder', () => {
           enabled: false,
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
-          clientSecret: 'test-client-secret'
+          clientSecret: 'test-client-secret',
         };
 
         expect(() => {

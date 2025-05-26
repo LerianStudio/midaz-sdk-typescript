@@ -6,6 +6,7 @@ import { AssetRateApiClient } from '../../api/interfaces/asset-rate-api-client';
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
 import { Observability } from '../../util/observability/observability';
 import { AssetRatesService } from '../asset-rates';
+import { getEnv } from '../../util/runtime/environment';
 
 /**
  * Implementation of the AssetRatesService interface
@@ -34,11 +35,11 @@ export class AssetRatesServiceImpl implements AssetRatesService {
       observability ||
       new Observability({
         serviceName: 'midaz-asset-rates-service',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
           : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
           : false,
       });
   }

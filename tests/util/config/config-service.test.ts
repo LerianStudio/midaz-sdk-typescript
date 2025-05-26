@@ -69,7 +69,6 @@ describe('ConfigService', () => {
   describe('getApiUrlConfig', () => {
     it('should return default values when no environment variables are set', () => {
       const config = ConfigService.getInstance().getApiUrlConfig();
-      console.log(config);
       expect(config).toEqual({
         onboardingUrl: 'http://localhost:3000/v1',
         transactionUrl: 'http://localhost:3001/v1',
@@ -84,8 +83,8 @@ describe('ConfigService', () => {
 
       const config = ConfigService.getInstance().getApiUrlConfig();
       expect(config).toEqual({
-        onboardingUrl: 'http://custom-onboarding.example.com',
-        transactionUrl: 'http://custom-transaction.example.com',
+        onboardingUrl: 'http://custom-onboarding.example.com/v1',
+        transactionUrl: 'http://custom-transaction.example.com/v1',
         apiVersion: 'v1',
       });
     });

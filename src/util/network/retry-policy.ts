@@ -99,12 +99,12 @@ export class RetryPolicy {
 
   /**
    * Executes a function with retry logic
-   * 
+   *
    * @returns Promise resolving to the function's result
    * @throws Error if all retry attempts fail
    */
   public async execute<T>(
-    fn: () => Promise<T>, 
+    fn: () => Promise<T>,
     onAttempt?: (info: { attempt: number; maxRetries: number; delay?: number }) => void
   ): Promise<T> {
     let lastError: Error | undefined;
@@ -114,7 +114,7 @@ export class RetryPolicy {
       if (onAttempt) {
         onAttempt({ attempt, maxRetries: this.maxRetries });
       }
-      
+
       try {
         return await fn();
       } catch (error) {
@@ -126,12 +126,12 @@ export class RetryPolicy {
         }
 
         const delay = this.calculateDelay(attempt);
-        
+
         // Call the onAttempt callback with delay information if provided
         if (onAttempt) {
           onAttempt({ attempt, maxRetries: this.maxRetries, delay });
         }
-        
+
         await this.sleep(delay);
       }
     }

@@ -6,6 +6,7 @@ import { ListOptions, ListResponse } from '../../models/common';
 import { CreatePortfolioInput, Portfolio, UpdatePortfolioInput } from '../../models/portfolio';
 import { Observability } from '../../util/observability/observability';
 import { PortfoliosService } from '../portfolios';
+import { getEnv } from '../../util/runtime/environment';
 
 /**
  * Implementation of the PortfoliosService interface
@@ -53,11 +54,11 @@ export class PortfoliosServiceImpl implements PortfoliosService {
       observability ||
       new Observability({
         serviceName: 'midaz-portfolios-service',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
           : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
           : false,
       });
   }

@@ -4,7 +4,10 @@
 
 import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../../../src/models/ledger';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import { validateCreateLedgerInput, validateUpdateLedgerInput } from '../../../src/models/validators/ledger-validator';
+import {
+  validateCreateLedgerInput,
+  validateUpdateLedgerInput,
+} from '../../../src/models/validators/ledger-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpLedgerApiClient } from '../../../src/api/http/http-ledger-api-client';
@@ -36,7 +39,7 @@ describe('HttpLedgerApiClient', () => {
     organizationId: orgId,
     status: { code: StatusCode.ACTIVE, timestamp: new Date().toISOString() },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   // Mock ledger list response
@@ -45,8 +48,8 @@ describe('HttpLedgerApiClient', () => {
     meta: {
       total: 1,
       count: 1,
-      nextCursor: 'next-cursor'
-    }
+      nextCursor: 'next-cursor',
+    },
   };
 
   // Mocks
@@ -64,19 +67,19 @@ describe('HttpLedgerApiClient', () => {
       setAttribute: jest.fn(),
       setStatus: jest.fn(),
       recordException: jest.fn(),
-      end: jest.fn()
+      end: jest.fn(),
     } as unknown as jest.Mocked<Span>;
 
     mockObservability = {
       startSpan: jest.fn().mockReturnValue(mockSpan),
-      recordMetric: jest.fn()
+      recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
 
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
       patch: jest.fn(),
-      delete: jest.fn()
+      delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
@@ -87,9 +90,9 @@ describe('HttpLedgerApiClient', () => {
         }
         return url;
       }),
-      getApiVersion: jest.fn().mockReturnValue(apiVersion)
+      getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
-    
+
     // Reset all mocks
     mockHttpClient.get.mockReset();
     mockHttpClient.post.mockReset();
@@ -102,12 +105,8 @@ describe('HttpLedgerApiClient', () => {
     });
 
     // Create client instance
-    client = new HttpLedgerApiClient(
-      mockHttpClient,
-      mockUrlBuilder,
-      mockObservability
-    );
-    
+    client = new HttpLedgerApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
+
     // Access the protected apiVersion property by using type assertion
     (client as any).apiVersion = apiVersion;
 
@@ -147,7 +146,7 @@ describe('HttpLedgerApiClient', () => {
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          params: options
+          params: options,
         })
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('limit', 10);
@@ -211,7 +210,7 @@ describe('HttpLedgerApiClient', () => {
         category: ErrorCategory.NOT_FOUND,
         code: ErrorCode.NOT_FOUND,
         message: 'Ledger not found',
-        statusCode: 404
+        statusCode: 404,
       });
       mockHttpClient.get.mockRejectedValueOnce(error);
 
@@ -226,7 +225,7 @@ describe('HttpLedgerApiClient', () => {
     const createInput: CreateLedgerInput = {
       name: 'New Ledger',
       status: StatusCode.ACTIVE,
-      metadata: { department: 'Finance' }
+      metadata: { department: 'Finance' },
     };
 
     it('should successfully create a ledger', async () => {
@@ -287,12 +286,19 @@ describe('HttpLedgerApiClient', () => {
     const updateInput: UpdateLedgerInput = {
       name: 'Updated Ledger',
       status: StatusCode.INACTIVE,
-      metadata: { department: 'Accounting' }
+      metadata: { department: 'Accounting' },
     };
 
     it('should successfully update a ledger', async () => {
       // Arrange
-      const updatedLedger = { ...mockLedger, name: updateInput.name, status: { code: updateInput.status || StatusCode.INACTIVE, timestamp: new Date().toISOString() } };
+      const updatedLedger = {
+        ...mockLedger,
+        name: updateInput.name,
+        status: {
+          code: updateInput.status || StatusCode.INACTIVE,
+          timestamp: new Date().toISOString(),
+        },
+      };
       mockHttpClient.patch.mockResolvedValueOnce(updatedLedger);
       (validateUpdateLedgerInput as jest.Mock).mockReturnValueOnce({ valid: true });
 
@@ -321,13 +327,17 @@ describe('HttpLedgerApiClient', () => {
       });
 
       // Act & Assert
-      await expect(client.updateLedger(orgId, ledgerId, updateInput)).rejects.toThrow('Validation error');
+      await expect(client.updateLedger(orgId, ledgerId, updateInput)).rejects.toThrow(
+        'Validation error'
+      );
       expect(mockHttpClient.patch).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing orgId', async () => {
       // Act & Assert
-      await expect(client.updateLedger('', ledgerId, updateInput)).rejects.toThrow('orgId is required');
+      await expect(client.updateLedger('', ledgerId, updateInput)).rejects.toThrow(
+        'orgId is required'
+      );
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
@@ -397,17 +407,17 @@ describe('HttpLedgerApiClient', () => {
     it('should record metrics with the observability provider', async () => {
       // Use a public method to indirectly test the private recordMetrics method
       mockHttpClient.get.mockResolvedValueOnce(mockLedger);
-      
+
       // Act
       await client.getLedger(orgId, ledgerId);
-      
+
       // Assert
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'ledgers.get',
         1,
-        expect.objectContaining({ 
-          orgId, 
-          ledgerId 
+        expect.objectContaining({
+          orgId,
+          ledgerId,
         })
       );
     });
@@ -415,11 +425,11 @@ describe('HttpLedgerApiClient', () => {
     it('should validate required parameters and throw error if missing', async () => {
       // The validateRequiredParams method is private, but we can test it indirectly
       // through the public methods that use it
-      
+
       // Test with missing parameters
       await expect(client.getLedger('', ledgerId)).rejects.toThrow('orgId is required');
       await expect(client.getLedger(orgId, '')).rejects.toThrow('id is required');
-      
+
       // Verify the error is recorded on the span
       expect(mockSpan.recordException).toHaveBeenCalled();
     });

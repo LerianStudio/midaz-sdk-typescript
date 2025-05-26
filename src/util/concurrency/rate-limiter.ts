@@ -1,3 +1,5 @@
+import { getEnv } from '../runtime/environment';
+
 /**
  * Configuration options for the rate limiter
  */
@@ -114,29 +116,29 @@ export class RateLimiter {
     // Use environment variables if available
     this.maxRequests =
       options.maxRequests ||
-      (process.env.MIDAZ_RATE_LIMIT_MAX_REQUESTS
-        ? parseInt(process.env.MIDAZ_RATE_LIMIT_MAX_REQUESTS, 10)
+      (getEnv('MIDAZ_RATE_LIMIT_MAX_REQUESTS')
+        ? parseInt(getEnv('MIDAZ_RATE_LIMIT_MAX_REQUESTS')!, 10)
         : 100);
 
     this.timeWindowMs =
       options.timeWindowMs ||
-      (process.env.MIDAZ_RATE_LIMIT_TIME_WINDOW
-        ? parseInt(process.env.MIDAZ_RATE_LIMIT_TIME_WINDOW, 10)
+      (getEnv('MIDAZ_RATE_LIMIT_TIME_WINDOW')
+        ? parseInt(getEnv('MIDAZ_RATE_LIMIT_TIME_WINDOW')!, 10)
         : 60000);
 
     this.queueExceeded =
       options.queueExceeded !== undefined
         ? options.queueExceeded
-        : process.env.MIDAZ_RATE_LIMIT_QUEUE_EXCEEDED
-          ? process.env.MIDAZ_RATE_LIMIT_QUEUE_EXCEEDED.toLowerCase() === 'true'
+        : getEnv('MIDAZ_RATE_LIMIT_QUEUE_EXCEEDED')
+          ? getEnv('MIDAZ_RATE_LIMIT_QUEUE_EXCEEDED')?.toLowerCase() === 'true'
           : true;
 
     this.maxQueueSize =
       options.maxQueueSize !== undefined
         ? options.maxQueueSize
-        : process.env.MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE
-          ? parseInt(process.env.MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE, 10)
-          : Infinity;
+        : getEnv('MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE')
+          ? parseInt(getEnv('MIDAZ_RATE_LIMIT_MAX_QUEUE_SIZE')!, 10)
+          : 1000; // Default to 1000 instead of Infinity to prevent memory leaks
   }
 
   /**
@@ -228,7 +230,8 @@ export class RateLimiter {
     }
 
     // Continue processing the queue
-    setImmediate(() => this.processQueue());
+    // Use setTimeout(0) instead of setImmediate for browser compatibility
+    setTimeout(() => this.processQueue(), 0);
   }
 
   /**

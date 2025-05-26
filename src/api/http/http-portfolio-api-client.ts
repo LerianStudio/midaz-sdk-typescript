@@ -12,6 +12,7 @@ import { Observability, Span } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
 import { PortfolioApiClient } from '../interfaces/portfolio-api-client';
 import { UrlBuilder } from '../url-builder';
+import { getEnv } from '../../util/runtime/environment';
 
 /**
  * HTTP implementation of the PortfolioApiClient interface
@@ -36,11 +37,11 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
       observability ||
       new Observability({
         serviceName: 'midaz-portfolio-api-client',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
           : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
           : false,
       });
   }

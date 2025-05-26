@@ -1,5 +1,6 @@
 import { ErrorHandlerOptions, ErrorRecoveryOptions, OperationResult } from './error-types';
 import { logger } from '../observability/logger-instance';
+import { Sanitizer } from '../security/sanitizer';
 import {
   isAccountEligibilityError,
   isDuplicateTransactionError,
@@ -29,12 +30,15 @@ export function logDetailedError(
   context?: Record<string, any>,
   logFn: (message: string, ...args: any[]) => void = console.error
 ): void {
+  // Create sanitizer for error details
+  const sanitizer = Sanitizer.getInstance();
+
   // Process the error to get enhanced information
   const errorInfo = processError(error);
 
   logFn('===== ERROR DETAILS =====');
   logFn(`Type: ${errorInfo?.type || 'Unknown'}`);
-  logFn(`Message: ${errorInfo?.message || 'No message available'}`);
+  logFn(`Message: ${sanitizer.sanitize(errorInfo?.message || 'No message available', 'message')}`);
 
   if (errorInfo?.transactionErrorType) {
     logFn(`Transaction Error Type: ${errorInfo.transactionErrorType}`);
@@ -55,19 +59,24 @@ export function logDetailedError(
   }
 
   if (errorInfo?.recoveryRecommendation) {
-    logFn(`Recovery Recommendation: ${errorInfo.recoveryRecommendation}`);
+    logFn(
+      `Recovery Recommendation: ${sanitizer.sanitize(errorInfo.recoveryRecommendation, 'recommendation')}`
+    );
   }
 
   logFn(`Retryable: ${errorInfo?.isRetryable}`);
 
   if (context) {
-    logFn('Context:', context);
+    // Sanitize the context to prevent exposure of sensitive data
+    const sanitizedContext = sanitizer.sanitize(context);
+    logFn('Context:', sanitizedContext);
   }
 
   // Use error.stack directly if available
   if (error instanceof Error && error.stack) {
     logFn('Stack Trace:');
-    logFn(error.stack);
+    // Sanitize stack trace to redact sensitive information
+    logFn(sanitizer.sanitize(error.stack, 'stack') as string);
   }
 
   logFn('=========================');
@@ -86,16 +95,21 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
   } = options || {};
 
   return function handleError(error: unknown, handlerContext?: Record<string, any>) {
+    // Create sanitizer for error handling
+    const sanitizer = Sanitizer.getInstance();
+
     // Process the error to get all details
     const errorInfo = processError(error);
 
-    // Get the error message
+    // Get the error message and sanitize it
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const sanitizedErrorMessage = sanitizer.sanitize(errorMessage, 'message') as string;
 
     // Handle user display if enabled
     if (displayErrors) {
-      // If we have a formatter and valid errorInfo, use it, otherwise use the raw error message
-      const displayMessage = formatMessage && errorInfo ? formatMessage(errorInfo) : errorMessage;
+      // If we have a formatter and valid errorInfo, use it, otherwise use the sanitized error message
+      const displayMessage =
+        formatMessage && errorInfo ? formatMessage(errorInfo) : sanitizedErrorMessage;
 
       displayFn(displayMessage);
     }
@@ -129,7 +143,8 @@ export function createErrorHandler(options?: ErrorHandlerOptions) {
 
     // Rethrow the error if enabled
     if (rethrow) {
-      throw error;
+      // If rethrowing, sanitize the error first
+      throw sanitizer.sanitizeError(error);
     }
 
     // Return the default value or the error info if no default is specified

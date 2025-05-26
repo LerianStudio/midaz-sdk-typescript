@@ -30,6 +30,22 @@ npm install midaz-sdk
 yarn add midaz-sdk
 ```
 
+### For Contributors and SDK Development
+
+If you're contributing to the SDK or running it from source:
+
+```bash
+# Clone the repository
+git clone https://github.com/LerianStudio/midaz-sdk-typescript.git
+cd midaz-sdk-typescript
+
+# Install all dependencies (including dev dependencies)
+npm run setup
+
+# Build the SDK
+npm run build
+```
+
 ## Quick Start
 
 ```typescript
@@ -216,6 +232,92 @@ For detailed documentation, see the [SDK Documentation](./docs/README.md) which 
 
 The Midaz SDK is written in TypeScript and provides full type definitions for all APIs. It requires TypeScript 5.8 or later.
 
+## Development and Build Scripts
+
+The SDK includes a comprehensive set of npm scripts with automatic dependency checking. If you run a command that requires development dependencies that aren't installed, the script will automatically guide you through the installation process.
+
+### Quick Setup
+
+```bash
+# Install all development dependencies
+npm run setup
+```
+
+### Available Scripts
+
+#### Build Commands
+
+```bash
+npm run build        # Build all targets (CommonJS, ESM, and TypeScript definitions)
+npm run build:cjs    # Build CommonJS module
+npm run build:esm    # Build ES module
+npm run build:types  # Build TypeScript type definitions
+npm run build:watch  # Watch mode for development
+npm run dev          # Alias for build:watch
+npm run clean        # Clean build artifacts
+```
+
+#### Testing
+
+```bash
+npm run test          # Run all tests
+npm run test:watch    # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
+npm run test:ci       # Run tests in CI mode
+```
+
+#### Code Quality
+
+```bash
+npm run lint         # Check code style with ESLint
+npm run lint:fix     # Fix auto-fixable linting issues
+npm run format       # Format code with Prettier
+npm run format:check # Check if code is formatted
+npm run typecheck    # Type-check without building
+```
+
+#### Documentation
+
+```bash
+npm run docs       # Generate API documentation
+npm run docs:serve # Generate and serve documentation locally
+```
+
+#### Other Commands
+
+```bash
+npm run size     # Check bundle size
+npm run examples # Run example scripts
+```
+
+### Automatic Dependency Management
+
+All scripts include automatic dependency checking. For example:
+
+- Running `npm run build` without TypeScript installed will prompt you to install it
+- Running `npm run test` without Jest installed will guide you through the setup
+- Running `npm run lint` without ESLint will help you get it installed
+
+This ensures you never encounter cryptic "command not found" errors!
+
+### Troubleshooting
+
+If you encounter any issues:
+
+1. **First Time Setup**: Run `npm run setup` to install all development dependencies
+2. **Build Errors**: Run `npm run clean` then `npm run build`
+3. **Test Failures**: Ensure you have the latest dependencies with `npm run setup`
+4. **Linting Issues**: Use `npm run lint:fix` to automatically fix common issues
+
+### Browser Compatibility
+
+The SDK is designed to work in both Node.js and browser environments:
+
+- Pure TypeScript implementation with no Node.js-specific runtime dependencies
+- Uses Web Crypto API for cryptographic operations
+- Provides both CommonJS and ESM builds
+- Fully tree-shakeable for optimal bundle sizes
+
 ### CI/CD Pipeline
 
 This project uses GitHub Actions for continuous integration and delivery:
@@ -229,6 +331,17 @@ This project uses GitHub Actions for continuous integration and delivery:
 ## Contributing
 
 Contributions are welcome! Please see our [Contributing Guide](./CONTRIBUTING.md) for details on how to contribute to the Midaz SDK.
+
+### Development Setup
+
+1. Fork and clone the repository
+2. Run `npm run setup` to install all dependencies
+3. Make your changes
+4. Run `npm run test` to ensure tests pass
+5. Run `npm run lint:fix` to fix code style
+6. Submit a pull request
+
+For more detailed development information, see our [Developer Guide](./DEVELOPER.md).
 
 ## License
 

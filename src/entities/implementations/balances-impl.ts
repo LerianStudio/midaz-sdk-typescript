@@ -44,11 +44,12 @@ export class BalancesServiceImpl implements BalancesService {
    * Creates a new BalancesServiceImpl
    *
    */
-  constructor(private readonly balanceApiClient: BalanceApiClient, observability?: Observability) {
+  constructor(
+    private readonly balanceApiClient: BalanceApiClient,
+    observability?: Observability
+  ) {
     // Initialize observability with service name
-    this.observability =
-      observability ||
-      Observability.getInstance();
+    this.observability = observability || Observability.getInstance();
   }
 
   /**

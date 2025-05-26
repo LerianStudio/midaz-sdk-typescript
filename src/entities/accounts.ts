@@ -7,7 +7,7 @@ import { ListOptions, ListResponse } from '../models/common';
 
 /**
  * Service for managing accounts in a ledger system
- * 
+ *
  * Accounts represent containers for holding specific assets, categorized by
  * type and organized into portfolios and segments.
  *
@@ -32,7 +32,7 @@ export interface AccountsService {
    */
   listAccounts(orgId: string, ledgerId: string, opts?: ListOptions): Promise<ListResponse<Account>>;
 
-  /** 
+  /**
    * Gets an account by ID
    *
    */
@@ -46,7 +46,7 @@ export interface AccountsService {
 
   /**
    * Updates an existing account
-   * 
+   *
    */
   updateAccount(
     orgId: string,

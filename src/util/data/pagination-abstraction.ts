@@ -3,56 +3,57 @@
 
 import { ListMetadata as _ListMetadata, ListOptions, ListResponse } from '../../models/common';
 import { Observability, Span } from '../../util/observability/observability';
+import { getEnv } from '../runtime/environment';
 
 /**
  * Generic paginator interface for all entity types
- * 
+ *
  * @template T - Type of items being paginated
  */
 export interface Paginator<T> {
   /**
    * Checks if there are more items to retrieve
-   * 
+   *
    * @returns Promise resolving to true if there are more items
    */
   hasNext(): Promise<boolean>;
 
   /**
    * Gets the next page of items
-   * 
+   *
    * @returns Promise resolving to the next page of items
    */
   next(): Promise<T[]>;
 
   /**
    * Gets the current page of items
-   * 
+   *
    * @returns Promise resolving to the current page of items
    */
   getCurrentPage(): Promise<T[]>;
 
   /**
    * Gets all remaining items (fetches all pages)
-   * 
+   *
    * @returns Promise resolving to all remaining items
    */
   getAllItems(): Promise<T[]>;
 
   /**
    * Processes each page with a callback function
-   * 
+   *
    */
   forEachPage(callback: (items: T[]) => Promise<void>): Promise<void>;
 
   /**
    * Processes each item with a callback function
-   * 
+   *
    */
   forEachItem(callback: (item: T) => Promise<void>): Promise<void>;
 
   /**
    * Gets the current pagination state
-   * 
+   *
    * @returns Current pagination metadata
    */
   getPaginationState(): PaginationState;
@@ -95,7 +96,7 @@ export interface PaginationState {
 
 /**
  * Configuration options for the paginator
- * 
+ *
  * @template T - Type of items being paginated
  */
 export interface PaginatorConfig<T> {
@@ -137,7 +138,7 @@ export interface PaginatorConfig<T> {
 
 /**
  * Base implementation of the Paginator interface
- * 
+ *
  * @template T - Type of items being paginated
  */
 export abstract class BasePaginator<T> implements Paginator<T> {
@@ -198,7 +199,7 @@ export abstract class BasePaginator<T> implements Paginator<T> {
 
   /**
    * Creates a new BasePaginator
-   * 
+   *
    */
   constructor(protected readonly config: PaginatorConfig<T>) {
     this.options = config.initialOptions || {};
@@ -207,54 +208,56 @@ export abstract class BasePaginator<T> implements Paginator<T> {
     this.spanAttributes = config.spanAttributes || {};
 
     // Set up observability
-    this.observability = config.observability || new Observability({
-      serviceName: config.serviceName || 'midaz-paginator',
-      enableTracing: process.env.MIDAZ_ENABLE_TRACING 
-        ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
-        : false,
-      enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-        ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
-        : false,
-    });
+    this.observability =
+      config.observability ||
+      new Observability({
+        serviceName: config.serviceName || 'midaz-paginator',
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
+          : false,
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
+          : false,
+      });
   }
 
   /**
    * Creates a span for the current operation
-   * 
+   *
    * @returns Created span with common attributes
    */
   protected createSpan(operationName: string): Span {
     const span = this.observability.startSpan(`paginator.${operationName}`);
-    
+
     // Add standard attributes
     for (const [key, value] of Object.entries(this.spanAttributes)) {
       span.setAttribute(key, value);
     }
-    
+
     // Add pagination state attributes
     span.setAttribute('pagesFetched', this.pagesFetched);
     span.setAttribute('itemsFetched', this.itemsFetched);
     span.setAttribute('hasMorePages', this.hasMorePages);
-    
+
     return span;
   }
 
   /**
    * Checks if there are more items to retrieve
-   * 
+   *
    * @returns Promise resolving to true if there are more items
    */
   public async hasNext(): Promise<boolean> {
     const span = this.createSpan('hasNext');
-    
+
     try {
       // Check limits
       const reachedMaxItems = this.itemsFetched >= this.maxItems;
       const reachedMaxPages = this.pagesFetched >= this.maxPages;
-      
+
       // No more pages if we've reached limits or API indicated no more pages
       const result = this.hasMorePages && !reachedMaxItems && !reachedMaxPages;
-      
+
       span.setAttribute('hasNext', result);
       span.setStatus('ok');
       return result;
@@ -275,18 +278,18 @@ export abstract class BasePaginator<T> implements Paginator<T> {
 
   /**
    * Gets the current page of items
-   * 
+   *
    * @returns Promise resolving to the current page of items
    */
   public async getCurrentPage(): Promise<T[]> {
     const span = this.createSpan('getCurrentPage');
-    
+
     try {
       // Fetch the page if not already fetched
       if (!this.currentPage) {
         await this.next();
       }
-      
+
       span.setAttribute('itemCount', this.currentPage?.length || 0);
       span.setStatus('ok');
       return this.currentPage || [];
@@ -301,19 +304,19 @@ export abstract class BasePaginator<T> implements Paginator<T> {
 
   /**
    * Gets all remaining items (fetches all pages)
-   * 
+   *
    * @returns Promise resolving to all remaining items
    */
   public async getAllItems(): Promise<T[]> {
     const span = this.createSpan('getAllItems');
     const allItems: T[] = [];
-    
+
     try {
       while (await this.hasNext()) {
         const items = await this.next();
         allItems.push(...items);
       }
-      
+
       span.setAttribute('totalItems', allItems.length);
       span.setStatus('ok');
       return allItems;
@@ -328,17 +331,17 @@ export abstract class BasePaginator<T> implements Paginator<T> {
 
   /**
    * Processes each page with a callback function
-   * 
+   *
    */
   public async forEachPage(callback: (items: T[]) => Promise<void>): Promise<void> {
     const span = this.createSpan('forEachPage');
-    
+
     try {
       while (await this.hasNext()) {
         const items = await this.next();
         await callback(items);
       }
-      
+
       span.setAttribute('pagesProcessed', this.pagesFetched);
       span.setStatus('ok');
     } catch (error) {
@@ -352,18 +355,18 @@ export abstract class BasePaginator<T> implements Paginator<T> {
 
   /**
    * Processes each item with a callback function
-   * 
+   *
    */
   public async forEachItem(callback: (item: T) => Promise<void>): Promise<void> {
     const span = this.createSpan('forEachItem');
-    
+
     try {
       await this.forEachPage(async (items) => {
         for (const item of items) {
           await callback(item);
         }
       });
-      
+
       span.setAttribute('itemsProcessed', this.itemsFetched);
       span.setStatus('ok');
     } catch (error) {
@@ -377,7 +380,7 @@ export abstract class BasePaginator<T> implements Paginator<T> {
 
   /**
    * Gets the current pagination state
-   * 
+   *
    * @returns Current pagination metadata
    */
   public getPaginationState(): PaginationState {
@@ -386,7 +389,7 @@ export abstract class BasePaginator<T> implements Paginator<T> {
       hasMore: this.hasMorePages,
       pagesFetched: this.pagesFetched,
       itemsFetched: this.itemsFetched,
-      lastFetchTimestamp: this.lastFetchTimestamp
+      lastFetchTimestamp: this.lastFetchTimestamp,
     };
   }
 
@@ -395,7 +398,7 @@ export abstract class BasePaginator<T> implements Paginator<T> {
    */
   public reset(): void {
     const span = this.createSpan('reset');
-    
+
     try {
       this.nextCursor = undefined;
       this.hasMorePages = true;
@@ -403,7 +406,7 @@ export abstract class BasePaginator<T> implements Paginator<T> {
       this.pagesFetched = 0;
       this.itemsFetched = 0;
       this.lastFetchTimestamp = undefined;
-      
+
       span.setStatus('ok');
     } catch (error) {
       span.recordException(error as Error);
@@ -417,18 +420,18 @@ export abstract class BasePaginator<T> implements Paginator<T> {
 
 /**
  * Standard implementation of the Paginator interface
- * 
+ *
  * @template T - Type of items being paginated
  */
 export class StandardPaginator<T> extends BasePaginator<T> {
   /**
    * Gets the next page of items
-   * 
+   *
    * @returns Promise resolving to the next page of items
    */
   public async next(): Promise<T[]> {
     const span = this.createSpan('next');
-    
+
     try {
       // Check if there are more pages to fetch
       if (!(await this.hasNext())) {
@@ -436,34 +439,34 @@ export class StandardPaginator<T> extends BasePaginator<T> {
         span.setStatus('ok');
         return [];
       }
-      
+
       // Prepare options with cursor
       const paginationOpts = {
         ...this.options,
         cursor: this.nextCursor,
       };
-      
+
       // Fetch the next page
       this.lastFetchTimestamp = Date.now();
       const response = await this.config.fetchPage(paginationOpts);
-      
+
       // Update pagination state
       this.nextCursor = response.meta?.nextCursor;
       this.hasMorePages = !!this.nextCursor;
       this.currentPage = response.items;
       this.pagesFetched++;
       this.itemsFetched += response.items.length;
-      
+
       // Record metrics
       this.observability.recordMetric('paginator.page', response.items.length, {
         serviceName: this.config.serviceName || 'midaz-paginator',
-        ...this.spanAttributes
+        ...this.spanAttributes,
       });
-      
+
       span.setAttribute('itemCount', response.items.length);
       span.setAttribute('hasMore', this.hasMorePages);
       span.setStatus('ok');
-      
+
       return this.currentPage;
     } catch (error) {
       span.recordException(error as Error);
@@ -477,7 +480,7 @@ export class StandardPaginator<T> extends BasePaginator<T> {
 
 /**
  * Creates a standard paginator for any entity type
- * 
+ *
  * @template T - Type of items to paginate
  * @returns A new paginator instance
  */
@@ -487,13 +490,13 @@ export function createPaginator<T>(config: PaginatorConfig<T>): Paginator<T> {
 
 /**
  * Creates an async generator for iterating through paginated results
- * 
+ *
  * @template T - Type of items being paginated
  * @returns Async generator yielding pages of items
  */
 export async function* paginateItems<T>(config: PaginatorConfig<T>): AsyncGenerator<T[]> {
   const paginator = createPaginator<T>(config);
-  
+
   while (await paginator.hasNext()) {
     yield await paginator.next();
   }
@@ -501,7 +504,7 @@ export async function* paginateItems<T>(config: PaginatorConfig<T>): AsyncGenera
 
 /**
  * Fetches all items from a paginated API
- * 
+ *
  * @template T - Type of items being paginated
  * @returns Promise resolving to an array of all items
  */

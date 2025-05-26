@@ -24,7 +24,7 @@ describe('Retry Policy Utilities with Environment Variables', () => {
   describe('RetryPolicy constructor with environment variables', () => {
     it('should use environment variables when available', () => {
       const policy = new RetryPolicy();
-      
+
       // @ts-expect-error - Accessing private properties for testing
       expect(policy.maxRetries).toBe(4);
       // @ts-expect-error - Accessing private properties for testing
@@ -38,11 +38,11 @@ describe('Retry Policy Utilities with Environment Variables', () => {
     it('should merge environment variables with provided options', () => {
       const customOptions: RetryOptions = {
         maxDelay: 2000,
-        retryableStatusCodes: [429, 503]
+        retryableStatusCodes: [429, 503],
       };
-      
+
       const policy = new RetryPolicy(customOptions);
-      
+
       // @ts-expect-error - Accessing private properties for testing
       expect(policy.maxRetries).toBe(4);
       // @ts-expect-error - Accessing private properties for testing

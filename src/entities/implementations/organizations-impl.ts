@@ -25,11 +25,12 @@ export class OrganizationsServiceImpl implements OrganizationsService {
    * Creates a new OrganizationsServiceImpl
    *
    */
-  constructor(private readonly apiClient: OrganizationApiClient, observability?: Observability) {
+  constructor(
+    private readonly apiClient: OrganizationApiClient,
+    observability?: Observability
+  ) {
     // Initialize observability with service name
-    this.observability =
-      observability ||
-      Observability.getInstance();
+    this.observability = observability || Observability.getInstance();
   }
 
   /**

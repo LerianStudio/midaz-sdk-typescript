@@ -241,4 +241,14 @@ export class Observability {
   ): void {
     Observability.getInstance().log(level, message, attributes);
   }
+
+  /** Destroys the global instance and cleans up resources */
+  static destroy(): void {
+    if (Observability.instance) {
+      // Flush any pending telemetry data
+      // Provider cleanup would go here if we had one
+      // For now, just cleanup the instance
+      Observability.instance = undefined;
+    }
+  }
 }

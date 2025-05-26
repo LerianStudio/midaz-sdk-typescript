@@ -12,7 +12,7 @@ import { Observability, Span } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
 import { LedgerApiClient } from '../interfaces/ledger-api-client';
 import { UrlBuilder } from '../url-builder';
-
+import { getEnv } from '../../util/runtime/environment';
 /**
  * HTTP implementation of the LedgerApiClient interface
  *
@@ -36,11 +36,11 @@ export class HttpLedgerApiClient implements LedgerApiClient {
       observability ||
       new Observability({
         serviceName: 'midaz-ledger-api-client',
-        enableTracing: process.env.MIDAZ_ENABLE_TRACING
-          ? process.env.MIDAZ_ENABLE_TRACING.toLowerCase() === 'true'
+        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
+          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
           : false,
-        enableMetrics: process.env.MIDAZ_ENABLE_METRICS
-          ? process.env.MIDAZ_ENABLE_METRICS.toLowerCase() === 'true'
+        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
+          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
           : false,
       });
   }
