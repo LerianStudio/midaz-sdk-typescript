@@ -34,11 +34,11 @@ jobs:
     name: Build, Test & Release
     runs-on: ubuntu-latest
     if: github.repository_owner == 'LerianStudio'
-    
+
     outputs:
       released: ${{ steps.semantic_release.outputs.new_release_published }}
       version: ${{ steps.semantic_release.outputs.new_release_version }}
-      
+
     steps:
       - name: Generate app token
         id: generate-token
@@ -113,7 +113,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: release
     if: needs.release.outputs.released == 'true' && github.ref == 'refs/heads/main'
-    
+
     permissions:
       contents: read
       packages: write
@@ -154,7 +154,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: release
     if: needs.release.outputs.released == 'true'
-    
+
     steps:
       - name: Generate app token
         uses: actions/create-github-app-token@v1
@@ -167,7 +167,6 @@ jobs:
         uses: LerianStudio/github-actions-gptchangelog@develop
         with:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
           LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
@@ -179,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [release, publish-github-packages]
     if: needs.release.outputs.released == 'true' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Generate app token
         id: generate-token
@@ -194,7 +193,7 @@ jobs:
           github-token: ${{ steps.generate-token.outputs.token }}
           script: |
             const version = '${{ needs.release.outputs.version }}';
-            
+
             // Create an issue in the main monorepo to update demo data generator
             await github.rest.issues.create({
               owner: 'LerianStudio',
@@ -250,5 +249,5 @@ jobs:
               `,
               labels: ['enhancement', 'demo-data', 'sdk', 'dependencies']
             });
-            
+
             console.log('Integration update issue created successfully!');
