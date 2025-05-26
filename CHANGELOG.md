@@ -1,3 +1,10 @@
+## [1.1.0-develop.6](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.5...v1.1.0-develop.6) (2025-05-26)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** make codecov upload non-blocking and only run on push events ([81b63b3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/81b63b3add23db13c64df14d1d18a6b6edae1055))
+
 ## [1.1.0-develop.5](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.4...v1.1.0-develop.5) (2025-05-26)
 
 
