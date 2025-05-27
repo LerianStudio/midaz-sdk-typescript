@@ -1,26 +1,18 @@
 version: 2
 
-# Define common settings using YAML anchors
-x-common-schedule: &common_schedule
-  interval: "weekly"
-  day: "monday"
-  time: "08:00"
-
-x-common-assignees: &common_assignees
-  - "fredamaral"
-
-x-common-reviewers: &common_reviewers
-  - "fredamaral"
-
 updates:
   # NPM Dependencies
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      <<: *common_schedule
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
     open-pull-requests-limit: 10
-    assignees: *common_assignees
-    reviewers: *common_reviewers
+    assignees:
+      - "fredamaral"
+    reviewers:
+      - "fredamaral"
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
@@ -74,10 +66,14 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      <<: *common_schedule
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
     open-pull-requests-limit: 10
-    assignees: *common_assignees
-    reviewers: *common_reviewers
+    assignees:
+      - "fredamaral"
+    reviewers:
+      - "fredamaral"
     commit-message:
       prefix: "ci"
       include: "scope"
