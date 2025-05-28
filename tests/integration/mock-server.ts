@@ -73,7 +73,29 @@ export class MockServer {
   getRequestsByPath(path: string): MockRequest[] {
     return this.requests.filter((req) => {
       const url = new URL(req.url, 'http://localhost');
-      return url.pathname === path;
+      // Handle API version prefix (e.g., /v1/organizations)
+      // Also handle path parameters (e.g., /organizations/:orgId)
+      const pathname = url.pathname;
+      
+      // Exact match
+      if (pathname === path) {
+        return true;
+      }
+      
+      // Ends with the path (for versioned APIs)
+      if (pathname.endsWith(path)) {
+        return true;
+      }
+      
+      // Check if the path is a pattern with parameters
+      if (path.includes(':')) {
+        // Convert path pattern to regex
+        const regexPattern = path.replace(/:[^/]+/g, '[^/]+');
+        const regex = new RegExp(`^${regexPattern}$`);
+        return regex.test(pathname);
+      }
+      
+      return false;
     });
   }
 
@@ -103,6 +125,8 @@ export class MockServer {
    * Creates a fetch interceptor
    */
   createFetchInterceptor(): typeof fetch {
+    // Store original fetch for reference (not used directly but helps document the flow)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const originalFetch = globalThis.fetch;
     const mockServer = this;
 
@@ -242,6 +266,22 @@ export function createMidazMockRoutes(): MockRoute[] {
           id: 'org_456',
           legalName: 'New Organization',
           status: { code: 'active' },
+        },
+      },
+    },
+    // Also add route for retry test
+    {
+      method: 'GET',
+      path: '/v1/organizations',
+      response: {
+        body: {
+          items: [
+            {
+              id: 'org_123',
+              legalName: 'Test Organization',
+              status: { code: 'active' },
+            },
+          ],
         },
       },
     },

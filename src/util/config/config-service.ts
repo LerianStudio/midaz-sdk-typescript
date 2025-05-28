@@ -291,7 +291,7 @@ export class ConfigService {
    * @returns The API URL configuration
    */
   public getApiUrlConfig(): ApiUrlConfig {
-    const apiVersion = this.getEnv('MIDAZ_API_VERSION', 'v1'); // Declaração da variável apiVersion
+    const apiVersion = this.getEnv('MIDAZ_API_VERSION', 'v1');
 
     const defaults: ApiUrlConfig = {
       onboardingUrl: `${this.getEnv('MIDAZ_ONBOARDING_URL', 'http://localhost:3000')}/${apiVersion}`,
@@ -299,10 +299,26 @@ export class ConfigService {
       apiVersion: apiVersion,
     };
 
-    return {
+    // Check if the URLs from environment already contain the API version
+    // to avoid duplication in tests
+    const processUrl = (url: string): string => {
+      if (url.endsWith(`/${apiVersion}/${apiVersion}`)) {
+        // Remove the duplicated version
+        return url.replace(`/${apiVersion}/${apiVersion}`, `/${apiVersion}`);
+      }
+      return url;
+    };
+
+    const result = {
       ...defaults,
       ...this.overrides.apiUrls,
     };
+
+    // Process URLs to avoid duplication
+    result.onboardingUrl = processUrl(result.onboardingUrl);
+    result.transactionUrl = processUrl(result.transactionUrl);
+
+    return result;
   }
 
   /**
