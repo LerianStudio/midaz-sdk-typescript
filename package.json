@@ -1,5 +1,5 @@
 {
-  "name": "midaz-sdk",
+  "name": "@lerianstudio/midaz-sdk",
   "version": "1.1.0-develop.11",
   "description": "Official TypeScript SDK for the Midaz financial API - Build powerful financial applications with type-safe, modern JavaScript/TypeScript",
   "main": "dist/index.js",
