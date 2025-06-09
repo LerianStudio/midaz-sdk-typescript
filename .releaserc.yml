@@ -19,7 +19,7 @@ plugins:
       - type: test
         release: patch
       - type: fix
-        release: minor
+        release: patch
       - type: refactor
         release: minor
       - type: docs
@@ -57,4 +57,5 @@ branches:
   - name: develop
     prerelease: beta
   - name: hotfix/*
-    prerelease: hf
+    prerelease: false 
+    channel: false
