@@ -6,17 +6,6 @@ import { Status, StatusCode } from './common';
 import { Builder, ModelBuilder } from './common-helpers';
 
 /**
- * Valid account types in the system
- */
-export type AccountType =
-  | 'deposit'
-  | 'savings'
-  | 'loans'
-  | 'marketplace'
-  | 'creditCard'
-  | 'external';
-
-/**
  * Account model
  */
 export interface Account {
@@ -48,7 +37,7 @@ export interface Account {
   alias?: string;
 
   /** Account type classification */
-  type: AccountType;
+  type: string;
 
   /** Ledger ID containing this account */
   ledgerId: string;
@@ -98,7 +87,7 @@ export interface CreateAccountInput {
   alias?: string;
 
   /** Account type classification */
-  type: AccountType;
+  type: string;
 
   /** Custom metadata fields for the account */
   metadata?: Record<string, any>;
@@ -132,7 +121,7 @@ export interface AccountBuilder extends Builder<CreateAccountInput, AccountBuild
   withAssetCode(assetCode: string): AccountBuilder;
 
   /** Set the account type */
-  withType(accountType: AccountType): AccountBuilder;
+  withType(accountType: string): AccountBuilder;
 
   /** Set the parent account ID */
   withParentAccountId(parentId: string): AccountBuilder;
@@ -163,7 +152,7 @@ export class AccountBuilderImpl
     return this;
   }
 
-  withType(accountType: AccountType): AccountBuilder {
+  withType(accountType: string): AccountBuilder {
     this.model.type = accountType;
     return this;
   }
@@ -195,7 +184,7 @@ export class AccountBuilderImpl
 export function createAccountBuilder(
   name: string,
   assetCode: string,
-  accountType: AccountType
+  accountType: string
 ): AccountBuilder {
   const model: CreateAccountInput = {
     name,
@@ -262,7 +251,7 @@ export function createUpdateAccountBuilder(): UpdateAccountBuilder {
 export function newCreateAccountInput(
   name: string,
   assetCode: string,
-  type: AccountType
+  type: string
 ): CreateAccountInput {
   return createAccountBuilder(name, assetCode, type).build();
 }
@@ -274,7 +263,7 @@ export function newCreateAccountInput(
 export function newCreateAccountInputWithAlias(
   name: string,
   assetCode: string,
-  type: AccountType,
+  type: string,
   alias: string
 ): CreateAccountInput {
   return createAccountBuilder(name, assetCode, type).withAlias(alias).build();

@@ -19,6 +19,7 @@ import { OrganizationsService } from './organizations';
 import { PortfoliosService } from './portfolios';
 import { SegmentsService } from './segments';
 import { TransactionsService } from './transactions';
+import { AccountTypesService } from './account-types';
 
 import { AccountsServiceImpl } from './implementations/accounts-impl';
 import { AssetRatesServiceImpl } from './implementations/asset-rates-impl';
@@ -30,6 +31,7 @@ import { OrganizationsServiceImpl } from './implementations/organizations-impl';
 import { PortfoliosServiceImpl } from './implementations/portfolios-impl';
 import { SegmentsServiceImpl } from './implementations/segments-impl';
 import { TransactionsServiceImpl } from './implementations/transactions-impl';
+import { AccountTypesServiceImpl } from './implementations/account-types-impl';
 
 /**
  * Entity factory providing access to all entity service interfaces
@@ -47,6 +49,9 @@ export class Entity {
 
   /** Accounts service */
   public readonly accounts: AccountsService;
+
+  /** Account Types service */
+  public readonly accountTypes: AccountTypesService;
 
   /** Ledgers service */
   public readonly ledgers: LedgersService;
@@ -138,6 +143,11 @@ export class Entity {
 
     this.portfolios = new PortfoliosServiceImpl(
       this.apiFactory.createPortfolioApiClient(),
+      this.observability
+    );
+
+    this.accountTypes = new AccountTypesServiceImpl(
+      this.apiFactory.createAccountTypeApiClient(),
       this.observability
     );
 

@@ -73,7 +73,12 @@ export class UrlBuilder {
    * @returns URL with version path
    */
   private getVersionedUrl(baseUrl: string): string {
-    return `${baseUrl}/${this.apiVersion}`;
+    const versionPath = `/${this.apiVersion}`;
+    // Avoid duplicating the version path if the base URL already includes it
+    if (baseUrl.endsWith(versionPath)) {
+      return baseUrl;
+    }
+    return `${baseUrl}${versionPath}`;
   }
 
   /**

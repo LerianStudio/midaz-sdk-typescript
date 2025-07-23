@@ -26,6 +26,8 @@ import { PortfolioApiClient } from './interfaces/portfolio-api-client';
 import { SegmentApiClient } from './interfaces/segment-api-client';
 import { TransactionApiClient } from './interfaces/transaction-api-client';
 import { UrlBuilder } from './url-builder';
+import { AccountTypeApiClient } from './interfaces/account-type-api-client';
+import { HttpAccountTypeApiClient } from './http/http-account-type-api-client';
 
 /**
  * Factory for creating API clients
@@ -138,6 +140,15 @@ export class ApiFactory {
    */
   public createAssetRateApiClient(): AssetRateApiClient {
     return new HttpAssetRateApiClient(this.httpClient, this.urlBuilder, this.observability);
+  }
+
+  /**
+   * Creates an account type API client
+   *
+   * @returns AccountTypeApiClient implementation
+   */
+  public createAccountTypeApiClient(): AccountTypeApiClient {
+    return new HttpAccountTypeApiClient(this.httpClient, this.urlBuilder, this.observability);
   }
 
   // All services have now been migrated to the API client pattern

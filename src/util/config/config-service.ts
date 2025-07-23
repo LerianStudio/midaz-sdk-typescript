@@ -291,11 +291,11 @@ export class ConfigService {
    * @returns The API URL configuration
    */
   public getApiUrlConfig(): ApiUrlConfig {
-    const apiVersion = this.getEnv('MIDAZ_API_VERSION', 'v1'); // Declaração da variável apiVersion
+    const apiVersion = this.getEnv('MIDAZ_API_VERSION', 'v1');
 
     const defaults: ApiUrlConfig = {
-      onboardingUrl: `${this.getEnv('MIDAZ_ONBOARDING_URL', 'http://localhost:3000')}/${apiVersion}`,
-      transactionUrl: `${this.getEnv('MIDAZ_TRANSACTION_URL', 'http://localhost:3001')}/${apiVersion}`,
+      onboardingUrl: this.getEnv('MIDAZ_ONBOARDING_URL', 'http://localhost:3000'),
+      transactionUrl: this.getEnv('MIDAZ_TRANSACTION_URL', 'http://localhost:3001'),
       apiVersion: apiVersion,
     };
 

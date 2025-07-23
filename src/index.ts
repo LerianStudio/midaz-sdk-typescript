@@ -128,7 +128,6 @@ export { SegmentsService } from './entities/segments';
 export {
   Account,
   AccountBuilder,
-  AccountType,
   CreateAccountInput,
   UpdateAccountBuilder,
   UpdateAccountInput,
@@ -137,6 +136,19 @@ export {
 } from './models/account';
 
 export { AccountsService } from './entities/accounts';
+
+// ------------------------------
+// Account Types
+// ------------------------------
+export {
+  AccountType,
+  AccountTypeBuilder,
+  CreateAccountTypeInput,
+  UpdateAccountTypeInput,
+  createAccountTypeBuilder,
+} from './models/account-type';
+
+export { AccountTypesService } from './entities/account-types';
 
 // Account helper utilities
 export * from './util/account/index';

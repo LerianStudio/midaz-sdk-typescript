@@ -79,13 +79,13 @@ describe('ConfigService', () => {
     it('should use environment variables when they are set', () => {
       process.env.MIDAZ_ONBOARDING_URL = 'http://custom-onboarding.example.com';
       process.env.MIDAZ_TRANSACTION_URL = 'http://custom-transaction.example.com';
-      process.env.MIDAZ_API_VERSION = 'v1';
+      process.env.MIDAZ_API_VERSION = 'v2';
 
       const config = ConfigService.getInstance().getApiUrlConfig();
       expect(config).toEqual({
-        onboardingUrl: 'http://custom-onboarding.example.com/v1',
-        transactionUrl: 'http://custom-transaction.example.com/v1',
-        apiVersion: 'v1',
+        onboardingUrl: 'http://custom-onboarding.example.com',
+        transactionUrl: 'http://custom-transaction.example.com',
+        apiVersion: 'v2',
       });
     });
   });

@@ -71,7 +71,7 @@ export class ModelBuilder<T extends BuildableModel, B extends Builder<T, B>>
    * Get the built model
    */
   build(): T {
-    return this.model;
+    return { ...this.model };
   }
 
   /**
