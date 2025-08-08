@@ -1,7 +1,7 @@
 /**
  */
 
-import { Address, Status } from './common';
+import { Address, Status, StatusCode } from './common';
 import { BuildableModel, Builder, ModelBuilder } from './common-helpers';
 
 /**
@@ -14,6 +14,7 @@ export interface CreateOrganizationInput extends BuildableModel {
   doingBusinessAs: string;
   address?: Address;
   parentOrganizationId?: string;
+  status?: StatusCode;
 }
 
 /**
@@ -78,6 +79,7 @@ export interface OrganizationBuilder extends Builder<CreateOrganizationInput, Or
   withLegalName(legalName: string): OrganizationBuilder;
   withLegalDocument(legalDocument: string): OrganizationBuilder;
   withDoingBusinessAs(doingBusinessAs: string): OrganizationBuilder;
+  withStatus(status: StatusCode): OrganizationBuilder;
 }
 
 /**
@@ -114,6 +116,11 @@ export class OrganizationBuilderImpl
 
   withDoingBusinessAs(doingBusinessAs: string): OrganizationBuilder {
     this.model.doingBusinessAs = doingBusinessAs;
+    return this;
+  }
+
+  withStatus(status: StatusCode): OrganizationBuilder {
+    this.model.status = status;
     return this;
   }
 }
@@ -183,6 +190,7 @@ export interface UpdateOrganizationBuilder
   withParentOrganizationId(parentId: string): UpdateOrganizationBuilder;
   withLegalName(legalName: string): UpdateOrganizationBuilder;
   withDoingBusinessAs(doingBusinessAs: string): UpdateOrganizationBuilder;
+  withStatus(status: StatusCode): UpdateOrganizationBuilder;
 }
 
 /**
@@ -214,6 +222,12 @@ export class UpdateOrganizationBuilderImpl
 
   withDoingBusinessAs(doingBusinessAs: string): UpdateOrganizationBuilder {
     this.model.doingBusinessAs = doingBusinessAs;
+    return this;
+  }
+
+  withStatus(status: StatusCode): UpdateOrganizationBuilder {
+    // Status updates are not supported for organization updates
+    // This method exists for API compatibility but doesn't modify the model
     return this;
   }
 }

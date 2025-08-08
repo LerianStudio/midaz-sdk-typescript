@@ -7,61 +7,67 @@ import { CreateTransactionInput, Transaction } from './transaction';
 
 /**
  * Transforms a client-side transaction to the API format
- *
  */
 export function toApiTransaction(input: CreateTransactionInput): any {
-  // Group operations by type (DEBIT and CREDIT)
-  const debitOperations = input.operations.filter((op) => op.type === 'DEBIT');
-  const creditOperations = input.operations.filter((op) => op.type === 'CREDIT');
-
-  // Create the new payload structure
   const result: any = {
-    send: {
-      asset: input.assetCode || debitOperations[0]?.amount.assetCode,
-      value: input.amount || debitOperations.reduce((sum, op) => sum + Number(op.amount.value), 0),
-      scale: input.scale || debitOperations[0]?.amount.scale || 2,
-      source: {
-        from: debitOperations.map((op) => ({
-          account: op.accountId,
-          amount: {
-            asset: op.amount.assetCode,
-            value: op.amount.value,
-            scale: op.amount.scale,
-          },
-          description: op.description || 'Debit Operation',
-          metadata: op.metadata,
-        })),
-      },
-      distribute: {
-        to: creditOperations.map((op) => ({
-          account: op.accountId,
-          amount: {
-            asset: op.amount.assetCode,
-            value: op.amount.value,
-            scale: op.amount.scale,
-          },
-          description: op.description || 'Credit Operation',
-          metadata: op.metadata,
-        })),
-      },
-    },
+    chartOfAccountsGroupName: input.chartOfAccountsGroupName,
+    description: input.description,
   };
 
-  // Add optional transaction-level fields
-  if (input.description) {
-    result.description = input.description;
+  // Add send information if present
+  if (input.send) {
+    result.send = input.send;
   }
 
-  if (input.chartOfAccountsGroupName) {
-    result.chartOfAccountsGroupName = input.chartOfAccountsGroupName;
+  // Add operations if present (alternative to send)
+  if (input.operations && input.operations.length > 0) {
+    // Convert operations to send format if no send is provided
+    if (!input.send) {
+      const debitOperations = input.operations.filter((op) => op.type === 'DEBIT');
+      const creditOperations = input.operations.filter((op) => op.type === 'CREDIT');
+      
+      if (debitOperations.length > 0 && creditOperations.length > 0) {
+        result.send = {
+          asset: input.assetCode || debitOperations[0]?.assetCode || 'USD',
+          value: input.amount || debitOperations[0]?.amount || '0',
+          source: {
+            from: debitOperations.map((op) => ({
+              account: op.accountId,
+              amount: {
+                asset: op.assetCode || 'USD',
+                value: op.amount,
+              },
+              accountAlias: op.accountAlias,
+              route: op.route,
+            })),
+          },
+          distribute: {
+            to: creditOperations.map((op) => ({
+              account: op.accountId,
+              amount: {
+                asset: op.assetCode || 'USD', 
+                value: op.amount,
+              },
+              accountAlias: op.accountAlias,
+              route: op.route,
+            })),
+          },
+        };
+      }
+    }
+  }
+
+  // Add optional fields
+  if (input.pending) {
+    result.pending = input.pending;
+  }
+
+  if (input.route) {
+    result.route = input.route;
   }
 
   if (input.metadata) {
     result.metadata = input.metadata;
-  }
-
-  if (input.externalId) {
-    result.externalId = input.externalId;
   }
 
   return result;

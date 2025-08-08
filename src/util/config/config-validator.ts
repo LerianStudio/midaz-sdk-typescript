@@ -27,24 +27,56 @@ export class ConfigValidator {
     const errors: ValidationError[] = [];
     const warnings: ValidationError[] = [];
 
-    // Validate API key
-    if (!config.apiKey) {
+    // Validate authentication - either API key or Access Manager must be configured
+    const hasApiKey = config.apiKey && typeof config.apiKey === 'string';
+    const hasAccessManager = config.accessManager && config.accessManager.enabled;
+    
+    if (!hasApiKey && !hasAccessManager) {
       errors.push({
-        field: 'apiKey',
-        message: 'API key is required',
+        field: 'authentication',
+        message: 'Either apiKey or accessManager (with enabled: true) is required for authentication',
       });
-    } else if (typeof config.apiKey !== 'string') {
-      errors.push({
-        field: 'apiKey',
-        message: 'API key must be a string',
-        value: config.apiKey,
-      });
-    } else if (config.apiKey.length < 10) {
-      warnings.push({
-        field: 'apiKey',
-        message: 'API key seems too short',
-        value: config.apiKey.length,
-      });
+    }
+
+    // Validate API key if provided
+    if (config.apiKey) {
+      if (typeof config.apiKey !== 'string') {
+        errors.push({
+          field: 'apiKey',
+          message: 'API key must be a string',
+          value: config.apiKey,
+        });
+      } else if (config.apiKey.length < 10) {
+        warnings.push({
+          field: 'apiKey',
+          message: 'API key seems too short',
+          value: config.apiKey.length,
+        });
+      }
+    }
+
+    // Validate Access Manager configuration if provided
+    if (config.accessManager) {
+      if (config.accessManager.enabled) {
+        if (!config.accessManager.address) {
+          errors.push({
+            field: 'accessManager.address',
+            message: 'Access Manager address is required when enabled',
+          });
+        }
+        if (!config.accessManager.clientId) {
+          errors.push({
+            field: 'accessManager.clientId',
+            message: 'Access Manager client ID is required when enabled',
+          });
+        }
+        if (!config.accessManager.clientSecret) {
+          errors.push({
+            field: 'accessManager.clientSecret',
+            message: 'Access Manager client secret is required when enabled',
+          });
+        }
+      }
     }
 
     // Validate base URLs

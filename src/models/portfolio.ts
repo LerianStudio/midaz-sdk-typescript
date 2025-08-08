@@ -190,6 +190,14 @@ export interface CreatePortfolioInput extends BuildableModel {
  */
 export interface UpdatePortfolioInput extends BuildableModel {
   /**
+   * EntityID is the updated identifier of the entity that owns this portfolio.
+   * Optional field that references a client, customer, department, or any other entity
+   * that the portfolio should be associated with.
+   * Max length: 256 characters.
+   */
+  entityId?: string;
+
+  /**
    * Name is the updated human-readable name for the portfolio.
    * Optional field that helps identify the purpose or owner of the portfolio.
    * Should be descriptive and meaningful to users.
@@ -309,6 +317,11 @@ export interface UpdatePortfolioBuilder
    * Set the name for the portfolio update
    */
   withName(name: string): UpdatePortfolioBuilder;
+
+  /**
+   * Set the entity ID for the portfolio update
+   */
+  withEntityId(entityId: string): UpdatePortfolioBuilder;
 }
 
 /**
@@ -329,6 +342,15 @@ export class UpdatePortfolioBuilderImpl
     }
 
     this.model.name = name;
+    return this;
+  }
+
+  withEntityId(entityId: string): UpdatePortfolioBuilder {
+    if (!entityId) {
+      throw new Error('Entity ID is required');
+    }
+
+    this.model.entityId = entityId;
     return this;
   }
 }

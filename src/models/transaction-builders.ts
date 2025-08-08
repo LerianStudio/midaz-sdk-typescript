@@ -9,14 +9,12 @@ import { AmountInput, CreateTransactionInput } from './transaction';
  * @returns Properly structured amount input
  */
 export function createAmountInput(
-  value: number | string,
-  assetCode: string,
-  scale = 0
+  value: string,
+  asset: string
 ): AmountInput {
   return {
     value,
-    assetCode,
-    scale,
+    asset,
   };
 }
 
@@ -51,10 +49,10 @@ export function createAmountInput(
 export function createDepositTransaction(
   sourceAccount: string,
   destinationAccount: string,
-  amount: number,
+  amount: string,
   assetCode: string,
-  scale = 0,
   description?: string,
+  chartOfAccountsGroupName = 'default',
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   // Set default external account ID format if not already external
@@ -62,25 +60,20 @@ export function createDepositTransaction(
 
   // Create the transaction with debit and credit operations
   return {
+    chartOfAccountsGroupName,
     description: description || `Deposit into ${destinationAccount}`,
     operations: [
       {
         accountId: sourceAccountId,
         type: 'DEBIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount,
+        assetCode,
       },
       {
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount,
+        assetCode,
       },
     ],
     metadata: {

@@ -246,4 +246,87 @@ export class UrlBuilder {
 
     return url;
   }
+
+  /**
+   * Builds the URL for account type endpoints
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountTypeUrl(orgId: string, ledgerId: string, accountTypeId?: string): string {
+    const baseUrl = this.getBaseUrl('onboarding');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/account-types`;
+
+    if (accountTypeId) {
+      url += `/${accountTypeId}`;
+    }
+
+    return url;
+  }
+
+  /**
+   * Builds the URL for operation route endpoints
+   *
+   * @returns The constructed URL
+   */
+  public buildOperationRouteUrl(orgId: string, ledgerId: string, operationRouteId?: string): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/operation-routes`;
+
+    if (operationRouteId) {
+      url += `/${operationRouteId}`;
+    }
+
+    return url;
+  }
+
+  /**
+   * Builds the URL for transaction route endpoints
+   *
+   * @returns The constructed URL
+   */
+  public buildTransactionRouteUrl(orgId: string, ledgerId: string, transactionRouteId?: string): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/transaction-routes`;
+
+    if (transactionRouteId) {
+      url += `/${transactionRouteId}`;
+    }
+
+    return url;
+  }
+}
+
+/**
+ * Builds a URL from a base URL and path segments
+ */
+export function buildUrl(baseUrl: string, ...pathSegments: string[]): string {
+  const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
+  const cleanSegments = pathSegments
+    .filter(segment => segment && segment.trim() !== '')
+    .map(segment => segment.replace(/^\/+|\/+$/g, ''));
+  
+  return [cleanBaseUrl, ...cleanSegments].join('/');
+}
+
+/**
+ * Builds query parameters string from an object
+ */
+export function buildQueryParams(params: Record<string, any>): string {
+  const searchParams = new URLSearchParams();
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      if (Array.isArray(value)) {
+        value.forEach(item => searchParams.append(key, String(item)));
+      } else {
+        searchParams.append(key, String(value));
+      }
+    }
+  });
+
+  const queryString = searchParams.toString();
+  return queryString ? `?${queryString}` : '';
 }

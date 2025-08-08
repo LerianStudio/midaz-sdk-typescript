@@ -1,7 +1,7 @@
 /**
  */
 
-import { Address, ListOptions, ListResponse, Status } from '../../models/common';
+import { Address, ListOptions, ListResponse, Status, StatusCode } from '../../models/common';
 
 import { ApiClient } from './api-client';
 
@@ -31,7 +31,7 @@ export interface CreateOrganizationInput {
   doingBusinessAs: string;
   parentOrganizationId?: string;
   address?: Address;
-  status?: string;
+  status?: StatusCode;
   metadata?: Record<string, any>;
 }
 
@@ -43,7 +43,7 @@ export interface UpdateOrganizationInput {
   doingBusinessAs?: string;
   parentOrganizationId?: string;
   address?: Address;
-  status?: string;
+  status?: StatusCode;
   metadata?: Record<string, any>;
 }
 
