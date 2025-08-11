@@ -6,20 +6,55 @@ import { AccessManagerConfig } from './util/auth/access-manager';
 import { HttpClient } from './util/network/http-client';
 
 /**
+ * Utility function to read environment variables with fallbacks
+ */
+function getEnvVar(name: string, defaultValue?: string): string | undefined {
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[name] || defaultValue;
+  }
+  return defaultValue;
+}
+
+/**
+ * Parse comma-separated string to number array
+ */
+function parseNumberArray(value: string | undefined): number[] {
+  if (!value) return [];
+  return value.split(',').map(num => parseInt(num.trim(), 10)).filter(num => !isNaN(num));
+}
+
+/**
+ * Parse boolean from string
+ */
+function parseBool(value: string | undefined, defaultValue: boolean = false): boolean {
+  if (!value) return defaultValue;
+  return value.toLowerCase() === 'true';
+}
+
+/**
+ * Parse number from string
+ */
+function parseNumber(value: string | undefined, defaultValue: number): number {
+  if (!value) return defaultValue;
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
+/**
  * Environment-specific base URLs
  */
 const ENVIRONMENT_URLS: Record<string, Record<string, string>> = {
   development: {
-    onboarding: 'https://api.dev.midaz.io',
-    transaction: 'https://api.dev.midaz.io',
+    onboarding: getEnvVar('MIDAZ_ONBOARDING_URL', 'http://localhost:3000') || 'http://localhost:3000',
+    transaction: getEnvVar('MIDAZ_TRANSACTION_URL', 'http://localhost:3001') || 'http://localhost:3001',
   },
   sandbox: {
-    onboarding: 'https://api.sandbox.midaz.io',
-    transaction: 'https://api.sandbox.midaz.io',
+    onboarding: getEnvVar('MIDAZ_ONBOARDING_URL', 'https://yourdomain.sandbox.midaz.io') || 'https://yourdomain.sandbox.midaz.io',
+    transaction: getEnvVar('MIDAZ_TRANSACTION_URL', 'https://yourdomain.sandbox.midaz.io') || 'https://yourdomain.sandbox.midaz.io',
   },
   production: {
-    onboarding: 'https://api.midaz.io',
-    transaction: 'https://api.midaz.io',
+    onboarding: getEnvVar('MIDAZ_ONBOARDING_URL', 'https://yourdomain.api.midaz.io') || 'https://yourdomain.api.midaz.io',
+    transaction: getEnvVar('MIDAZ_TRANSACTION_URL', 'https://yourdomain.api.midaz.io') || 'https://yourdomain.api.midaz.io',
   },
 };
 
@@ -28,21 +63,22 @@ const ENVIRONMENT_URLS: Record<string, Record<string, string>> = {
  */
 const DEFAULT_CONFIG: Partial<MidazConfig> = {
   environment: 'production',
-  apiVersion: 'v1',
-  timeout: 30000,
+  apiVersion: getEnvVar('MIDAZ_API_VERSION', 'v1') || 'v1',
+  timeout: parseNumber(getEnvVar('MIDAZ_HTTP_TIMEOUT'), 30000),
   retries: {
-    maxRetries: 3,
-    initialDelay: 100,
-    maxDelay: 1000,
-    retryableStatusCodes: [408, 429, 500, 502, 503, 504],
+    maxRetries: parseNumber(getEnvVar('MIDAZ_RETRY_MAX_RETRIES'), 3),
+    initialDelay: parseNumber(getEnvVar('MIDAZ_RETRY_INITIAL_DELAY'), 100),
+    maxDelay: parseNumber(getEnvVar('MIDAZ_RETRY_MAX_DELAY'), 1000),
+    retryableStatusCodes: parseNumberArray(getEnvVar('MIDAZ_RETRY_STATUS_CODES')) || [408, 429, 500, 502, 503, 504],
   },
   observability: {
-    enableTracing: false,
-    enableMetrics: false,
-    enableLogging: false,
-    serviceName: 'midaz-typescript-sdk',
+    enableTracing: parseBool(getEnvVar('MIDAZ_ENABLE_TRACING'), false),
+    enableMetrics: parseBool(getEnvVar('MIDAZ_ENABLE_METRICS'), false),
+    enableLogging: parseBool(getEnvVar('MIDAZ_ENABLE_LOGGING'), false),
+    serviceName: getEnvVar('MIDAZ_SERVICE_NAME', 'midaz-typescript-sdk') || 'midaz-typescript-sdk',
+    collectorEndpoint: getEnvVar('MIDAZ_COLLECTOR_ENDPOINT'),
   },
-  debug: false,
+  debug: parseBool(getEnvVar('MIDAZ_DEBUG'), false),
 };
 
 /**
@@ -251,8 +287,11 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
     };
 
     // Validate required configuration
-    if (!config.authToken && !config.apiKey) {
-      throw new Error('Either apiKey or authToken must be provided');
+    const hasAuthToken = !!(config.authToken || config.apiKey);
+    const hasAccessManager = !!(config.accessManager && config.accessManager.enabled);
+    
+    if (!hasAuthToken && !hasAccessManager) {
+      throw new Error('Either apiKey/authToken or accessManager (with enabled: true) must be provided');
     }
 
     // Set up base URLs based on environment if not already set
@@ -284,21 +323,23 @@ export function createClientConfigWithToken(authToken: string): ClientConfigBuil
  * Creates a client configuration builder with Access Manager authentication
  * @returns A new client configuration builder with Access Manager configured
  */
-export function createClientConfigWithAccessManager(config: {
-  address: string;
-  clientId: string;
-  clientSecret: string;
+export function createClientConfigWithAccessManager(config?: {
+  address?: string;
+  clientId?: string;
+  clientSecret?: string;
   tokenEndpoint?: string;
   refreshThresholdSeconds?: number;
 }): ClientConfigBuilder {
-  return new ClientConfigBuilderImpl().withAccessManager({
-    enabled: true,
-    address: config.address,
-    clientId: config.clientId,
-    clientSecret: config.clientSecret,
-    tokenEndpoint: config.tokenEndpoint,
-    refreshThresholdSeconds: config.refreshThresholdSeconds,
-  });
+  const accessManagerConfig = {
+    enabled: parseBool(getEnvVar('PLUGIN_AUTH_ENABLED'), true),
+    address: config?.address || getEnvVar('PLUGIN_AUTH_ADDRESS') || 'http://localhost:4000',
+    clientId: config?.clientId || getEnvVar('MIDAZ_CLIENT_ID') || '',
+    clientSecret: config?.clientSecret || getEnvVar('MIDAZ_CLIENT_SECRET') || '',
+    tokenEndpoint: config?.tokenEndpoint || getEnvVar('PLUGIN_AUTH_TOKEN_ENDPOINT'),
+    refreshThresholdSeconds: config?.refreshThresholdSeconds || parseNumber(getEnvVar('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS'), 300),
+  };
+  
+  return new ClientConfigBuilderImpl().withAccessManager(accessManagerConfig);
 }
 
 /**
@@ -317,19 +358,20 @@ export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): Clie
  * @returns A new client configuration builder with development environment defaults and Access Manager
  */
 export function createDevelopmentConfigWithAccessManager(
-  config: {
-    address: string;
-    clientId: string;
-    clientSecret: string;
+  config?: {
+    address?: string;
+    clientId?: string;
+    clientSecret?: string;
     tokenEndpoint?: string;
     refreshThresholdSeconds?: number;
   },
-  apiVersion = 'v1'
+  apiVersion?: string
 ): ClientConfigBuilder {
+  const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
   return createClientConfigWithAccessManager(config)
     .withEnvironment('development')
-    .withApiVersion(apiVersion)
-    .withDebugMode(true);
+    .withApiVersion(defaultApiVersion)
+    .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }
 
 /**
@@ -345,18 +387,19 @@ export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientCo
  * @returns A new client configuration builder with sandbox environment defaults and Access Manager
  */
 export function createSandboxConfigWithAccessManager(
-  config: {
-    address: string;
-    clientId: string;
-    clientSecret: string;
+  config?: {
+    address?: string;
+    clientId?: string;
+    clientSecret?: string;
     tokenEndpoint?: string;
     refreshThresholdSeconds?: number;
   },
-  apiVersion = 'v1'
+  apiVersion?: string
 ): ClientConfigBuilder {
+  const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
   return createClientConfigWithAccessManager(config)
     .withEnvironment('sandbox')
-    .withApiVersion(apiVersion);
+    .withApiVersion(defaultApiVersion);
 }
 
 /**
@@ -372,18 +415,19 @@ export function createProductionConfig(apiKey: string, apiVersion = 'v1'): Clien
  * @returns A new client configuration builder with production environment defaults and Access Manager
  */
 export function createProductionConfigWithAccessManager(
-  config: {
-    address: string;
-    clientId: string;
-    clientSecret: string;
+  config?: {
+    address?: string;
+    clientId?: string;
+    clientSecret?: string;
     tokenEndpoint?: string;
     refreshThresholdSeconds?: number;
   },
-  apiVersion = 'v1'
+  apiVersion?: string
 ): ClientConfigBuilder {
+  const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
   return createClientConfigWithAccessManager(config)
     .withEnvironment('production')
-    .withApiVersion(apiVersion);
+    .withApiVersion(defaultApiVersion);
 }
 
 /**
@@ -392,16 +436,19 @@ export function createProductionConfigWithAccessManager(
  */
 export function createLocalConfig(
   apiKey: string,
-  port = 3000,
-  apiVersion = 'v1'
+  port?: number,
+  apiVersion?: string
 ): ClientConfigBuilder {
+  const defaultPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3000);
+  const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
+  
   return createClientConfigBuilder(apiKey)
     .withBaseUrls({
-      onboarding: `http://localhost:${port}`,
-      transaction: `http://localhost:${port + 1}`,
+      onboarding: getEnvVar('MIDAZ_ONBOARDING_URL') || `http://localhost:${defaultPort}`,
+      transaction: getEnvVar('MIDAZ_TRANSACTION_URL') || `http://localhost:${defaultPort + 1}`,
     })
-    .withApiVersion(apiVersion)
-    .withDebugMode(true);
+    .withApiVersion(defaultApiVersion)
+    .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }
 
 /**
@@ -409,21 +456,32 @@ export function createLocalConfig(
  * @returns A new client configuration builder with local development defaults and Access Manager
  */
 export function createLocalConfigWithAccessManager(
-  config: {
-    address: string;
-    clientId: string;
-    clientSecret: string;
+  config?: {
+    address?: string;
+    clientId?: string;
+    clientSecret?: string;
     tokenEndpoint?: string;
     refreshThresholdSeconds?: number;
   },
-  port = 3000,
-  apiVersion = 'v1'
+  port?: number,
+  apiVersion?: string
 ): ClientConfigBuilder {
-  return createClientConfigWithAccessManager(config)
+  const defaultPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3000);
+  const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
+  
+  const accessManagerConfig = {
+    address: config?.address || getEnvVar('PLUGIN_AUTH_ADDRESS') || 'http://localhost:4000',
+    clientId: config?.clientId || getEnvVar('MIDAZ_CLIENT_ID') || '',
+    clientSecret: config?.clientSecret || getEnvVar('MIDAZ_CLIENT_SECRET') || '',
+    tokenEndpoint: config?.tokenEndpoint || getEnvVar('PLUGIN_AUTH_TOKEN_ENDPOINT'),
+    refreshThresholdSeconds: config?.refreshThresholdSeconds || parseNumber(getEnvVar('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS'), 300),
+  };
+  
+  return createClientConfigWithAccessManager(accessManagerConfig)
     .withBaseUrls({
-      onboarding: `http://localhost:${port}`,
-      transaction: `http://localhost:${port + 1}`,
+      onboarding: getEnvVar('MIDAZ_ONBOARDING_URL') || `http://localhost:${defaultPort}`,
+      transaction: getEnvVar('MIDAZ_TRANSACTION_URL') || `http://localhost:${defaultPort + 1}`,
     })
-    .withApiVersion(apiVersion)
-    .withDebugMode(true);
+    .withApiVersion(defaultApiVersion)
+    .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }

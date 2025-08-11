@@ -230,8 +230,12 @@ example:
 	$(call print_header,"Running Complete Workflow Example")
 	$(call print_header,"Make sure the Midaz Stack is running --default is localhost")
 	@echo "$(CYAN)Running new features example...$(NC)"
+	@if [ -f ".env" ]; then \
+		echo "$(GREEN)Found .env file, copying to examples directory...$(NC)"; \
+		cp .env examples/.env; \
+	fi
 	@if [ -f "examples/new-features-example.ts" ]; then \
-		$(NPX) ts-node examples/new-features-example.ts; \
+		cd examples && $(NPX) ts-node --project ../tsconfig.examples.json new-features-example.ts; \
 		echo "$(GREEN)[ok]$(NC) Complete workflow example completed$(GREEN) ✔️$(NC)"; \
 	else \
 		echo "$(RED)[error]$(NC) New features example not found$(RED) ❌$(NC)"; \

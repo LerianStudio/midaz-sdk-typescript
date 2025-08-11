@@ -130,6 +130,9 @@ export interface CreateTransactionInput {
   /** Description is a human-readable description of the transaction (REQUIRED by API) */
   description: string;
   
+  /** Code is an optional identifier/reference code for the transaction */
+  code?: string;
+  
   /** Pending indicates whether the transaction should be created in a pending state */
   pending?: boolean;
   

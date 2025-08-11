@@ -31,14 +31,40 @@ import { MidazClient, createClientConfigBuilder } from '../src/index';
 config();
 
 console.log('🔧 Loading configuration from environment...');
+
+// Auto-detect authentication method from environment (matches Go SDK behavior)
+const pluginAuthEnabled = process?.env?.PLUGIN_AUTH_ENABLED?.toLowerCase() === 'true';
+
 console.log('🔌 Connecting to Midaz APIs:');
 console.log(`   - Onboarding API: ${process?.env?.MIDAZ_ONBOARDING_URL || 'http://localhost:3000'}/v1`);
 console.log(`   - Transaction API: ${process?.env?.MIDAZ_TRANSACTION_URL || 'http://localhost:3001'}/v1`);
 console.log(`   - Environment: local`);
-console.log(`   - Debug mode: ${process?.env?.MIDAZ_DEBUG || 'false'}\n`);
+console.log(`   - Debug mode: ${process?.env?.MIDAZ_DEBUG || 'false'}`);
+
+// Display authentication method being used (like Go SDK)
+if (pluginAuthEnabled) {
+  console.log(`🔐 Authentication: Plugin Auth`);
+  console.log(`   - Auth Service: ${process?.env?.PLUGIN_AUTH_ADDRESS || process?.env?.PLUGIN_AUTH_HOST || 'http://localhost:4000'}`);
+  console.log(`   - Client ID: ${process?.env?.MIDAZ_CLIENT_ID ? '***' + process?.env?.MIDAZ_CLIENT_ID.slice(-4) : 'not set'}`);
+} else {
+  console.log(`🔐 Authentication: Plugin Auth (Default)`);
+  console.log(`   - Using pluginAccessManager for authentication`);
+}
+console.log();
 
 console.log('🔑 Initializing SDK client...');
-const clientConfig = createClientConfigBuilder(process?.env?.MIDAZ_AUTH_TOKEN || 'demo-token')
+
+// Configure client using pluginAccessManager
+const clientConfig = createClientConfigBuilder('')
+  .withAccessManager({
+    enabled: pluginAuthEnabled,
+    address: process?.env?.PLUGIN_AUTH_ADDRESS || process?.env?.PLUGIN_AUTH_HOST || '',
+    clientId: process?.env?.MIDAZ_CLIENT_ID || '',
+    clientSecret: process?.env?.MIDAZ_CLIENT_SECRET || '',
+    tokenEndpoint: process?.env?.PLUGIN_AUTH_TOKEN_ENDPOINT || '/v1/login/oauth/access_token',
+    refreshThresholdSeconds: process?.env?.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS ? 
+      parseInt(process?.env?.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS, 10) : 300
+  })
   .withBaseUrls({
     onboarding: process?.env?.MIDAZ_ONBOARDING_URL || 'http://localhost:3000',
     transaction: process?.env?.MIDAZ_TRANSACTION_URL || 'http://localhost:3001'
@@ -324,12 +350,140 @@ async function runCompleteWorkflow() {
     console.log(`   Asset: ${dummy2Account.assetCode}`);
     console.log(`   Created: ${dummy2Account.createdAt}\n`);
 
-    // STEP 6: Transaction Execution (Skipped - API compatibility issue)
-    console.log('💸 STEP 6: TRANSACTION EXECUTION');
+    // STEP 6: Transaction Execution with Routes
+    console.log('💸 STEP 6: TRANSACTION EXECUTION WITH ROUTES');
     console.log('==================================================\n');
     
-    console.log('⏭️ Skipping transaction execution - TypeScript SDK transaction API format differs from Go SDK');
-    console.log('   All other SDK functionality is working correctly with real API calls\n');
+    const amount = '1000.00';
+    const externalAccountID = '@external/USD';
+
+    console.log('Creating transaction using transaction routes and operation routes...');
+    
+    const transactionInput = {
+      chartOfAccountsGroupName: 'FUNDING',
+      description: 'Initial deposit from external account using routes',
+      route: transactionRoute.id,
+      metadata: {
+        source: 'typescript-sdk-example',
+        type: 'deposit',
+        useRoutes: true,
+        transactionRouteID: transactionRoute.id,
+        transactionRouteTitle: transactionRoute.title
+      },
+      send: {
+        asset: assetCode,
+        value: amount,
+        source: {
+          from: [{
+            account: externalAccountID,
+            route: sourceOperationRoute.id,
+            amount: {
+              asset: assetCode,
+              value: amount
+            },
+            description: 'Debit Operation - External deposit',
+            metadata: {
+              operation: 'funding',
+              type: 'external'
+            }
+          }]
+        },
+        distribute: {
+          to: [{
+            account: customerAccount.alias || customerAccount.id,
+            route: destinationOperationRoute.id,
+            amount: {
+              asset: assetCode,
+              value: amount
+            },
+            description: 'Credit Operation - Customer account',
+            metadata: {
+              operation: 'funding',
+              type: 'account'
+            }
+          }]
+        }
+      }
+    };
+    
+    
+    try {
+      const transaction = await client.entities.transactions.createTransaction(orgId, ledgerId, transactionInput);
+      
+      console.log(`✅ Transaction created: ${transaction.id}`);
+      console.log(`   Description: ${transaction.description}`);
+      console.log(`   Amount: ${transaction.amount} ${transaction.assetCode}`);
+      console.log(`   Route: ${transaction.route}`);
+      console.log(`   Status: ${transaction.status?.code}`);
+      console.log(`   Created: ${transaction.createdAt}`);
+      console.log(`   Source: ${transaction.source?.join(', ')}`);
+      console.log(`   Destination: ${transaction.destination?.join(', ')}\n`);
+
+      // Create a second transaction - Payment between accounts using routes
+      console.log('Creating payment transaction using routes...');
+      const paymentTransaction = await client.entities.transactions.createTransaction(orgId, ledgerId, {
+        chartOfAccountsGroupName: 'TRANSFER',
+        description: 'Payment for services using routes',
+        route: transactionRoute.id,
+        metadata: {
+          source: 'typescript-sdk-example',
+          type: 'transfer',
+          useRoutes: true,
+          purpose: 'service_payment'
+        },
+        send: {
+          asset: assetCode,
+          value: '250.00',
+          source: {
+            from: [{
+              account: customerAccount.alias || customerAccount.id,
+              route: sourceOperationRoute.id,
+              amount: {
+                asset: assetCode,
+                value: '250.00'
+              },
+              description: 'Debit Operation - Customer payment',
+              metadata: {
+                operation: 'transfer',
+                type: 'payment'
+              }
+            }]
+          },
+          distribute: {
+            to: [{
+              account: merchantAccount.alias || merchantAccount.id,
+              route: destinationOperationRoute.id,
+              amount: {
+                asset: assetCode,
+                value: '250.00'
+              },
+              description: 'Credit Operation - Merchant account',
+              metadata: {
+                operation: 'transfer',
+                type: 'receipt'
+              }
+            }]
+          }
+        }
+      });
+
+      console.log(`✅ Payment transaction created: ${paymentTransaction.id}`);
+      console.log(`   Description: ${paymentTransaction.description}`);
+      console.log(`   Amount: ${paymentTransaction.amount} ${paymentTransaction.assetCode}`);
+      console.log(`   Route: ${paymentTransaction.route}`);
+      console.log(`   Status: ${paymentTransaction.status?.code}`);
+      console.log(`   Created: ${paymentTransaction.createdAt}\n`);
+
+    } catch (error) {
+      console.log(`⚠️ Transaction creation failed: ${(error as any).message}`);
+      console.log('🐛 Full error details:');
+      console.log(JSON.stringify(error, null, 2));
+      if ((error as any).response) {
+        console.log('🐛 API Response Details:');
+        console.log(JSON.stringify((error as any).response, null, 2));
+      }
+      console.log('\n🔍 Debugging transaction creation issue...\n');
+    }
 
     // STEP 7: Portfolio Creation
     console.log('📁 STEP 7: PORTFOLIO CREATION');

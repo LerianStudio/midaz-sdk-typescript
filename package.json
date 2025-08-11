@@ -36,22 +36,7 @@
     "docs:serve": "typedoc --watch",
     "size": "bundlewatch",
     "examples": "npm run example:new-features",
-    "example:new-features": "npx ts-node --project tsconfig.examples.json examples/new-features-example.ts",
-    "benchmark": "node scripts/run-benchmarks.js",
-    "example:workflow": "npx ts-node --project tsconfig.examples.json examples/workflow.ts",
-    "example:client-config": "npx ts-node --project tsconfig.examples.json examples/client-config-example.ts",
-    "example:api-versioning": "npx ts-node --project tsconfig.examples.json examples/api-versioning-example.ts",
-    "example:cache": "npx ts-node --project tsconfig.examples.json examples/cache-example.ts",
-    "example:concurrency": "npx ts-node --project tsconfig.examples.json examples/concurrency-example.ts",
-    "example:validation": "npx ts-node --project tsconfig.examples.json examples/validation-example.ts",
-    "example:error-handling": "npx ts-node --project tsconfig.examples.json examples/error-handling-example.ts",
-    "example:network": "npx ts-node --project tsconfig.examples.json examples/network-example.ts",
-    "example:data": "npx ts-node --project tsconfig.examples.json examples/data-example.ts",
-    "example:observability": "npx ts-node --project tsconfig.examples.json examples/observability-example.ts",
-    "example:access-manager": "npx ts-node --project tsconfig.examples.json examples/access-manager-example.ts",
-    "example:account-helpers": "npx ts-node --project tsconfig.examples.json examples/account-helpers-example.ts",
-    "example:config": "npx ts-node --project tsconfig.examples.json examples/config-example.ts",
-    "example:version-transformer": "npx ts-node --project tsconfig.examples.json examples/version-transformer-example.ts"
+    "example:new-features": "npx ts-node --project tsconfig.examples.json examples/new-features-example.ts"
   },
   "keywords": [
     "midaz",

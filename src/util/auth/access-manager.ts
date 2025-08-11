@@ -83,7 +83,7 @@ export class AccessManager {
     this.address = config.address;
     this.clientId = config.clientId;
     this.clientSecret = config.clientSecret;
-    this.tokenEndpoint = config.tokenEndpoint || '/oauth/token';
+    this.tokenEndpoint = config.tokenEndpoint || '/v1/login/oauth/access_token';
     this.refreshThresholdSeconds = config.refreshThresholdSeconds || 300;
 
     // No longer needed - using fetch API directly
@@ -199,7 +199,7 @@ export class AccessManager {
   static fromEnvironment(): AccessManager {
     // Access environment variables directly
     const enabled = getEnv('PLUGIN_AUTH_ENABLED')?.toLowerCase() === 'true';
-    const address = getEnv('PLUGIN_AUTH_ADDRESS') || '';
+    const address = getEnv('PLUGIN_AUTH_ADDRESS') || getEnv('PLUGIN_AUTH_HOST') || '';
     const clientId = getEnv('MIDAZ_CLIENT_ID') || '';
     const clientSecret = getEnv('MIDAZ_CLIENT_SECRET') || '';
 
@@ -215,7 +215,7 @@ export class AccessManager {
       address,
       clientId,
       clientSecret,
-      tokenEndpoint: getEnv('PLUGIN_AUTH_TOKEN_ENDPOINT') || '/oauth/token',
+      tokenEndpoint: getEnv('PLUGIN_AUTH_TOKEN_ENDPOINT') || '/v1/login/oauth/access_token',
       refreshThresholdSeconds: getEnv('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS')
         ? parseInt(getEnv('PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS')!, 10)
         : 300,
