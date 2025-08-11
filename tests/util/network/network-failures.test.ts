@@ -4,7 +4,19 @@
  */
 import { HttpClient } from '../../../src/util/network/http-client';
 import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
-import { MockObservability, MockSpan } from '../mocks/mock-observability';
+
+// Simple mock classes for skipped tests
+class MockSpan {
+  setTag = jest.fn();
+  setStatus = jest.fn();
+  log = jest.fn();
+  finish = jest.fn();
+}
+
+class MockObservability {
+  createSpan = jest.fn(() => new MockSpan());
+  reset = jest.fn();
+}
 
 // We need to mock RetryPolicy before importing it
 jest.mock('../../../src/util/network/retry-policy', () => {

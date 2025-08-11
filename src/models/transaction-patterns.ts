@@ -170,10 +170,10 @@ export async function createInitialDeposit(
   const transaction = createDepositTransaction(
     `@external/${assetCode}`,
     destinationAccountId,
-    amount,
+    amount.toString(),
     assetCode,
-    mergedOptions.scale,
     mergedOptions.description,
+    'default',
     mergedOptions.metadata
   );
 

@@ -127,25 +127,20 @@ export function createWithdrawalTransaction(
 
   // Create the transaction with debit and credit operations
   return {
+    chartOfAccountsGroupName: 'default',
     description: description || `Withdrawal from ${sourceAccount}`,
     operations: [
       {
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
       {
         accountId: destinationAccountId,
         type: 'CREDIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
     ],
     metadata: {
@@ -194,25 +189,20 @@ export function createTransferTransaction(
 ): CreateTransactionInput {
   // Create the transaction with debit and credit operations
   return {
+    chartOfAccountsGroupName: 'default',
     description: description || `Transfer from ${sourceAccount} to ${destinationAccount}`,
     operations: [
       {
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
       {
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
     ],
     metadata: {
@@ -266,25 +256,20 @@ export function createMultiCurrencyTransaction(
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   return {
+    chartOfAccountsGroupName: 'default',
     description: description || `Exchange ${sourceAssetCode} to ${destinationAssetCode}`,
     operations: [
       {
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: {
-          value: sourceAmount,
-          assetCode: sourceAssetCode,
-          scale: sourceScale,
-        },
+        amount: sourceAmount.toString(),
+        assetCode: sourceAssetCode,
       },
       {
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: {
-          value: destinationAmount,
-          assetCode: destinationAssetCode,
-          scale: destinationScale,
-        },
+        amount: destinationAmount.toString(),
+        assetCode: destinationAssetCode,
       },
     ],
     metadata: {

@@ -18,7 +18,19 @@ import { RateLimiter } from '../../../src/util/concurrency/rate-limiter';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 import { RetryPolicy } from '../../../src/util/network/retry-policy';
-import { MockObservability, MockSpan } from '../mocks/mock-observability';
+
+// Simple mock classes for skipped tests
+class MockSpan {
+  setTag = jest.fn();
+  setStatus = jest.fn();
+  log = jest.fn();
+  finish = jest.fn();
+}
+
+class MockObservability {
+  createSpan = jest.fn(() => new MockSpan());
+  reset = jest.fn();
+}
 
 describe.skip('Rate Limiting Edge Cases', () => {
   // Mock Date.now to control time in tests

@@ -30,7 +30,7 @@ export async function sha256(input: string): Promise<string> {
 
   // Try Web Crypto API (available in browsers and modern Node.js)
   if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
-    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgBuffer as BufferSource);
     return uint8ArrayToHex(new Uint8Array(hashBuffer));
   }
 

@@ -3,7 +3,7 @@
  */
 
 import { MidazClient } from '../../src/client';
-import { MockServer, createMidazMockRoutes } from '../integration/mock-server';
+// Mock server removed - benchmarks should use real API or inline mocks
 
 // Helper to measure performance
 async function measurePerformance(
