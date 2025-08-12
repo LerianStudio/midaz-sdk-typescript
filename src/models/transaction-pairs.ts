@@ -3,7 +3,6 @@
 
 import { MidazClient } from '../client';
 import {
-  ExecuteTransactionResult as _ExecuteTransactionResult,
   executeTransaction,
 } from '../util/error/error-handler';
 import { createTransferTransaction } from './transaction-builders';

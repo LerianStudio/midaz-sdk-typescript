@@ -36,7 +36,6 @@ import {
   newConflictError,
   newInsufficientBalanceError,
   newInternalError,
-  newInvalidInputError,
   newMissingParameterError,
   newNetworkError,
   newNotFoundError,

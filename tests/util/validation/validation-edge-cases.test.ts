@@ -3,7 +3,6 @@
  * This file tests how the system handles various validation edge cases
  */
 import {
-  ValidationError,
   validateAssetCode,
   validateNotEmpty,
   validateNumber,

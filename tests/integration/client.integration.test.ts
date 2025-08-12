@@ -4,7 +4,6 @@
  */
 
 import { MidazClient } from '../../src/client';
-import { MidazError } from '../../src/util/error/error-types';
 
 // Skip integration tests by default unless MIDAZ_INTEGRATION_TESTS=true
 const shouldRunIntegrationTests = process.env.MIDAZ_INTEGRATION_TESTS === 'true';
@@ -25,7 +24,8 @@ describeIntegration('MidazClient Integration Tests', () => {
   const clientSecret = process.env.MIDAZ_CLIENT_SECRET || 'test-client-secret';
 
   beforeAll(async () => {
-    // Create client for real Midaz instance with AccessManager authentication
+    // Create client for real Midaz instance using Access Manager authentication
+    // Note: Access Manager is the only supported authentication method
     client = new MidazClient({
       baseUrls: {
         onboarding: onboardingBaseURL,
@@ -271,13 +271,20 @@ describeIntegration('MidazClient Integration Tests', () => {
   });
 
   describe('Client Configuration', () => {
-    test('should handle different timeout configurations', async () => {
+    test('should handle different timeout configurations with Access Manager', async () => {
       const fastClient = new MidazClient({
         baseUrls: {
           onboarding: onboardingBaseURL,
           transaction: transactionBaseURL,
         },
-        apiKey: apiKey,
+        accessManager: {
+          enabled: true,
+          address: authServerUrl,
+          clientId: clientId,
+          clientSecret: clientSecret,
+          tokenEndpoint: '/api/login/oauth/access_token',
+          refreshThresholdSeconds: 300,
+        },
         timeout: 5000, // 5 second timeout
         security: {
           enforceHttps: false,
@@ -292,13 +299,20 @@ describeIntegration('MidazClient Integration Tests', () => {
       await fastClient.destroy();
     });
 
-    test('should handle retry configurations', async () => {
+    test('should handle retry configurations with Access Manager', async () => {
       const retryClient = new MidazClient({
         baseUrls: {
           onboarding: onboardingBaseURL,
           transaction: transactionBaseURL,
         },
-        apiKey: apiKey,
+        accessManager: {
+          enabled: true,
+          address: authServerUrl,
+          clientId: clientId,
+          clientSecret: clientSecret,
+          tokenEndpoint: '/api/login/oauth/access_token',
+          refreshThresholdSeconds: 300,
+        },
         retries: {
           maxRetries: 2,
           initialDelay: 100,

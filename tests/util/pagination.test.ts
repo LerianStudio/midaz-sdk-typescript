@@ -2,7 +2,6 @@
  * @file Tests for pagination utilities
  */
 import {
-  fetchAllPages,
   fetchAllItems,
   paginateItems,
   Paginator,

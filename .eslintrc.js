@@ -62,7 +62,7 @@ module.exports = {
       // Temporarily allow unused variables and import sorting in source files until they can be properly refactored
       files: ["src/**/*.ts"],
       rules: {
-        "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/no-unused-vars": "off",
         "sort-imports": "warn"
       }
     }

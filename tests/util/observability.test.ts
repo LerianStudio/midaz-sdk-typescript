@@ -4,7 +4,6 @@
 import {
   Observability,
   ObservabilityOptions,
-  Span,
 } from '../../src/util/observability/observability';
 import { OpenTelemetryProvider } from '../../src/util/observability/observability-otel';
 
@@ -214,6 +213,7 @@ describe('Observability', () => {
     it('should log debug messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.debug('test message', { key: 'value' });
@@ -225,6 +225,7 @@ describe('Observability', () => {
     it('should log info messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.info('test message', { key: 'value' });
@@ -236,6 +237,7 @@ describe('Observability', () => {
     it('should log warning messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.warn('test message', { key: 'value' });
@@ -247,6 +249,7 @@ describe('Observability', () => {
     it('should log error messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.error('test message', { key: 'value' });

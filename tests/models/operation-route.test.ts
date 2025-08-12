@@ -4,8 +4,6 @@
 
 import {
   OperationRoute,
-  CreateOperationRouteInput,
-  UpdateOperationRouteInput,
   AccountRule,
   createOperationRouteBuilder,
   createUpdateOperationRouteBuilder,

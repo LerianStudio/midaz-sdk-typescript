@@ -8,7 +8,7 @@ import { getEnv } from '../runtime/environment';
  *
  * @template T - Type of the results produced by workers
  */
-export interface WorkerPoolOptions<_T> {
+export interface WorkerPoolOptions<_T = unknown> {
   /**
    * Maximum number of concurrent workers
    * Controls how many tasks can run in parallel
@@ -56,24 +56,6 @@ export interface WorkerPoolOptions<_T> {
   signal?: AbortSignal;
 }
 
-/**
- * Default worker pool options
- * @internal
- */
-const _DEFAULT_WORKER_POOL_OPTIONS = {
-  concurrency: getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')
-    ? parseInt(getEnv('MIDAZ_WORKER_POOL_CONCURRENCY')!, 10)
-    : 10,
-  preserveOrder: getEnv('MIDAZ_WORKER_POOL_PRESERVE_ORDER')
-    ? getEnv('MIDAZ_WORKER_POOL_PRESERVE_ORDER')?.toLowerCase() === 'true'
-    : true,
-  batchDelay: getEnv('MIDAZ_WORKER_POOL_BATCH_DELAY')
-    ? parseInt(getEnv('MIDAZ_WORKER_POOL_BATCH_DELAY')!, 10)
-    : 0,
-  continueOnError: getEnv('MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR')
-    ? getEnv('MIDAZ_WORKER_POOL_CONTINUE_ON_ERROR')?.toLowerCase() === 'true'
-    : false,
-};
 
 /**
  * Processes a collection of items in parallel with controlled concurrency
@@ -349,15 +331,6 @@ async function processWithThrottling<T>(
   });
 }
 
-/**
- * Sleeps for a specified duration
- *
- * @returns Promise that resolves after the specified duration
- * @private
- */
-function _sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * Worker pool controller for better resource management

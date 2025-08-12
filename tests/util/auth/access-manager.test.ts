@@ -99,7 +99,7 @@ describe('AccessManager', () => {
 
       expect(token).toBe('new-access-token');
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://auth.example.com/oauth/token',
+        'https://auth.example.com/v1/login/oauth/access_token',
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -114,60 +114,6 @@ describe('AccessManager', () => {
       );
     });
 
-    it.skip('should use refresh token when available', async () => {
-      const accessManager = new AccessManager({
-        enabled: true,
-        address: 'https://auth.example.com',
-        clientId: 'test-client-id',
-        clientSecret: 'test-client-secret',
-      });
-
-      // First call to get initial token with refresh token
-      mockedAxios.request.mockResolvedValueOnce({
-        data: {
-          accessToken: 'initial-access-token',
-          tokenType: 'Bearer',
-          expiresIn: 3600,
-          refreshToken: 'refresh-token',
-        },
-      });
-
-      // Get the initial token
-      await accessManager.getToken();
-
-      // Mock token expiration by manipulating the internal state
-      // We can't directly access private properties, so we'll make a second call
-      // that should use the refresh token
-
-      // Second call to refresh the token
-      mockedAxios.request.mockResolvedValueOnce({
-        data: {
-          accessToken: 'refreshed-access-token',
-          tokenType: 'Bearer',
-          expiresIn: 3600,
-        },
-      });
-
-      // Force token refresh by manipulating the mock to simulate expiration
-      // This is a bit of a hack, but it's the best we can do without exposing internals
-      Object.defineProperty(accessManager, 'tokenExpiry', {
-        value: Math.floor(Date.now() / 1000) - 100, // Token expired 100 seconds ago
-        writable: true,
-      });
-
-      const token = await accessManager.getToken();
-
-      expect(token).toBe('refreshed-access-token');
-      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
-      // The second call should use the refresh token
-      expect(mockedAxios.request.mock.calls[1][0].data).toEqual(
-        expect.objectContaining({
-          grantType: 'client_credentials',
-          clientId: 'test-client-id',
-          clientSecret: 'test-client-secret',
-        })
-      );
-    });
 
     it('should handle token fetch errors', async () => {
       const accessManager = new AccessManager({

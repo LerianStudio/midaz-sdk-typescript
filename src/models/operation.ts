@@ -6,7 +6,6 @@
  */
 
 import { ApiResponse, Status } from './common';
-import { OperationType } from './constants';
 
 /**
  * Amount structure for operation amounts.

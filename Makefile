@@ -72,15 +72,15 @@ help:
 	@echo "  make tidy                        - Clean dependencies"
 	@echo "  make verify-sdk                  - Run SDK quality checks"
 	@echo "  make hooks                       - Install git hooks"
-	@echo "  make gosec                       - Run security checks with gosec"
+	@echo "  make security-audit              - Run security checks with npm audit"
 	@echo ""
 	@echo "Example Commands:"
 	@echo "  make example                     - Run complete workflow example"
 	@echo ""
 	@echo "Documentation Commands:"
-	@echo "  make godoc                       - Start a godoc server for interactive documentation"
-	@echo "  make godoc-static                - Generate static documentation files"
-	@echo "  make docs                        - Generate comprehensive documentation (includes godoc-static)"
+	@echo "  make docs-serve                  - Start a TypeDoc server for interactive documentation"
+	@echo "  make docs-static                 - Generate static documentation files"
+	@echo "  make docs                        - Generate comprehensive documentation (includes docs-static)"
 	@echo ""
 
 #-------------------------------------------------------
@@ -138,7 +138,7 @@ coverage:
 # Code Quality Commands
 #-------------------------------------------------------
 
-.PHONY: lint fmt tidy verify-sdk hooks gosec
+.PHONY: lint fmt tidy verify-sdk hooks security-audit
 
 lint:
 	$(call print_header,"Running linting tools")
@@ -200,7 +200,7 @@ hooks:
 		echo "$(GREEN)[ok]$(NC) Git hooks installed$(GREEN) ✔️$(NC)"; \
 	fi
 
-gosec:
+security-audit:
 	$(call print_header,"Running security checks")
 	@echo "$(CYAN)Running npm audit for security checks...$(NC)"
 	@$(NPM) audit --audit-level=moderate || echo "$(YELLOW)Some security issues found. Please review.$(NC)"
@@ -246,9 +246,9 @@ example:
 # Documentation Commands
 #-------------------------------------------------------
 
-.PHONY: godoc godoc-static docs
+.PHONY: docs-serve docs-static docs
 
-godoc:
+docs-serve:
 	$(call print_header,"Starting TypeDoc documentation server")
 	@echo "$(CYAN)Starting TypeDoc server for interactive documentation...$(NC)"
 	@if [ -f "$(NODE_MODULES)/.bin/typedoc" ]; then \
@@ -259,7 +259,7 @@ godoc:
 		$(NPM) run docs:serve; \
 	fi
 
-godoc-static:
+docs-static:
 	$(call print_header,"Generating static documentation")
 	@echo "$(CYAN)Generating static TypeDoc documentation...$(NC)"
 	@mkdir -p $(DOCS_DIR)
@@ -273,6 +273,6 @@ godoc-static:
 		echo "$(GREEN)[ok]$(NC) Static documentation generated successfully in docs/$(GREEN) ✔️$(NC)"; \
 	fi
 
-docs: godoc-static
+docs: docs-static
 	$(call print_header,"Documentation generation complete")
 	@echo "$(GREEN)[ok]$(NC) Documentation generated successfully$(GREEN) ✔️$(NC)"

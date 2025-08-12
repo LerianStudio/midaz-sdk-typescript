@@ -13,16 +13,6 @@ import { createLogger } from './util/logger/universal-logger';
  */
 export interface MidazConfig {
   /**
-   * Authentication token for API requests
-   */
-  authToken?: string;
-
-  /**
-   * API key for API requests
-   */
-  apiKey?: string;
-
-  /**
    * Environment to connect to (development, sandbox, production)
    */
   environment?: 'development' | 'sandbox' | 'production';
@@ -349,19 +339,8 @@ export class MidazClient {
         minRequestTimeout: this.config.security?.timeoutBudget?.minRequestTimeout,
       });
 
-    // Set auth token if provided
-    if (this.config.authToken || this.config.apiKey) {
-      this.httpClient.setDefaultHeader(
-        'Authorization',
-        `Bearer ${this.config.authToken || this.config.apiKey}`
-      );
-    }
-
-    // If Access Manager is enabled, set up authentication interceptor
-    if (this.accessManager?.isEnabled()) {
-      // We can't directly modify the private request method, so we'll intercept the public methods
-      this.setupAuthInterceptors();
-    }
+    // Always set up authentication interceptors (will handle both enabled and disabled cases)
+    this.setupAuthInterceptors();
 
     // Initialize entities API with config and observability
     this.entities = new Entity(this.httpClient, this.config, this.observability);
@@ -420,7 +399,12 @@ export class MidazClient {
         const options = args[method === 'get' || method === 'delete' ? 1 : 2] || {};
         options.headers = options.headers || {};
         const token = await this.getAuthToken();
-        options.headers['Authorization'] = token;
+        
+        // Only add Authorization header if token is not empty
+        if (token) {
+          options.headers['Authorization'] = token;
+        }
+        
         if (method === 'get' || method === 'delete') {
           return originalMethod(args[0], options);
         } else {
@@ -432,17 +416,19 @@ export class MidazClient {
 
   /**
    * Gets an authentication token from the Access Manager
+   * Returns empty string if Access Manager is not enabled
    *
-   * @returns Promise resolving to the authentication token
+   * @returns Promise resolving to the authentication token or empty string
    * @private
    */
   private async getAuthToken(): Promise<string> {
     if (!this.accessManager?.isEnabled()) {
-      throw new Error('Access Manager is not enabled');
+      return ''; // Return empty string instead of throwing error
     }
 
     try {
-      return await this.accessManager.getToken();
+      const token = await this.accessManager.getToken();
+      return `Bearer ${token}`;
     } catch (error) {
       logger.error('Failed to get authentication token:', error as Error);
       throw new Error(

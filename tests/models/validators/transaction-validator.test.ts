@@ -1,6 +1,5 @@
 import { validateCreateTransactionInput } from '../../../src/models/validators/transaction-validator';
 import {
-  OperationInput,
   AmountInput,
   CreateTransactionInput,
 } from '../../../src/models/transaction';

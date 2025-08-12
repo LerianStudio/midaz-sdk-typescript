@@ -417,8 +417,15 @@ export function createTransactionInput(chartOfAccountsGroupName: string, descrip
  */
 export function addDebitOperation(
   transactionInput: CreateTransactionInput,
-  _operation: OperationInput
+  operation: OperationInput
 ): CreateTransactionInput {
-  // Add implementation here
+  // Add the debit operation to the existing operations array
+  if (!transactionInput.operations) {
+    transactionInput.operations = [];
+  }
+  transactionInput.operations.push({
+    ...operation,
+    type: 'DEBIT',
+  });
   return transactionInput;
 }

@@ -3,8 +3,6 @@
  */
 
 import {
-  validateNotEmpty as _validateNotEmpty,
-  validatePattern as _validatePattern,
   combineValidationResults,
   validateRequired,
   ValidationResult,
@@ -70,7 +68,7 @@ export function validateCreateAccountInput(input: CreateAccountInput): Validatio
     return {
       valid: false,
       message: Object.entries(fieldErrors)
-        .map(([_field, errors]) => errors[0])
+        .map(([, errors]) => errors[0])
         .join('; '),
       fieldErrors,
     };

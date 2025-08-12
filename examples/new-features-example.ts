@@ -25,7 +25,7 @@
  */
 
 import { config } from 'dotenv';
-import { MidazClient, createClientConfigBuilder } from '../src/index';
+import { MidazClient, createClientConfigBuilder, createClientConfigWithAccessManager } from '../src/index';
 
 // Load environment variables
 config();
@@ -47,23 +47,18 @@ if (pluginAuthEnabled) {
   console.log(`   - Auth Service: ${process?.env?.PLUGIN_AUTH_ADDRESS || process?.env?.PLUGIN_AUTH_HOST || 'http://localhost:4000'}`);
   console.log(`   - Client ID: ${process?.env?.MIDAZ_CLIENT_ID ? '***' + process?.env?.MIDAZ_CLIENT_ID.slice(-4) : 'not set'}`);
 } else {
-  console.log(`🔐 Authentication: Plugin Auth (Default)`);
-  console.log(`   - Using pluginAccessManager for authentication`);
+  console.log(`🔐 Authentication: Plugin Auth (Disabled)`);
 }
 console.log();
 
 console.log('🔑 Initializing SDK client...');
 
 // Configure client using pluginAccessManager
-const clientConfig = createClientConfigBuilder('')
-  .withAccessManager({
-    enabled: pluginAuthEnabled,
-    address: process?.env?.PLUGIN_AUTH_ADDRESS || process?.env?.PLUGIN_AUTH_HOST || '',
-    clientId: process?.env?.MIDAZ_CLIENT_ID || '',
-    clientSecret: process?.env?.MIDAZ_CLIENT_SECRET || '',
-    tokenEndpoint: process?.env?.PLUGIN_AUTH_TOKEN_ENDPOINT || '/v1/login/oauth/access_token',
-    refreshThresholdSeconds: process?.env?.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS ? 
-      parseInt(process?.env?.PLUGIN_AUTH_REFRESH_THRESHOLD_SECONDS, 10) : 300
+const clientConfig = createClientConfigWithAccessManager({
+    address: process?.env?.PLUGIN_AUTH_ADDRESS,
+    clientId: process?.env?.MIDAZ_CLIENT_ID,
+    clientSecret: process?.env?.MIDAZ_CLIENT_SECRET,
+    tokenEndpoint: process?.env?.PLUGIN_AUTH_TOKEN_ENDPOINT,
   })
   .withBaseUrls({
     onboarding: process?.env?.MIDAZ_ONBOARDING_URL || 'http://localhost:3000',

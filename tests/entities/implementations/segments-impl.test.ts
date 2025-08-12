@@ -36,7 +36,7 @@ jest.mock('../../../src/models/validators/segment-validator', () => {
       }
       return { valid: true };
     }),
-    validateUpdateSegmentInput: jest.fn().mockImplementation((_input) => {
+    validateUpdateSegmentInput: jest.fn().mockImplementation(() => {
       return { valid: true };
     }),
   };
@@ -46,7 +46,6 @@ describe('SegmentsServiceImpl', () => {
   let segmentsService: SegmentsServiceImpl;
   let segmentApiClient: jest.Mocked<SegmentApiClient>;
   let mockObservability: jest.Mocked<Observability>;
-  let _config: any;
 
   // Test data
   const orgId = 'org_123';
@@ -81,7 +80,7 @@ describe('SegmentsServiceImpl', () => {
 
     // Create a mock SegmentApiClient
     segmentApiClient = {
-      listSegments: jest.fn().mockImplementation((orgId, ledgerId, _options) => {
+      listSegments: jest.fn().mockImplementation((orgId, ledgerId, options) => {
         if (!orgId) throw new ValidationError('Organization ID is required');
         if (!ledgerId) throw new ValidationError('Ledger ID is required');
         return Promise.resolve(mockSegmentsList);
@@ -98,7 +97,7 @@ describe('SegmentsServiceImpl', () => {
         if (!input.name) throw new ValidationError('Segment name is required');
         return Promise.resolve(mockSegment);
       }),
-      updateSegment: jest.fn().mockImplementation((orgId, ledgerId, id, _input) => {
+      updateSegment: jest.fn().mockImplementation((orgId, ledgerId, id, input) => {
         if (!orgId) throw new ValidationError('Organization ID is required');
         if (!ledgerId) throw new ValidationError('Ledger ID is required');
         if (!id) throw new ValidationError('Segment ID is required');
@@ -122,11 +121,6 @@ describe('SegmentsServiceImpl', () => {
       }),
       recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
-
-    // Create config for reference
-    _config = {
-      environment: 'sandbox',
-    };
 
     // Create the service instance
     segmentsService = new SegmentsServiceImpl(segmentApiClient, mockObservability);

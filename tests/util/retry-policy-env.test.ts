@@ -13,7 +13,6 @@ process.env.MIDAZ_RETRY_STATUS_CODES = '429,503,504';
 
 // Import after setting environment variables
 import { RetryOptions, RetryPolicy } from '../../src/util/network/retry-policy';
-import { ErrorCategory, ErrorCode, MidazError } from '../../src/util/error';
 
 describe('Retry Policy Utilities with Environment Variables', () => {
   afterAll(() => {

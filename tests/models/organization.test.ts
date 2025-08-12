@@ -1,7 +1,5 @@
 import {
-  CreateOrganizationInput,
   Organization,
-  UpdateOrganizationInput,
   createOrganizationBuilder,
   createUpdateOrganizationBuilder,
 } from '../../src/models/organization';

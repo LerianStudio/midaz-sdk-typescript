@@ -9,7 +9,7 @@ const originalEnv = process.env;
 // Extend the Cache prototype with a 'has' method for testing
 // This is needed because the tests use this method but it's not in the new implementation
 declare module '../../src/util/cache/cache' {
-  interface Cache<T> {
+  interface Cache<any> {
     has(key: string): boolean;
   }
 }

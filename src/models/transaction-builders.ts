@@ -116,7 +116,7 @@ export function createWithdrawalTransaction(
   destinationAccount: string,
   amount: number,
   assetCode: string,
-  scale = 0,
+  _scale = 0,
   description?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
@@ -183,7 +183,7 @@ export function createTransferTransaction(
   destinationAccount: string,
   amount: number,
   assetCode: string,
-  scale = 0,
+  _scale = 0,
   description?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
@@ -247,11 +247,11 @@ export function createMultiCurrencyTransaction(
   sourceAccount: string,
   sourceAmount: number,
   sourceAssetCode: string,
-  sourceScale: number,
+  _sourceScale: number,
   destinationAccount: string,
   destinationAmount: number,
   destinationAssetCode: string,
-  destinationScale: number,
+  _destinationScale: number,
   description?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
@@ -277,7 +277,7 @@ export function createMultiCurrencyTransaction(
       exchangeRate: {
         from: sourceAssetCode,
         to: destinationAssetCode,
-        rate: destinationAmount / destinationScale / (sourceAmount / sourceScale),
+        rate: destinationAmount / _destinationScale / (sourceAmount / _sourceScale),
       },
       ...metadata,
     },

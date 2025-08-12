@@ -8,7 +8,12 @@ const originalEnv = { ...process.env };
 
 // Helper function to reset the environment variables
 function resetEnv(): void {
-  process.env = { ...originalEnv };
+  // Clear all MIDAZ and PLUGIN environment variables
+  Object.keys(process.env).forEach(key => {
+    if (key.startsWith('MIDAZ_') || key.startsWith('PLUGIN_')) {
+      delete process.env[key];
+    }
+  });
   ConfigService.reset();
 }
 
@@ -18,7 +23,9 @@ describe('ConfigService', () => {
   });
 
   afterAll(() => {
-    resetEnv();
+    // Restore original environment variables
+    process.env = { ...originalEnv };
+    ConfigService.reset();
   });
 
   describe('getObservabilityConfig', () => {

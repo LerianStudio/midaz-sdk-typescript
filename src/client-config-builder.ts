@@ -1,4 +1,5 @@
 /**
+ * Client configuration builder utilities for the Midaz TypeScript SDK
  */
 
 import { MidazConfig } from './client';
@@ -89,16 +90,6 @@ const DEFAULT_CONFIG: Partial<MidazConfig> = {
  */
 export interface ClientConfigBuilder {
   /**
-   * Set the API key for authentication
-   */
-  withApiKey(apiKey: string): ClientConfigBuilder;
-
-  /**
-   * Set the auth token for authentication (alternative to API key)
-   */
-  withAuthToken(authToken: string): ClientConfigBuilder;
-
-  /**
    * Set the environment (development, sandbox, production)
    * This will automatically set default base URLs for the environment
    */
@@ -157,6 +148,12 @@ export interface ClientConfigBuilder {
   withAccessManager(config: AccessManagerConfig): ClientConfigBuilder;
 
   /**
+   * Set API key for backward compatibility (not used for authentication)
+   * @deprecated API key authentication is no longer supported. Use Access Manager instead.
+   */
+  withApiKey(apiKey: string): ClientConfigBuilder;
+
+  /**
    * Build the final configuration object
    * @returns The complete MidazConfig object
    */
@@ -174,16 +171,6 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
    */
   constructor(initialConfig: Partial<MidazConfig> = {}) {
     this.config = { ...initialConfig };
-  }
-
-  withApiKey(apiKey: string): ClientConfigBuilder {
-    this.config.apiKey = apiKey;
-    return this;
-  }
-
-  withAuthToken(authToken: string): ClientConfigBuilder {
-    this.config.authToken = authToken;
-    return this;
   }
 
   withEnvironment(environment: 'development' | 'sandbox' | 'production'): ClientConfigBuilder {
@@ -266,6 +253,13 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
     return this;
   }
 
+  withApiKey(apiKey: string): ClientConfigBuilder {
+    // For backward compatibility only - not used for authentication
+    // This method is deprecated and will be removed in a future version
+    console.warn('WARNING: withApiKey is deprecated. API key authentication is no longer supported. Use Access Manager instead.');
+    return this;
+  }
+
   build(): MidazConfig {
     // Apply default configuration for any unset properties
     const config: MidazConfig = {
@@ -286,12 +280,11 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
         : DEFAULT_CONFIG.observability,
     };
 
-    // Validate required configuration
-    const hasAuthToken = !!(config.authToken || config.apiKey);
-    const hasAccessManager = !!(config.accessManager && config.accessManager.enabled);
-    
-    if (!hasAuthToken && !hasAccessManager) {
-      throw new Error('Either apiKey/authToken or accessManager (with enabled: true) must be provided');
+    // Validate Access Manager configuration (optional - can work without authentication)
+    if (config.accessManager && config.accessManager.enabled) {
+      if (!config.accessManager.address || !config.accessManager.clientId || !config.accessManager.clientSecret) {
+        throw new Error('Access Manager requires address, clientId, and clientSecret when enabled');
+      }
     }
 
     // Set up base URLs based on environment if not already set
@@ -304,19 +297,11 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
 }
 
 /**
- * Creates a client configuration builder with an API key
+ * Creates a basic client configuration builder
  * @returns A new client configuration builder
  */
-export function createClientConfigBuilder(apiKey: string): ClientConfigBuilder {
-  return new ClientConfigBuilderImpl().withApiKey(apiKey);
-}
-
-/**
- * Creates a client configuration builder with an auth token
- * @returns A new client configuration builder
- */
-export function createClientConfigWithToken(authToken: string): ClientConfigBuilder {
-  return new ClientConfigBuilderImpl().withAuthToken(authToken);
+export function createClientConfigBuilder(): ClientConfigBuilder {
+  return new ClientConfigBuilderImpl();
 }
 
 /**
@@ -343,11 +328,11 @@ export function createClientConfigWithAccessManager(config?: {
 }
 
 /**
- * Creates a development environment configuration builder with API key authentication
+ * Creates a development environment configuration builder
  * @returns A new client configuration builder with development environment defaults
  */
-export function createDevelopmentConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey)
+export function createDevelopmentConfig(apiVersion = 'v1'): ClientConfigBuilder {
+  return createClientConfigBuilder()
     .withEnvironment('development')
     .withApiVersion(apiVersion)
     .withDebugMode(true);
@@ -375,11 +360,11 @@ export function createDevelopmentConfigWithAccessManager(
 }
 
 /**
- * Creates a sandbox environment configuration builder with API key authentication
+ * Creates a sandbox environment configuration builder
  * @returns A new client configuration builder with sandbox environment defaults
  */
-export function createSandboxConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey).withEnvironment('sandbox').withApiVersion(apiVersion);
+export function createSandboxConfig(apiVersion = 'v1'): ClientConfigBuilder {
+  return createClientConfigBuilder().withEnvironment('sandbox').withApiVersion(apiVersion);
 }
 
 /**
@@ -403,11 +388,11 @@ export function createSandboxConfigWithAccessManager(
 }
 
 /**
- * Creates a production environment configuration builder with API key authentication
+ * Creates a production environment configuration builder
  * @returns A new client configuration builder with production environment defaults
  */
-export function createProductionConfig(apiKey: string, apiVersion = 'v1'): ClientConfigBuilder {
-  return createClientConfigBuilder(apiKey).withEnvironment('production').withApiVersion(apiVersion);
+export function createProductionConfig(apiVersion = 'v1'): ClientConfigBuilder {
+  return createClientConfigBuilder().withEnvironment('production').withApiVersion(apiVersion);
 }
 
 /**
@@ -431,18 +416,17 @@ export function createProductionConfigWithAccessManager(
 }
 
 /**
- * Creates a local development configuration builder with API key authentication
+ * Creates a local development configuration builder
  * @returns A new client configuration builder with local development defaults
  */
 export function createLocalConfig(
-  apiKey: string,
   port?: number,
   apiVersion?: string
 ): ClientConfigBuilder {
   const defaultPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3000);
   const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
   
-  return createClientConfigBuilder(apiKey)
+  return createClientConfigBuilder()
     .withBaseUrls({
       onboarding: getEnvVar('MIDAZ_ONBOARDING_URL') || `http://localhost:${defaultPort}`,
       transaction: getEnvVar('MIDAZ_TRANSACTION_URL') || `http://localhost:${defaultPort + 1}`,

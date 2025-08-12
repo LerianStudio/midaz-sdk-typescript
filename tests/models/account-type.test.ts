@@ -4,8 +4,6 @@
 
 import {
   AccountType,
-  CreateAccountTypeInput,
-  UpdateAccountTypeInput,
   createAccountTypeBuilder,
   createUpdateAccountTypeBuilder,
   AccountTypeBuilder,

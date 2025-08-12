@@ -225,7 +225,7 @@ export class UpdateOrganizationBuilderImpl
     return this;
   }
 
-  withStatus(status: StatusCode): UpdateOrganizationBuilder {
+  withStatus(_status: StatusCode): UpdateOrganizationBuilder {
     // Status updates are not supported for organization updates
     // This method exists for API compatibility but doesn't modify the model
     return this;

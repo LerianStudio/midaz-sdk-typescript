@@ -293,7 +293,7 @@ describe('HttpAccountTypeApiClient', () => {
 
       try {
         await client.getAccountType(organizationId, ledgerId, 'at_123');
-      } catch (e) {
+      } catch {
         // Expected to throw
       }
 

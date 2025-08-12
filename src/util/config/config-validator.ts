@@ -27,33 +27,8 @@ export class ConfigValidator {
     const errors: ValidationError[] = [];
     const warnings: ValidationError[] = [];
 
-    // Validate authentication - either API key or Access Manager must be configured
-    const hasApiKey = config.apiKey && typeof config.apiKey === 'string';
-    const hasAccessManager = config.accessManager && config.accessManager.enabled;
-    
-    if (!hasApiKey && !hasAccessManager) {
-      errors.push({
-        field: 'authentication',
-        message: 'Either apiKey or accessManager (with enabled: true) is required for authentication',
-      });
-    }
-
-    // Validate API key if provided
-    if (config.apiKey) {
-      if (typeof config.apiKey !== 'string') {
-        errors.push({
-          field: 'apiKey',
-          message: 'API key must be a string',
-          value: config.apiKey,
-        });
-      } else if (config.apiKey.length < 10) {
-        warnings.push({
-          field: 'apiKey',
-          message: 'API key seems too short',
-          value: config.apiKey.length,
-        });
-      }
-    }
+    // Authentication is now optional - SDK can work without authentication
+    // If Access Manager is configured, validate its settings
 
     // Validate Access Manager configuration if provided
     if (config.accessManager) {
@@ -226,7 +201,7 @@ export class ConfigValidator {
           value: url,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       errors.push({
         field,
         message: 'Invalid URL format',
