@@ -4,7 +4,6 @@
 
 import { Balance, UpdateBalanceInput } from '../../../src/models/balance';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import { validateUpdateBalanceInput } from '../../../src/models/validators/balance-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpBalanceApiClient } from '../../../src/api/http/http-balance-api-client';
@@ -29,7 +28,6 @@ describe('HttpBalanceApiClient', () => {
   const accountId = 'acc-789';
   const balanceId = 'bal-101';
   const apiVersion = 'v1';
-  const _serviceName = 'midaz-balance-api-client';
 
   // Mock balance data
   const mockBalance: Balance = {
@@ -415,7 +413,6 @@ describe('HttpBalanceApiClient', () => {
         allowReceiving: true,
       };
       mockHttpClient.patch.mockResolvedValueOnce(updatedBalance);
-      (validateUpdateBalanceInput as jest.Mock).mockReturnValueOnce({ valid: true });
 
       // Act
       const result = await client.updateBalance(orgId, ledgerId, balanceId, updateInput);

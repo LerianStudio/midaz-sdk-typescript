@@ -62,8 +62,8 @@ const client = createClient({
   environment: 'production',
   httpOptions: {
     timeout: 30000,
-    keepAlive: true
-  }
+    keepAlive: true,
+  },
 });
 ```
 
@@ -80,16 +80,16 @@ The client interface is implemented as follows:
 class Client {
   /** HTTP client for API requests */
   private httpClient: HttpClient;
-  
+
   /** Configuration service instance */
   private config: ConfigService;
-  
+
   /** Entity services container */
   private _entities?: EntityServices;
-  
+
   /** Utility services container */
   private _utilities?: UtilityServices;
-  
+
   /**
    * Creates a new client instance
    * @param config Client configuration
@@ -97,28 +97,28 @@ class Client {
   constructor(config: ClientConfig) {
     // Initialize configuration service
     this.config = ConfigService.getInstance();
-    
+
     // Apply configuration overrides
     if (config) {
       ConfigService.configure({
         apiUrls: {
           onboardingUrl: config.onboardingUrl,
-          transactionUrl: config.transactionUrl
+          transactionUrl: config.transactionUrl,
         },
         httpClient: {
           apiKey: config.apiKey,
           timeout: config.httpOptions?.timeout,
-          keepAlive: config.httpOptions?.keepAlive
-        }
+          keepAlive: config.httpOptions?.keepAlive,
+        },
       });
     }
-    
+
     // Initialize HTTP client
     this.httpClient = new HttpClient({
-      apiKey: config.apiKey
+      apiKey: config.apiKey,
     });
   }
-  
+
   /**
    * Access entity services
    */
@@ -133,7 +133,7 @@ class Client {
     }
     return this._entities;
   }
-  
+
   /**
    * Access utility services
    */
@@ -147,7 +147,7 @@ class Client {
     }
     return this._utilities;
   }
-  
+
   /**
    * Update client configuration
    * @param config New configuration options
@@ -157,23 +157,23 @@ class Client {
     ConfigService.configure({
       apiUrls: {
         onboardingUrl: config.onboardingUrl,
-        transactionUrl: config.transactionUrl
+        transactionUrl: config.transactionUrl,
       },
       httpClient: {
         apiKey: config.apiKey,
         timeout: config.httpOptions?.timeout,
-        keepAlive: config.httpOptions?.keepAlive
-      }
+        keepAlive: config.httpOptions?.keepAlive,
+      },
     });
-    
+
     // Update HTTP client configuration
     this.httpClient.updateConfig({
       apiKey: config.apiKey,
       timeout: config.httpOptions?.timeout,
-      keepAlive: config.httpOptions?.keepAlive
+      keepAlive: config.httpOptions?.keepAlive,
     });
   }
-  
+
   /**
    * Close the client and release resources
    */
@@ -194,42 +194,42 @@ The client can be configured with various options:
 interface ClientConfig {
   /** API key for authentication */
   apiKey?: string;
-  
+
   /** Environment (production, sandbox, development) */
   environment?: 'production' | 'sandbox' | 'development';
-  
+
   /** Custom onboarding URL */
   onboardingUrl?: string;
-  
+
   /** Custom transaction URL */
   transactionUrl?: string;
-  
+
   /** HTTP client options */
   httpOptions?: {
     /** Request timeout in milliseconds */
     timeout?: number;
-    
+
     /** Keep-alive connections */
     keepAlive?: boolean;
-    
+
     /** Maximum sockets per host */
     maxSockets?: number;
-    
+
     /** Enable debug mode */
     debug?: boolean;
   };
-  
+
   /** Observability options */
   observability?: {
     /** Enable tracing */
     enableTracing?: boolean;
-    
+
     /** Enable metrics */
     enableMetrics?: boolean;
-    
+
     /** Enable logging */
     enableLogging?: boolean;
-    
+
     /** Service name */
     serviceName?: string;
   };
@@ -244,18 +244,18 @@ const environmentDefaults = {
   production: {
     onboardingUrl: 'https://api.midaz.io/v1/onboarding',
     transactionUrl: 'https://api.midaz.io/v1/transaction',
-    timeout: 10000
+    timeout: 10000,
   },
   sandbox: {
     onboardingUrl: 'https://api-sandbox.midaz.io/v1/onboarding',
     transactionUrl: 'https://api-sandbox.midaz.io/v1/transaction',
-    timeout: 30000
+    timeout: 30000,
   },
   development: {
     onboardingUrl: 'http://localhost:3000',
     transactionUrl: 'http://localhost:3001',
-    timeout: 60000
-  }
+    timeout: 60000,
+  },
 };
 ```
 
@@ -268,31 +268,31 @@ Entity services are organized into namespaces for discoverability:
 interface EntityServices {
   /** Account management */
   accounts: AccountsService;
-  
+
   /** Asset management */
   assets: AssetsService;
-  
+
   /** Asset rates management */
   assetRates: AssetRatesService;
-  
+
   /** Balance management */
   balances: BalancesService;
-  
+
   /** Ledger management */
   ledgers: LedgersService;
-  
+
   /** Operation management */
   operations: OperationsService;
-  
+
   /** Organization management */
   organizations: OrganizationsService;
-  
+
   /** Portfolio management */
   portfolios: PortfolioService;
-  
+
   /** Segment management */
   segments: SegmentService;
-  
+
   /** Transaction management */
   transactions: TransactionsService;
 }
@@ -307,19 +307,19 @@ Utility services are organized into their own namespace:
 interface UtilityServices {
   /** Validation utilities */
   validation: ValidationService;
-  
+
   /** Formatting utilities */
   formatting: FormattingService;
-  
+
   /** Data processing utilities */
   data: DataService;
-  
+
   /** Account helper utilities */
   account: AccountHelperService;
-  
+
   /** Caching utilities */
   cache: CacheService;
-  
+
   /** Concurrency utilities */
   concurrency: ConcurrencyService;
 }
@@ -333,15 +333,12 @@ The client interface manages resources to ensure efficient usage and proper clea
 // Creating a client with proper resource management
 const client = createClient({
   apiKey: 'your-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 
 try {
   // Use the client...
-  const accounts = await client.entities.accounts.listAccounts(
-    'org_123',
-    'ledger_456'
-  );
+  const accounts = await client.entities.accounts.listAccounts('org_123', 'ledger_456');
 } finally {
   // Always close the client when done
   client.close();
@@ -356,18 +353,18 @@ The SDK supports both singleton and multiple client patterns:
 // Singleton pattern (reuse the same client)
 const defaultClient = createClient({
   apiKey: 'your-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 
 // Multiple clients pattern (different configurations)
 const productionClient = createClient({
   apiKey: 'prod-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 
 const sandboxClient = createClient({
   apiKey: 'sandbox-api-key',
-  environment: 'sandbox'
+  environment: 'sandbox',
 });
 ```
 
@@ -378,12 +375,12 @@ The client handles authentication through API keys:
 ```typescript
 // Create client with API key
 const client = createClient({
-  apiKey: 'your-api-key'
+  apiKey: 'your-api-key',
 });
 
 // Update API key later
 client.updateConfig({
-  apiKey: 'new-api-key'
+  apiKey: 'new-api-key',
 });
 ```
 
@@ -395,7 +392,7 @@ The client supports multiple API versions:
 // Create client with specific API version
 const client = createClient({
   apiKey: 'your-api-key',
-  apiVersion: '2023-01-01'
+  apiVersion: '2023-01-01',
 });
 ```
 
@@ -405,7 +402,8 @@ The client interface integrates with the builder pattern for creating complex ob
 
 ```typescript
 // Get a builder from the client
-const assetBuilder = client.entities.assets.createBuilder('US Dollar', 'USD')
+const assetBuilder = client.entities.assets
+  .createBuilder('US Dollar', 'USD')
   .withType('currency')
   .withMetadata({ precision: 2, symbol: '$' });
 
@@ -426,13 +424,9 @@ import { withEnhancedRecovery } from 'midaz-sdk/util/error';
 
 // Execute with enhanced recovery
 const result = await withEnhancedRecovery(
-  () => client.entities.transactions.createTransaction(
-    'org_123',
-    'ledger_456',
-    transaction
-  ),
+  () => client.entities.transactions.createTransaction('org_123', 'ledger_456', transaction),
   {
-    maxRetries: 3
+    maxRetries: 3,
   }
 );
 ```
@@ -447,41 +441,35 @@ import { createClient } from 'midaz-sdk';
 // Create a client
 const client = createClient({
   apiKey: 'your-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 
 // Use the client
 async function processAccounts() {
   try {
     // List accounts
-    const accountsResponse = await client.entities.accounts.listAccounts(
-      'org_123',
-      'ledger_456',
-      { limit: 10 }
-    );
-    
+    const accountsResponse = await client.entities.accounts.listAccounts('org_123', 'ledger_456', {
+      limit: 10,
+    });
+
     console.log(`Found ${accountsResponse.items.length} accounts`);
-    
+
     // Create a new account
-    const newAccount = await client.entities.accounts.createAccount(
-      'org_123',
-      'ledger_456',
-      {
-        name: 'Savings Account',
-        type: 'savings',
-        assetCode: 'USD'
-      }
-    );
-    
+    const newAccount = await client.entities.accounts.createAccount('org_123', 'ledger_456', {
+      name: 'Savings Account',
+      type: 'savings',
+      assetCode: 'USD',
+    });
+
     console.log(`Created account: ${newAccount.id}`);
-    
+
     // Get an account by ID
     const account = await client.entities.accounts.getAccount(
       'org_123',
       'ledger_456',
       newAccount.id
     );
-    
+
     console.log(`Retrieved account: ${account.name}`);
   } catch (error) {
     console.error('Error:', error.message);
@@ -504,22 +492,22 @@ import { ConfigService } from 'midaz-sdk/util/config';
 ConfigService.configure({
   apiUrls: {
     onboardingUrl: 'https://custom-api.example.com/v1/onboarding',
-    transactionUrl: 'https://custom-api.example.com/v1/transaction'
+    transactionUrl: 'https://custom-api.example.com/v1/transaction',
   },
   observability: {
     enableTracing: true,
-    serviceName: 'my-financial-service'
+    serviceName: 'my-financial-service',
   },
   httpClient: {
     timeout: 15000,
     keepAlive: true,
-    maxSockets: 20
-  }
+    maxSockets: 20,
+  },
 });
 
 // Create a client with minimal config (will use configured settings)
 const client = createClient({
-  apiKey: 'your-api-key'
+  apiKey: 'your-api-key',
 });
 
 // Use the client...
@@ -535,19 +523,19 @@ import { createClient, Client } from 'midaz-sdk';
 // Extend the client with custom functionality
 class EnhancedClient {
   private client: Client;
-  
+
   constructor(config) {
     this.client = createClient(config);
   }
-  
+
   get entities() {
     return this.client.entities;
   }
-  
+
   get utilities() {
     return this.client.utilities;
   }
-  
+
   // Add custom methods
   async createAccountWithInitialBalance(
     orgId: string,
@@ -556,34 +544,26 @@ class EnhancedClient {
     initialBalance: number
   ) {
     // Create the account
-    const account = await this.client.entities.accounts.createAccount(
-      orgId,
-      ledgerId,
-      accountData
-    );
-    
+    const account = await this.client.entities.accounts.createAccount(orgId, ledgerId, accountData);
+
     // If initial balance is greater than zero, create a transaction
     if (initialBalance > 0) {
-      await this.client.entities.transactions.createTransaction(
-        orgId,
-        ledgerId,
-        {
-          code: `initial-balance-${account.id}`,
-          operations: [
-            {
-              accountId: account.id,
-              assetCode: account.assetCode,
-              amount: initialBalance,
-              type: 'credit'
-            }
-          ]
-        }
-      );
+      await this.client.entities.transactions.createTransaction(orgId, ledgerId, {
+        code: `initial-balance-${account.id}`,
+        operations: [
+          {
+            accountId: account.id,
+            assetCode: account.assetCode,
+            amount: initialBalance,
+            type: 'credit',
+          },
+        ],
+      });
     }
-    
+
     return account;
   }
-  
+
   // Close the client
   close() {
     this.client.close();
@@ -593,7 +573,7 @@ class EnhancedClient {
 // Usage
 const enhancedClient = new EnhancedClient({
   apiKey: 'your-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 
 const account = await enhancedClient.createAccountWithInitialBalance(
@@ -602,7 +582,7 @@ const account = await enhancedClient.createAccountWithInitialBalance(
   {
     name: 'Savings Account',
     type: 'savings',
-    assetCode: 'USD'
+    assetCode: 'USD',
   },
   1000 // Initial balance
 );

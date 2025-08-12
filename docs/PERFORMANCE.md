@@ -29,6 +29,7 @@ const client = new MidazClient({
 ```
 
 Benefits:
+
 - Reduces connection overhead
 - Improves latency for subsequent requests
 - Better resource utilization
@@ -48,6 +49,7 @@ const client = new MidazClient({
 ```
 
 Cached operations:
+
 - `listOrganizations()`
 - `getOrganization()`
 - `listAccounts()`
@@ -100,10 +102,10 @@ while (hasMore) {
     limit: pageSize,
     cursor: cursor,
   });
-  
+
   // Process accounts
   processAccounts(response.items);
-  
+
   cursor = response.nextCursor;
   hasMore = !!cursor;
 }
@@ -197,12 +199,14 @@ npm test -- tests/benchmarks/performance.bench.ts
 ### Interpreting Results
 
 Benchmark output shows:
+
 - **Avg (ms)**: Average response time
 - **P50 (ms)**: Median response time
 - **P90 (ms)**: 90th percentile response time
 - **P99 (ms)**: 99th percentile response time
 
 Example output:
+
 ```
 Benchmark                    | Iterations | Avg (ms) | P50 (ms) | P90 (ms) | P99 (ms)
 ----------------------------|------------|----------|----------|----------|----------

@@ -253,11 +253,6 @@ describe('HttpAccountApiClient', () => {
 
     it('should throw error when validation fails', async () => {
       // Arrange
-      const _validationError = {
-        valid: false,
-        message: 'Validation error',
-        fieldErrors: { name: ['Name is required'] },
-      };
       validateMock.mockImplementation(() => {
         throw new Error('Validation error');
       });
@@ -319,11 +314,6 @@ describe('HttpAccountApiClient', () => {
 
     it('should throw error when validation fails', async () => {
       // Arrange
-      const _validationError = {
-        valid: false,
-        message: 'Validation error',
-        fieldErrors: { name: ['Name cannot be empty'] },
-      };
       validateMock.mockImplementation(() => {
         throw new Error('Validation error');
       });

@@ -22,7 +22,7 @@ console.log(formattedBtc); // "1.23456789"
 // Format with currency symbol and locale
 const formattedEur = formatBalance(2050, 100, {
   locale: 'de-DE',
-  currency: 'EUR'
+  currency: 'EUR',
 });
 console.log(formattedEur); // "20,50 €"
 ```
@@ -38,7 +38,7 @@ import { formatBalanceSafely } from 'midaz-sdk/util/data/formatting';
 const formatted1 = formatBalanceSafely(1050, 100);
 console.log(formatted1); // "10.50"
 
-const formatted2 = formatBalanceSafely("1050", "100");
+const formatted2 = formatBalanceSafely('1050', '100');
 console.log(formatted2); // "10.50"
 
 // Handles invalid inputs
@@ -52,12 +52,12 @@ console.log(formatted3); // "0.00"
 import { formatAmountWithAsset } from 'midaz-sdk/util/data/formatting';
 
 // Format a USD amount with asset code
-const formattedAmount = formatAmountWithAsset(1050, 100, "USD");
+const formattedAmount = formatAmountWithAsset(1050, 100, 'USD');
 console.log(formattedAmount); // "10.50 USD"
 
 // Format with symbol position
-const formattedWithSymbol = formatAmountWithAsset(1050, 100, "USD", {
-  symbolPosition: "before"
+const formattedWithSymbol = formatAmountWithAsset(1050, 100, 'USD', {
+  symbolPosition: 'before',
 });
 console.log(formattedWithSymbol); // "USD 10.50"
 ```
@@ -68,15 +68,18 @@ console.log(formattedWithSymbol); // "USD 10.50"
 import { formatAccountBalance } from 'midaz-sdk/util/data/formatting';
 
 // Format an account balance for display
-const formattedBalance = formatAccountBalance({
-  accountId: "acc_123",
-  available: 10050,
-  onHold: 500,
-  assetCode: "USD",
-  scale: 100
-}, { 
-  accountType: "Savings" 
-});
+const formattedBalance = formatAccountBalance(
+  {
+    accountId: 'acc_123',
+    available: 10050,
+    onHold: 500,
+    assetCode: 'USD',
+    scale: 100,
+  },
+  {
+    accountType: 'Savings',
+  }
+);
 
 console.log(formattedBalance.displayString);
 // "USD (Savings acc_123): Available 100.50, On Hold 5.00"
@@ -113,7 +116,7 @@ import { Paginator } from 'midaz-sdk/util/data/pagination';
 const paginator = new Paginator<Account>({
   fetchPage: (options) => client.entities.accounts.listAccounts(orgId, ledgerId, options),
   pageSize: 25,
-  maxItems: 100
+  maxItems: 100,
 });
 
 // Method 1: Manual iteration
@@ -141,7 +144,7 @@ import { paginateItems } from 'midaz-sdk/util/data/pagination';
 // Create a pagination generator
 const accountPages = paginateItems<Account>({
   fetchPage: (options) => client.entities.accounts.listAccounts(orgId, ledgerId, options),
-  pageSize: 25
+  pageSize: 25,
 });
 
 // Iterate through pages using for-await-of
@@ -161,7 +164,7 @@ import { fetchAllItems } from 'midaz-sdk/util/data/pagination';
 // Fetch all accounts (up to maxItems)
 const allAccounts = await fetchAllItems<Account>({
   fetchPage: (options) => client.entities.accounts.listAccounts(orgId, ledgerId, options),
-  maxItems: 1000  // Limit to 1000 accounts
+  maxItems: 1000, // Limit to 1000 accounts
 });
 
 console.log(`Fetched ${allAccounts.length} accounts in total`);
@@ -175,8 +178,8 @@ For the most common case of fetching all items:
 import { fetchAllPages } from 'midaz-sdk/util/data/pagination';
 
 // Fetch all accounts across all pages
-const allAccounts = await fetchAllPages(
-  (options) => client.entities.accounts.listAccounts(orgId, ledgerId, options)
+const allAccounts = await fetchAllPages((options) =>
+  client.entities.accounts.listAccounts(orgId, ledgerId, options)
 );
 
 // Fetch all transactions with initial filtering
@@ -190,14 +193,14 @@ const allTransactions = await fetchAllPages(
 
 When creating a paginator, you can configure it with these options:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `fetchPage` | Function | (required) | Function to fetch a page of results |
-| `initialOptions` | ListOptions | {} | Initial options for the first page request |
-| `pageSize` | number | 100 | Number of items per page |
-| `maxItems` | number | Infinity | Maximum total items to fetch |
-| `maxPages` | number | Infinity | Maximum number of pages to fetch |
-| `onPage` | Function | undefined | Callback for each page of results |
+| Option           | Type        | Default    | Description                                |
+| ---------------- | ----------- | ---------- | ------------------------------------------ |
+| `fetchPage`      | Function    | (required) | Function to fetch a page of results        |
+| `initialOptions` | ListOptions | {}         | Initial options for the first page request |
+| `pageSize`       | number      | 100        | Number of items per page                   |
+| `maxItems`       | number      | Infinity   | Maximum total items to fetch               |
+| `maxPages`       | number      | Infinity   | Maximum number of pages to fetch           |
+| `onPage`         | Function    | undefined  | Callback for each page of results          |
 
 ## Example: Processing Large Datasets Efficiently
 
@@ -211,34 +214,32 @@ async function analyzeAccountBalances(client, orgId, ledgerId) {
   // Set up counters
   let totalAccounts = 0;
   let totalBalance = 0;
-  
+
   // Create paginator for processing accounts in batches
   const accountPages = paginateItems<Account>({
     fetchPage: (options) => client.entities.accounts.listAccounts(orgId, ledgerId, options),
     pageSize: 50,
     onPage: (accounts, meta) => {
       console.log(`Received page ${meta.currentPage} with ${accounts.length} accounts`);
-    }
+    },
   });
-  
+
   // Process each page as it arrives
   for await (const accounts of accountPages) {
     totalAccounts += accounts.length;
-    
+
     // Process each account
     for (const account of accounts) {
       // Get account balances
-      const balances = await client.entities.balances.listBalances(
-        orgId, 
-        ledgerId,
-        { filter: { accountId: account.id } }
-      );
-      
+      const balances = await client.entities.balances.listBalances(orgId, ledgerId, {
+        filter: { accountId: account.id },
+      });
+
       // Format and analyze balances
       for (const balance of balances.items) {
         const formatted = formatAccountBalance(balance);
         console.log(`Account ${account.id}: ${formatted.displayString}`);
-        
+
         // Add to total (assuming USD for simplicity)
         if (balance.assetCode === 'USD') {
           totalBalance += balance.available;
@@ -246,11 +247,11 @@ async function analyzeAccountBalances(client, orgId, ledgerId) {
       }
     }
   }
-  
+
   // Format the final total
   const formattedTotal = formatBalance(totalBalance, 100);
   console.log(`Analyzed ${totalAccounts} accounts with total balance: $${formattedTotal}`);
-  
+
   return { totalAccounts, totalBalance };
 }
 ```
@@ -270,9 +271,9 @@ async function processTransactions(client, orgId, ledgerId) {
     (options) => client.entities.transactions.listTransactions(orgId, ledgerId, options),
     { filter: { status: 'completed' } }
   );
-  
+
   console.log(`Processing ${transactions.length} transactions with concurrent workers`);
-  
+
   // Process transactions concurrently
   const results = await workerPool({
     items: transactions,
@@ -284,25 +285,25 @@ async function processTransactions(client, orgId, ledgerId) {
         transaction.accountId,
         { filter: { transactionId: transaction.id } }
       );
-      
+
       // Format the amount for display
       const formattedAmount = formatAmountWithAsset(
         transaction.amount,
         transaction.scale,
         transaction.assetCode
       );
-      
+
       return {
         id: transaction.id,
         formattedAmount,
-        operationCount: operations.items.length
+        operationCount: operations.items.length,
       };
     },
     options: {
-      concurrency: 5
-    }
+      concurrency: 5,
+    },
   });
-  
+
   return results;
 }
 ```

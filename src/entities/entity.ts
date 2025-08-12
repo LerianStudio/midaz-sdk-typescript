@@ -10,26 +10,32 @@ import { HttpClient } from '../util/network/http-client';
 import { Observability } from '../util/observability/observability';
 
 import { AccountsService } from './accounts';
+import { AccountTypesService } from './account-types';
 import { AssetRatesService } from './asset-rates';
 import { AssetsService } from './assets';
 import { BalancesService } from './balances';
 import { LedgersService } from './ledgers';
 import { OperationsService } from './operations';
+import { OperationRoutesService } from './operation-routes';
 import { OrganizationsService } from './organizations';
 import { PortfoliosService } from './portfolios';
 import { SegmentsService } from './segments';
 import { TransactionsService } from './transactions';
+import { TransactionRoutesService } from './transaction-routes';
 
 import { AccountsServiceImpl } from './implementations/accounts-impl';
+import { AccountTypesServiceImpl } from './implementations/account-types-impl';
 import { AssetRatesServiceImpl } from './implementations/asset-rates-impl';
 import { AssetsServiceImpl } from './implementations/assets-impl';
 import { BalancesServiceImpl } from './implementations/balances-impl';
 import { LedgersServiceImpl } from './implementations/ledgers-impl';
 import { OperationsServiceImpl } from './implementations/operations-impl';
+import { OperationRoutesServiceImpl } from './implementations/operation-routes-impl';
 import { OrganizationsServiceImpl } from './implementations/organizations-impl';
 import { PortfoliosServiceImpl } from './implementations/portfolios-impl';
 import { SegmentsServiceImpl } from './implementations/segments-impl';
 import { TransactionsServiceImpl } from './implementations/transactions-impl';
+import { TransactionRoutesServiceImpl } from './implementations/transaction-routes-impl';
 
 /**
  * Entity factory providing access to all entity service interfaces
@@ -48,11 +54,17 @@ export class Entity {
   /** Accounts service */
   public readonly accounts: AccountsService;
 
+  /** Account types service */
+  public readonly accountTypes: AccountTypesService;
+
   /** Ledgers service */
   public readonly ledgers: LedgersService;
 
   /** Transactions service */
   public readonly transactions: TransactionsService;
+
+  /** Transaction routes service */
+  public readonly transactionRoutes: TransactionRoutesService;
 
   /** Assets service */
   public readonly assets: AssetsService;
@@ -68,6 +80,9 @@ export class Entity {
 
   /** Operations service */
   public readonly operations: OperationsService;
+
+  /** Operation routes service */
+  public readonly operationRoutes: OperationRoutesService;
 
   /** Asset rates service */
   public readonly assetRates: AssetRatesService;
@@ -136,6 +151,11 @@ export class Entity {
       this.observability
     );
 
+    this.accountTypes = new AccountTypesServiceImpl(
+      this.apiFactory.createAccountTypeApiClient(),
+      this.observability
+    );
+
     this.portfolios = new PortfoliosServiceImpl(
       this.apiFactory.createPortfolioApiClient(),
       this.observability
@@ -148,6 +168,16 @@ export class Entity {
 
     this.operations = new OperationsServiceImpl(
       this.apiFactory.createOperationApiClient(),
+      this.observability
+    );
+
+    this.operationRoutes = new OperationRoutesServiceImpl(
+      this.apiFactory.createOperationRouteApiClient(),
+      this.observability
+    );
+
+    this.transactionRoutes = new TransactionRoutesServiceImpl(
+      this.apiFactory.createTransactionRouteApiClient(),
       this.observability
     );
 

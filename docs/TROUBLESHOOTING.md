@@ -16,11 +16,13 @@ This guide helps you diagnose and fix common issues with the Midaz SDK.
 #### TypeScript Compilation Errors
 
 **Problem**: TypeScript errors when building
+
 ```
 error TS2307: Cannot find module 'midaz-sdk'
 ```
 
 **Solution**:
+
 ```bash
 # Ensure TypeScript is installed
 npm install --save-dev typescript
@@ -37,11 +39,13 @@ npm install --save-dev typescript
 #### Missing Dependencies
 
 **Problem**: Module not found errors
+
 ```
 Error: Cannot find module '@types/node'
 ```
 
 **Solution**:
+
 ```bash
 # Install missing types
 npm install --save-dev @types/node
@@ -55,11 +59,13 @@ npm run setup
 #### Invalid API Key
 
 **Problem**: 401 Unauthorized errors
+
 ```typescript
 MidazError: Invalid API key provided
 ```
 
 **Solution**:
+
 ```typescript
 // Check API key is set correctly
 const client = new MidazClient({
@@ -73,11 +79,13 @@ console.log('API Key exists:', !!process.env.MIDAZ_API_KEY);
 #### API Key Exposure
 
 **Problem**: API key visible in logs
+
 ```
 [WARN] Using API key: sk-1234567890abcdef
 ```
 
 **Solution**: The SDK should sanitize this automatically. Update to latest version:
+
 ```bash
 npm update midaz-sdk
 ```
@@ -87,11 +95,13 @@ npm update midaz-sdk
 #### HTTPS Enforcement
 
 **Problem**: Connection refused with HTTP URLs
+
 ```
 Error: HTTPS required but HTTP URL provided
 ```
 
 **Solution**:
+
 ```typescript
 // For development only
 const client = new MidazClient({
@@ -108,11 +118,13 @@ const client = new MidazClient({
 #### Timeout Errors
 
 **Problem**: Request timeout
+
 ```
 Error: Request timeout after 30000ms
 ```
 
 **Solution**:
+
 ```typescript
 // Increase timeout
 const client = new MidazClient({
@@ -129,11 +141,13 @@ const client = new MidazClient({
 #### Circuit Breaker Open
 
 **Problem**: Circuit breaker preventing requests
+
 ```
 Error: Circuit breaker is OPEN for /v1/organizations
 ```
 
 **Solution**:
+
 ```typescript
 // Wait for circuit to reset or adjust thresholds
 const client = new MidazClient({
@@ -151,11 +165,13 @@ const client = new MidazClient({
 #### Validation Errors
 
 **Problem**: Invalid request data
+
 ```
 MidazError: Validation failed: amount must be positive
 ```
 
 **Solution**:
+
 ```typescript
 // Validate before sending
 if (amount <= 0) {
@@ -172,11 +188,13 @@ const transaction: CreateTransactionInput = {
 #### Missing Required Fields
 
 **Problem**: Missing required fields
+
 ```
 MidazError: Missing required field: assetCode
 ```
 
 **Solution**:
+
 ```typescript
 // Check TypeScript types for required fields
 const account: CreateAccountInput = {
@@ -193,6 +211,7 @@ const account: CreateAccountInput = {
 **Problem**: Requests taking too long
 
 **Solution**:
+
 ```typescript
 // Enable connection pooling
 const client = new MidazClient({
@@ -217,6 +236,7 @@ const client = new MidazClient({
 **Problem**: Memory usage growing over time
 
 **Solution**:
+
 ```typescript
 // Clean up resources
 await client.destroy();
@@ -233,15 +253,15 @@ const client = new MidazClient({
 
 ### HTTP Status Codes
 
-| Code | Meaning | Solution |
-|------|---------|----------|
-| 400 | Bad Request | Check request data and validation |
-| 401 | Unauthorized | Verify API key is correct |
-| 403 | Forbidden | Check permissions for the API key |
-| 404 | Not Found | Verify resource ID and endpoint |
-| 429 | Too Many Requests | Implement rate limiting/backoff |
-| 500 | Server Error | Retry with exponential backoff |
-| 503 | Service Unavailable | Wait and retry |
+| Code | Meaning             | Solution                          |
+| ---- | ------------------- | --------------------------------- |
+| 400  | Bad Request         | Check request data and validation |
+| 401  | Unauthorized        | Verify API key is correct         |
+| 403  | Forbidden           | Check permissions for the API key |
+| 404  | Not Found           | Verify resource ID and endpoint   |
+| 429  | Too Many Requests   | Implement rate limiting/backoff   |
+| 500  | Server Error        | Retry with exponential backoff    |
+| 503  | Service Unavailable | Wait and retry                    |
 
 ### SDK Error Types
 
@@ -347,21 +367,27 @@ setInterval(() => {
 
 When reporting issues, include:
 
-```markdown
+````markdown
 **Environment:**
+
 - SDK Version: 2.0.0
 - Node.js Version: 18.18.0
 - TypeScript Version: 5.0.0
 - Operating System: macOS 13.0
 
 **Code:**
+
 ```typescript
 // Minimal reproduction code
-const client = new MidazClient({ /* config */ });
+const client = new MidazClient({
+  /* config */
+});
 // ... problem code
 ```
+````
 
 **Error:**
+
 ```
 // Full error message and stack trace
 ```
@@ -371,6 +397,7 @@ What should happen
 
 **Actual Behavior:**
 What actually happens
+
 ```
 
 ### Support Channels
@@ -399,3 +426,4 @@ For production issues:
    - Request IDs
    - Time range of issue
    - Impact description
+```

@@ -31,18 +31,15 @@ import { createClient } from 'midaz-sdk';
 
 const client = createClient({
   apiKey: 'your-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 
 // Access entity services through the client
-const account = await client.entities.accounts.getAccount(
-  'org_123', 
-  'ledger_456', 
-  'account_789'
-);
+const account = await client.entities.accounts.getAccount('org_123', 'ledger_456', 'account_789');
 ```
 
 Key characteristics:
+
 - **Unified Access Point**: Provides access to all SDK capabilities
 - **Configuration Management**: Handles API keys, environment settings, etc.
 - **Service Discovery**: Exposes available services in a discoverable manner
@@ -57,13 +54,23 @@ Entity services represent domain-specific operations around specific business en
 interface AccountsService {
   createAccount(orgId: string, ledgerId: string, account: CreateAccountInput): Promise<Account>;
   getAccount(orgId: string, ledgerId: string, accountId: string): Promise<Account>;
-  updateAccount(orgId: string, ledgerId: string, accountId: string, account: UpdateAccountInput): Promise<Account>;
+  updateAccount(
+    orgId: string,
+    ledgerId: string,
+    accountId: string,
+    account: UpdateAccountInput
+  ): Promise<Account>;
   deleteAccount(orgId: string, ledgerId: string, accountId: string): Promise<void>;
-  listAccounts(orgId: string, ledgerId: string, options?: ListOptions): Promise<ListResponse<Account>>;
+  listAccounts(
+    orgId: string,
+    ledgerId: string,
+    options?: ListOptions
+  ): Promise<ListResponse<Account>>;
 }
 ```
 
 The SDK includes entity services for:
+
 - Accounts
 - Assets
 - Asset Rates
@@ -76,6 +83,7 @@ The SDK includes entity services for:
 - Transactions
 
 Each entity service follows a consistent pattern, typically including:
+
 - **CRUD Operations**: Create, read, update, delete methods for the entity
 - **List Operations**: Methods to list entities with filtering, sorting, and pagination
 - **Specialized Operations**: Entity-specific methods for unique operations
@@ -125,39 +133,44 @@ Entity services follow a consistent implementation pattern:
 class AccountsServiceImpl implements AccountsService {
   private httpClient: HttpClient;
   private basePath: string;
-  
+
   constructor(httpClient: HttpClient) {
     this.httpClient = httpClient;
     this.basePath = 'accounts';
   }
-  
-  async createAccount(orgId: string, ledgerId: string, account: CreateAccountInput): Promise<Account> {
+
+  async createAccount(
+    orgId: string,
+    ledgerId: string,
+    account: CreateAccountInput
+  ): Promise<Account> {
     // Validate input
     validate(account, validateAccountInput);
-    
+
     // Make API request
     try {
       const response = await this.httpClient.post(
         `organizations/${orgId}/ledgers/${ledgerId}/${this.basePath}`,
         account
       );
-      
+
       return response as Account;
     } catch (error) {
       // Enhanced error handling
       throw processError(error, {
         operation: 'createAccount',
         resource: 'Account',
-        resourceId: account.id
+        resourceId: account.id,
       });
     }
   }
-  
+
   // Other methods follow similar pattern...
 }
 ```
 
 Key aspects of this pattern:
+
 - **Dependency Injection**: Services receive dependencies via constructor
 - **Path Construction**: Consistent URL path building
 - **Input Validation**: Pre-request validation
@@ -170,10 +183,7 @@ Services are created using a factory pattern:
 
 ```typescript
 // Factory function to create a service instance
-function createAccountsService(
-  httpClient: HttpClient,
-  config?: ServiceConfig
-): AccountsService {
+function createAccountsService(httpClient: HttpClient, config?: ServiceConfig): AccountsService {
   return new AccountsServiceImpl(httpClient, config);
 }
 
@@ -184,6 +194,7 @@ client.entities.accounts = accountsService;
 ```
 
 The factory pattern provides:
+
 - **Abstraction**: Hides implementation details
 - **Configuration**: Allows customizing service behavior
 - **Testing**: Enables easier mocking for tests
@@ -199,31 +210,32 @@ class Client {
     assets?: AssetsService;
     // Other services...
   } = {};
-  
+
   private httpClient: HttpClient;
-  
+
   constructor(config: ClientConfig) {
     this.httpClient = new HttpClient(config);
   }
-  
+
   get entities() {
     // Lazy initialization of services
     if (!this._entities.accounts) {
       this._entities.accounts = createAccountsService(this.httpClient);
     }
-    
+
     if (!this._entities.assets) {
       this._entities.assets = createAssetsService(this.httpClient);
     }
-    
+
     // Initialize other services as needed...
-    
+
     return this._entities;
   }
 }
 ```
 
 This approach provides:
+
 - **Lazy Loading**: Services are created only when needed
 - **Resource Efficiency**: Minimizes memory usage
 - **Discoverability**: IDE auto-completion shows available services
@@ -236,14 +248,14 @@ Services can be configured through both global and service-specific settings:
 // Global configuration through ConfigService
 ConfigService.configure({
   apiUrls: {
-    onboardingUrl: 'https://custom-api.example.com/v1'
-  }
+    onboardingUrl: 'https://custom-api.example.com/v1',
+  },
 });
 
 // Service-specific configuration
 const accountsService = createAccountsService(httpClient, {
   cacheEnabled: true,
-  cacheTtl: 60000 // 1 minute
+  cacheTtl: 60000, // 1 minute
 });
 ```
 
@@ -273,12 +285,15 @@ try {
     resource: 'ResourceName',
     resourceId: resourceId,
     // Additional context
-    details: { /* operation-specific details */ }
+    details: {
+      /* operation-specific details */
+    },
   });
 }
 ```
 
 This pattern:
+
 - **Contextualizes Errors**: Adds operational context to errors
 - **Categorizes Errors**: Maps HTTP errors to domain-specific categories
 - **Standardizes Format**: Ensures consistent error structure

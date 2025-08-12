@@ -40,7 +40,7 @@ jest.mock('../../../src/models/validators/organization-validator', () => {
       }
       return { valid: true };
     }),
-    validateUpdateOrganizationInput: jest.fn().mockImplementation((_input) => {
+    validateUpdateOrganizationInput: jest.fn().mockImplementation(() => {
       return { valid: true };
     }),
   };
@@ -50,7 +50,6 @@ describe('OrganizationsServiceImpl', () => {
   let organizationsService: OrganizationsServiceImpl;
   let organizationApiClient: jest.Mocked<OrganizationApiClient>;
   let mockObservability: jest.Mocked<Observability>;
-  let _config: any;
 
   // Test data
   const organizationId = 'org_123';
@@ -90,7 +89,7 @@ describe('OrganizationsServiceImpl', () => {
 
     // Create a mock OrganizationApiClient
     organizationApiClient = {
-      listOrganizations: jest.fn().mockImplementation((_options) => {
+      listOrganizations: jest.fn().mockImplementation(() => {
         return Promise.resolve(mockOrganizationsList);
       }),
       getOrganization: jest.fn().mockImplementation((id) => {
@@ -101,7 +100,7 @@ describe('OrganizationsServiceImpl', () => {
         if (!input.legalName) throw new ValidationError('Organization name is required');
         return Promise.resolve(mockOrganization);
       }),
-      updateOrganization: jest.fn().mockImplementation((id, _input) => {
+      updateOrganization: jest.fn().mockImplementation((id) => {
         if (!id) throw new ValidationError('Organization ID is required');
         return Promise.resolve(mockOrganization);
       }),
@@ -121,11 +120,6 @@ describe('OrganizationsServiceImpl', () => {
       }),
       recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
-
-    // Create config for reference
-    _config = {
-      environment: 'sandbox',
-    };
 
     // Create the service instance
     organizationsService = new OrganizationsServiceImpl(organizationApiClient, mockObservability);

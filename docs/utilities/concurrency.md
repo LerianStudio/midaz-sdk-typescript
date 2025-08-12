@@ -23,8 +23,8 @@ const userDetails = await workerPool({
   },
   options: {
     concurrency: 3,
-    ordered: true // Results will be in the same order as userIds
-  }
+    ordered: true, // Results will be in the same order as userIds
+  },
 });
 
 console.log(userDetails); // Array of user details in the same order as userIds
@@ -34,10 +34,10 @@ console.log(userDetails); // Array of user details in the same order as userIds
 
 The worker pool accepts the following options:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `concurrency` | number | 5 | Maximum number of concurrent operations |
-| `ordered` | boolean | true | Whether to preserve the order of results |
+| Option        | Type    | Default | Description                              |
+| ------------- | ------- | ------- | ---------------------------------------- |
+| `concurrency` | number  | 5       | Maximum number of concurrent operations  |
+| `ordered`     | boolean | true    | Whether to preserve the order of results |
 
 ### Processing Large Datasets
 
@@ -56,7 +56,7 @@ for (const items of itemChunks) {
   const chunkResults = await workerPool({
     items,
     workerFn: processItem,
-    options: { concurrency: 10 }
+    options: { concurrency: 10 },
   });
   results.push(...chunkResults);
 }
@@ -76,7 +76,7 @@ const rateLimiter = new RateLimiter({
   maxRequests: 100,
   timeWindowMs: 60000, // 1 minute
   queueExceeded: true,
-  maxQueueSize: 1000
+  maxQueueSize: 1000,
 });
 
 // Execute a function with rate limiting
@@ -95,12 +95,12 @@ try {
 
 The rate limiter accepts the following options:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `maxRequests` | number | 100 | Maximum number of requests allowed per time window |
-| `timeWindowMs` | number | 60000 | Time window in milliseconds |
-| `queueExceeded` | boolean | true | Whether to queue requests that exceed the rate limit |
-| `maxQueueSize` | number | Infinity | Maximum size of the queue for excess requests |
+| Option          | Type    | Default  | Description                                          |
+| --------------- | ------- | -------- | ---------------------------------------------------- |
+| `maxRequests`   | number  | 100      | Maximum number of requests allowed per time window   |
+| `timeWindowMs`  | number  | 60000    | Time window in milliseconds                          |
+| `queueExceeded` | boolean | true     | Whether to queue requests that exceed the rate limit |
+| `maxQueueSize`  | number  | Infinity | Maximum size of the queue for excess requests        |
 
 ### API Request Management
 
@@ -111,28 +111,28 @@ import { RateLimiter } from 'midaz-sdk/util/concurrency';
 
 class ApiClient {
   private rateLimiter: RateLimiter;
-  
+
   constructor() {
     this.rateLimiter = new RateLimiter({
       maxRequests: 50,
       timeWindowMs: 10000, // 10 seconds
-      queueExceeded: true
+      queueExceeded: true,
     });
   }
-  
+
   async get(url: string) {
     return this.rateLimiter.execute(async () => {
       const response = await fetch(url);
       return response.json();
     });
   }
-  
+
   async post(url: string, data: any) {
     return this.rateLimiter.execute(async () => {
       const response = await fetch(url, {
         method: 'POST',
         body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       return response.json();
     });
@@ -144,7 +144,7 @@ const api = new ApiClient();
 const results = await Promise.all([
   api.get('/resources/1'),
   api.get('/resources/2'),
-  api.get('/resources/3')
+  api.get('/resources/3'),
   // These will be automatically rate limited
 ]);
 ```
@@ -184,23 +184,23 @@ async function batchProcessTransactions(client, transactions) {
         );
       } catch (error) {
         // Handle errors but don't stop the batch
-        return { 
-          error: true, 
-          message: error.message, 
-          transaction 
+        return {
+          error: true,
+          message: error.message,
+          transaction,
         };
       }
     },
     options: {
       concurrency: 5,
-      ordered: true
-    }
+      ordered: true,
+    },
   });
-  
+
   // Separate successful and failed transactions
-  const succeeded = results.filter(r => !r.error);
-  const failed = results.filter(r => r.error);
-  
+  const succeeded = results.filter((r) => !r.error);
+  const failed = results.filter((r) => r.error);
+
   return { succeeded, failed };
 }
 ```
@@ -217,51 +217,45 @@ async function migrateData(sourceClient, targetClient, accountIds) {
     workerFn: async (accountId) => {
       try {
         // Get source data
-        const account = await sourceClient.entities.accounts.getAccount(
-          organizationId,
-          accountId
-        );
-        
+        const account = await sourceClient.entities.accounts.getAccount(organizationId, accountId);
+
         // Get associated data
         const balances = await sourceClient.entities.accounts.getAccountBalances(
           organizationId,
           accountId
         );
-        
+
         // Create in target system
-        const newAccount = await targetClient.entities.accounts.createAccount(
-          organizationId,
-          {
-            name: account.name,
-            ledgerId: account.ledgerId,
-            assetIds: account.assetIds,
-            metadata: {
-              ...account.metadata,
-              migratedFrom: account.id,
-              migratedAt: new Date().toISOString()
-            }
-          }
-        );
-        
+        const newAccount = await targetClient.entities.accounts.createAccount(organizationId, {
+          name: account.name,
+          ledgerId: account.ledgerId,
+          assetIds: account.assetIds,
+          metadata: {
+            ...account.metadata,
+            migratedFrom: account.id,
+            migratedAt: new Date().toISOString(),
+          },
+        });
+
         return {
           success: true,
           sourceId: accountId,
           targetId: newAccount.id,
-          name: account.name
+          name: account.name,
         };
       } catch (error) {
         return {
           success: false,
           sourceId: accountId,
-          error: error.message
+          error: error.message,
         };
       }
     },
     options: {
-      concurrency: 3
-    }
+      concurrency: 3,
+    },
   });
-  
+
   return migrationResults;
 }
 ```
@@ -276,9 +270,9 @@ async function syncWithExternalApi(client, entities) {
   const rateLimiter = new RateLimiter({
     maxRequests: 30,
     timeWindowMs: 60000, // 30 requests per minute
-    queueExceeded: true
+    queueExceeded: true,
   });
-  
+
   // Process each entity
   const results = [];
   for (const entity of entities) {
@@ -287,32 +281,29 @@ async function syncWithExternalApi(client, entities) {
       const result = await rateLimiter.execute(async () => {
         // Get external data
         const externalData = await fetchFromExternalApi(entity.externalId);
-        
+
         // Update internal system
-        return client.entities.updateEntity(
-          entity.id,
-          {
-            ...entity,
-            externalData,
-            lastSyncedAt: new Date().toISOString()
-          }
-        );
+        return client.entities.updateEntity(entity.id, {
+          ...entity,
+          externalData,
+          lastSyncedAt: new Date().toISOString(),
+        });
       });
-      
+
       results.push({
         success: true,
         id: entity.id,
-        result
+        result,
       });
     } catch (error) {
       results.push({
         success: false,
         id: entity.id,
-        error: error.message
+        error: error.message,
       });
     }
   }
-  
+
   return results;
 }
 ```

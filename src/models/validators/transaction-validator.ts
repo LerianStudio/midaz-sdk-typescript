@@ -74,8 +74,19 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
     return requiredResult;
   }
 
-  // Validate required fields
-  const results: ValidationResult[] = [validateRequired(input.operations, 'operations')];
+  // Validate that either operations OR send is provided
+  const results: ValidationResult[] = [];
+
+  // Check if either operations or send is provided
+  if (!input.operations && !input.send) {
+    results.push({
+      valid: false,
+      message: 'Either operations or send must be provided',
+      fieldErrors: {
+        operations: ['Either operations or send must be provided'],
+      },
+    });
+  }
 
   // Validate transaction code if provided
   if (input.externalId) {
@@ -87,24 +98,29 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
     results.push(validateMetadata(input.metadata));
   }
 
-  // Validate that operations array is not empty
-  if (!input.operations || input.operations.length === 0) {
-    results.push({
-      valid: false,
-      message: 'At least one operation is required',
-      fieldErrors: {
-        operations: ['At least one operation is required'],
-      },
-    });
-  } else {
-    // Validate each operation
-    input.operations.forEach((operation, index) => {
-      results.push(validateOperation(operation, `operations[${index}]`));
-    });
+  // If operations are provided, validate them
+  if (input.operations) {
+    // Validate that operations array is not empty
+    if (input.operations.length === 0) {
+      results.push({
+        valid: false,
+        message: 'At least one operation is required',
+        fieldErrors: {
+          operations: ['At least one operation is required'],
+        },
+      });
+    } else {
+      // Validate each operation
+      input.operations.forEach((operation, index) => {
+        results.push(validateOperation(operation, `operations[${index}]`));
+      });
 
-    // Validate that the transaction is balanced (sum of debits equals sum of credits)
-    results.push(validateTransactionBalance(input.operations));
+      // Validate that the transaction is balanced (sum of debits equals sum of credits)
+      results.push(validateTransactionBalance(input.operations));
+    }
   }
+
+  // If send is provided, we skip operation validation as the server will generate them from DSL
 
   return combineValidationResults(results);
 }
@@ -205,44 +221,73 @@ function validateAmount(amount: any, fieldName: string): ValidationResult {
     return requiredResult;
   }
 
-  // Validate required fields
-  const results: ValidationResult[] = [
-    validateRequired(amount.value, `${fieldName}.value`),
-    validateRequired(amount.scale, `${fieldName}.scale`),
-    validateNotEmpty(amount.assetCode, `${fieldName}.assetCode`),
-  ];
-
-  // Validate currency format (ISO 4217)
-  results.push(validateCurrencyCode(amount.assetCode));
-
-  // Validate amount value
-  if (amount.value !== undefined) {
-    // Convert to string if it's a number
-    const valueStr = typeof amount.value === 'number' ? amount.value.toString() : amount.value;
+  // Handle both string amounts (preferred by server) and object amounts (legacy)
+  if (typeof amount === 'string') {
+    // String amount validation - this is what the server expects
+    const results: ValidationResult[] = [];
 
     // Validate that the value is a valid decimal number
     results.push(
       validatePattern(
-        valueStr,
+        amount,
         /^-?\d+(\.\d+)?$/,
-        `${fieldName}.value`,
-        'Amount value must be a valid decimal number'
+        fieldName,
+        'Amount must be a valid decimal number string'
       )
     );
 
     // Validate that the value is not negative
-    if (parseFloat(valueStr) < 0) {
+    if (parseFloat(amount) < 0) {
       results.push({
         valid: false,
         message: 'Amount value cannot be negative',
         fieldErrors: {
-          [`${fieldName}.value`]: ['Amount value cannot be negative'],
+          [fieldName]: ['Amount value cannot be negative'],
         },
       });
     }
-  }
 
-  return combineValidationResults(results);
+    return combineValidationResults(results);
+  } else {
+    // Object amount validation (legacy support)
+    const results: ValidationResult[] = [
+      validateRequired(amount.value, `${fieldName}.value`),
+      validateRequired(amount.scale, `${fieldName}.scale`),
+      validateNotEmpty(amount.assetCode, `${fieldName}.assetCode`),
+    ];
+
+    // Validate currency format (ISO 4217)
+    results.push(validateCurrencyCode(amount.assetCode));
+
+    // Validate amount value
+    if (amount.value !== undefined) {
+      // Convert to string if it's a number
+      const valueStr = typeof amount.value === 'number' ? amount.value.toString() : amount.value;
+
+      // Validate that the value is a valid decimal number
+      results.push(
+        validatePattern(
+          valueStr,
+          /^-?\d+(\.\d+)?$/,
+          `${fieldName}.value`,
+          'Amount value must be a valid decimal number'
+        )
+      );
+
+      // Validate that the value is not negative
+      if (parseFloat(valueStr) < 0) {
+        results.push({
+          valid: false,
+          message: 'Amount value cannot be negative',
+          fieldErrors: {
+            [`${fieldName}.value`]: ['Amount value cannot be negative'],
+          },
+        });
+      }
+    }
+
+    return combineValidationResults(results);
+  }
 }
 
 /**
@@ -295,7 +340,30 @@ function validateTransactionBalance(operations: OperationInput[]): ValidationRes
       };
     }
 
-    const assetCode = operation.amount.assetCode;
+    // Handle both string and object amount types
+    let assetCode: string;
+    let value: number;
+
+    if (typeof operation.amount === 'string') {
+      // amount is a string - get assetCode from the operation itself
+      assetCode = operation.assetCode || '';
+      value = parseFloat(operation.amount);
+    } else {
+      // amount is an Amount object
+      assetCode = (operation.amount as any).assetCode;
+      const amountValue = (operation.amount as any).value;
+      if (amountValue === undefined || amountValue === null) {
+        return {
+          valid: false,
+          message: 'Missing value in operation amount',
+          fieldErrors: {
+            operations: ['Missing value in operation amount'],
+          },
+        };
+      }
+      value = parseFloat(amountValue.toString());
+    }
+
     if (!assetCode) {
       return {
         valid: false,
@@ -305,19 +373,6 @@ function validateTransactionBalance(operations: OperationInput[]): ValidationRes
         },
       };
     }
-
-    // Check if amount.value exists before trying to convert it
-    if (operation.amount.value === undefined || operation.amount.value === null) {
-      return {
-        valid: false,
-        message: 'Missing value in operation amount',
-        fieldErrors: {
-          operations: ['Missing value in operation amount'],
-        },
-      };
-    }
-
-    const value = parseFloat(operation.amount.value.toString());
 
     if (!operationsByCurrency[assetCode]) {
       operationsByCurrency[assetCode] = { debits: 0, credits: 0 };
@@ -339,7 +394,7 @@ function validateTransactionBalance(operations: OperationInput[]): ValidationRes
 
     // Get the transaction type from the first operation's metadata or from input
     const firstOperation = operations[0];
-    const transactionType = firstOperation?.metadata?.transactionType;
+    const transactionType = (firstOperation as any)?.metadata?.transactionType;
     const inputType = operations.length > 0 ? operations[0].type : null;
 
     // Skip balance check for special transaction types

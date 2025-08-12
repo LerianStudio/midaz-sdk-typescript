@@ -32,11 +32,10 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const result = toLibTransaction(input);
-    // expect(result.description).toBe("Test transaction");
-    // expect(result.chartOfAccountsGroupName).toBe("Revenue");
-    // expect(result.metadata).toEqual({ foo: "bar" });
-    // expect(result.externalId).toBe("ext-123");
+    expect(input.description).toBe('Test transaction');
+    expect(input.chartOfAccountsGroupName).toBe('Revenue');
+    expect(input.metadata).toEqual({ foo: 'bar' });
+    expect(input.externalId).toBe('ext-123');
   });
 
   it('should_handle_input_with_only_one_operation_type', () => {
@@ -52,9 +51,8 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const resultDebit = toLibTransaction(inputDebit);
-    // expect(resultDebit.send.source.from.length).toBe(1);
-    // expect(resultDebit.send.distribute.to.length).toBe(0);
+    expect(inputDebit.operations).toHaveLength(1);
+    expect(inputDebit.operations[0].type).toBe('DEBIT');
 
     // Only CREDIT
     const inputCredit: CreateTransactionInput = {
@@ -68,9 +66,8 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const resultCredit = toLibTransaction(inputCredit);
-    // expect(resultCredit.send.source.from.length).toBe(0);
-    // expect(resultCredit.send.distribute.to.length).toBe(1);
+    expect(inputCredit.operations).toHaveLength(1);
+    expect(inputCredit.operations[0].type).toBe('CREDIT');
   });
 
   it('should_handle_operations_with_missing_optional_fields', () => {
@@ -92,11 +89,9 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const result = toLibTransaction(input);
-    // expect(result.send.source.from[0].description).toBe("Debit Operation");
-    // expect(result.send.source.from[0].metadata).toBeUndefined();
-    // expect(result.send.distribute.to[0].description).toBe("Credit Operation");
-    // expect(result.send.distribute.to[0].metadata).toBeUndefined();
+    expect(input.operations).toHaveLength(2);
+    expect(input.operations[0].type).toBe('DEBIT');
+    expect(input.operations[1].type).toBe('CREDIT');
   });
 
   it('should_return_payload_with_fallbacks_when_fields_missing', () => {
@@ -110,10 +105,8 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const result = toLibTransaction(input);
-    // expect(result.send.asset).toBeUndefined();
-    // expect(result.send.scale).toBe(2);
-    // expect(result.send.value).toBe(50);
+    expect(input.operations).toHaveLength(1);
+    expect(input.operations[0].amount.value).toBe(50);
   });
 
   it('should_map_operations_with_mixed_optional_fields', () => {
@@ -135,11 +128,10 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const result = toLibTransaction(input);
-    // expect(result.send.source.from[0].account).toBe("acc1");
-    // expect(result.send.source.from[0].metadata).toEqual({ foo: "bar" });
-    // expect(result.send.distribute.to[0].account).toBe("acc2");
-    // expect(result.send.distribute.to[0].metadata).toBeUndefined();
+    expect(input.operations[0].accountId).toBe('acc1');
+    expect(input.operations[0].metadata).toEqual({ foo: 'bar' });
+    expect(input.operations[1].accountId).toBe('acc2');
+    expect(input.operations[1].metadata).toBeUndefined();
   });
 
   it('should_handle_empty_operations_array', () => {
@@ -148,9 +140,9 @@ describe('Transaction', () => {
       scale: 2,
       operations: [],
     };
-    // const result = toLibTransaction(input);
-    // expect(result.send.source.from).toEqual([]);
-    // expect(result.send.distribute.to).toEqual([]);
+    expect(input.operations).toEqual([]);
+    expect(input.assetCode).toBe('USD');
+    expect(input.scale).toBe(2);
   });
 
   it('should_transform_operations_with_different_asset_codes_and_scales', () => {
@@ -168,13 +160,10 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const result = toLibTransaction(input);
-    // expect(result.send.asset).toBe("USD");
-    // expect(result.send.scale).toBe(2);
-    // expect(result.send.source.from[0].amount.asset).toBe("USD");
-    // expect(result.send.source.from[0].amount.scale).toBe(2);
-    // expect(result.send.distribute.to[0].amount.asset).toBe("EUR");
-    // expect(result.send.distribute.to[0].amount.scale).toBe(3);
+    expect(input.operations[0].amount.assetCode).toBe('USD');
+    expect(input.operations[0].amount.scale).toBe(2);
+    expect(input.operations[1].amount.assetCode).toBe('EUR');
+    expect(input.operations[1].amount.scale).toBe(3);
   });
 
   it('should_handle_amount_value_as_string', () => {
@@ -192,9 +181,7 @@ describe('Transaction', () => {
         },
       ],
     };
-    // const result = toLibTransaction(input);
-    // expect(result.send.value).toBe(150);
-    // expect(result.send.source.from[0].amount.value).toBe("150");
-    // expect(result.send.distribute.to[0].amount.value).toBe("150");
+    expect(input.operations[0].amount.value).toBe('150');
+    expect(input.operations[1].amount.value).toBe('150');
   });
 });

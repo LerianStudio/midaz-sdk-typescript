@@ -8,10 +8,6 @@ import {
   Portfolio,
   UpdatePortfolioInput,
 } from '../../../src/models/portfolio';
-import {
-  validateCreatePortfolioInput,
-  validateUpdatePortfolioInput,
-} from '../../../src/models/validators/portfolio-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpPortfolioApiClient } from '../../../src/api/http/http-portfolio-api-client';
@@ -20,6 +16,10 @@ import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/portfolio-validator');
+import {
+  validateCreatePortfolioInput,
+  validateUpdatePortfolioInput,
+} from '../../../src/models/validators/portfolio-validator';
 // Validation mock
 const validateMock = jest.fn();
 jest.mock('../../../src/util/validation', () => ({
@@ -36,7 +36,6 @@ describe('HttpPortfolioApiClient', () => {
   const portfolioId = 'pfl-789';
   const entityId = 'entity-123';
   const apiVersion = 'v1';
-  const _serviceName = 'midaz-portfolio-api-client';
 
   // Mock portfolio data
   const mockPortfolio: Portfolio = {

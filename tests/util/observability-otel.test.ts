@@ -2,7 +2,6 @@
  * @file Tests for OpenTelemetry provider
  */
 import { OpenTelemetryProvider } from '../../src/util/observability/observability-otel';
-import { ObservabilityOptions, Span } from '../../src/util/observability/observability';
 
 describe('OpenTelemetryProvider', () => {
   beforeEach(() => {

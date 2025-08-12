@@ -44,15 +44,17 @@ import { withEnhancedRecovery } from 'midaz-sdk/util';
 const result = await withEnhancedRecovery(
   () => client.entities.transactions.createTransaction(orgId, ledgerId, transaction),
   {
-    retries: 3,                 // Number of retry attempts
-    retryDelay: 500,            // Base delay between retries (ms)
-    exponentialBackoff: true,   // Whether to use exponential backoff
-    fallback: async () => {     // Optional fallback operation
+    retries: 3, // Number of retry attempts
+    retryDelay: 500, // Base delay between retries (ms)
+    exponentialBackoff: true, // Whether to use exponential backoff
+    fallback: async () => {
+      // Optional fallback operation
       return alternativeOperation();
     },
-    verification: async (result) => {  // Optional verification function
+    verification: async (result) => {
+      // Optional verification function
       return result && result.id ? true : false;
-    }
+    },
   }
 );
 
@@ -63,7 +65,7 @@ if (result.success) {
 } else {
   // Operation failed even after recovery attempts
   console.error(`Error: ${result.error.message}`);
-  
+
   if (result.attemptedRecovery) {
     console.log(`Recovery was attempted ${result.recoveryAttempts} times`);
   }
@@ -80,7 +82,7 @@ const httpClient = new HttpClient({
   retries: 3,
   retryDelay: 500,
   exponentialBackoff: true,
-  retryableStatusCodes: [429, 500, 502, 503, 504]
+  retryableStatusCodes: [429, 500, 502, 503, 504],
 });
 ```
 
@@ -91,13 +93,13 @@ For high-load scenarios, the SDK includes circuit breaking capabilities to preve
 ```typescript
 // Create a circuit breaker
 const circuitBreaker = createCircuitBreaker({
-  failureThreshold: 5,           // Number of failures before opening circuit
-  resetTimeout: 30000,           // Time (ms) before trying to close circuit
+  failureThreshold: 5, // Number of failures before opening circuit
+  resetTimeout: 30000, // Time (ms) before trying to close circuit
 });
 
 // Execute operation with circuit breaker
-const result = await circuitBreaker.execute(
-  () => client.entities.assets.getAsset(orgId, ledgerId, assetId)
+const result = await circuitBreaker.execute(() =>
+  client.entities.assets.getAsset(orgId, ledgerId, assetId)
 );
 ```
 
@@ -108,8 +110,8 @@ const result = await circuitBreaker.execute(
    Always wrap critical operations with enhanced recovery:
 
    ```typescript
-   const result = await withEnhancedRecovery(
-     () => client.entities.transactions.createTransaction(orgId, ledgerId, transaction)
+   const result = await withEnhancedRecovery(() =>
+     client.entities.transactions.createTransaction(orgId, ledgerId, transaction)
    );
    ```
 
@@ -121,14 +123,14 @@ const result = await circuitBreaker.execute(
    // For less critical operations
    const lightRecovery = {
      retries: 2,
-     retryDelay: 250
+     retryDelay: 250,
    };
 
    // For critical operations
    const robustRecovery = {
      retries: 5,
      retryDelay: 500,
-     exponentialBackoff: true
+     exponentialBackoff: true,
    };
    ```
 
@@ -137,15 +139,12 @@ const result = await circuitBreaker.execute(
    Add verification to ensure operations complete successfully:
 
    ```typescript
-   const result = await withEnhancedRecovery(
-     operation,
-     { 
-       verification: async (data) => {
-         // Custom verification logic
-         return isValid(data);
-       }
-     }
-   );
+   const result = await withEnhancedRecovery(operation, {
+     verification: async (data) => {
+       // Custom verification logic
+       return isValid(data);
+     },
+   });
    ```
 
 4. **Handle Specific Error Types**
@@ -167,8 +166,5 @@ const result = await circuitBreaker.execute(
    Provide fallback operations for critical functionality:
 
    ```typescript
-   const result = await withEnhancedRecovery(
-     primaryOperation,
-     { fallback: alternativeOperation }
-   );
+   const result = await withEnhancedRecovery(primaryOperation, { fallback: alternativeOperation });
    ```

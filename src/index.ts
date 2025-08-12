@@ -10,7 +10,7 @@ export { MidazClient, MidazConfig } from './client';
 export {
   ClientConfigBuilder,
   createClientConfigBuilder,
-  createClientConfigWithToken,
+  createClientConfigWithAccessManager,
   createDevelopmentConfig,
   createSandboxConfig,
   createProductionConfig,

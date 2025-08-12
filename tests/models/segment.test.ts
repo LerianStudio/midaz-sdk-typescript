@@ -1,5 +1,4 @@
 import {
-  CreateSegmentInput,
   newCreateSegmentInput,
   newUpdateSegmentInput,
   Segment,

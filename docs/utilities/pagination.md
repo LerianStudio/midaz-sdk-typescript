@@ -8,17 +8,17 @@ Pagination in the Midaz SDK follows a standard offset-based approach:
 
 ```typescript
 interface ListOptions {
-  limit?: number;    // Number of items to return
-  offset?: number;   // Number of items to skip
+  limit?: number; // Number of items to return
+  offset?: number; // Number of items to skip
   sort?: SortOption; // Field and direction to sort by
 }
 
 interface ListResponse<T> {
-  data: T[];         // Array of items
-  total: number;     // Total count of items available
-  limit: number;     // Limit used for this response
-  offset: number;    // Offset used for this response
-  hasMore: boolean;  // Whether more items are available
+  data: T[]; // Array of items
+  total: number; // Total count of items available
+  limit: number; // Limit used for this response
+  offset: number; // Offset used for this response
+  hasMore: boolean; // Whether more items are available
 }
 ```
 
@@ -28,14 +28,10 @@ Most list operations in the SDK accept pagination parameters:
 
 ```typescript
 // List assets with pagination
-const assetList = await client.entities.assets.listAssets(
-  organizationId,
-  ledgerId,
-  { 
-    limit: 50,     // Return 50 items
-    offset: 0      // Start from the beginning
-  }
-);
+const assetList = await client.entities.assets.listAssets(organizationId, ledgerId, {
+  limit: 50, // Return 50 items
+  offset: 0, // Start from the beginning
+});
 
 console.log(`Showing ${assetList.data.length} of ${assetList.total} assets`);
 console.log(`Has more: ${assetList.hasMore}`);
@@ -47,25 +43,22 @@ To retrieve subsequent pages, increment the offset by the limit:
 
 ```typescript
 // First page
-const page1 = await client.entities.assets.listAssets(
-  organizationId,
-  ledgerId,
-  { limit: 50, offset: 0 }
-);
+const page1 = await client.entities.assets.listAssets(organizationId, ledgerId, {
+  limit: 50,
+  offset: 0,
+});
 
 // Second page
-const page2 = await client.entities.assets.listAssets(
-  organizationId,
-  ledgerId,
-  { limit: 50, offset: 50 }
-);
+const page2 = await client.entities.assets.listAssets(organizationId, ledgerId, {
+  limit: 50,
+  offset: 50,
+});
 
 // Third page
-const page3 = await client.entities.assets.listAssets(
-  organizationId,
-  ledgerId,
-  { limit: 50, offset: 100 }
-);
+const page3 = await client.entities.assets.listAssets(organizationId, ledgerId, {
+  limit: 50,
+  offset: 100,
+});
 ```
 
 ## Auto-Pagination Iterator
@@ -77,15 +70,11 @@ import { createPaginatedIterator } from 'midaz-sdk/util';
 
 // Create a paginated iterator for assets
 const assetIterator = createPaginatedIterator(
-  (options) => client.entities.assets.listAssets(
-    organizationId, 
-    ledgerId,
-    options
-  ),
-  { 
-    limit: 50,                  // Items per page
-    maxPages: 10,               // Maximum number of pages to fetch
-    initialOffset: 0            // Starting offset
+  (options) => client.entities.assets.listAssets(organizationId, ledgerId, options),
+  {
+    limit: 50, // Items per page
+    maxPages: 10, // Maximum number of pages to fetch
+    initialOffset: 0, // Starting offset
   }
 );
 
@@ -105,14 +94,10 @@ import { collectAllPages } from 'midaz-sdk/util';
 
 // Collect all assets into an array
 const allAssets = await collectAllPages(
-  (options) => client.entities.assets.listAssets(
-    organizationId, 
-    ledgerId,
-    options
-  ),
-  { 
-    limit: 100,          // Items per page
-    maxTotal: 1000       // Maximum total items to collect
+  (options) => client.entities.assets.listAssets(organizationId, ledgerId, options),
+  {
+    limit: 100, // Items per page
+    maxTotal: 1000, // Maximum total items to collect
   }
 );
 
@@ -125,18 +110,14 @@ You can specify sorting criteria when listing resources:
 
 ```typescript
 // List transactions sorted by creation date in descending order
-const transactions = await client.entities.transactions.listTransactions(
-  organizationId,
-  ledgerId,
-  { 
-    limit: 50,
-    offset: 0,
-    sort: {
-      field: 'createdAt',
-      direction: 'desc'
-    }
-  }
-);
+const transactions = await client.entities.transactions.listTransactions(organizationId, ledgerId, {
+  limit: 50,
+  offset: 0,
+  sort: {
+    field: 'createdAt',
+    direction: 'desc',
+  },
+});
 ```
 
 ## Parallel Pagination
@@ -148,21 +129,17 @@ import { parallelPaginate } from 'midaz-sdk/util';
 
 // Process multiple pages in parallel
 await parallelPaginate(
-  (options) => client.entities.accounts.listAccounts(
-    organizationId, 
-    ledgerId,
-    options
-  ),
+  (options) => client.entities.accounts.listAccounts(organizationId, ledgerId, options),
   async (accounts) => {
     // Process each batch of accounts
     for (const account of accounts) {
       await processAccount(account);
     }
   },
-  { 
-    limit: 50,               // Items per page
-    concurrency: 3,          // Number of parallel requests
-    maxPages: 10             // Maximum number of pages to process
+  {
+    limit: 50, // Items per page
+    concurrency: 3, // Number of parallel requests
+    maxPages: 10, // Maximum number of pages to process
   }
 );
 ```
@@ -189,11 +166,10 @@ await parallelPaginate(
    Always check if the result includes data:
 
    ```typescript
-   const response = await client.entities.assets.listAssets(
-     organizationId,
-     ledgerId,
-     { limit: 50, offset: 0 }
-   );
+   const response = await client.entities.assets.listAssets(organizationId, ledgerId, {
+     limit: 50,
+     offset: 0,
+   });
 
    if (response.data.length === 0) {
      console.log('No assets found');
@@ -217,14 +193,11 @@ await parallelPaginate(
    When collecting all pages, set reasonable limits to avoid processing too many items:
 
    ```typescript
-   const allItems = await collectAllPages(
-     fetchFunction,
-     { 
-       limit: 100,
-       maxTotal: 1000,  // Never collect more than 1000 items
-       maxPages: 10     // Never fetch more than 10 pages
-     }
-   );
+   const allItems = await collectAllPages(fetchFunction, {
+     limit: 100,
+     maxTotal: 1000, // Never collect more than 1000 items
+     maxPages: 10, // Never fetch more than 10 pages
+   });
    ```
 
 5. **Use Filtering when Available**
@@ -235,12 +208,12 @@ await parallelPaginate(
    const transactions = await client.entities.transactions.listTransactions(
      organizationId,
      ledgerId,
-     { 
+     {
        limit: 50,
        offset: 0,
        status: 'completed',
        fromDate: '2023-01-01T00:00:00Z',
-       toDate: '2023-01-31T23:59:59Z'
+       toDate: '2023-01-31T23:59:59Z',
      }
    );
    ```

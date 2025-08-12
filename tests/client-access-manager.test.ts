@@ -13,7 +13,7 @@ import { HttpClient } from '../src/util/network/http-client';
 jest.mock('../src/util/network/http-client');
 jest.mock('../src/util/auth/access-manager');
 
-describe('MidazClient with Access Manager', () => {
+describe('MidazClient with Access Manager Authentication', () => {
   let mockAccessManager: jest.Mocked<AccessManager>;
   let mockHttpClient: jest.Mocked<HttpClient>;
 
@@ -37,40 +37,45 @@ describe('MidazClient with Access Manager', () => {
   });
 
   it('should create a client with Access Manager authentication', () => {
-    // Create config with Access Manager
+    // Create config with Access Manager only
     const config = createClientConfigWithAccessManager({
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
-      .build();
+    }).build();
 
     // Create client
     const client = new MidazClient(config);
-
-    // Since we're using a fallback API key, we should verify the client was created successfully
-    // We can't directly check for accessManager since it might be handled internally
     expect(client).toBeDefined();
+
+    // Verify HttpClient was created
     expect(HttpClient).toHaveBeenCalled();
+
+    // Verify Access Manager configuration is present
+    expect(config.accessManager).toBeDefined();
+    expect(config.accessManager?.address).toBe('https://auth.example.com');
+    expect(config.accessManager?.clientId).toBe('test-client-id');
+    expect(config.accessManager?.enabled).toBe(true);
   });
 
-  it('should initialize API clients with the HTTP client', () => {
-    // Create config with Access Manager
+  it('should initialize API clients with Access Manager authentication', () => {
+    // Create config with Access Manager only
     const config = createClientConfigWithAccessManager({
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
-      .build();
+    }).build();
 
     // Create client
     const client = new MidazClient(config);
-
-    // Verify client was created successfully
     expect(client).toBeDefined();
-    // We don't need to check individual API clients since they're mocked
+
+    // Verify HttpClient was created
+    expect(HttpClient).toHaveBeenCalled();
+
+    // Verify no API key authentication is configured
+    expect(config.accessManager).toBeDefined();
+    // API clients should rely on Access Manager for authentication
   });
 
   it('should handle Access Manager token errors gracefully', async () => {
@@ -82,56 +87,52 @@ describe('MidazClient with Access Manager', () => {
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .withApiKey('fallback-api-key') // Add a fallback API key to satisfy validation
-      .build();
+    }).build();
 
     // Should still create client without errors
     const client = new MidazClient(config);
+    expect(client).toBeDefined();
 
     // HttpClient should still be created
     expect(HttpClient).toHaveBeenCalled();
+
+    // When Access Manager fails, no Authorization header should be set
+    // This test verifies that the client handles auth failures gracefully
   });
 
-  it('should use API key authentication when Access Manager is not provided', () => {
-    // Create config with API key
-    const config = createClientConfigBuilder('test-api-key').build();
+  it('should work without authentication when Access Manager is not enabled', () => {
+    // Create config without Access Manager or API key
+    const config = createClientConfigBuilder().build();
 
     // Create client
     const client = new MidazClient(config);
+    expect(client).toBeDefined();
 
     // Verify HttpClient was created
     expect(HttpClient).toHaveBeenCalled();
 
-    // Verify setDefaultHeader was called with the API key
-    const httpClientInstance = (HttpClient as jest.Mock).mock.results[0].value;
-    expect(httpClientInstance.setDefaultHeader).toHaveBeenCalledWith(
-      'Authorization',
-      'Bearer test-api-key'
-    );
+    // When no Access Manager is configured, no authentication headers should be set
+    expect(config.accessManager).toBeUndefined();
   });
 
-  it('should prioritize Access Manager over API key when both are provided', () => {
-    // Create config with both Access Manager and API key
+  it('should use Access Manager for authentication when configured', () => {
+    // Create config with Access Manager
     const config = createClientConfigWithAccessManager({
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .withApiKey('test-api-key') // This should override the Access Manager
-      .build();
+    }).build();
 
     // Create client
     const client = new MidazClient(config);
+    expect(client).toBeDefined();
 
     // Verify HttpClient was created
     expect(HttpClient).toHaveBeenCalled();
 
-    // Verify setDefaultHeader was called with the API key
-    const httpClientInstance = (HttpClient as jest.Mock).mock.results[0].value;
-    expect(httpClientInstance.setDefaultHeader).toHaveBeenCalledWith(
-      'Authorization',
-      'Bearer test-api-key'
-    );
+    // Verify Access Manager is configured for authentication
+    expect(config.accessManager).toBeDefined();
+    expect(config.accessManager?.enabled).toBe(true);
+    expect(config.accessManager?.address).toBe('https://auth.example.com');
   });
 });

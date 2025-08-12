@@ -1,7 +1,7 @@
 /**
  */
 
-import { ListMetadata as _ListMetadata, ListOptions, ListResponse } from '../../models/common';
+import { ListOptions, ListResponse } from '../../models/common';
 import { Observability, Span } from '../../util/observability/observability';
 import { getEnv } from '../runtime/environment';
 

@@ -63,14 +63,11 @@ const assetInput = createAssetBuilder('US Dollar', 'USD')
   .build();
 
 // Pass the built object to the API
-const asset = await client.entities.assets.createAsset(
-  organizationId,
-  ledgerId,
-  assetInput
-);
+const asset = await client.entities.assets.createAsset(organizationId, ledgerId, assetInput);
 ```
 
 The builder pattern provides:
+
 - Fluent interface for constructing complex objects
 - Parameter validation at build-time
 - Immutable intermediate objects
@@ -93,7 +90,7 @@ Factory methods create and return instances of services:
 // Factory function to create a client
 const client = createClient({
   apiKey: 'your-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 ```
 
@@ -122,7 +119,7 @@ const result = await withEnhancedRecovery(
   {
     maxRetries: 3,
     fallbackAttempts: 2,
-    enableSmartRecovery: true
+    enableSmartRecovery: true,
   }
 );
 ```
@@ -138,7 +135,7 @@ import { createClient } from 'midaz-sdk';
 
 const client = createClient({
   apiKey: 'your-api-key',
-  environment: 'production'
+  environment: 'production',
 });
 
 // Access entity services
@@ -178,6 +175,7 @@ class HttpClient {
 ```
 
 Features:
+
 - Automatic retries for transient failures
 - Consistent error handling
 - Support for authentication
@@ -199,6 +197,7 @@ class MidazError extends Error {
 ```
 
 Features:
+
 - Categorized errors (validation, authentication, network, etc.)
 - Specific error codes for detailed error types
 - Enhanced recovery mechanisms for retrying failed operations
@@ -216,6 +215,7 @@ if (!validationResult.valid) {
 ```
 
 Features:
+
 - Field-level validation functions
 - Structured validation results
 - Combined validation for complex objects
@@ -239,12 +239,13 @@ import { ConfigService } from 'midaz-sdk/util/config';
 // Override configuration
 ConfigService.configure({
   apiUrls: {
-    onboardingUrl: 'https://custom-api.example.com/v1'
-  }
+    onboardingUrl: 'https://custom-api.example.com/v1',
+  },
 });
 ```
 
 Features:
+
 - Environment variable support
 - Programmatic configuration overrides
 - Service-specific configuration groups

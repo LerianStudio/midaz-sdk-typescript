@@ -30,8 +30,8 @@ To retrieve the exchange rate between two assets:
 const rate = await client.entities.assetRates.getAssetRate(
   organizationId,
   ledgerId,
-  "USD",  // Source asset code
-  "EUR"   // Destination asset code
+  'USD', // Source asset code
+  'EUR' // Destination asset code
 );
 
 console.log(`Exchange rate: 1 ${rate.fromAsset} = ${rate.rate} ${rate.toAsset}`);
@@ -48,11 +48,11 @@ import { createUpdateAssetRateInput } from 'midaz-sdk';
 // Create input for a new USD to EUR exchange rate
 // Method 1: Create input object directly
 const rateInput = {
-  fromAsset: "USD",
-  toAsset: "EUR",
+  fromAsset: 'USD',
+  toAsset: 'EUR',
   rate: 0.92,
-  effectiveAt: "2023-09-15T00:00:00Z",
-  expirationAt: "2023-09-16T00:00:00Z"
+  effectiveAt: '2023-09-15T00:00:00Z',
+  expirationAt: '2023-09-16T00:00:00Z',
 };
 
 // Method 2: Use the helper function
@@ -60,13 +60,7 @@ const now = new Date();
 const tomorrow = new Date(now);
 tomorrow.setDate(tomorrow.getDate() + 1);
 
-const helperRateInput = createUpdateAssetRateInput(
-  "USD",
-  "EUR",
-  0.92,
-  now,
-  tomorrow
-);
+const helperRateInput = createUpdateAssetRateInput('USD', 'EUR', 0.92, now, tomorrow);
 
 // Create or update the asset rate
 const newRate = await client.entities.assetRates.createOrUpdateAssetRate(
@@ -79,6 +73,7 @@ console.log(`Asset rate created/updated: ${newRate.id}`);
 ```
 
 Note that:
+
 - The `createUpdateAssetRateInput` function handles date conversion automatically
 - All fields are required when creating or updating a rate
 - If a rate already exists for the given asset pair, it will be updated
@@ -91,12 +86,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Create/update an asset rate with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.assetRates.createOrUpdateAssetRate(
-    organizationId,
-    ledgerId,
-    rateInput
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.assetRates.createOrUpdateAssetRate(organizationId, ledgerId, rateInput)
 );
 
 if (result.success) {
@@ -117,32 +108,20 @@ async function manageAssetRates(client, organizationId, ledgerId) {
     const ratesToCreate = [
       // USD to EUR conversion
       createUpdateAssetRateInput(
-        "USD",
-        "EUR",
+        'USD',
+        'EUR',
         0.92,
         new Date(),
         new Date(Date.now() + 86400000) // Valid for 24 hours
       ),
-      
+
       // EUR to USD conversion (inverse of the above)
-      createUpdateAssetRateInput(
-        "EUR",
-        "USD",
-        1.09,
-        new Date(),
-        new Date(Date.now() + 86400000)
-      ),
-      
+      createUpdateAssetRateInput('EUR', 'USD', 1.09, new Date(), new Date(Date.now() + 86400000)),
+
       // BTC to USD conversion
-      createUpdateAssetRateInput(
-        "BTC",
-        "USD",
-        43000,
-        new Date(),
-        new Date(Date.now() + 86400000)
-      )
+      createUpdateAssetRateInput('BTC', 'USD', 43000, new Date(), new Date(Date.now() + 86400000)),
     ];
-    
+
     // Create/update each rate
     const createdRates = [];
     for (const rateInput of ratesToCreate) {
@@ -154,21 +133,23 @@ async function manageAssetRates(client, organizationId, ledgerId) {
       createdRates.push(rate);
       console.log(`Created rate: 1 ${rate.fromAsset} = ${rate.rate} ${rate.toAsset}`);
     }
-    
+
     // Retrieve a specific rate
     const usdToEurRate = await client.entities.assetRates.getAssetRate(
       organizationId,
       ledgerId,
-      "USD",
-      "EUR"
+      'USD',
+      'EUR'
     );
-    
-    console.log(`Retrieved rate: 1 ${usdToEurRate.fromAsset} = ${usdToEurRate.rate} ${usdToEurRate.toAsset}`);
+
+    console.log(
+      `Retrieved rate: 1 ${usdToEurRate.fromAsset} = ${usdToEurRate.rate} ${usdToEurRate.toAsset}`
+    );
     console.log(`Effective from: ${usdToEurRate.effectiveAt} to ${usdToEurRate.expirationAt}`);
-    
+
     return {
       createdRates,
-      retrievedRate: usdToEurRate
+      retrievedRate: usdToEurRate,
     };
   } catch (error) {
     console.error(`Asset rate management error: ${error.message}`);
@@ -185,14 +166,7 @@ Asset rates are commonly used for currency conversion in multi-currency ledgers:
 
 ```typescript
 // Function to convert an amount from one asset to another
-async function convertAmount(
-  client,
-  organizationId,
-  ledgerId,
-  amount,
-  fromAsset,
-  toAsset
-) {
+async function convertAmount(client, organizationId, ledgerId, amount, fromAsset, toAsset) {
   // Get the exchange rate
   const rate = await client.entities.assetRates.getAssetRate(
     organizationId,
@@ -200,29 +174,24 @@ async function convertAmount(
     fromAsset,
     toAsset
   );
-  
+
   // Perform conversion
   const convertedAmount = amount * rate.rate;
-  
+
   return {
     originalAmount: amount,
     originalAsset: fromAsset,
     convertedAmount,
     convertedAsset: toAsset,
     rate: rate.rate,
-    effectiveAt: rate.effectiveAt
+    effectiveAt: rate.effectiveAt,
   };
 }
 
 // Example usage
-const conversion = await convertAmount(
-  client,
-  organizationId,
-  ledgerId,
-  100,
-  "USD",
-  "EUR"
-);
+const conversion = await convertAmount(client, organizationId, ledgerId, 100, 'USD', 'EUR');
 
-console.log(`${conversion.originalAmount} ${conversion.originalAsset} = ${conversion.convertedAmount} ${conversion.convertedAsset}`);
+console.log(
+  `${conversion.originalAmount} ${conversion.originalAsset} = ${conversion.convertedAmount} ${conversion.convertedAsset}`
+);
 ```

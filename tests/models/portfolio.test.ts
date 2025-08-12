@@ -1,5 +1,4 @@
 import {
-  CreatePortfolioInput,
   newCreatePortfolioInput,
   newUpdatePortfolioInput,
   Portfolio,

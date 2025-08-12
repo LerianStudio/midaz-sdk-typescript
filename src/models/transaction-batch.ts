@@ -308,25 +308,20 @@ export async function createDepositBatch(
 ): Promise<TransactionBatchResult> {
   // Create deposit transactions for each destination account
   const transactions = destinationAccountIds.map((destinationId) => ({
+    chartOfAccountsGroupName: 'default',
     description: `Batch deposit to ${destinationId}`,
     operations: [
       {
         accountId: sourceAccountId.startsWith('@') ? sourceAccountId : `@external/${assetCode}`,
         type: 'DEBIT' as const, // Type assertion using as const
-        amount: {
-          value: amount,
-          assetCode,
-          scale: 0,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
       {
         accountId: destinationId,
         type: 'CREDIT' as const, // Type assertion using as const
-        amount: {
-          value: amount,
-          assetCode,
-          scale: 0,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
     ],
     metadata: {
@@ -393,25 +388,20 @@ export async function createTransferBatch(
 
   // Create transfer transactions for each account pair
   const transactions = accountPairs.map((pair, index) => ({
+    chartOfAccountsGroupName: 'default',
     description: `Batch transfer from ${pair.source} to ${pair.destination}`,
     operations: [
       {
         accountId: pair.source,
         type: 'DEBIT' as const, // Type assertion using as const
-        amount: {
-          value: amounts[index],
-          assetCode,
-          scale: 0,
-        },
+        amount: amounts[index].toString(),
+        assetCode,
       },
       {
         accountId: pair.destination,
         type: 'CREDIT' as const, // Type assertion using as const
-        amount: {
-          value: amounts[index],
-          assetCode,
-          scale: 0,
-        },
+        amount: amounts[index].toString(),
+        assetCode,
       },
     ],
     metadata: {

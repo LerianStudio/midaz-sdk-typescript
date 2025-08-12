@@ -24,6 +24,7 @@ interface Segment {
 ```
 
 Segments are commonly used for:
+
 - Business unit categorization (departments, divisions)
 - Geographic segmentation (regions, countries)
 - Product line segmentation (product categories)
@@ -44,7 +45,7 @@ const segmentInput = createSegmentBuilder('North America')
   .withMetadata({
     regionCode: 'NA',
     countries: ['US', 'CA', 'MX'],
-    currency: 'USD'
+    currency: 'USD',
   })
   .build();
 
@@ -67,14 +68,11 @@ import { newCreateSegmentInput, withMetadata, withStatus, StatusCode } from 'mid
 const segmentInput = newCreateSegmentInput('North America');
 
 // Add additional properties
-const enhancedInput = withMetadata(
-  withStatus(segmentInput, StatusCode.ACTIVE),
-  {
-    regionCode: 'NA',
-    countries: ['US', 'CA', 'MX'],
-    currency: 'USD'
-  }
-);
+const enhancedInput = withMetadata(withStatus(segmentInput, StatusCode.ACTIVE), {
+  regionCode: 'NA',
+  countries: ['US', 'CA', 'MX'],
+  currency: 'USD',
+});
 
 // Create the segment
 const segment = await client.entities.segments.createSegment(
@@ -85,6 +83,7 @@ const segment = await client.entities.segments.createSegment(
 ```
 
 Note that:
+
 - The `name` is a required field for segment creation
 - Additional properties can be set using the chainable `with*` methods or helper functions
 - The `status` field can be explicitly set or will use the default (typically 'ACTIVE')
@@ -95,11 +94,7 @@ Note that:
 
 ```typescript
 // Get a specific segment by ID
-const segment = await client.entities.segments.getSegment(
-  organizationId,
-  ledgerId,
-  segmentId
-);
+const segment = await client.entities.segments.getSegment(organizationId, ledgerId, segmentId);
 
 console.log(`Segment: ${segment.name} (${segment.id})`);
 console.log(`Status: ${segment.status.code}`);
@@ -112,11 +107,10 @@ if (segment.metadata) {
 
 ```typescript
 // List segments with pagination
-const segmentList = await client.entities.segments.listSegments(
-  organizationId,
-  ledgerId,
-  { limit: 50, offset: 0 }
-);
+const segmentList = await client.entities.segments.listSegments(organizationId, ledgerId, {
+  limit: 50,
+  offset: 0,
+});
 
 console.log(`Total segments: ${segmentList.total}`);
 for (const segment of segmentList.data) {
@@ -138,7 +132,7 @@ const updateInput = createUpdateSegmentBuilder()
     regionCode: 'NAR',
     countries: ['US', 'CA', 'MX'],
     currency: 'USD',
-    timeZones: ['EST', 'CST', 'MST', 'PST']
+    timeZones: ['EST', 'CST', 'MST', 'PST'],
   })
   .build();
 
@@ -160,15 +154,12 @@ import { newUpdateSegmentInput, withName, withMetadata } from 'midaz-sdk';
 const updateInput = newUpdateSegmentInput();
 
 // Add updates
-const enhancedUpdate = withMetadata(
-  withName(updateInput, 'North America Region'),
-  {
-    regionCode: 'NAR',
-    countries: ['US', 'CA', 'MX'],
-    currency: 'USD',
-    timeZones: ['EST', 'CST', 'MST', 'PST']
-  }
-);
+const enhancedUpdate = withMetadata(withName(updateInput, 'North America Region'), {
+  regionCode: 'NAR',
+  countries: ['US', 'CA', 'MX'],
+  currency: 'USD',
+  timeZones: ['EST', 'CST', 'MST', 'PST'],
+});
 
 // Update the segment
 const updatedSegment = await client.entities.segments.updateSegment(
@@ -180,6 +171,7 @@ const updatedSegment = await client.entities.segments.updateSegment(
 ```
 
 Note that:
+
 - Only certain fields can be updated (name, status, metadata)
 - Only fields included in the update input will be modified
 
@@ -187,11 +179,7 @@ Note that:
 
 ```typescript
 // Delete a segment
-await client.entities.segments.deleteSegment(
-  organizationId,
-  ledgerId,
-  segmentId
-);
+await client.entities.segments.deleteSegment(organizationId, ledgerId, segmentId);
 
 console.log(`Segment ${segmentId} has been deleted`);
 ```
@@ -204,12 +192,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Create a segment with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.segments.createSegment(
-    organizationId,
-    ledgerId,
-    segmentInput
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.segments.createSegment(organizationId, ledgerId, segmentInput)
 );
 
 if (result.success) {
@@ -232,7 +216,7 @@ async function manageSegments(client, organizationId, ledgerId) {
         regionCode: 'EU',
         countries: ['UK', 'FR', 'DE', 'IT', 'ES'],
         currency: 'EUR',
-        headquarters: 'London'
+        headquarters: 'London',
       })
       .build();
 
@@ -257,10 +241,7 @@ async function manageSegments(client, organizationId, ledgerId) {
       .withName('Europe, Middle East, and Africa')
       .withMetadata({
         ...retrievedSegment.metadata,
-        countries: [
-          'UK', 'FR', 'DE', 'IT', 'ES',
-          'AE', 'SA', 'ZA', 'EG', 'NG'
-        ]
+        countries: ['UK', 'FR', 'DE', 'IT', 'ES', 'AE', 'SA', 'ZA', 'EG', 'NG'],
       })
       .build();
 
@@ -273,17 +254,15 @@ async function manageSegments(client, organizationId, ledgerId) {
     console.log(`Updated segment: ${updatedSegment.name}`);
 
     // List all segments
-    const segments = await client.entities.segments.listSegments(
-      organizationId,
-      ledgerId,
-      { limit: 10 }
-    );
+    const segments = await client.entities.segments.listSegments(organizationId, ledgerId, {
+      limit: 10,
+    });
     console.log(`Listed ${segments.data.length} segments`);
 
     return {
       created: segment,
       updated: updatedSegment,
-      list: segments.data
+      list: segments.data,
     };
   } catch (error) {
     console.error(`Segment management error: ${error.message}`);
@@ -306,8 +285,8 @@ async function createGeographicSegments(client, organizationId, ledgerId) {
         regionCode: 'NA',
         countries: ['US', 'CA', 'MX'],
         currency: 'USD',
-        headquarters: 'New York'
-      }
+        headquarters: 'New York',
+      },
     },
     {
       name: 'Europe',
@@ -315,8 +294,8 @@ async function createGeographicSegments(client, organizationId, ledgerId) {
         regionCode: 'EU',
         countries: ['UK', 'FR', 'DE', 'IT', 'ES'],
         currency: 'EUR',
-        headquarters: 'London'
-      }
+        headquarters: 'London',
+      },
     },
     {
       name: 'Asia Pacific',
@@ -324,30 +303,28 @@ async function createGeographicSegments(client, organizationId, ledgerId) {
         regionCode: 'APAC',
         countries: ['JP', 'CN', 'SG', 'AU', 'IN'],
         currency: 'USD',
-        headquarters: 'Singapore'
-      }
-    }
+        headquarters: 'Singapore',
+      },
+    },
   ];
-  
+
   const results = [];
-  
+
   for (const region of geographicRegions) {
-    const segmentInput = createSegmentBuilder(region.name)
-      .withMetadata(region.metadata)
-      .build();
-    
+    const segmentInput = createSegmentBuilder(region.name).withMetadata(region.metadata).build();
+
     const segment = await client.entities.segments.createSegment(
       organizationId,
       ledgerId,
       segmentInput
     );
-    
+
     results.push({
       name: region.name,
-      id: segment.id
+      id: segment.id,
     });
   }
-  
+
   return results;
 }
 ```
@@ -358,29 +335,29 @@ async function createGeographicSegments(client, organizationId, ledgerId) {
 // Create segments for business units
 async function createBusinessUnitSegments(client, organizationId, ledgerId, businessUnits) {
   const results = [];
-  
+
   for (const unit of businessUnits) {
     const segmentInput = createSegmentBuilder(unit.name)
       .withMetadata({
         unitCode: unit.code,
         departmentHead: unit.head,
         costCenter: unit.costCenter,
-        budget: unit.budget
+        budget: unit.budget,
       })
       .build();
-    
+
     const segment = await client.entities.segments.createSegment(
       organizationId,
       ledgerId,
       segmentInput
     );
-    
+
     results.push({
       name: unit.name,
-      id: segment.id
+      id: segment.id,
     });
   }
-  
+
   return results;
 }
 ```

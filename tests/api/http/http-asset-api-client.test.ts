@@ -4,10 +4,6 @@
 
 import { Asset, CreateAssetInput, UpdateAssetInput } from '../../../src/models/asset';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import {
-  validateCreateAssetInput,
-  validateUpdateAssetInput,
-} from '../../../src/models/validators/asset-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpAssetApiClient } from '../../../src/api/http/http-asset-api-client';

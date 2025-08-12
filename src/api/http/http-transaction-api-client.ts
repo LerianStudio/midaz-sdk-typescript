@@ -125,7 +125,8 @@ export class HttpTransactionApiClient
 
     // Record transaction amount metrics if available
     if (input.amount) {
-      this.recordMetrics('transactions.amount', input.amount, {
+      const amount = typeof input.amount === 'string' ? parseFloat(input.amount) : input.amount;
+      this.recordMetrics('transactions.amount', amount, {
         orgId,
         ledgerId,
         assetCode: input.assetCode || 'unknown',

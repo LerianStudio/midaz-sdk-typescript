@@ -1,4 +1,4 @@
-name: "SDK Typescript Combined Analysis"
+name: 'SDK Typescript Combined Analysis'
 
 on:
   push:

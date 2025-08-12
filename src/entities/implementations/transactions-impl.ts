@@ -259,7 +259,8 @@ export class TransactionsServiceImpl implements TransactionsService {
 
       // Record transaction amount metrics if available
       if (input.amount) {
-        this.observability.recordMetric('transactions.amount', input.amount, {
+        const amount = typeof input.amount === 'string' ? parseFloat(input.amount) : input.amount;
+        this.observability.recordMetric('transactions.amount', amount, {
           orgId,
           ledgerId,
           assetCode: input.assetCode || 'unknown',

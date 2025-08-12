@@ -3,8 +3,6 @@
  */
 
 import {
-  validateNotEmpty as _validateNotEmpty,
-  validatePattern as _validatePattern,
   combineValidationResults,
   validateRequired,
   ValidationResult,
@@ -41,7 +39,16 @@ export function validateCreateAccountInput(input: CreateAccountInput): Validatio
 
   // Also validate type if present
   if (input.type) {
-    const validTypes = ['deposit', 'savings', 'loans', 'marketplace', 'creditCard', 'external'];
+    const validTypes = [
+      'deposit',
+      'savings',
+      'loans',
+      'marketplace',
+      'creditCard',
+      'external',
+      'liability',
+      'revenue',
+    ];
 
     if (!validTypes.includes(input.type)) {
       fieldErrors.type = fieldErrors.type || [];
@@ -70,7 +77,7 @@ export function validateCreateAccountInput(input: CreateAccountInput): Validatio
     return {
       valid: false,
       message: Object.entries(fieldErrors)
-        .map(([_field, errors]) => errors[0])
+        .map(([, errors]) => errors[0])
         .join('; '),
       fieldErrors,
     };

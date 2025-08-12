@@ -1,11 +1,7 @@
 /**
  * @file Tests for observability utilities
  */
-import {
-  Observability,
-  ObservabilityOptions,
-  Span,
-} from '../../src/util/observability/observability';
+import { Observability, ObservabilityOptions } from '../../src/util/observability/observability';
 import { OpenTelemetryProvider } from '../../src/util/observability/observability-otel';
 
 // Mock the OpenTelemetryProvider
@@ -214,6 +210,7 @@ describe('Observability', () => {
     it('should log debug messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.debug('test message', { key: 'value' });
@@ -225,6 +222,7 @@ describe('Observability', () => {
     it('should log info messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.info('test message', { key: 'value' });
@@ -236,6 +234,7 @@ describe('Observability', () => {
     it('should log warning messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.warn('test message', { key: 'value' });
@@ -247,6 +246,7 @@ describe('Observability', () => {
     it('should log error messages', () => {
       // Arrange
       const observability = new Observability({ enableLogging: true });
+      expect(observability).toBeDefined();
 
       // Act
       ObservabilityTest.error('test message', { key: 'value' });
@@ -298,7 +298,7 @@ describe('Observability', () => {
       // Reset OpenTelemetryProvider mock call count
       (OpenTelemetryProvider as jest.Mock).mockClear();
 
-      const observability = new Observability({
+      const _observability = new Observability({
         enableTracing: true,
         // @ts-ignore - provider is not in the type definition but used for testing
         provider: 'opentelemetry',
