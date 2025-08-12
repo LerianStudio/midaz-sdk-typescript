@@ -1,3 +1,4 @@
+#release configuration for hotfix branches
 plugins:
   - path: "@semantic-release/commit-analyzer"
     preset: conventionalcommits
@@ -19,19 +20,21 @@ plugins:
       - type: test
         release: patch
       - type: fix
-        release: patch
+        release: patch # to hotfix scenarios
       - type: refactor
         release: minor
       - type: docs
         release: patch
       - breaking: true
         release: major
-
+        
+  # Plugin to version the CHANGELOG.md
   - path: "@semantic-release/git"
     assets:
       - CHANGELOG.md
     message: "chore(release): ${nextRelease.version}\n\nChangelog atualizado."
 
+  # Plugin to publish the CHANGELOG.md as an asset in the GitHub release
   - path: "@semantic-release/github"
     assets:
       - path: CHANGELOG.md
@@ -39,19 +42,11 @@ plugins:
     successComment: false
     failComment: false
     labels: []
-
-  - path: "@semantic-release/npm"
+  
   - path: "@semantic-release/exec"
 
-  # - path: "@saithodev/semantic-release-backmerge"
-  #   backmergeBranches:
-  #     - from: main
-  #       to: develop
-  #   strategy: merge
-  #   message: "chore(release): Preparations for next release [skip ci]"
-
 branches:
-  - name: main
+  - main
   - name: develop
     prerelease: beta
   - name: hotfix/*
