@@ -301,7 +301,7 @@ describe('Observability', () => {
       // Reset OpenTelemetryProvider mock call count
       (OpenTelemetryProvider as jest.Mock).mockClear();
 
-      const observability = new Observability({
+      const _observability = new Observability({
         enableTracing: true,
         // @ts-ignore - provider is not in the type definition but used for testing
         provider: 'opentelemetry',

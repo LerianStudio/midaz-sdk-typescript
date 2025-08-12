@@ -1,8 +1,7 @@
 /**
  * @file Tests for HTTP client utilities
  */
-import { HttpClient, HttpClientConfig, RequestOptions } from '../../src/util/network/http-client';
-import { ErrorCategory, ErrorCode, MidazError } from '../../src/util/error';
+import { HttpClient } from '../../src/util/network/http-client';
 import { RetryPolicy } from '../../src/util/network/retry-policy';
 import { Cache } from '../../src/util/cache/cache';
 import { Observability } from '../../src/util/observability/observability';
