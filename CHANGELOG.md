@@ -1,3 +1,17 @@
+## [1.2.0-develop.2](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.2.0-develop.1...v1.2.0-develop.2) (2025-08-12)
+
+
+### ✨ Features
+
+* create account type, transaction-route, operation-route and testes. ([1dcce6f](https://github.com/LerianStudio/midaz-sdk-typescript/commit/1dcce6fcdcbc1164c3a62a2485d4446095c38410))
+* create account type, transaction-route, operation-route and testes. BREAKING CHANGE: removing the scale fields ([2ccc4c8](https://github.com/LerianStudio/midaz-sdk-typescript/commit/2ccc4c8dd3adfc710c3a0e3bab8ef62a293d5732))
+* create account type, transaction-route, operation-route and testes. BREAKING CHANGE: removing the scale fields ([bd446a3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/bd446a31fc08d297f5a69b9d51f428586e90a48e))
+
+
+### 🔨 Maintenance
+
+* upgrading the version ([c99c132](https://github.com/LerianStudio/midaz-sdk-typescript/commit/c99c1324bcb96727ff89ad67621915abacc8fc70))
+
 ## [1.2.0-develop.1](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0...v1.2.0-develop.1) (2025-06-09)
 
 
