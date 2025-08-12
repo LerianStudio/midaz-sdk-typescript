@@ -41,18 +41,18 @@ const transactionInput = createTransactionBuilder()
     accountId: 'account1',
     assetId: 'asset1',
     amount: '100.00',
-    direction: 'credit'
+    direction: 'credit',
   })
   .withEntry({
     accountId: 'account2',
     assetId: 'asset1',
     amount: '100.00',
-    direction: 'debit'
+    direction: 'debit',
   })
   .withIdempotencyKey('unique-transaction-key-123')
-  .withMetadata({ 
+  .withMetadata({
     purpose: 'Monthly transfer',
-    category: 'Recurring'
+    category: 'Recurring',
   })
   .build();
 
@@ -72,15 +72,10 @@ The SDK provides specialized creator functions for common transaction types:
 // Create a deposit transaction
 import { createDepositTransaction } from 'midaz-sdk';
 
-const depositTx = createDepositTransaction(
-  accountId,
-  '500.00',
-  assetId,
-  { 
-    idempotencyKey: 'deposit-123',
-    metadata: { source: 'Bank transfer' }
-  }
-);
+const depositTx = createDepositTransaction(accountId, '500.00', assetId, {
+  idempotencyKey: 'deposit-123',
+  metadata: { source: 'Bank transfer' },
+});
 
 // Create a transfer transaction
 import { createTransferTransaction } from 'midaz-sdk';
@@ -90,24 +85,19 @@ const transferTx = createTransferTransaction(
   destinationAccountId,
   '250.00',
   assetId,
-  { 
+  {
     idempotencyKey: 'transfer-123',
-    metadata: { purpose: 'Loan repayment' }
+    metadata: { purpose: 'Loan repayment' },
   }
 );
 
 // Create a withdrawal transaction
 import { createWithdrawalTransaction } from 'midaz-sdk';
 
-const withdrawalTx = createWithdrawalTransaction(
-  accountId,
-  '100.00',
-  assetId,
-  { 
-    idempotencyKey: 'withdrawal-123',
-    metadata: { destination: 'External account' }
-  }
-);
+const withdrawalTx = createWithdrawalTransaction(accountId, '100.00', assetId, {
+  idempotencyKey: 'withdrawal-123',
+  metadata: { destination: 'External account' },
+});
 ```
 
 ## Retrieving Transactions
@@ -134,12 +124,12 @@ console.log(`Entries: ${transaction.entries.length}`);
 const transactionList = await client.entities.transactions.listTransactions(
   organizationId,
   ledgerId,
-  { 
-    limit: 50, 
+  {
+    limit: 50,
     offset: 0,
     status: 'completed',
     fromDate: '2023-01-01T00:00:00Z',
-    toDate: '2023-12-31T23:59:59Z'
+    toDate: '2023-12-31T23:59:59Z',
   }
 );
 
@@ -175,11 +165,7 @@ import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Create a transaction with enhanced recovery
 const result = await withEnhancedRecovery(
-  () => client.entities.transactions.createTransaction(
-    organizationId,
-    ledgerId,
-    transactionInput
-  ),
+  () => client.entities.transactions.createTransaction(organizationId, ledgerId, transactionInput),
   {
     retries: 3,
     retryDelay: 500,
@@ -195,7 +181,7 @@ const result = await withEnhancedRecovery(
       } catch (e) {
         return false;
       }
-    }
+    },
   }
 );
 
@@ -218,17 +204,12 @@ import { createBatch, executeBatch } from 'midaz-sdk/util';
 const transactions = [
   createDepositTransaction(account1Id, '100.00', assetId),
   createTransferTransaction(account1Id, account2Id, '50.00', assetId),
-  createWithdrawalTransaction(account2Id, '25.00', assetId)
+  createWithdrawalTransaction(account2Id, '25.00', assetId),
 ];
 
 // Create and execute a batch
 const batch = createBatch(transactions);
-const results = await executeBatch(
-  client.entities.transactions,
-  organizationId,
-  ledgerId,
-  batch
-);
+const results = await executeBatch(client.entities.transactions, organizationId, ledgerId, batch);
 
 // Process results
 for (const result of results) {
@@ -247,16 +228,11 @@ for (const result of results) {
 async function manageTransactions(client, organizationId, ledgerId, accounts, assets) {
   try {
     // Create a deposit transaction
-    const depositTx = createDepositTransaction(
-      accounts[0].id,
-      '1000.00',
-      assets[0].id,
-      { 
-        idempotencyKey: `deposit-${Date.now()}`,
-        metadata: { source: 'Initial funding' }
-      }
-    );
-    
+    const depositTx = createDepositTransaction(accounts[0].id, '1000.00', assets[0].id, {
+      idempotencyKey: `deposit-${Date.now()}`,
+      metadata: { source: 'Initial funding' },
+    });
+
     const deposit = await client.entities.transactions.createTransaction(
       organizationId,
       ledgerId,
@@ -270,12 +246,12 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
       accounts[1].id,
       '500.00',
       assets[0].id,
-      { 
+      {
         idempotencyKey: `transfer-${Date.now()}`,
-        metadata: { purpose: 'Allocation to secondary account' }
+        metadata: { purpose: 'Allocation to secondary account' },
       }
     );
-    
+
     const transfer = await client.entities.transactions.createTransaction(
       organizationId,
       ledgerId,
@@ -291,7 +267,7 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
     );
     console.log(`Retrieved transaction: ${retrievedTx.id}`);
     console.log(`Status: ${retrievedTx.status}`);
-    
+
     // List transactions
     const transactions = await client.entities.transactions.listTransactions(
       organizationId,
@@ -303,9 +279,9 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
     // Create and execute a batch of transactions
     const batchTransactions = [
       createDepositTransaction(accounts[1].id, '200.00', assets[0].id),
-      createWithdrawalTransaction(accounts[0].id, '100.00', assets[0].id)
+      createWithdrawalTransaction(accounts[0].id, '100.00', assets[0].id),
     ];
-    
+
     const batch = createBatch(batchTransactions);
     const batchResults = await executeBatch(
       client.entities.transactions,
@@ -313,17 +289,19 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
       ledgerId,
       batch
     );
-    
+
     console.log(`Executed batch with ${batchResults.length} transactions`);
-    const successfulBatchTxs = batchResults.filter(r => r.success).length;
-    console.log(`${successfulBatchTxs} successful, ${batchResults.length - successfulBatchTxs} failed`);
+    const successfulBatchTxs = batchResults.filter((r) => r.success).length;
+    console.log(
+      `${successfulBatchTxs} successful, ${batchResults.length - successfulBatchTxs} failed`
+    );
 
     return {
       deposit,
       transfer,
       retrieved: retrievedTx,
       list: transactions.data,
-      batchResults
+      batchResults,
     };
   } catch (error) {
     console.error(`Transaction management error: ${error.message}`);

@@ -9,10 +9,7 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true
   },
-  "include": [
-    "src/types/globals.d.ts",
-    "examples/**/*.ts"
-  ],
+  "include": ["src/types/globals.d.ts", "examples/**/*.ts"],
   "ts-node": {
     "files": true
   }

@@ -34,7 +34,8 @@ These are implemented in classes like `ModelBuilder`:
 
 ```typescript
 export class ModelBuilder<T extends BuildableModel, B extends Builder<T, B>>
-  implements Builder<T, B> {
+  implements Builder<T, B>
+{
   protected model: T;
 
   constructor(model: T) {
@@ -49,7 +50,7 @@ export class ModelBuilder<T extends BuildableModel, B extends Builder<T, B>>
     this.model.metadata = metadata;
     return this as unknown as B;
   }
-  
+
   // Other builder methods...
 }
 ```
@@ -103,11 +104,7 @@ const assetInput = createAssetBuilder('USD Currency', 'USD')
   .withMetadata({ precision: 2, symbol: '$' })
   .build();
 
-const asset = await client.entities.assets.createAsset(
-  organizationId,
-  ledgerId,
-  assetInput
-);
+const asset = await client.entities.assets.createAsset(organizationId, ledgerId, assetInput);
 ```
 
 ### Creating an Account
@@ -120,10 +117,7 @@ const accountInput = createAccountBuilder('Savings Account', ledgerId)
   .withMetadata({ accountType: 'savings' })
   .build();
 
-const account = await client.entities.accounts.createAccount(
-  organizationId,
-  accountInput
-);
+const account = await client.entities.accounts.createAccount(organizationId, accountInput);
 ```
 
 ### Creating an Organization
@@ -135,9 +129,7 @@ const organizationInput = createOrganizationBuilder('Acme Corp')
   .withMetadata({ industry: 'Technology' })
   .build();
 
-const organization = await client.entities.organizations.createOrganization(
-  organizationInput
-);
+const organization = await client.entities.organizations.createOrganization(organizationInput);
 ```
 
 ## Best Practices

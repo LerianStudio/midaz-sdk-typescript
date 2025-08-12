@@ -7,7 +7,6 @@ import {
   TransactionPaginatorImpl,
   TransactionsServiceImpl,
 } from '../../../src/entities/implementations/transactions-impl';
-import { MidazConfig } from '../../../src/client';
 import { CreateTransactionInput, Operation, Transaction } from '../../../src/models/transaction';
 import { ListResponse } from '../../../src/models/common';
 import { Observability } from '../../../src/util/observability';

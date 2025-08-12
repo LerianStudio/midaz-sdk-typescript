@@ -2,7 +2,6 @@
  */
 
 import {
-  validatePattern as _validatePattern,
   combineValidationResults,
   validateNotEmpty,
   validateRequired,

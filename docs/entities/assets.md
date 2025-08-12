@@ -37,14 +37,11 @@ const assetInput = createAssetBuilder('US Dollar', 'USD')
   .build();
 
 // Create the asset
-const asset = await client.entities.assets.createAsset(
-  organizationId,
-  ledgerId,
-  assetInput
-);
+const asset = await client.entities.assets.createAsset(organizationId, ledgerId, assetInput);
 ```
 
 Note that:
+
 - The `createAssetBuilder` function requires the `name` and `code` parameters as these are required fields
 - The `status` field is set in the model but not included in the output of the builder
 - Validation happens at runtime rather than during build
@@ -56,11 +53,7 @@ Note that:
 
 ```typescript
 // Get a specific asset by ID
-const asset = await client.entities.assets.getAsset(
-  organizationId,
-  ledgerId,
-  assetId
-);
+const asset = await client.entities.assets.getAsset(organizationId, ledgerId, assetId);
 
 console.log(`Asset: ${asset.name} (${asset.code})`);
 ```
@@ -69,11 +62,10 @@ console.log(`Asset: ${asset.name} (${asset.code})`);
 
 ```typescript
 // List assets with pagination
-const assetList = await client.entities.assets.listAssets(
-  organizationId,
-  ledgerId,
-  { limit: 50, offset: 0 }
-);
+const assetList = await client.entities.assets.listAssets(organizationId, ledgerId, {
+  limit: 50,
+  offset: 0,
+});
 
 console.log(`Total assets: ${assetList.total}`);
 for (const asset of assetList.data) {
@@ -85,19 +77,14 @@ for (const asset of assetList.data) {
 
 ```typescript
 // Update an asset
-const updatedAsset = await client.entities.assets.updateAsset(
-  organizationId,
-  ledgerId,
-  assetId,
-  {
-    name: 'Updated US Dollar',
-    metadata: {
-      precision: 2,
-      symbol: '$',
-      updated: true
-    }
-  }
-);
+const updatedAsset = await client.entities.assets.updateAsset(organizationId, ledgerId, assetId, {
+  name: 'Updated US Dollar',
+  metadata: {
+    precision: 2,
+    symbol: '$',
+    updated: true,
+  },
+});
 ```
 
 ## Error Handling
@@ -108,12 +95,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Create an asset with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.assets.createAsset(
-    organizationId,
-    ledgerId,
-    assetInput
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.assets.createAsset(organizationId, ledgerId, assetInput)
 );
 
 if (result.success) {
@@ -136,11 +119,7 @@ async function manageAssets(client, organizationId, ledgerId) {
       .withMetadata({ precision: 8, symbol: '₿' })
       .build();
 
-    const asset = await client.entities.assets.createAsset(
-      organizationId,
-      ledgerId,
-      assetInput
-    );
+    const asset = await client.entities.assets.createAsset(organizationId, ledgerId, assetInput);
     console.log(`Created asset: ${asset.name} (${asset.id})`);
 
     // Get the asset details
@@ -160,24 +139,20 @@ async function manageAssets(client, organizationId, ledgerId) {
         name: 'Bitcoin Digital Gold',
         metadata: {
           ...asset.metadata,
-          description: 'Digital cryptocurrency'
-        }
+          description: 'Digital cryptocurrency',
+        },
       }
     );
     console.log(`Updated asset: ${updatedAsset.name}`);
 
     // List all assets
-    const assets = await client.entities.assets.listAssets(
-      organizationId,
-      ledgerId,
-      { limit: 10 }
-    );
+    const assets = await client.entities.assets.listAssets(organizationId, ledgerId, { limit: 10 });
     console.log(`Listed ${assets.data.length} assets`);
 
     return {
       created: asset,
       updated: updatedAsset,
-      list: assets.data
+      list: assets.data,
     };
   } catch (error) {
     console.error(`Asset management error: ${error.message}`);

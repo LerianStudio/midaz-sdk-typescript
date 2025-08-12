@@ -1,12 +1,7 @@
 /**
  * @file Tests for pagination utilities
  */
-import {
-  fetchAllPages,
-  fetchAllItems,
-  paginateItems,
-  Paginator,
-} from '../../src/util/data/pagination';
+import { fetchAllItems, paginateItems, Paginator } from '../../src/util/data/pagination';
 import { ListOptions, ListResponse } from '../../src/models/common';
 
 describe('Pagination Utilities', () => {

@@ -137,15 +137,11 @@ function createAccount(userInput: any) {
   if (!isValidAccountName(userInput.name)) {
     throw new Error('Invalid account name');
   }
-  
-  return client.entities.accounts.createAccount(
-    orgId,
-    ledgerId,
-    {
-      name: sanitize(userInput.name),
-      // ... other fields
-    }
-  );
+
+  return client.entities.accounts.createAccount(orgId, ledgerId, {
+    name: sanitize(userInput.name),
+    // ... other fields
+  });
 }
 ```
 
@@ -159,7 +155,7 @@ try {
 } catch (error) {
   // Log full error internally
   logger.error('Failed to create organization', error);
-  
+
   // Return sanitized error to user
   return {
     error: 'Failed to create organization',

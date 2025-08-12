@@ -27,24 +27,31 @@ export class ConfigValidator {
     const errors: ValidationError[] = [];
     const warnings: ValidationError[] = [];
 
-    // Validate API key
-    if (!config.apiKey) {
-      errors.push({
-        field: 'apiKey',
-        message: 'API key is required',
-      });
-    } else if (typeof config.apiKey !== 'string') {
-      errors.push({
-        field: 'apiKey',
-        message: 'API key must be a string',
-        value: config.apiKey,
-      });
-    } else if (config.apiKey.length < 10) {
-      warnings.push({
-        field: 'apiKey',
-        message: 'API key seems too short',
-        value: config.apiKey.length,
-      });
+    // Authentication is now optional - SDK can work without authentication
+    // If Access Manager is configured, validate its settings
+
+    // Validate Access Manager configuration if provided
+    if (config.accessManager) {
+      if (config.accessManager.enabled) {
+        if (!config.accessManager.address) {
+          errors.push({
+            field: 'accessManager.address',
+            message: 'Access Manager address is required when enabled',
+          });
+        }
+        if (!config.accessManager.clientId) {
+          errors.push({
+            field: 'accessManager.clientId',
+            message: 'Access Manager client ID is required when enabled',
+          });
+        }
+        if (!config.accessManager.clientSecret) {
+          errors.push({
+            field: 'accessManager.clientSecret',
+            message: 'Access Manager client secret is required when enabled',
+          });
+        }
+      }
     }
 
     // Validate base URLs
@@ -194,7 +201,7 @@ export class ConfigValidator {
           value: url,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       errors.push({
         field,
         message: 'Invalid URL format',

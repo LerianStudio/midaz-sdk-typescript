@@ -88,6 +88,7 @@ npm run example:workflow
 ### Branch Naming Convention
 
 Use the following branch naming convention:
+
 - `feature/your-feature-name` for new features
 - `fix/issue-description` for bug fixes
 - `docs/what-you-documented` for documentation updates
@@ -101,6 +102,7 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 Format: `<type>(<scope>): <description>`
 
 Examples:
+
 - `feat(accounts): add support for account aliases`
 - `fix(transactions): correct validation for transaction amounts`
 - `docs(readme): update installation instructions`

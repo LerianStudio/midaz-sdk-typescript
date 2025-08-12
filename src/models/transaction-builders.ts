@@ -8,15 +8,10 @@ import { AmountInput, CreateTransactionInput } from './transaction';
  *
  * @returns Properly structured amount input
  */
-export function createAmountInput(
-  value: number | string,
-  assetCode: string,
-  scale = 0
-): AmountInput {
+export function createAmountInput(value: string, asset: string): AmountInput {
   return {
     value,
-    assetCode,
-    scale,
+    asset,
   };
 }
 
@@ -51,10 +46,10 @@ export function createAmountInput(
 export function createDepositTransaction(
   sourceAccount: string,
   destinationAccount: string,
-  amount: number,
+  amount: string,
   assetCode: string,
-  scale = 0,
   description?: string,
+  chartOfAccountsGroupName = 'default',
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   // Set default external account ID format if not already external
@@ -62,25 +57,20 @@ export function createDepositTransaction(
 
   // Create the transaction with debit and credit operations
   return {
+    chartOfAccountsGroupName,
     description: description || `Deposit into ${destinationAccount}`,
     operations: [
       {
         accountId: sourceAccountId,
         type: 'DEBIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount,
+        assetCode,
       },
       {
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount,
+        assetCode,
       },
     ],
     metadata: {
@@ -123,7 +113,7 @@ export function createWithdrawalTransaction(
   destinationAccount: string,
   amount: number,
   assetCode: string,
-  scale = 0,
+  _scale = 0,
   description?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
@@ -134,25 +124,20 @@ export function createWithdrawalTransaction(
 
   // Create the transaction with debit and credit operations
   return {
+    chartOfAccountsGroupName: 'default',
     description: description || `Withdrawal from ${sourceAccount}`,
     operations: [
       {
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
       {
         accountId: destinationAccountId,
         type: 'CREDIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
     ],
     metadata: {
@@ -195,31 +180,26 @@ export function createTransferTransaction(
   destinationAccount: string,
   amount: number,
   assetCode: string,
-  scale = 0,
+  _scale = 0,
   description?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   // Create the transaction with debit and credit operations
   return {
+    chartOfAccountsGroupName: 'default',
     description: description || `Transfer from ${sourceAccount} to ${destinationAccount}`,
     operations: [
       {
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
       {
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: {
-          value: amount,
-          assetCode,
-          scale,
-        },
+        amount: amount.toString(),
+        assetCode,
       },
     ],
     metadata: {
@@ -264,34 +244,29 @@ export function createMultiCurrencyTransaction(
   sourceAccount: string,
   sourceAmount: number,
   sourceAssetCode: string,
-  sourceScale: number,
+  _sourceScale: number,
   destinationAccount: string,
   destinationAmount: number,
   destinationAssetCode: string,
-  destinationScale: number,
+  _destinationScale: number,
   description?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   return {
+    chartOfAccountsGroupName: 'default',
     description: description || `Exchange ${sourceAssetCode} to ${destinationAssetCode}`,
     operations: [
       {
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: {
-          value: sourceAmount,
-          assetCode: sourceAssetCode,
-          scale: sourceScale,
-        },
+        amount: sourceAmount.toString(),
+        assetCode: sourceAssetCode,
       },
       {
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: {
-          value: destinationAmount,
-          assetCode: destinationAssetCode,
-          scale: destinationScale,
-        },
+        amount: destinationAmount.toString(),
+        assetCode: destinationAssetCode,
       },
     ],
     metadata: {
@@ -299,7 +274,7 @@ export function createMultiCurrencyTransaction(
       exchangeRate: {
         from: sourceAssetCode,
         to: destinationAssetCode,
-        rate: destinationAmount / destinationScale / (sourceAmount / sourceScale),
+        rate: destinationAmount / _destinationScale / (sourceAmount / _sourceScale),
       },
       ...metadata,
     },

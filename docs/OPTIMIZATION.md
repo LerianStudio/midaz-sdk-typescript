@@ -44,8 +44,8 @@ function getMidazClient(): MidazClient {
 Add preconnect hints to your HTML:
 
 ```html
-<link rel="preconnect" href="https://api.midaz.com">
-<link rel="dns-prefetch" href="https://api.midaz.com">
+<link rel="preconnect" href="https://api.midaz.com" />
+<link rel="dns-prefetch" href="https://api.midaz.com" />
 ```
 
 ### 3. Warm Up Connections
@@ -90,13 +90,13 @@ const PAGE_SIZE = 100;
 
 async function* getAllAccounts(orgId: string, ledgerId: string) {
   let cursor: string | undefined;
-  
+
   do {
     const response = await client.entities.accounts.listAccounts(orgId, ledgerId, {
       limit: PAGE_SIZE,
       cursor,
     });
-    
+
     yield* response.items;
     cursor = response.nextCursor;
   } while (cursor);
@@ -108,7 +108,7 @@ const batch: Account[] = [];
 
 for await (const account of getAllAccounts(orgId, ledgerId)) {
   batch.push(account);
-  
+
   if (batch.length === batchSize) {
     await processBatch(batch);
     batch.length = 0;
@@ -176,7 +176,7 @@ const client = new MidazClient({
 // For large data exports
 async function exportTransactions(orgId: string, ledgerId: string, stream: WritableStream) {
   const writer = stream.getWriter();
-  
+
   try {
     for await (const transaction of getAllTransactions(orgId, ledgerId)) {
       await writer.write(JSON.stringify(transaction) + '\n');
@@ -210,8 +210,8 @@ async function loadTransactionModule() {
 }
 
 // React example
-const TransactionView = lazy(() => 
-  import('./TransactionView').then(module => ({
+const TransactionView = lazy(() =>
+  import('./TransactionView').then((module) => ({
     default: module.TransactionView,
   }))
 );
@@ -336,11 +336,11 @@ import { performance } from 'perf_hooks';
 
 async function measureApiCall() {
   const start = performance.now();
-  
+
   try {
     const result = await client.entities.organizations.listOrganizations();
     const duration = performance.now() - start;
-    
+
     console.log(`API call took ${duration.toFixed(2)}ms`);
     return result;
   } catch (error) {

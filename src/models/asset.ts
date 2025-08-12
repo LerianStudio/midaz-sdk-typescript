@@ -36,6 +36,9 @@ export interface Asset {
   /** Timestamp when the asset was last updated */
   updatedAt: string;
 
+  /** Timestamp when the asset was soft-deleted (null if active) */
+  deletedAt?: string;
+
   /** Custom metadata fields for the asset */
   metadata?: Record<string, any>;
 }

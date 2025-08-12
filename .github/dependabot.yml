@@ -2,81 +2,81 @@ version: 2
 
 updates:
   # NPM Dependencies
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "08:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
     open-pull-requests-limit: 10
     assignees:
-      - "fredamaral"
+      - 'fredamaral'
     reviewers:
-      - "fredamaral"
+      - 'fredamaral'
     commit-message:
-      prefix: "chore"
-      prefix-development: "chore"
-      include: "scope"
+      prefix: 'chore'
+      prefix-development: 'chore'
+      include: 'scope'
     labels:
-      - "dependencies"
-      - "npm"
+      - 'dependencies'
+      - 'npm'
     groups:
       typescript-ecosystem:
         patterns:
-          - "typescript"
-          - "@types/*"
-          - "ts-*"
+          - 'typescript'
+          - '@types/*'
+          - 'ts-*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       testing-framework:
         patterns:
-          - "jest"
-          - "@types/jest"
-          - "ts-jest"
+          - 'jest'
+          - '@types/jest'
+          - 'ts-jest'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       linting-tools:
         patterns:
-          - "eslint*"
-          - "@typescript-eslint/*"
-          - "prettier"
+          - 'eslint*'
+          - '@typescript-eslint/*'
+          - 'prettier'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       build-tools:
         patterns:
-          - "typedoc"
-          - "dotenv"
+          - 'typedoc'
+          - 'dotenv'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       runtime-dependencies:
         patterns:
-          - "axios"
-          - "pino*"
-          - "abort-controller"
-          - "node-fetch"
+          - 'axios'
+          - 'pino*'
+          - 'abort-controller'
+          - 'node-fetch'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
 
   # GitHub Actions Dependencies
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "08:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
     open-pull-requests-limit: 10
     assignees:
-      - "fredamaral"
+      - 'fredamaral'
     reviewers:
-      - "fredamaral"
+      - 'fredamaral'
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: 'ci'
+      include: 'scope'
     labels:
-      - "dependencies"
-      - "github-actions"
+      - 'dependencies'
+      - 'github-actions'

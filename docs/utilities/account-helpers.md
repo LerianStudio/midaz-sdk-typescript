@@ -33,14 +33,14 @@ import { isSystemAccount } from 'midaz-sdk/util/account';
 // Check if an account is a system account
 const systemAccount = {
   id: '@external/USD',
-  name: 'External USD Account'
+  name: 'External USD Account',
 };
 const isSystem = isSystemAccount(systemAccount);
 console.log(isSystem); // true
 
 const userAccount = {
   id: 'acc_12345',
-  name: 'User Savings Account'
+  name: 'User Savings Account',
 };
 const isUser = isSystemAccount(userAccount);
 console.log(isUser); // false
@@ -56,11 +56,9 @@ Separates a list of accounts into regular and system accounts.
 import { categorizeAccounts } from 'midaz-sdk/util/account';
 
 // Categorize a list of accounts
-const allAccounts = await client.entities.accounts.listAccounts(
-  organizationId,
-  ledgerId,
-  { limit: 100 }
-);
+const allAccounts = await client.entities.accounts.listAccounts(organizationId, ledgerId, {
+  limit: 100,
+});
 
 const { regularAccounts, systemAccounts } = categorizeAccounts(allAccounts.data);
 
@@ -83,11 +81,9 @@ Groups accounts by their associated asset codes, with optional filtering.
 import { groupAccountsByAsset } from 'midaz-sdk/util/account';
 
 // Group accounts by asset
-const allAccounts = await client.entities.accounts.listAccounts(
-  organizationId,
-  ledgerId,
-  { limit: 100 }
-);
+const allAccounts = await client.entities.accounts.listAccounts(organizationId, ledgerId, {
+  limit: 100,
+});
 
 // Group all accounts by asset
 const accountsByAsset = groupAccountsByAsset(allAccounts.data);
@@ -103,7 +99,7 @@ console.log(`USD accounts: ${usdAccounts.length}`);
 
 // Filter to only accounts from a specific ledger
 const ledgerAccounts = groupAccountsByAsset(allAccounts.data, {
-  ledgerId: 'ldg_12345'
+  ledgerId: 'ldg_12345',
 });
 ```
 
@@ -115,20 +111,18 @@ const ledgerAccounts = groupAccountsByAsset(allAccounts.data, {
 import { categorizeAccounts } from 'midaz-sdk/util/account';
 
 async function getDisplayableAccounts(client, organizationId, ledgerId) {
-  const allAccounts = await client.entities.accounts.listAccounts(
-    organizationId,
-    ledgerId,
-    { limit: 200 }
-  );
-  
+  const allAccounts = await client.entities.accounts.listAccounts(organizationId, ledgerId, {
+    limit: 200,
+  });
+
   // Filter out system accounts for user display
   const { regularAccounts } = categorizeAccounts(allAccounts.data);
-  
-  return regularAccounts.map(account => ({
+
+  return regularAccounts.map((account) => ({
     id: account.id,
     name: account.name,
     assetIds: account.assetIds,
-    status: account.status
+    status: account.status,
   }));
 }
 ```
@@ -139,44 +133,38 @@ async function getDisplayableAccounts(client, organizationId, ledgerId) {
 import { groupAccountsByAsset } from 'midaz-sdk/util/account';
 
 async function generateAccountDashboard(client, organizationId, ledgerId) {
-  const allAccounts = await client.entities.accounts.listAccounts(
-    organizationId,
-    ledgerId,
-    { limit: 200 }
-  );
-  
+  const allAccounts = await client.entities.accounts.listAccounts(organizationId, ledgerId, {
+    limit: 200,
+  });
+
   // Group accounts by asset
   const accountsByAsset = groupAccountsByAsset(allAccounts.data);
-  
+
   // Generate dashboard data
   const dashboardData = [];
-  
+
   for (const [assetCode, accounts] of Object.entries(accountsByAsset)) {
     // Get asset details
     let assetInfo;
     try {
-      assetInfo = await client.entities.assets.getAssetByCode(
-        organizationId,
-        ledgerId,
-        assetCode
-      );
+      assetInfo = await client.entities.assets.getAssetByCode(organizationId, ledgerId, assetCode);
     } catch (error) {
       assetInfo = { name: assetCode, code: assetCode };
     }
-    
+
     // Calculate total accounts and active accounts
     const totalAccounts = accounts.length;
-    const activeAccounts = accounts.filter(acc => acc.status.code === 'ACTIVE').length;
-    
+    const activeAccounts = accounts.filter((acc) => acc.status.code === 'ACTIVE').length;
+
     dashboardData.push({
       assetCode,
       assetName: assetInfo.name,
       totalAccounts,
       activeAccounts,
-      accountList: accounts
+      accountList: accounts,
     });
   }
-  
+
   return dashboardData;
 }
 ```
@@ -189,19 +177,31 @@ import { isExternalAccount } from 'midaz-sdk/util/account';
 function validateTransfer(sourceAccountId, destinationAccountId) {
   const isExternalSource = isExternalAccount(sourceAccountId);
   const isExternalDestination = isExternalAccount(destinationAccountId);
-  
+
   if (isExternalSource && isExternalDestination) {
     throw new Error('Cannot transfer between two external accounts');
   }
-  
+
   if (isExternalSource) {
-    return { type: 'DEPOSIT', externalAccount: sourceAccountId, internalAccount: destinationAccountId };
+    return {
+      type: 'DEPOSIT',
+      externalAccount: sourceAccountId,
+      internalAccount: destinationAccountId,
+    };
   }
-  
+
   if (isExternalDestination) {
-    return { type: 'WITHDRAWAL', internalAccount: sourceAccountId, externalAccount: destinationAccountId };
+    return {
+      type: 'WITHDRAWAL',
+      internalAccount: sourceAccountId,
+      externalAccount: destinationAccountId,
+    };
   }
-  
-  return { type: 'INTERNAL_TRANSFER', sourceAccount: sourceAccountId, destinationAccount: destinationAccountId };
+
+  return {
+    type: 'INTERNAL_TRANSFER',
+    sourceAccount: sourceAccountId,
+    destinationAccount: destinationAccountId,
+  };
 }
 ```

@@ -333,7 +333,6 @@ export class ConfigService {
   public getHttpClientConfig(): HttpConfig {
     const defaults: HttpConfig = {
       timeout: this.getNumberEnv('MIDAZ_HTTP_TIMEOUT', 30000),
-      apiKey: this.getEnv('MIDAZ_AUTH_TOKEN'),
       debug: this.getBooleanEnv('MIDAZ_DEBUG', false),
       keepAlive: this.getBooleanEnv('MIDAZ_HTTP_KEEP_ALIVE', true),
       maxSockets: this.getNumberEnv('MIDAZ_HTTP_MAX_SOCKETS', 10),

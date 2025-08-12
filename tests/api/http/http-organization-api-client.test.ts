@@ -13,13 +13,13 @@ import {
   Organization,
   UpdateOrganizationInput,
 } from '../../../src/api/interfaces/organization-api-client';
+
+// Mock dependencies
+jest.mock('../../../src/models/validators/organization-validator');
 import {
   validateCreateOrganizationInput,
   validateUpdateOrganizationInput,
 } from '../../../src/models/validators/organization-validator';
-
-// Mock dependencies
-jest.mock('../../../src/models/validators/organization-validator');
 // Validation mock
 const validateMock = jest.fn();
 jest.mock('../../../src/util/validation', () => ({
@@ -33,7 +33,6 @@ describe('HttpOrganizationApiClient', () => {
   // Sample data
   const orgId = 'org-123';
   const apiVersion = 'v1';
-  const _serviceName = 'midaz-organization-api-client';
 
   // Mock address
   const address: Address = {

@@ -24,13 +24,10 @@ When validation fails, a `ValidationError` is thrown with detailed field-level e
 import { ValidationError } from 'midaz-sdk/util/validation';
 
 // Example of a validation error
-const error = new ValidationError(
-  'Validation failed',
-  {
-    assetCode: ['Asset code must be 3-10 uppercase letters and numbers'],
-    amount: ['Amount must be greater than zero']
-  }
-);
+const error = new ValidationError('Validation failed', {
+  assetCode: ['Asset code must be 3-10 uppercase letters and numbers'],
+  amount: ['Amount must be greater than zero'],
+});
 ```
 
 ## Basic Validation Functions
@@ -73,7 +70,7 @@ import { validateNumber, validateRange } from 'midaz-sdk/util/validation';
 const amountResult = validateNumber(input.amount, 'amount', {
   min: 0,
   allowZero: false,
-  integer: false
+  integer: false,
 });
 
 // Check if a number is within a range
@@ -91,7 +88,7 @@ import {
   validateAssetCode,
   validateCurrencyCode,
   validateAccountType,
-  validateAssetType
+  validateAssetType,
 } from 'midaz-sdk/util/validation';
 
 // Validate financial identifiers
@@ -120,12 +117,7 @@ const accountRefResult = validateAccountReference(
 import { validateDateRange } from 'midaz-sdk/util/validation';
 
 // Validate date ranges
-const dateRangeResult = validateDateRange(
-  input.startDate,
-  input.endDate,
-  'startDate',
-  'endDate'
-);
+const dateRangeResult = validateDateRange(input.startDate, input.endDate, 'startDate', 'endDate');
 ```
 
 ### Object Validation
@@ -136,7 +128,7 @@ import { validateMetadata, validateAddress } from 'midaz-sdk/util/validation';
 // Validate metadata object
 const metadataResult = validateMetadata(input.metadata, 'metadata', {
   maxMetadataSize: 5120, // 5KB
-  maxMetadataKeyLength: 50
+  maxMetadataKeyLength: 50,
 });
 
 // Validate address object
@@ -154,7 +146,7 @@ import { combineValidationResults } from 'midaz-sdk/util/validation';
 const results = [
   validateRequired(input.name, 'name'),
   validateAssetCode(input.assetCode),
-  validateNumber(input.amount, 'amount', { min: 0 })
+  validateNumber(input.amount, 'amount', { min: 0 }),
 ];
 
 // Combine all validation results
@@ -176,13 +168,15 @@ import { validate, validateRequired } from 'midaz-sdk/util/validation';
 try {
   // This will throw a ValidationError if validation fails
   validate(input.name, (value) => validateRequired(value, 'name'));
-  validate(input.email, (value) => validatePattern(
-    value,
-    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-    'email',
-    'valid email address'
-  ));
-  
+  validate(input.email, (value) =>
+    validatePattern(
+      value,
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      'email',
+      'valid email address'
+    )
+  );
+
   // Code here only runs if all validations pass
   console.log('Input is valid');
 } catch (error) {
@@ -205,7 +199,7 @@ const config: Partial<ValidationConfig> = {
   maxStringLength: 100,
   maxMetadataSize: 2048, // 2KB
   maxMetadataKeyLength: 32,
-  maxMetadataValueLength: 256
+  maxMetadataValueLength: 256,
 };
 
 // Use custom configuration
@@ -232,13 +226,9 @@ const assetInput = assetBuilder.build();
 try {
   validate(assetInput.name, (value) => validateNotEmpty(value, 'name'));
   validate(assetInput.code, (value) => validateAssetCode(value, 'code'));
-  
+
   // Proceed with creating the asset
-  const asset = await client.entities.assets.createAsset(
-    organizationId,
-    ledgerId,
-    assetInput
-  );
+  const asset = await client.entities.assets.createAsset(organizationId, ledgerId, assetInput);
 } catch (error) {
   if (error instanceof ValidationError) {
     console.error('Asset validation failed:', error.message);
@@ -257,7 +247,7 @@ import {
   validateNumber,
   validateMetadata,
   combineValidationResults,
-  ValidationError
+  ValidationError,
 } from 'midaz-sdk/util/validation';
 
 function validateTransactionInput(input) {
@@ -269,29 +259,29 @@ function validateTransactionInput(input) {
     validateRequired(input.amount, 'amount'),
     validateNumber(input.amount, 'amount', {
       min: 0,
-      allowZero: false
-    })
+      allowZero: false,
+    }),
   ];
-  
+
   // Add optional field validations if fields are present
   if (input.description !== undefined) {
     results.push(validateNotEmpty(input.description, 'description'));
   }
-  
+
   if (input.metadata !== undefined) {
     results.push(validateMetadata(input.metadata, 'metadata'));
   }
-  
+
   // Combine results and check validity
   const combinedResult = combineValidationResults(results);
-  
+
   if (!combinedResult.valid) {
     throw new ValidationError(
       combinedResult.message || 'Transaction validation failed',
       combinedResult.fieldErrors
     );
   }
-  
+
   // Return the validated input
   return input;
 }
@@ -301,14 +291,14 @@ try {
   const validatedInput = validateTransactionInput({
     accountId: 'acc_12345',
     assetCode: 'USD',
-    amount: 100.50,
+    amount: 100.5,
     description: 'Monthly payment',
     metadata: {
       category: 'subscription',
-      recurring: true
-    }
+      recurring: true,
+    },
   });
-  
+
   // Process the validated input
   console.log('Input validation passed:', validatedInput);
 } catch (error) {

@@ -4,8 +4,6 @@
  */
 
 import {
-  DEFAULT_VALIDATION_CONFIG,
-  PATTERNS,
   combineValidationResults,
   getExternalAccountReference,
   validate,

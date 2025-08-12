@@ -4,10 +4,6 @@
 
 import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../../../src/models/ledger';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
-import {
-  validateCreateLedgerInput,
-  validateUpdateLedgerInput,
-} from '../../../src/models/validators/ledger-validator';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpLedgerApiClient } from '../../../src/api/http/http-ledger-api-client';
@@ -16,6 +12,10 @@ import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/ledger-validator');
+import {
+  validateCreateLedgerInput,
+  validateUpdateLedgerInput,
+} from '../../../src/models/validators/ledger-validator';
 // Validation mock
 const validateMock = jest.fn();
 jest.mock('../../../src/util/validation', () => ({
@@ -30,7 +30,6 @@ describe('HttpLedgerApiClient', () => {
   const orgId = 'org-123';
   const ledgerId = 'ledger-456';
   const apiVersion = 'v1';
-  const _serviceName = 'midaz-ledger-api-client';
 
   // Mock ledger data
   const mockLedger: Ledger = {

@@ -56,9 +56,7 @@ async function loadTransactionFeatures() {
 }
 
 // Use with React
-const TransactionModule = React.lazy(() => 
-  import('midaz-sdk/entities/transactions')
-);
+const TransactionModule = React.lazy(() => import('midaz-sdk/entities/transactions'));
 ```
 
 ## Webpack Configuration
@@ -137,10 +135,11 @@ const orgs = await organizations.listOrganizations();
 ```
 
 Bundle includes only:
+
 - Core client (~15KB)
 - Organizations service (~5KB)
 - Required utilities (~10KB)
-Total: ~30KB instead of 100KB
+  Total: ~30KB instead of 100KB
 
 ## Module Aliases
 
@@ -217,7 +216,7 @@ const MidazContext = createContext<MidazClient | null>(null);
 
 export function MidazProvider({ children, config }) {
   const client = useMemo(() => new MidazClient(config), [config]);
-  
+
   return (
     <MidazContext.Provider value={client}>
       {children}
@@ -234,7 +233,7 @@ export function useMidazClient() {
 }
 
 // LazyOrganizations.tsx
-const OrganizationsModule = React.lazy(() => 
+const OrganizationsModule = React.lazy(() =>
   import('./OrganizationsModule')
 );
 
@@ -281,6 +280,7 @@ Typical improvements with code splitting:
 ### Issue: Tree shaking not working
 
 Solution: Ensure you're using ES modules and production mode:
+
 ```json
 {
   "sideEffects": false,
@@ -291,6 +291,7 @@ Solution: Ensure you're using ES modules and production mode:
 ### Issue: Dynamic imports not splitting
 
 Solution: Use magic comments:
+
 ```typescript
 const module = await import(
   /* webpackChunkName: "midaz-transactions" */
@@ -301,6 +302,7 @@ const module = await import(
 ### Issue: Circular dependencies
 
 Solution: The SDK avoids circular dependencies, but if you encounter them:
+
 ```typescript
 // Bad
 import { MidazClient } from '.';

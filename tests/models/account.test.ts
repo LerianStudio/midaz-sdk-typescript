@@ -1,6 +1,5 @@
 import {
   Account,
-  AccountType,
   CreateAccountInput,
   createAccountBuilder,
   UpdateAccountInput,
@@ -182,14 +181,8 @@ describe('Account Model and Helper Functions', () => {
     const withInvalidType = createAccountBuilder('Name', 'USD', 'invalidType' as any).build();
     expect(withInvalidType.type).toBe('invalidType');
 
-    const acc = {
-      id: 'id',
-      name: 'name',
-      assetCode: 'USD',
-      type: 'invalidType',
-      alias: undefined,
-      metadata: undefined,
-    };
+    // Test that the builder accepts invalid types but passes them through
+    expect(withInvalidType.type).toBe('invalidType');
   });
 
   it('shouldHandleLargeMetadataObjects', () => {
@@ -268,10 +261,12 @@ describe('Account Model and Helper Functions', () => {
     const accountWithInvalidMetadata1 = createAccountBuilder('Name', 'USD', 'deposit')
       .withMetadata(invalidMetadata1 as any)
       .build();
+    expect(accountWithInvalidMetadata1.metadata).toEqual(invalidMetadata1);
 
     const accountWithInvalidMetadata2 = createAccountBuilder('Name', 'USD', 'deposit')
       .withMetadata(invalidMetadata2 as any)
       .build();
+    expect(accountWithInvalidMetadata2.metadata).toEqual(invalidMetadata2);
   });
 
   it('shouldRejectInvalidOrMissingAssetCode', () => {

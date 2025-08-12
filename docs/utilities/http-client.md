@@ -50,8 +50,8 @@ const client = new MidazClient(
       retryDelay: 500,
       exponentialBackoff: true,
       headers: {
-        'Custom-Header': 'custom-value'
-      }
+        'Custom-Header': 'custom-value',
+      },
     })
     .build()
 );
@@ -104,14 +104,17 @@ The HTTP client can automatically retry failed requests:
 
 ```typescript
 const httpClient = new HttpClient({
-  retries: 3,                     // Number of retry attempts
-  retryDelay: 500,                // Base delay in milliseconds
-  exponentialBackoff: true,       // Use exponential backoff
+  retries: 3, // Number of retry attempts
+  retryDelay: 500, // Base delay in milliseconds
+  exponentialBackoff: true, // Use exponential backoff
   retryableStatusCodes: [
-    429,                         // Too Many Requests
-    500, 502, 503, 504           // Server errors
+    429, // Too Many Requests
+    500,
+    502,
+    503,
+    504, // Server errors
   ],
-  retryableNetworkErrors: true    // Retry on network errors
+  retryableNetworkErrors: true, // Retry on network errors
 });
 ```
 
@@ -123,23 +126,19 @@ You can set custom headers for all requests:
 const httpClient = new HttpClient({
   headers: {
     'Custom-Header': 'value',
-    'Idempotency-Key': 'unique-key-123'
-  }
+    'Idempotency-Key': 'unique-key-123',
+  },
 });
 ```
 
 Or for individual requests:
 
 ```typescript
-const response = await httpClient.post(
-  url,
-  data,
-  {
-    headers: {
-      'Idempotency-Key': 'unique-key-456'
-    }
-  }
-);
+const response = await httpClient.post(url, data, {
+  headers: {
+    'Idempotency-Key': 'unique-key-456',
+  },
+});
 ```
 
 ## Observability Integration
@@ -149,7 +148,7 @@ The HTTP client integrates with the SDK's observability system:
 ```typescript
 // The HttpClient automatically creates spans for requests
 const httpClient = new HttpClient({
-  observability: observabilityInstance
+  observability: observabilityInstance,
 });
 
 // The span will include:
@@ -167,15 +166,11 @@ const httpClient = new HttpClient({
    Always include idempotency keys for non-idempotent operations:
 
    ```typescript
-   const response = await httpClient.post(
-     '/transactions',
-     transactionData,
-     {
-       headers: {
-         'Idempotency-Key': `tx-${uuidv4()}`
-       }
-     }
-   );
+   const response = await httpClient.post('/transactions', transactionData, {
+     headers: {
+       'Idempotency-Key': `tx-${uuidv4()}`,
+     },
+   });
    ```
 
 2. **Configure Appropriate Timeouts**
@@ -214,11 +209,8 @@ const httpClient = new HttpClient({
    ```typescript
    import { withEnhancedRecovery } from 'midaz-sdk/util';
 
-   const result = await withEnhancedRecovery(
-     () => httpClient.post('/critical-endpoint', data),
-     {
-       retries: 5,
-       exponentialBackoff: true
-     }
-   );
+   const result = await withEnhancedRecovery(() => httpClient.post('/critical-endpoint', data), {
+     retries: 5,
+     exponentialBackoff: true,
+   });
    ```

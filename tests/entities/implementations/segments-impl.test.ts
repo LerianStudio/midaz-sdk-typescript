@@ -36,7 +36,7 @@ jest.mock('../../../src/models/validators/segment-validator', () => {
       }
       return { valid: true };
     }),
-    validateUpdateSegmentInput: jest.fn().mockImplementation((_input) => {
+    validateUpdateSegmentInput: jest.fn().mockImplementation(() => {
       return { valid: true };
     }),
   };
@@ -46,7 +46,6 @@ describe('SegmentsServiceImpl', () => {
   let segmentsService: SegmentsServiceImpl;
   let segmentApiClient: jest.Mocked<SegmentApiClient>;
   let mockObservability: jest.Mocked<Observability>;
-  let _config: any;
 
   // Test data
   const orgId = 'org_123';
@@ -122,11 +121,6 @@ describe('SegmentsServiceImpl', () => {
       }),
       recordMetric: jest.fn(),
     } as unknown as jest.Mocked<Observability>;
-
-    // Create config for reference
-    _config = {
-      environment: 'sandbox',
-    };
 
     // Create the service instance
     segmentsService = new SegmentsServiceImpl(segmentApiClient, mockObservability);

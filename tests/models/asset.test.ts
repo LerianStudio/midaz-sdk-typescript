@@ -1,6 +1,5 @@
 import {
   CreateAssetInput,
-  UpdateAssetInput,
   Asset,
   createAssetBuilder,
   createAssetBuilderWithType,
@@ -153,7 +152,6 @@ describe('Asset Model and Helper Functions', () => {
 
   // Test 10: Handle complex metadata objects
   it('shouldHandleComplexMetadataObjects', () => {
-    const input = createAssetBuilder('Complex Asset', 'COMPLEX').build();
     const complexMetadata = {
       nestedObject: {
         level1: {
@@ -192,7 +190,6 @@ describe('Asset Model and Helper Functions', () => {
 
   // Test 13: Handling large metadata objects
   it('shouldHandleLargeMetadataObjects', () => {
-    const input = createAssetBuilder('Large Metadata Asset', 'LARGE').build();
     const largeMetadata: Record<string, any> = {};
     for (let i = 0; i < 1000; i++) {
       largeMetadata[`key${i}`] = `value${i}`;
@@ -213,7 +210,6 @@ describe('Asset Model and Helper Functions', () => {
 
   // Test 15: Handling null metadata values
   it('shouldHandleNullMetadataValues', () => {
-    const input = createAssetBuilder('Null Metadata Asset', 'NULL').build();
     const metadataWithNull = {
       nullValue: null,
       regularValue: 'value',
@@ -278,7 +274,6 @@ describe('Asset Model and Helper Functions', () => {
   // Test 20: Setting status to different values
   it('shouldSetStatusToDifferentValues', () => {
     // Note: In the new builder pattern, status is set in the model but not included in the output
-    const input = createAssetBuilder('Status Test', 'STATUS').build();
 
     // Since we can't directly access the model's status, we'll just verify the builder doesn't throw
     const activeBuilder = createAssetBuilder('Status Test', 'STATUS');
@@ -294,7 +289,6 @@ describe('Asset Model and Helper Functions', () => {
   // Test 21: Overriding existing values
   it('shouldOverrideExistingValues', () => {
     // Note: In the new builder pattern, status is set in the model but not included in the output
-    const input = createAssetBuilderWithType('Original Name', 'CODE', 'ORIGINAL_TYPE').build();
 
     // Since we can't directly access the model's status, we'll just verify the builder doesn't throw
     const withStatusBuilder = createAssetBuilderWithType('Original Name', 'CODE', 'ORIGINAL_TYPE');

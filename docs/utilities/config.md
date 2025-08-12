@@ -51,31 +51,31 @@ ConfigService.configure({
   // Override API URLs
   apiUrls: {
     onboardingUrl: 'https://custom-api.example.com/v1/onboarding',
-    transactionUrl: 'https://custom-api.example.com/v1/transaction'
+    transactionUrl: 'https://custom-api.example.com/v1/transaction',
   },
-  
+
   // Override retry policy settings
   retryPolicy: {
     maxRetries: 5,
     initialDelay: 200,
-    maxDelay: 5000
+    maxDelay: 5000,
   },
-  
+
   // Override HTTP client settings
   httpClient: {
     timeout: 30000,
     debug: true,
     keepAlive: true,
-    maxSockets: 20
+    maxSockets: 20,
   },
-  
+
   // Override observability settings
   observability: {
     enableTracing: true,
     enableMetrics: true,
     serviceName: 'my-custom-service',
-    collectorEndpoint: 'https://otel-collector.example.com'
-  }
+    collectorEndpoint: 'https://otel-collector.example.com',
+  },
 });
 ```
 
@@ -246,28 +246,27 @@ interface ObservabilityConfig {
 
 The configuration service automatically reads from environment variables. Here are the key environment variables you can set:
 
-| Environment Variable | Description | Default |
-|---------------------|-------------|---------|
-| `MIDAZ_ONBOARDING_URL` | Base URL for onboarding service | `http://localhost:3000` |
-| `MIDAZ_TRANSACTION_URL` | Base URL for transaction service | `http://localhost:3001` |
-| `MIDAZ_API_URL` | Base URL for API (legacy) | `http://localhost:3000` |
-| `MIDAZ_AUTH_TOKEN` | Authentication token | |
-| `MIDAZ_HTTP_TIMEOUT` | HTTP request timeout in ms | `10000` |
-| `MIDAZ_HTTP_DEBUG` | Enable HTTP debug logging | `false` |
-| `MIDAZ_HTTP_KEEP_ALIVE` | Enable HTTP keep-alive | `true` |
-| `MIDAZ_HTTP_MAX_SOCKETS` | Max sockets per host | `10` |
-| `MIDAZ_HTTP_KEEP_ALIVE_MS` | Keep-alive time in ms | `1000` |
-| `MIDAZ_HTTP_ENABLE_HTTP2` | Enable HTTP/2 support | `false` |
-| `MIDAZ_DNS_CACHE_TTL` | DNS cache TTL in ms | `60000` |
-| `MIDAZ_RETRY_MAX_RETRIES` | Maximum retry attempts | `3` |
-| `MIDAZ_RETRY_INITIAL_DELAY` | Initial retry delay in ms | `100` |
-| `MIDAZ_RETRY_MAX_DELAY` | Maximum retry delay in ms | `1000` |
-| `MIDAZ_RETRY_STATUS_CODES` | Retryable HTTP status codes | `408,429,500,502,503,504` |
-| `MIDAZ_ENABLE_TRACING` | Enable distributed tracing | `false` |
-| `MIDAZ_ENABLE_METRICS` | Enable metrics collection | `false` |
-| `MIDAZ_ENABLE_LOGGING` | Enable structured logging | `false` |
-| `MIDAZ_SERVICE_NAME` | Service name for observability | `midaz-typescript-sdk` |
-| `MIDAZ_COLLECTOR_ENDPOINT` | OpenTelemetry collector endpoint | |
+| Environment Variable        | Description                      | Default                   |
+| --------------------------- | -------------------------------- | ------------------------- |
+| `MIDAZ_ONBOARDING_URL`      | Base URL for onboarding service  | `http://localhost:3000`   |
+| `MIDAZ_TRANSACTION_URL`     | Base URL for transaction service | `http://localhost:3001`   |
+| `MIDAZ_API_URL`             | Base URL for API (legacy)        | `http://localhost:3000`   |
+| `MIDAZ_HTTP_TIMEOUT`        | HTTP request timeout in ms       | `10000`                   |
+| `MIDAZ_HTTP_DEBUG`          | Enable HTTP debug logging        | `false`                   |
+| `MIDAZ_HTTP_KEEP_ALIVE`     | Enable HTTP keep-alive           | `true`                    |
+| `MIDAZ_HTTP_MAX_SOCKETS`    | Max sockets per host             | `10`                      |
+| `MIDAZ_HTTP_KEEP_ALIVE_MS`  | Keep-alive time in ms            | `1000`                    |
+| `MIDAZ_HTTP_ENABLE_HTTP2`   | Enable HTTP/2 support            | `false`                   |
+| `MIDAZ_DNS_CACHE_TTL`       | DNS cache TTL in ms              | `60000`                   |
+| `MIDAZ_RETRY_MAX_RETRIES`   | Maximum retry attempts           | `3`                       |
+| `MIDAZ_RETRY_INITIAL_DELAY` | Initial retry delay in ms        | `100`                     |
+| `MIDAZ_RETRY_MAX_DELAY`     | Maximum retry delay in ms        | `1000`                    |
+| `MIDAZ_RETRY_STATUS_CODES`  | Retryable HTTP status codes      | `408,429,500,502,503,504` |
+| `MIDAZ_ENABLE_TRACING`      | Enable distributed tracing       | `false`                   |
+| `MIDAZ_ENABLE_METRICS`      | Enable metrics collection        | `false`                   |
+| `MIDAZ_ENABLE_LOGGING`      | Enable structured logging        | `false`                   |
+| `MIDAZ_SERVICE_NAME`        | Service name for observability   | `midaz-typescript-sdk`    |
+| `MIDAZ_COLLECTOR_ENDPOINT`  | OpenTelemetry collector endpoint |                           |
 
 ## Examples
 
@@ -277,7 +276,6 @@ The configuration service automatically reads from environment variables. Here a
 // Set environment variables
 process.env.MIDAZ_ONBOARDING_URL = 'https://api.example.com/v1/onboarding';
 process.env.MIDAZ_TRANSACTION_URL = 'https://api.example.com/v1/transaction';
-process.env.MIDAZ_AUTH_TOKEN = 'your-auth-token';
 process.env.MIDAZ_HTTP_TIMEOUT = '30000';
 process.env.MIDAZ_RETRY_MAX_RETRIES = '5';
 
@@ -300,12 +298,12 @@ process.env.MIDAZ_SERVICE_NAME = 'my-service';
 ConfigService.configure({
   apiUrls: {
     onboardingUrl: 'https://api.example.com/v1/onboarding',
-    transactionUrl: 'https://api.example.com/v1/transaction'
+    transactionUrl: 'https://api.example.com/v1/transaction',
   },
   httpClient: {
     timeout: 30000,
-    debug: true
-  }
+    debug: true,
+  },
 });
 
 // Create a client that will use both environment variables and programmatic configuration
@@ -323,42 +321,42 @@ function setupEnvironment(env: 'development' | 'staging' | 'production') {
     ConfigService.configure({
       apiUrls: {
         onboardingUrl: 'http://localhost:3000',
-        transactionUrl: 'http://localhost:3001'
+        transactionUrl: 'http://localhost:3001',
       },
       httpClient: {
         debug: true,
-        timeout: 60000 // longer timeout for development
+        timeout: 60000, // longer timeout for development
       },
       observability: {
         enableTracing: true,
-        enableLogging: true
-      }
+        enableLogging: true,
+      },
     });
   } else if (env === 'staging') {
     ConfigService.configure({
       apiUrls: {
         onboardingUrl: 'https://api-staging.example.com/v1/onboarding',
-        transactionUrl: 'https://api-staging.example.com/v1/transaction'
+        transactionUrl: 'https://api-staging.example.com/v1/transaction',
       },
       retryPolicy: {
-        maxRetries: 5
-      }
+        maxRetries: 5,
+      },
     });
   } else if (env === 'production') {
     ConfigService.configure({
       apiUrls: {
         onboardingUrl: 'https://api.example.com/v1/onboarding',
-        transactionUrl: 'https://api.example.com/v1/transaction'
+        transactionUrl: 'https://api.example.com/v1/transaction',
       },
       retryPolicy: {
         maxRetries: 3,
-        initialDelay: 200
+        initialDelay: 200,
       },
       observability: {
         enableTracing: true,
         enableMetrics: true,
-        collectorEndpoint: 'https://otel-collector.example.com'
-      }
+        collectorEndpoint: 'https://otel-collector.example.com',
+      },
     });
   }
 }

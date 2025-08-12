@@ -23,7 +23,7 @@ All npm scripts now include automatic dependency checking. If you run a command 
 ```bash
 # These commands will work even if dev dependencies aren't installed
 npm run build      # Checks for TypeScript, installs if needed
-npm run test       # Checks for Jest, installs if needed  
+npm run test       # Checks for Jest, installs if needed
 npm run lint       # Checks for ESLint, installs if needed
 npm run format     # Checks for Prettier, installs if needed
 ```
@@ -44,7 +44,7 @@ npm run format     # Checks for Prettier, installs if needed
 The SDK uses a pure TypeScript implementation with no runtime dependencies:
 
 - **CommonJS build**: `dist/index.js`
-- **ESM build**: `dist/esm/index.js`  
+- **ESM build**: `dist/esm/index.js`
 - **TypeScript definitions**: `dist/index.d.ts`
 
 ## 🌐 Browser Compatibility
@@ -90,6 +90,7 @@ Run `npm run setup` to install all development dependencies.
 ### Test errors
 
 Make sure you have the latest dependencies:
+
 ```bash
 npm run setup
 npm run test

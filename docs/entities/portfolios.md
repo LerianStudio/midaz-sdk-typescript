@@ -38,7 +38,7 @@ const portfolioInput = createPortfolioBuilder('client_12345', 'Retirement Portfo
   .withMetadata({
     riskProfile: 'conservative',
     investmentStrategy: 'income',
-    targetReturn: '5%'
+    targetReturn: '5%',
   })
   .build();
 
@@ -61,14 +61,11 @@ import { newCreatePortfolioInput, withMetadata, withStatus, StatusCode } from 'm
 const portfolioInput = newCreatePortfolioInput('client_12345', 'Investment Portfolio');
 
 // Add additional properties
-const enhancedInput = withMetadata(
-  withStatus(portfolioInput, StatusCode.ACTIVE),
-  {
-    riskProfile: 'aggressive',
-    investmentStrategy: 'growth',
-    targetReturn: '10%'
-  }
-);
+const enhancedInput = withMetadata(withStatus(portfolioInput, StatusCode.ACTIVE), {
+  riskProfile: 'aggressive',
+  investmentStrategy: 'growth',
+  targetReturn: '10%',
+});
 
 // Create the portfolio
 const portfolio = await client.entities.portfolios.createPortfolio(
@@ -79,6 +76,7 @@ const portfolio = await client.entities.portfolios.createPortfolio(
 ```
 
 Note that:
+
 - The `entityId` and `name` are required fields for portfolio creation
 - Additional properties can be set using the chainable `with*` methods or helper functions
 - The `status` field can be explicitly set or will use the default (typically 'ACTIVE')
@@ -104,11 +102,10 @@ console.log(`Status: ${portfolio.status.code}`);
 
 ```typescript
 // List portfolios with pagination
-const portfolioList = await client.entities.portfolios.listPortfolios(
-  organizationId,
-  ledgerId,
-  { limit: 50, offset: 0 }
-);
+const portfolioList = await client.entities.portfolios.listPortfolios(organizationId, ledgerId, {
+  limit: 50,
+  offset: 0,
+});
 
 console.log(`Total portfolios: ${portfolioList.total}`);
 for (const portfolio of portfolioList.data) {
@@ -129,7 +126,7 @@ const updateInput = createUpdatePortfolioBuilder()
   .withMetadata({
     riskProfile: 'very conservative',
     investmentStrategy: 'income and preservation',
-    targetReturn: '4%'
+    targetReturn: '4%',
   })
   .build();
 
@@ -151,14 +148,11 @@ import { newUpdatePortfolioInput, withName, withMetadata } from 'midaz-sdk';
 const updateInput = newUpdatePortfolioInput();
 
 // Add updates
-const enhancedUpdate = withMetadata(
-  withName(updateInput, 'Growth Investment Portfolio'),
-  {
-    riskProfile: 'moderate',
-    investmentStrategy: 'balanced growth',
-    targetReturn: '7%'
-  }
-);
+const enhancedUpdate = withMetadata(withName(updateInput, 'Growth Investment Portfolio'), {
+  riskProfile: 'moderate',
+  investmentStrategy: 'balanced growth',
+  targetReturn: '7%',
+});
 
 // Update the portfolio
 const updatedPortfolio = await client.entities.portfolios.updatePortfolio(
@@ -170,6 +164,7 @@ const updatedPortfolio = await client.entities.portfolios.updatePortfolio(
 ```
 
 Note that:
+
 - Only certain fields can be updated (name, status, metadata)
 - The `entityId` cannot be changed after portfolio creation
 - Only fields included in the update input will be modified
@@ -178,11 +173,7 @@ Note that:
 
 ```typescript
 // Delete a portfolio
-await client.entities.portfolios.deletePortfolio(
-  organizationId,
-  ledgerId,
-  portfolioId
-);
+await client.entities.portfolios.deletePortfolio(organizationId, ledgerId, portfolioId);
 
 console.log(`Portfolio ${portfolioId} has been deleted`);
 ```
@@ -195,12 +186,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Create a portfolio with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.portfolios.createPortfolio(
-    organizationId,
-    ledgerId,
-    portfolioInput
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.portfolios.createPortfolio(organizationId, ledgerId, portfolioInput)
 );
 
 if (result.success) {
@@ -224,7 +211,7 @@ async function managePortfolios(client, organizationId, ledgerId) {
         investmentStrategy: 'growth',
         targetReturn: '10%',
         assetClasses: ['equities', 'alternatives'],
-        rebalanceFrequency: 'quarterly'
+        rebalanceFrequency: 'quarterly',
       })
       .build();
 
@@ -251,7 +238,7 @@ async function managePortfolios(client, organizationId, ledgerId) {
       .withMetadata({
         ...retrievedPortfolio.metadata,
         riskProfile: 'moderate',
-        rebalanceFrequency: 'monthly'
+        rebalanceFrequency: 'monthly',
       })
       .build();
 
@@ -264,17 +251,15 @@ async function managePortfolios(client, organizationId, ledgerId) {
     console.log(`Updated portfolio: ${updatedPortfolio.name}`);
 
     // List all portfolios
-    const portfolios = await client.entities.portfolios.listPortfolios(
-      organizationId,
-      ledgerId,
-      { limit: 10 }
-    );
+    const portfolios = await client.entities.portfolios.listPortfolios(organizationId, ledgerId, {
+      limit: 10,
+    });
     console.log(`Listed ${portfolios.data.length} portfolios`);
 
     return {
       created: portfolio,
       updated: updatedPortfolio,
-      list: portfolios.data
+      list: portfolios.data,
     };
   } catch (error) {
     console.error(`Portfolio management error: ${error.message}`);
@@ -291,33 +276,30 @@ async function managePortfolios(client, organizationId, ledgerId) {
 // Organize accounts into client portfolios
 async function organizeClientPortfolios(client, organizationId, ledgerId, clientData) {
   const results = [];
-  
+
   for (const clientInfo of clientData) {
     // Create a portfolio for each client
-    const portfolioInput = createPortfolioBuilder(
-      clientInfo.id,
-      `${clientInfo.name} Portfolio`
-    )
+    const portfolioInput = createPortfolioBuilder(clientInfo.id, `${clientInfo.name} Portfolio`)
       .withMetadata({
         clientType: clientInfo.type,
         relationshipManager: clientInfo.manager,
-        onboardingDate: clientInfo.since
+        onboardingDate: clientInfo.since,
       })
       .build();
-    
+
     const portfolio = await client.entities.portfolios.createPortfolio(
       organizationId,
       ledgerId,
       portfolioInput
     );
-    
+
     results.push({
       clientId: clientInfo.id,
       clientName: clientInfo.name,
-      portfolioId: portfolio.id
+      portfolioId: portfolio.id,
     });
   }
-  
+
   return results;
 }
 ```
@@ -328,35 +310,33 @@ async function organizeClientPortfolios(client, organizationId, ledgerId, client
 // Categorize portfolios by risk profile
 async function categorizeByRiskProfile(client, organizationId, ledgerId) {
   // Get all portfolios
-  const allPortfolios = await client.entities.portfolios.listPortfolios(
-    organizationId,
-    ledgerId,
-    { limit: 1000 }
-  );
-  
+  const allPortfolios = await client.entities.portfolios.listPortfolios(organizationId, ledgerId, {
+    limit: 1000,
+  });
+
   // Group by risk profile
   const profileGroups = {
     conservative: [],
     moderate: [],
     aggressive: [],
-    unknown: []
+    unknown: [],
   };
-  
+
   for (const portfolio of allPortfolios.data) {
     const riskProfile = portfolio.metadata?.riskProfile?.toLowerCase() || 'unknown';
-    
+
     if (profileGroups[riskProfile]) {
       profileGroups[riskProfile].push(portfolio);
     } else {
       profileGroups.unknown.push(portfolio);
     }
   }
-  
+
   // Report on findings
   for (const [profile, portfolios] of Object.entries(profileGroups)) {
     console.log(`${profile}: ${portfolios.length} portfolios`);
   }
-  
+
   return profileGroups;
 }
 ```

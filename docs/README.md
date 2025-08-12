@@ -22,6 +22,7 @@ This SDK follows a layered architecture with clear separation of concerns and em
 ## Documentation Structure
 
 ### Architecture
+
 - [Overview](./architecture/overview.md) - High-level architecture overview and design principles
 - [Service Layer](./architecture/service-layer.md) - Service layer design and patterns
 - [Error Handling](./architecture/error-handling.md) - Error handling architecture and recovery mechanisms
@@ -29,10 +30,12 @@ This SDK follows a layered architecture with clear separation of concerns and em
 - [Client Interface](./architecture/client-interface.md) - Client interface design and usage
 
 ### Core Concepts
+
 - [Builder Pattern](./core-concepts/builder-pattern.md) - How to use builders for creating complex objects
 - [Error Handling](./core-concepts/error-handling.md) - Error handling and recovery strategies
 
 ### Entities
+
 - [Assets](./entities/assets.md) - Working with assets (currencies, commodities, etc.)
 - [Accounts](./entities/accounts.md) - Working with accounts
 - [Transactions](./entities/transactions.md) - Creating and managing transactions
@@ -45,6 +48,7 @@ This SDK follows a layered architecture with clear separation of concerns and em
 - [Segments](./entities/segments.md) - Managing segments for analytics and grouping
 
 ### Utilities
+
 - [Account Helpers](./utilities/account-helpers.md) - Helper functions for account operations
 - [Cache](./utilities/cache.md) - Caching mechanisms for improved performance
 - [Concurrency](./utilities/concurrency.md) - Utilities for managing concurrent operations
@@ -68,7 +72,7 @@ Simple authentication using an API key:
 ```typescript
 const client = createClient({
   apiKey: 'your-api-key',
-  environment: 'sandbox'
+  environment: 'sandbox',
 });
 ```
 
@@ -83,9 +87,9 @@ const client = createClient({
     enabled: true,
     address: 'https://auth.example.com',
     clientId: 'your-client-id',
-    clientSecret: 'your-client-secret'
+    clientSecret: 'your-client-secret',
   },
-  environment: 'sandbox'
+  environment: 'sandbox',
 });
 
 // Using the builder pattern with environment-specific configurations
@@ -95,12 +99,13 @@ const client = new MidazClient(
   createSandboxConfigWithAccessManager({
     address: 'https://auth.example.com',
     clientId: 'your-client-id',
-    clientSecret: 'your-client-secret'
+    clientSecret: 'your-client-secret',
   })
 );
 ```
 
 The Access Manager automatically handles:
+
 - OAuth token acquisition using client credentials flow
 - Token caching to minimize authentication requests
 - Automatic token renewal before expiration
@@ -114,7 +119,7 @@ import { createClient } from 'midaz-sdk';
 
 const client = createClient({
   apiKey: 'your-api-key',
-  environment: 'sandbox'
+  environment: 'sandbox',
 });
 
 // Create an asset
@@ -125,11 +130,7 @@ const assetInput = createAssetBuilder('US Dollar', 'USD')
   .withMetadata({ precision: 2, symbol: '$' })
   .build();
 
-const asset = await client.entities.assets.createAsset(
-  'org_123',
-  'ledger_456',
-  assetInput
-);
+const asset = await client.entities.assets.createAsset('org_123', 'ledger_456', assetInput);
 
 // Create an account
 const accountInput = createAccountBuilder('Savings Account', 'USD')
@@ -137,11 +138,7 @@ const accountInput = createAccountBuilder('Savings Account', 'USD')
   .withAlias('personal-savings')
   .build();
 
-const account = await client.entities.accounts.createAccount(
-  'org_123',
-  'ledger_456',
-  accountInput
-);
+const account = await client.entities.accounts.createAccount('org_123', 'ledger_456', accountInput);
 
 // Create a transaction
 const transactionInput = createTransactionBuilder()
@@ -151,14 +148,14 @@ const transactionInput = createTransactionBuilder()
       accountId: 'source_account_id',
       assetCode: 'USD',
       amount: 100 * 100, // $100.00
-      type: 'debit'
+      type: 'debit',
     },
     {
       accountId: 'destination_account_id',
       assetCode: 'USD',
       amount: 100 * 100, // $100.00
-      type: 'credit'
-    }
+      type: 'credit',
+    },
   ])
   .withMetadata({ purpose: 'Monthly payment' })
   .build();
@@ -167,14 +164,10 @@ const transactionInput = createTransactionBuilder()
 import { withEnhancedRecovery } from 'midaz-sdk/util/error';
 
 const result = await withEnhancedRecovery(
-  () => client.entities.transactions.createTransaction(
-    'org_123',
-    'ledger_456',
-    transactionInput
-  ),
+  () => client.entities.transactions.createTransaction('org_123', 'ledger_456', transactionInput),
   {
     maxRetries: 3,
-    enableSmartRecovery: true
+    enableSmartRecovery: true,
   }
 );
 
@@ -209,6 +202,7 @@ The SDK is compatible with Node.js versions 18.18.0 or later (but less than 24).
 ### Dependencies
 
 The SDK has minimal production dependencies:
+
 - `abort-controller`: For cancellable requests
 - `axios`: For HTTP communication
 - `node-fetch`: For network requests in Node.js environments

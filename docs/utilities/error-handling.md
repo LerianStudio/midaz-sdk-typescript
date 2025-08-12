@@ -18,7 +18,7 @@ try {
     console.error(`Error category: ${error.category}`);
     console.error(`Error code: ${error.code}`);
     console.error(`Message: ${error.message}`);
-    
+
     // Additional context if available
     if (error.resource && error.resourceId) {
       console.error(`Resource: ${error.resource} ${error.resourceId}`);
@@ -63,10 +63,10 @@ async function createAccount() {
     {
       maxRetries: 3,
       initialDelay: 500,
-      backoffFactor: 2
+      backoffFactor: 2,
     }
   );
-  
+
   if (result.status === 'success') {
     return result.result;
   } else {
@@ -80,49 +80,46 @@ async function createAccount() {
 ```typescript
 import { withEnhancedRecovery } from 'midaz-sdk/util/error';
 
-const result = await withEnhancedRecovery(
-  () => sendPayment(sender, recipient, 1000),
-  {
-    // Basic retry settings
-    maxRetries: 3,
-    initialDelay: 500,
-    maxDelay: 5000,
-    backoffFactor: 2,
-    
-    // Only retry network errors and rate limits
-    retryCondition: (error) => isNetworkError(error) || isRateLimitError(error),
-    
-    // Log each retry attempt
-    onRetry: (error, attempt) => {
-      console.warn(`Retrying after error (attempt ${attempt}):`, error);
-    },
-    
-    // Log when all retries are exhausted
-    onExhausted: (error, attempts) => {
-      console.error(`Failed after ${attempts} attempts:`, error);
-    },
-    
-    // Enhanced recovery features
-    fallbackAttempts: 2,
-    transformOperation: (error, attempt) => {
-      // If insufficient funds, try with a smaller amount
-      if (isInsufficientFundsError(error)) {
-        const newAmount = 1000 * 0.9; // 90% of original
-        return () => sendPayment(sender, recipient, newAmount);
-      }
-      return null; // No transformation for other errors
-    },
-    
-    // Handle duplicates as successful operations
-    handleDuplicatesAsSuccess: true,
-    
-    // Periodically verify operation success
-    usePolledVerification: true,
-    pollingInterval: 1000,
-    maxPollingAttempts: 5,
-    verifyOperation: () => checkIfPaymentExists(paymentId)
-  }
-);
+const result = await withEnhancedRecovery(() => sendPayment(sender, recipient, 1000), {
+  // Basic retry settings
+  maxRetries: 3,
+  initialDelay: 500,
+  maxDelay: 5000,
+  backoffFactor: 2,
+
+  // Only retry network errors and rate limits
+  retryCondition: (error) => isNetworkError(error) || isRateLimitError(error),
+
+  // Log each retry attempt
+  onRetry: (error, attempt) => {
+    console.warn(`Retrying after error (attempt ${attempt}):`, error);
+  },
+
+  // Log when all retries are exhausted
+  onExhausted: (error, attempts) => {
+    console.error(`Failed after ${attempts} attempts:`, error);
+  },
+
+  // Enhanced recovery features
+  fallbackAttempts: 2,
+  transformOperation: (error, attempt) => {
+    // If insufficient funds, try with a smaller amount
+    if (isInsufficientFundsError(error)) {
+      const newAmount = 1000 * 0.9; // 90% of original
+      return () => sendPayment(sender, recipient, newAmount);
+    }
+    return null; // No transformation for other errors
+  },
+
+  // Handle duplicates as successful operations
+  handleDuplicatesAsSuccess: true,
+
+  // Periodically verify operation success
+  usePolledVerification: true,
+  pollingInterval: 1000,
+  maxPollingAttempts: 5,
+  verifyOperation: () => checkIfPaymentExists(paymentId),
+});
 
 if (result.status === 'success' || result.status === 'duplicate') {
   console.log('Payment processed successfully');
@@ -146,7 +143,7 @@ const result = await executeTransactionWithRecovery(
   {
     maxRetries: 3,
     enableSmartRecovery: true, // Enables specialized handling for transaction errors
-    
+
     transformOperation: (error, attempt) => {
       // Custom transformation logic for specific error types
       if (isInsufficientBalanceError(error)) {
@@ -155,7 +152,7 @@ const result = await executeTransactionWithRecovery(
         return () => client.entities.transactions.createTransaction(orgId, ledgerId, reducedTx);
       }
       return null;
-    }
+    },
   }
 );
 
@@ -180,7 +177,7 @@ import {
   isRetryableError,
   isValidationError,
   isNotFoundError,
-  isCancellationError
+  isCancellationError,
 } from 'midaz-sdk/util/error';
 
 function handleError(error) {
@@ -216,21 +213,19 @@ async function createAssetWithRetries(client, orgId, assetData) {
       maxRetries: 3,
       initialDelay: 500,
       backoffFactor: 2,
-      
+
       // Only retry certain errors
       retryCondition: (error) => {
-        return isNetworkError(error) || 
-               isRateLimitError(error) || 
-               isTimeoutError(error);
+        return isNetworkError(error) || isRateLimitError(error) || isTimeoutError(error);
       },
-      
+
       // Log retries
       onRetry: (error, attempt) => {
         console.warn(`Retrying asset creation (attempt ${attempt})`, error);
-      }
+      },
     }
   );
-  
+
   // Check result
   if (result.status === 'success') {
     console.log('Asset created successfully', result.result);
@@ -263,77 +258,67 @@ async function processBatchWithErrorHandling(client, orgId, ledgerId, accounts) 
           {
             maxRetries: 2,
             initialDelay: 200,
-            handleDuplicatesAsSuccess: true
+            handleDuplicatesAsSuccess: true,
           }
         );
-        
+
         return {
           accountId: account.id,
           success: result.status === 'success' || result.status === 'duplicate',
           result: result.result,
-          error: result.error
+          error: result.error,
         };
       } catch (error) {
         return {
           accountId: account.id,
           success: false,
-          error: error
+          error: error,
         };
       }
     },
     options: {
-      concurrency: 5
-    }
+      concurrency: 5,
+    },
   });
-  
+
   // Analyze results
-  const successful = results.filter(r => r.success);
-  const failed = results.filter(r => !r.success);
-  
+  const successful = results.filter((r) => r.success);
+  const failed = results.filter((r) => !r.success);
+
   console.log(`Processed ${accounts.length} accounts`);
   console.log(`- ${successful.length} succeeded`);
   console.log(`- ${failed.length} failed`);
-  
+
   return { successful, failed };
 }
 
 // Helper function for account update
 async function updateAccount(client, orgId, ledgerId, account) {
-  return client.entities.accounts.updateAccount(
-    orgId,
-    ledgerId,
-    account.id,
-    account
-  );
+  return client.entities.accounts.updateAccount(orgId, ledgerId, account.id, account);
 }
 ```
 
 ### Critical Operation with Verification
 
 ```typescript
-import { 
-  withEnhancedRecovery, 
-  createTransactionVerification 
-} from 'midaz-sdk/util/error';
+import { withEnhancedRecovery, createTransactionVerification } from 'midaz-sdk/util/error';
 
 async function processCriticalPayment(client, orgId, ledgerId, payment) {
   // Create verification function
-  const verifyTransaction = createTransactionVerification(
-    async () => {
-      try {
-        // Check if transaction exists by ID
-        const tx = await client.entities.transactions.getTransaction(
-          orgId, 
-          ledgerId, 
-          payment.idempotencyKey || payment.id
-        );
-        return tx && tx.status === 'completed';
-      } catch (error) {
-        return false;
-      }
+  const verifyTransaction = createTransactionVerification(async () => {
+    try {
+      // Check if transaction exists by ID
+      const tx = await client.entities.transactions.getTransaction(
+        orgId,
+        ledgerId,
+        payment.idempotencyKey || payment.id
+      );
+      return tx && tx.status === 'completed';
+    } catch (error) {
+      return false;
     }
-  );
-  
+  });
+
   // Execute with enhanced recovery and verification
   const result = await withEnhancedRecovery(
     () => client.entities.transactions.createTransaction(orgId, ledgerId, payment),
@@ -342,40 +327,40 @@ async function processCriticalPayment(client, orgId, ledgerId, payment) {
       maxRetries: 5,
       initialDelay: 500,
       maxDelay: 10000,
-      
+
       // Enable verification
       usePolledVerification: true,
       pollingInterval: 2000,
       maxPollingAttempts: 10,
       verifyOperation: verifyTransaction,
-      
+
       // Callback when verification succeeds
       onVerificationSuccess: (tx) => {
         console.log(`Transaction ${tx.id} verified as successful`);
-      }
+      },
     }
   );
-  
+
   // Handle result
   if (result.status === 'success') {
     if (result.verifiedSuccess) {
-      return { 
-        success: true, 
-        verified: true, 
-        transaction: result.result 
+      return {
+        success: true,
+        verified: true,
+        transaction: result.result,
       };
     } else {
-      return { 
-        success: true, 
-        verified: false, 
+      return {
+        success: true,
+        verified: false,
         transaction: result.result,
-        message: 'Transaction created but not verified'
+        message: 'Transaction created but not verified',
       };
     }
   } else {
     return {
       success: false,
-      error: result.error
+      error: result.error,
     };
   }
 }
@@ -389,25 +374,19 @@ If you're migrating from an older version of the SDK that used functions like `e
 // Old approach
 import { executeWithEnhancedRecovery } from 'midaz-sdk';
 
-const result = await executeWithEnhancedRecovery(
-  () => createTransaction(data),
-  {
-    maxRetries: 3,
-    delayBetweenRetries: 1000
-  }
-);
+const result = await executeWithEnhancedRecovery(() => createTransaction(data), {
+  maxRetries: 3,
+  delayBetweenRetries: 1000,
+});
 
 // New approach (preferred)
 import { withEnhancedRecovery } from 'midaz-sdk/util/error';
 
-const result = await withEnhancedRecovery(
-  () => createTransaction(data),
-  {
-    maxRetries: 3,
-    initialDelay: 1000,
-    backoffFactor: 1 // No exponential backoff in this case
-  }
-);
+const result = await withEnhancedRecovery(() => createTransaction(data), {
+  maxRetries: 3,
+  initialDelay: 1000,
+  backoffFactor: 1, // No exponential backoff in this case
+});
 ```
 
 The new approach provides more flexibility, better control over retry behavior, and enhanced recovery options.

@@ -7,61 +7,99 @@ import { CreateTransactionInput, Transaction } from './transaction';
 
 /**
  * Transforms a client-side transaction to the API format
- *
  */
 export function toApiTransaction(input: CreateTransactionInput): any {
-  // Group operations by type (DEBIT and CREDIT)
-  const debitOperations = input.operations.filter((op) => op.type === 'DEBIT');
-  const creditOperations = input.operations.filter((op) => op.type === 'CREDIT');
-
-  // Create the new payload structure
   const result: any = {
-    send: {
-      asset: input.assetCode || debitOperations[0]?.amount.assetCode,
-      value: input.amount || debitOperations.reduce((sum, op) => sum + Number(op.amount.value), 0),
-      scale: input.scale || debitOperations[0]?.amount.scale || 2,
-      source: {
-        from: debitOperations.map((op) => ({
-          account: op.accountId,
-          amount: {
-            asset: op.amount.assetCode,
-            value: op.amount.value,
-            scale: op.amount.scale,
-          },
-          description: op.description || 'Debit Operation',
-          metadata: op.metadata,
-        })),
-      },
-      distribute: {
-        to: creditOperations.map((op) => ({
-          account: op.accountId,
-          amount: {
-            asset: op.amount.assetCode,
-            value: op.amount.value,
-            scale: op.amount.scale,
-          },
-          description: op.description || 'Credit Operation',
-          metadata: op.metadata,
-        })),
-      },
-    },
+    chartOfAccountsGroupName: input.chartOfAccountsGroupName,
+    description: input.description,
   };
 
-  // Add optional transaction-level fields
-  if (input.description) {
-    result.description = input.description;
+  // Add send information if present (REQUIRED for API)
+  if (input.send) {
+    result.send = {
+      asset: input.send.asset,
+      value: input.send.value,
+    };
+
+    // Transform source operations - API expects 'accountAlias' not 'account'
+    if (input.send.source) {
+      result.send.source = {
+        from: input.send.source.from.map((fromInput: any) => {
+          const operation: any = {
+            accountAlias: fromInput.account, // Transform 'account' to 'accountAlias'
+            amount: fromInput.amount,
+          };
+
+          // Add route if provided (operation route reference)
+          if (fromInput.route) {
+            operation.route = fromInput.route;
+          }
+
+          // Add other optional fields
+          if (fromInput.description) {
+            operation.description = fromInput.description;
+          }
+
+          if (fromInput.metadata) {
+            operation.metadata = fromInput.metadata;
+          }
+
+          return operation;
+        }),
+      };
+    }
+
+    // Transform distribute operations - API expects 'accountAlias' not 'account'
+    if (input.send.distribute) {
+      result.send.distribute = {
+        to: input.send.distribute.to.map((toInput: any) => {
+          const operation: any = {
+            accountAlias: toInput.account, // Transform 'account' to 'accountAlias'
+            amount: toInput.amount,
+          };
+
+          // Add route if provided (operation route reference)
+          if (toInput.route) {
+            operation.route = toInput.route;
+          }
+
+          // Add other optional fields
+          if (toInput.description) {
+            operation.description = toInput.description;
+          }
+
+          if (toInput.metadata) {
+            operation.metadata = toInput.metadata;
+          }
+
+          return operation;
+        }),
+      };
+    }
   }
 
-  if (input.chartOfAccountsGroupName) {
-    result.chartOfAccountsGroupName = input.chartOfAccountsGroupName;
+  // Note: amount, assetCode, and operations fields are NOT sent to backend API
+  // These cause HTTP 400 "Unexpected Fields" errors according to Midaz API contract
+
+  // Add optional fields
+  if (input.pending) {
+    result.pending = input.pending;
+  }
+
+  if (input.route) {
+    result.route = input.route;
   }
 
   if (input.metadata) {
     result.metadata = input.metadata;
   }
 
-  if (input.externalId) {
-    result.externalId = input.externalId;
+  if (input.idempotencyKey) {
+    result.idempotencyKey = input.idempotencyKey;
+  }
+
+  if (input.code) {
+    result.code = input.code;
   }
 
   return result;
@@ -79,4 +117,4 @@ export function toClientTransaction(apiTransaction: any): Transaction {
 
 /** Transaction model transformer for client/API format conversion */
 export const transactionTransformer: ModelTransformer<CreateTransactionInput, any> =
-  createModelTransformer(toApiTransaction, toClientTransaction);
+  createModelTransformer(toApiTransaction, toClientTransaction as any);

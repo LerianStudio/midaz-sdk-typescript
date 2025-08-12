@@ -161,7 +161,7 @@ export class OrganizationsServiceImpl implements OrganizationsService {
 
     try {
       // Delegate to API client (validation happens there)
-      const result = await this.apiClient.updateOrganization(id, input);
+      const result = await this.apiClient.updateOrganization(id, input as any);
 
       // Record metrics
       this.observability.recordMetric('organizations.update', 1, {

@@ -1,13 +1,10 @@
 import {
   isRetryableError,
   categorizeTransactionError as getTransactionErrorType,
-  TransactionErrorCategory,
-  TransactionErrorCategory as _TransactionErrorType,
   getErrorRecoveryRecommendation,
   createErrorHandler,
   logDetailedError,
   processError as getEnhancedErrorInfo,
-  errorFromHttpResponse as _processApiError,
   withErrorRecovery,
   executeTransaction,
   MidazError,
@@ -162,7 +159,7 @@ jest.mock('../../../src/util/error/error-handler', () => {
                 status: 'success',
                 attempts: 2,
               };
-            } catch (err) {
+            } catch (_err) {
               // If it fails again, return retried status
               return {
                 result: null,
@@ -717,7 +714,7 @@ describe('Error Handler', () => {
       const handler = createErrorHandler({
         displayErrors: true,
         displayFn: consoleSpy,
-        formatMessage: (errorInfo) => 'Formatted error',
+        formatMessage: (_errorInfo) => 'Formatted error',
       });
 
       // Create and handle test error

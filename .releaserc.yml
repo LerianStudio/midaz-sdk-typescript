@@ -1,10 +1,10 @@
 plugins:
-  - path: "@semantic-release/commit-analyzer"
+  - path: '@semantic-release/commit-analyzer'
     preset: conventionalcommits
     parserOpts:
       noteKeywords:
-        - "BREAKING CHANGE"
-        - "BREAKING CHANGES"
+        - 'BREAKING CHANGE'
+        - 'BREAKING CHANGES'
     releaseRules:
       - type: feat
         release: minor
@@ -19,42 +19,43 @@ plugins:
       - type: test
         release: patch
       - type: fix
-        release: minor
+        release: patch
       - type: refactor
         release: minor
       - type: docs
         release: patch
       - breaking: true
         release: major
-        
+
   # Plugin to version the CHANGELOG.md
-  - path: "@semantic-release/git"
+  - path: '@semantic-release/git'
     assets:
       - CHANGELOG.md
     message: "chore(release): ${nextRelease.version}\n\nChangelog atualizado."
 
   # Plugin to publish the CHANGELOG.md as an asset in the GitHub release
-  - path: "@semantic-release/github"
+  - path: '@semantic-release/github'
     assets:
       - path: CHANGELOG.md
-        label: "Changelog"
-  
- # Plugin to perform the backmerge between the 'main' and 'develop' branches
-  - path: "@saithodev/semantic-release-backmerge"
+        label: 'Changelog'
+
+  # Plugin to perform the backmerge between the 'main' and 'develop' branches
+  - path: '@saithodev/semantic-release-backmerge'
     backmergeBranches:
       - from: main
         to: develop
-    message: "chore(release): Preparations for next release [skip ci]"
+    message: 'chore(release): Preparations for next release [skip ci]'
 
-  - path: "@semantic-release/exec"
+  - path: '@semantic-release/exec'
     backmergeBranches:
-      - from: main 
+      - from: main
         to: develop
-    message: "chore(release): Preparations for next release [skip ci]"
+    message: 'chore(release): Preparations for next release [skip ci]'
 
 branches:
   - main
   - name: develop
     prerelease: beta
   - name: hotfix/*
-    prerelease: hf
+    prerelease: false 
+    channel: false
