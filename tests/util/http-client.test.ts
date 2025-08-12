@@ -371,10 +371,5 @@ describe('HTTP Client Utilities', () => {
       expect(mockCache.get).not.toHaveBeenCalled();
       expect(mockCache.set).not.toHaveBeenCalled();
     });
-
-
-
   });
-
 });
-

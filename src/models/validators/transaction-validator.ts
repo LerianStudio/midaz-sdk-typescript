@@ -76,7 +76,7 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
 
   // Validate that either operations OR send is provided
   const results: ValidationResult[] = [];
-  
+
   // Check if either operations or send is provided
   if (!input.operations && !input.send) {
     results.push({
@@ -285,7 +285,7 @@ function validateAmount(amount: any, fieldName: string): ValidationResult {
         });
       }
     }
-    
+
     return combineValidationResults(results);
   }
 }
@@ -343,7 +343,7 @@ function validateTransactionBalance(operations: OperationInput[]): ValidationRes
     // Handle both string and object amount types
     let assetCode: string;
     let value: number;
-    
+
     if (typeof operation.amount === 'string') {
       // amount is a string - get assetCode from the operation itself
       assetCode = operation.assetCode || '';
@@ -363,7 +363,7 @@ function validateTransactionBalance(operations: OperationInput[]): ValidationRes
       }
       value = parseFloat(amountValue.toString());
     }
-    
+
     if (!assetCode) {
       return {
         valid: false,

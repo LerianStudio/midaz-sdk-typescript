@@ -3,16 +3,21 @@
  */
 
 import { ApiClient } from './api-client';
-import { OperationRoute, CreateOperationRouteInput, UpdateOperationRouteInput } from '../../models/operation-route';
+import {
+  OperationRoute,
+  CreateOperationRouteInput,
+  UpdateOperationRouteInput,
+} from '../../models/operation-route';
 import { PaginatedResponse, ListOptions } from '../../models/common';
 
 /**
  * Interface for Operation Route API operations
  */
-export interface OperationRouteApiClient extends ApiClient<OperationRoute, CreateOperationRouteInput, UpdateOperationRouteInput> {
+export interface OperationRouteApiClient
+  extends ApiClient<OperationRoute, CreateOperationRouteInput, UpdateOperationRouteInput> {
   /**
    * Retrieve a paginated list of operation routes for a ledger
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param options - Optional list options for pagination and filtering
@@ -26,7 +31,7 @@ export interface OperationRouteApiClient extends ApiClient<OperationRoute, Creat
 
   /**
    * Retrieve a specific operation route by ID
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param operationRouteId - The operation route ID
@@ -40,7 +45,7 @@ export interface OperationRouteApiClient extends ApiClient<OperationRoute, Creat
 
   /**
    * Create a new operation route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param input - The operation route creation data
@@ -54,7 +59,7 @@ export interface OperationRouteApiClient extends ApiClient<OperationRoute, Creat
 
   /**
    * Update an existing operation route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param operationRouteId - The operation route ID to update
@@ -70,7 +75,7 @@ export interface OperationRouteApiClient extends ApiClient<OperationRoute, Creat
 
   /**
    * Delete an operation route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param operationRouteId - The operation route ID to delete

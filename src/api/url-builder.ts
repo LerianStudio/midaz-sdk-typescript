@@ -269,7 +269,11 @@ export class UrlBuilder {
    *
    * @returns The constructed URL
    */
-  public buildOperationRouteUrl(orgId: string, ledgerId: string, operationRouteId?: string): string {
+  public buildOperationRouteUrl(
+    orgId: string,
+    ledgerId: string,
+    operationRouteId?: string
+  ): string {
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/operation-routes`;
@@ -286,7 +290,11 @@ export class UrlBuilder {
    *
    * @returns The constructed URL
    */
-  public buildTransactionRouteUrl(orgId: string, ledgerId: string, transactionRouteId?: string): string {
+  public buildTransactionRouteUrl(
+    orgId: string,
+    ledgerId: string,
+    transactionRouteId?: string
+  ): string {
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/transaction-routes`;
@@ -305,9 +313,9 @@ export class UrlBuilder {
 export function buildUrl(baseUrl: string, ...pathSegments: string[]): string {
   const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
   const cleanSegments = pathSegments
-    .filter(segment => segment && segment.trim() !== '')
-    .map(segment => segment.replace(/^\/+|\/+$/g, ''));
-  
+    .filter((segment) => segment && segment.trim() !== '')
+    .map((segment) => segment.replace(/^\/+|\/+$/g, ''));
+
   return [cleanBaseUrl, ...cleanSegments].join('/');
 }
 
@@ -316,11 +324,11 @@ export function buildUrl(baseUrl: string, ...pathSegments: string[]): string {
  */
 export function buildQueryParams(params: Record<string, any>): string {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       if (Array.isArray(value)) {
-        value.forEach(item => searchParams.append(key, String(item)));
+        value.forEach((item) => searchParams.append(key, String(item)));
       } else {
         searchParams.append(key, String(value));
       }

@@ -1,79 +1,69 @@
 ## [1.1.0-develop.11](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.10...v1.1.0-develop.11) (2025-05-26)
 
-
 ### 🐛 Bug Fixes
 
-* **dependabot:** remove YAML aliases to fix parsing error ([7b279df](https://github.com/LerianStudio/midaz-sdk-typescript/commit/7b279df27fc8605fb1b4b1b883175908608e7209))
-* 
+- **dependabot:** remove YAML aliases to fix parsing error ([7b279df](https://github.com/LerianStudio/midaz-sdk-typescript/commit/7b279df27fc8605fb1b4b1b883175908608e7209))
+-
+
 ## [1.1.0-develop.10](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.9...v1.1.0-develop.10) (2025-05-26)
 
-
 ### 🐛 Bug Fixes
 
-* **ci:** add missing bot credentials to AI changelog step ([95401c0](https://github.com/LerianStudio/midaz-sdk-typescript/commit/95401c0cb27fa16ceea908acf29a08c4b0289f1e))
+- **ci:** add missing bot credentials to AI changelog step ([95401c0](https://github.com/LerianStudio/midaz-sdk-typescript/commit/95401c0cb27fa16ceea908acf29a08c4b0289f1e))
 
 ## [1.1.0-develop.9](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.8...v1.1.0-develop.9) (2025-05-26)
 
-
 ### 🐛 Bug Fixes
 
-* **ci:** remove codecov upload and fix workflow formatting ([4e7a8ee](https://github.com/LerianStudio/midaz-sdk-typescript/commit/4e7a8ee066fa3632838a3b1e88dcafa4c1da0095))
+- **ci:** remove codecov upload and fix workflow formatting ([4e7a8ee](https://github.com/LerianStudio/midaz-sdk-typescript/commit/4e7a8ee066fa3632838a3b1e88dcafa4c1da0095))
 
 ## [1.1.0-develop.8](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.7...v1.1.0-develop.8) (2025-05-26)
 
-
 ### ✨ Features
 
-* **exports:** add AccountType and concurrency utilities to public API ([03549ba](https://github.com/LerianStudio/midaz-sdk-typescript/commit/03549baf6b8c12236b69f8f3c0adf11c62cda594))
+- **exports:** add AccountType and concurrency utilities to public API ([03549ba](https://github.com/LerianStudio/midaz-sdk-typescript/commit/03549baf6b8c12236b69f8f3c0adf11c62cda594))
 
 ## [1.1.0-develop.7](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.6...v1.1.0-develop.7) (2025-05-26)
 
-
 ### 🐛 Bug Fixes
 
-* **release:** simplify GitHub release URL template to fix syntax error ([bd343e7](https://github.com/LerianStudio/midaz-sdk-typescript/commit/bd343e77b737655030bc0dfbab46c605f604df4e))
+- **release:** simplify GitHub release URL template to fix syntax error ([bd343e7](https://github.com/LerianStudio/midaz-sdk-typescript/commit/bd343e77b737655030bc0dfbab46c605f604df4e))
 
 ## [1.1.0-develop.6](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.5...v1.1.0-develop.6) (2025-05-26)
 
-
 ### 🐛 Bug Fixes
 
-* **ci:** make codecov upload non-blocking and only run on push events ([81b63b3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/81b63b3add23db13c64df14d1d18a6b6edae1055))
+- **ci:** make codecov upload non-blocking and only run on push events ([81b63b3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/81b63b3add23db13c64df14d1d18a6b6edae1055))
 
 ## [1.1.0-develop.5](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.4...v1.1.0-develop.5) (2025-05-26)
 
-
 ### 🐛 Bug Fixes
 
-* **ci:** add missing test:coverage script and lint:check command ([692f5f4](https://github.com/LerianStudio/midaz-sdk-typescript/commit/692f5f4d299b2091c6d1a17d74a5399d8b1624a4))
+- **ci:** add missing test:coverage script and lint:check command ([692f5f4](https://github.com/LerianStudio/midaz-sdk-typescript/commit/692f5f4d299b2091c6d1a17d74a5399d8b1624a4))
 
 ## [1.1.0-develop.4](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.3...v1.1.0-develop.4) (2025-05-26)
 
-
 ### 🐛 Bug Fixes
 
-* **format:** apply prettier formatting to correlation.ts ([822fc2d](https://github.com/LerianStudio/midaz-sdk-typescript/commit/822fc2d8c29298679e5131fdc9e9d5873b71d666))
+- **format:** apply prettier formatting to correlation.ts ([822fc2d](https://github.com/LerianStudio/midaz-sdk-typescript/commit/822fc2d8c29298679e5131fdc9e9d5873b71d666))
 
 ## [1.1.0-develop.3](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.2...v1.1.0-develop.3) (2025-05-26)
 
-
 ### ♻️ Code Refactoring
 
-* apply code review improvements from PR [#48](https://github.com/LerianStudio/midaz-sdk-typescript/issues/48) ([5c090b3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/5c090b3dadfad6aebf88c2c92b398bd662bf4c62))
+- apply code review improvements from PR [#48](https://github.com/LerianStudio/midaz-sdk-typescript/issues/48) ([5c090b3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/5c090b3dadfad6aebf88c2c92b398bd662bf4c62))
 
 ## [1.1.0-develop.2](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0-develop.1...v1.1.0-develop.2) (2025-05-25)
 
-
 ### ✨ Features
 
-* refactor to pure TypeScript SDK implementation ([#47](https://github.com/LerianStudio/midaz-sdk-typescript/issues/47)) ([aeec1f5](https://github.com/LerianStudio/midaz-sdk-typescript/commit/aeec1f5418c8ebd6aedcbaf705282209f725add8))
-* **sdk:** transform to pure TypeScript SDK without Node.js dependencies ([d4e54f5](https://github.com/LerianStudio/midaz-sdk-typescript/commit/d4e54f5ec8553b042ec6b6054c794b9096ecd86b))
-
+- refactor to pure TypeScript SDK implementation ([#47](https://github.com/LerianStudio/midaz-sdk-typescript/issues/47)) ([aeec1f5](https://github.com/LerianStudio/midaz-sdk-typescript/commit/aeec1f5418c8ebd6aedcbaf705282209f725add8))
+- **sdk:** transform to pure TypeScript SDK without Node.js dependencies ([d4e54f5](https://github.com/LerianStudio/midaz-sdk-typescript/commit/d4e54f5ec8553b042ec6b6054c794b9096ecd86b))
 
 ### 🔨 Maintenance
 
-* **deps-dev:** bump typedoc from 0.28.3 to 0.28.4 ([94db8eb](https://github.com/LerianStudio/midaz-sdk-typescript/commit/94db8ebd6648bbbf599c9dc5e01ca9e9ffca302c))
-* **sdk:** bump version to 2.0.0-develop.1 for pure TypeScript SDK ([840c68c](https://github.com/LerianStudio/midaz-sdk-typescript/commit/840c68c473d37332a0a716e60e794999175080df))
+- **deps-dev:** bump typedoc from 0.28.3 to 0.28.4 ([94db8eb](https://github.com/LerianStudio/midaz-sdk-typescript/commit/94db8ebd6648bbbf599c9dc5e01ca9e9ffca302c))
+- **sdk:** bump version to 2.0.0-develop.1 for pure TypeScript SDK ([840c68c](https://github.com/LerianStudio/midaz-sdk-typescript/commit/840c68c473d37332a0a716e60e794999175080df))
 
 ## [1.1.0-develop.1](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.0.0...v1.1.0-develop.1) (2025-05-25)
 

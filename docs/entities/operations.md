@@ -32,16 +32,18 @@ const operations = await client.entities.operations.listOperations(
   organizationId,
   ledgerId,
   accountId,
-  { 
+  {
     limit: 50,
-    offset: 0
+    offset: 0,
   }
 );
 
 console.log(`Total operations: ${operations.total}`);
 for (const operation of operations.data) {
   const monetaryValue = Number(operation.amount.value) / operation.amount.scale;
-  console.log(`Operation ${operation.id}: ${operation.type} ${monetaryValue} ${operation.amount.assetCode}`);
+  console.log(
+    `Operation ${operation.id}: ${operation.type} ${monetaryValue} ${operation.amount.assetCode}`
+  );
   console.log(`Account: ${operation.accountId}`);
 }
 ```
@@ -81,11 +83,11 @@ const updatedOperation = await client.entities.operations.updateOperation(
   accountId,
   operationId,
   {
-    description: "Updated operation description",
+    description: 'Updated operation description',
     metadata: {
-      category: "payroll",
-      department: "engineering"
-    }
+      category: 'payroll',
+      department: 'engineering',
+    },
   }
 );
 
@@ -93,6 +95,7 @@ console.log(`Operation updated: ${updatedOperation.id}`);
 ```
 
 Note that:
+
 - Only metadata and description can typically be updated
 - The core financial details (amount, type, etc.) cannot be modified directly
 - To change financial details, you would need to create a new transaction
@@ -116,7 +119,7 @@ const paginator = client.entities.operations.getOperationPaginator(
 while (await paginator.hasNext()) {
   const operationBatch = await paginator.next();
   console.log(`Processing batch of ${operationBatch.length} operations`);
-  
+
   for (const operation of operationBatch) {
     // Process each operation
     console.log(`Processing operation ${operation.id}`);
@@ -138,7 +141,7 @@ const operationsGenerator = client.entities.operations.iterateOperations(
 // Process operations in batches using for-await-of
 for await (const operationBatch of operationsGenerator) {
   console.log(`Processing batch of ${operationBatch.length} operations`);
-  
+
   for (const operation of operationBatch) {
     // Process each operation
     console.log(`Processing operation ${operation.id}`);
@@ -154,10 +157,10 @@ const allOperations = await client.entities.operations.getAllOperations(
   organizationId,
   ledgerId,
   accountId,
-  { 
+  {
     // Filtering options
     fromDate: '2023-01-01T00:00:00Z',
-    toDate: '2023-01-31T23:59:59Z'
+    toDate: '2023-01-31T23:59:59Z',
   }
 );
 
@@ -172,13 +175,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Get operations with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.operations.listOperations(
-    organizationId,
-    ledgerId,
-    accountId,
-    { limit: 50 }
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.operations.listOperations(organizationId, ledgerId, accountId, { limit: 50 })
 );
 
 if (result.success) {
@@ -198,15 +196,16 @@ async function analyzeAccountOperations(client, organizationId, ledgerId, accoun
     // Set up date range
     const today = new Date();
     let fromDate;
-    
+
     if (timeframe === 'month') {
       fromDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
     } else if (timeframe === 'quarter') {
       fromDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
-    } else { // year
+    } else {
+      // year
       fromDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
     }
-    
+
     // Get all operations in the date range
     const operations = await client.entities.operations.getAllOperations(
       organizationId,
@@ -214,63 +213,67 @@ async function analyzeAccountOperations(client, organizationId, ledgerId, accoun
       accountId,
       {
         fromDate: fromDate.toISOString(),
-        toDate: today.toISOString()
+        toDate: today.toISOString(),
       }
     );
-    
-    console.log(`Analyzing ${operations.length} operations from ${fromDate.toISOString()} to ${today.toISOString()}`);
-    
+
+    console.log(
+      `Analyzing ${operations.length} operations from ${fromDate.toISOString()} to ${today.toISOString()}`
+    );
+
     // Summarize by operation type
     const summary = {
       DEBIT: { count: 0, total: 0 },
-      CREDIT: { count: 0, total: 0 }
+      CREDIT: { count: 0, total: 0 },
     };
-    
+
     // Group by month
     const monthlyActivity = {};
-    
+
     for (const operation of operations) {
       const type = operation.type;
       const monetaryValue = Number(operation.amount.value) / operation.amount.scale;
-      
+
       // Update summary
       summary[type].count += 1;
       summary[type].total += monetaryValue;
-      
+
       // Update monthly activity
       const opDate = new Date(operation.createdAt);
       const monthKey = `${opDate.getFullYear()}-${opDate.getMonth() + 1}`;
-      
+
       if (!monthlyActivity[monthKey]) {
         monthlyActivity[monthKey] = {
           DEBIT: { count: 0, total: 0 },
-          CREDIT: { count: 0, total: 0 }
+          CREDIT: { count: 0, total: 0 },
         };
       }
-      
+
       monthlyActivity[monthKey][type].count += 1;
       monthlyActivity[monthKey][type].total += monetaryValue;
     }
-    
+
     // Calculate net change
     const netChange = summary.CREDIT.total - summary.DEBIT.total;
-    
+
     console.log(`Operation Summary for ${timeframe}:`);
     console.log(`Credits: ${summary.CREDIT.count} operations totaling ${summary.CREDIT.total}`);
     console.log(`Debits: ${summary.DEBIT.count} operations totaling ${summary.DEBIT.total}`);
     console.log(`Net Change: ${netChange}`);
     console.log('\nMonthly Breakdown:');
-    
+
     for (const [month, data] of Object.entries(monthlyActivity)) {
       const monthlyNet = data.CREDIT.total - data.DEBIT.total;
-      console.log(`${month}: Net Change: ${monthlyNet} (${data.CREDIT.count} credits, ${data.DEBIT.count} debits)`);
+      console.log(
+        `${month}: Net Change: ${monthlyNet} (${data.CREDIT.count} credits, ${data.DEBIT.count} debits)`
+      );
     }
-    
+
     return {
       summary,
       monthlyActivity,
       netChange,
-      operationCount: operations.length
+      operationCount: operations.length,
     };
   } catch (error) {
     console.error(`Operation analysis error: ${error.message}`);
@@ -295,18 +298,18 @@ async function exportAccountActivity(client, organizationId, ledgerId, accountId
       // Set appropriate date filters based on timeframe
     }
   );
-  
+
   // Convert to CSV
   let csv = 'Date,Type,Amount,Asset,Description\n';
-  
+
   for (const op of operations) {
     const date = new Date(op.createdAt).toISOString().split('T')[0];
     const amount = Number(op.amount.value) / op.amount.scale;
     const description = op.description || 'N/A';
-    
+
     csv += `${date},${op.type},${amount},${op.amount.assetCode},${description}\n`;
   }
-  
+
   return csv;
 }
 ```
@@ -322,7 +325,7 @@ async function reconcileOperations(client, organizationId, ledgerId, accountId, 
     ledgerId,
     accountId
   );
-  
+
   // Map operations by external ID for quick lookup
   const opsByExternalId = {};
   for (const op of operations) {
@@ -330,15 +333,15 @@ async function reconcileOperations(client, organizationId, ledgerId, accountId, 
       opsByExternalId[op.metadata.externalId] = op;
     }
   }
-  
+
   // Find matches and discrepancies
   const matched = [];
   const missing = [];
   const discrepancies = [];
-  
+
   for (const record of externalRecords) {
     const operation = opsByExternalId[record.id];
-    
+
     if (!operation) {
       missing.push(record);
     } else {
@@ -347,21 +350,21 @@ async function reconcileOperations(client, organizationId, ledgerId, accountId, 
         discrepancies.push({
           record,
           operation,
-          difference: opAmount - record.amount
+          difference: opAmount - record.amount,
         });
       } else {
         matched.push({
           record,
-          operation
+          operation,
         });
       }
     }
   }
-  
+
   return {
     matched,
     missing,
-    discrepancies
+    discrepancies,
   };
 }
 ```

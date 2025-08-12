@@ -9,7 +9,10 @@ import {
 } from '../../src/models/ledger';
 import { validateMetadata } from '../../src/util/validation/validation';
 import { StatusCode } from '../../src/models/common';
-import { validateCreateLedgerInput, validateUpdateLedgerInput } from '../../src/models/validators/ledger-validator';
+import {
+  validateCreateLedgerInput,
+  validateUpdateLedgerInput,
+} from '../../src/models/validators/ledger-validator';
 
 describe('Ledger Model and Helper Functions', () => {
   // Test 1: Creating a ledger input with required fields

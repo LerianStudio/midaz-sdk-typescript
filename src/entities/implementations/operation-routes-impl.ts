@@ -3,7 +3,11 @@
  */
 
 import { OperationRoutesService } from '../operation-routes';
-import { OperationRoute, CreateOperationRouteInput, UpdateOperationRouteInput } from '../../models/operation-route';
+import {
+  OperationRoute,
+  CreateOperationRouteInput,
+  UpdateOperationRouteInput,
+} from '../../models/operation-route';
 import { PaginatedResponse, ListOptions } from '../../models/common';
 import { OperationRouteApiClient } from '../../api/interfaces/operation-route-api-client';
 import { Observability } from '../../util/observability/observability';
@@ -27,21 +31,21 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
     options?: ListOptions
   ): Promise<PaginatedResponse<OperationRoute>> {
     const span = this.observability?.startSpan('OperationRoutesService.listOperationRoutes');
-    
+
     try {
       logger.debug('Listing operation routes', {
         organizationId,
         ledgerId,
-        options
+        options,
       });
 
       const result = await this.apiClient.listOperationRoutes(organizationId, ledgerId, options);
-      
+
       logger.debug('Operation routes listed successfully', {
         organizationId,
         ledgerId,
         count: result.items.length,
-        total: result.totalCount
+        total: result.totalCount,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -50,7 +54,7 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
       logger.error('Failed to list operation routes', {
         organizationId,
         ledgerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -70,22 +74,26 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
     operationRouteId: string
   ): Promise<OperationRoute> {
     const span = this.observability?.startSpan('OperationRoutesService.getOperationRoute');
-    
+
     try {
       logger.debug('Getting operation route', {
         organizationId,
         ledgerId,
-        operationRouteId
+        operationRouteId,
       });
 
-      const result = await this.apiClient.getOperationRoute(organizationId, ledgerId, operationRouteId);
-      
+      const result = await this.apiClient.getOperationRoute(
+        organizationId,
+        ledgerId,
+        operationRouteId
+      );
+
       logger.debug('Operation route retrieved successfully', {
         organizationId,
         ledgerId,
         operationRouteId,
         operationRouteTitle: result.title,
-        operationType: result.operationType
+        operationType: result.operationType,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -95,7 +103,7 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
         organizationId,
         ledgerId,
         operationRouteId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -115,7 +123,7 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
     input: CreateOperationRouteInput
   ): Promise<OperationRoute> {
     const span = this.observability?.startSpan('OperationRoutesService.createOperationRoute');
-    
+
     try {
       logger.debug('Creating operation route', {
         organizationId,
@@ -125,8 +133,8 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
           operationType: input.operationType,
           hasDescription: !!input.description,
           hasAccount: !!input.account,
-          hasMetadata: !!input.metadata
-        }
+          hasMetadata: !!input.metadata,
+        },
       });
 
       // Basic validation
@@ -144,13 +152,13 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
       }
 
       const result = await this.apiClient.createOperationRoute(organizationId, ledgerId, input);
-      
+
       logger.info('Operation route created successfully', {
         organizationId,
         ledgerId,
         operationRouteId: result.id,
         operationRouteTitle: result.title,
-        operationType: result.operationType
+        operationType: result.operationType,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -160,7 +168,7 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
         organizationId,
         ledgerId,
         inputTitle: input.title,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -181,7 +189,7 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
     input: UpdateOperationRouteInput
   ): Promise<OperationRoute> {
     const span = this.observability?.startSpan('OperationRoutesService.updateOperationRoute');
-    
+
     try {
       logger.debug('Updating operation route', {
         organizationId,
@@ -191,18 +199,23 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
           hasTitle: !!input.title,
           hasDescription: !!input.description,
           hasAccount: !!input.account,
-          hasMetadata: !!input.metadata
-        }
+          hasMetadata: !!input.metadata,
+        },
       });
 
-      const result = await this.apiClient.updateOperationRoute(organizationId, ledgerId, operationRouteId, input);
-      
+      const result = await this.apiClient.updateOperationRoute(
+        organizationId,
+        ledgerId,
+        operationRouteId,
+        input
+      );
+
       logger.info('Operation route updated successfully', {
         organizationId,
         ledgerId,
         operationRouteId,
         operationRouteTitle: result.title,
-        operationType: result.operationType
+        operationType: result.operationType,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -212,7 +225,7 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
         organizationId,
         ledgerId,
         operationRouteId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -232,20 +245,20 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
     operationRouteId: string
   ): Promise<void> {
     const span = this.observability?.startSpan('OperationRoutesService.deleteOperationRoute');
-    
+
     try {
       logger.debug('Deleting operation route', {
         organizationId,
         ledgerId,
-        operationRouteId
+        operationRouteId,
       });
 
       await this.apiClient.deleteOperationRoute(organizationId, ledgerId, operationRouteId);
-      
+
       logger.info('Operation route deleted successfully', {
         organizationId,
         ledgerId,
-        operationRouteId
+        operationRouteId,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -254,7 +267,7 @@ export class OperationRoutesServiceImpl implements OperationRoutesService {
         organizationId,
         ledgerId,
         operationRouteId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);

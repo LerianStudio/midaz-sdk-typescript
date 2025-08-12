@@ -3,16 +3,21 @@
  */
 
 import { ApiClient } from './api-client';
-import { AccountType, CreateAccountTypeInput, UpdateAccountTypeInput } from '../../models/account-type';
+import {
+  AccountType,
+  CreateAccountTypeInput,
+  UpdateAccountTypeInput,
+} from '../../models/account-type';
 import { PaginatedResponse, ListOptions } from '../../models/common';
 
 /**
  * Interface for Account Type API operations
  */
-export interface AccountTypeApiClient extends ApiClient<AccountType, CreateAccountTypeInput, UpdateAccountTypeInput> {
+export interface AccountTypeApiClient
+  extends ApiClient<AccountType, CreateAccountTypeInput, UpdateAccountTypeInput> {
   /**
    * Retrieve a paginated list of account types for a ledger
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param options - Optional list options for pagination and filtering
@@ -26,7 +31,7 @@ export interface AccountTypeApiClient extends ApiClient<AccountType, CreateAccou
 
   /**
    * Retrieve a specific account type by ID
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param accountTypeId - The account type ID
@@ -40,7 +45,7 @@ export interface AccountTypeApiClient extends ApiClient<AccountType, CreateAccou
 
   /**
    * Create a new account type
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param input - The account type creation data
@@ -54,7 +59,7 @@ export interface AccountTypeApiClient extends ApiClient<AccountType, CreateAccou
 
   /**
    * Update an existing account type
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param accountTypeId - The account type ID to update
@@ -70,15 +75,11 @@ export interface AccountTypeApiClient extends ApiClient<AccountType, CreateAccou
 
   /**
    * Delete an account type
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param accountTypeId - The account type ID to delete
    * @returns Promise resolving when the account type is deleted
    */
-  deleteAccountType(
-    organizationId: string,
-    ledgerId: string,
-    accountTypeId: string
-  ): Promise<void>;
+  deleteAccountType(organizationId: string, ledgerId: string, accountTypeId: string): Promise<void>;
 }

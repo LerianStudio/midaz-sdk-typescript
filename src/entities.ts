@@ -20,7 +20,12 @@ export { AssetRatesService } from './entities/asset-rates';
 // Entity models - export specific items to avoid conflicts
 export * from './models/organization';
 export * from './models/ledger';
-export { Account, CreateAccountInput, UpdateAccountInput, AccountType as AccountTypeEnum } from './models/account';
+export {
+  Account,
+  CreateAccountInput,
+  UpdateAccountInput,
+  AccountType as AccountTypeEnum,
+} from './models/account';
 export { AccountType, CreateAccountTypeInput, UpdateAccountTypeInput } from './models/account-type';
 export { Asset, CreateAssetInput, UpdateAssetInput } from './models/asset';
 export { Portfolio, CreatePortfolioInput, UpdatePortfolioInput } from './models/portfolio';

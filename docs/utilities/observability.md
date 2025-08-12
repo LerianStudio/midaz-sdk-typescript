@@ -27,7 +27,7 @@ const client = new MidazClient(
       enabled: true,
       tracingEnabled: true,
       metricsEnabled: true,
-      loggingEnabled: true
+      loggingEnabled: true,
     })
     .build()
 );
@@ -56,8 +56,8 @@ const client = new MidazClient(
       samplingRate: 0.1, // Sample 10% of traces
       attributes: {
         environment: 'production',
-        version: '1.0.0'
-      }
+        version: '1.0.0',
+      },
     })
     .build()
 );
@@ -95,12 +95,12 @@ You can record custom metrics to monitor performance and behavior:
 // Record a counter metric
 observability.recordMetric('requests.total', 1, {
   operation: 'createAsset',
-  status: 'success'
+  status: 'success',
 });
 
 // Record a measure metric
 observability.recordMetric('operation.duration', 235, {
-  operation: 'createAsset'
+  operation: 'createAsset',
 });
 ```
 
@@ -143,14 +143,14 @@ const client = new MidazClient(
       // Connect to Jaeger for tracing
       tracingExporter: 'jaeger',
       tracingEndpoint: 'http://jaeger:14268/api/traces',
-      
+
       // Connect to Prometheus for metrics
       metricsExporter: 'prometheus',
       metricsEndpoint: 'http://prometheus:9090/metrics',
-      
+
       // Connect to ELK stack for logging
       loggingExporter: 'elasticsearch',
-      loggingEndpoint: 'http://elasticsearch:9200'
+      loggingEndpoint: 'http://elasticsearch:9200',
     })
     .build()
 );
@@ -207,10 +207,10 @@ observability.withContext(extractedContext, () => {
 
    ```typescript
    // Development: capture everything
-   samplingRate: 1.0
+   samplingRate: 1.0;
 
    // Production: sample a percentage
-   samplingRate: 0.1 // 10% of traces
+   samplingRate: 0.1; // 10% of traces
    ```
 
 4. **Use Baggage for Context Propagation**

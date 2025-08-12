@@ -4,7 +4,11 @@
 
 import { HttpBaseApiClient } from './http-base-api-client';
 import { AccountTypeApiClient } from '../interfaces/account-type-api-client';
-import { AccountType, CreateAccountTypeInput, UpdateAccountTypeInput } from '../../models/account-type';
+import {
+  AccountType,
+  CreateAccountTypeInput,
+  UpdateAccountTypeInput,
+} from '../../models/account-type';
 import { PaginatedResponse, ListOptions } from '../../models/common';
 import { HttpClient } from '../../util/network/http-client';
 import { buildQueryParams, UrlBuilder } from '../url-builder';
@@ -13,15 +17,11 @@ import { Observability } from '../../util/observability/observability';
 /**
  * HTTP implementation of AccountTypeApiClient
  */
-export class HttpAccountTypeApiClient 
-  extends HttpBaseApiClient<AccountType, CreateAccountTypeInput, UpdateAccountTypeInput> 
-  implements AccountTypeApiClient {
-  
-  constructor(
-    httpClient: HttpClient,
-    urlBuilder: UrlBuilder,
-    observability?: Observability
-  ) {
+export class HttpAccountTypeApiClient
+  extends HttpBaseApiClient<AccountType, CreateAccountTypeInput, UpdateAccountTypeInput>
+  implements AccountTypeApiClient
+{
+  constructor(httpClient: HttpClient, urlBuilder: UrlBuilder, observability?: Observability) {
     super(httpClient, urlBuilder, 'account-types', observability);
   }
 
@@ -35,7 +35,7 @@ export class HttpAccountTypeApiClient
   ): Promise<PaginatedResponse<AccountType>> {
     const url = this.urlBuilder.buildAccountTypeUrl(organizationId, ledgerId);
     const queryParams = buildQueryParams(options || {});
-    
+
     return this.getRequest<PaginatedResponse<AccountType>>(
       'listAccountTypes',
       `${url}${queryParams}`
@@ -51,11 +51,8 @@ export class HttpAccountTypeApiClient
     accountTypeId: string
   ): Promise<AccountType> {
     const url = this.urlBuilder.buildAccountTypeUrl(organizationId, ledgerId, accountTypeId);
-    
-    return this.getRequest<AccountType>(
-      'getAccountType',
-      url
-    );
+
+    return this.getRequest<AccountType>('getAccountType', url);
   }
 
   /**
@@ -67,12 +64,8 @@ export class HttpAccountTypeApiClient
     input: CreateAccountTypeInput
   ): Promise<AccountType> {
     const url = this.urlBuilder.buildAccountTypeUrl(organizationId, ledgerId);
-    
-    return this.postRequest<AccountType>(
-      'createAccountType',
-      url,
-      input
-    );
+
+    return this.postRequest<AccountType>('createAccountType', url, input);
   }
 
   /**
@@ -85,12 +78,8 @@ export class HttpAccountTypeApiClient
     input: UpdateAccountTypeInput
   ): Promise<AccountType> {
     const url = this.urlBuilder.buildAccountTypeUrl(organizationId, ledgerId, accountTypeId);
-    
-    return this.patchRequest<AccountType>(
-      'updateAccountType',
-      url,
-      input
-    );
+
+    return this.patchRequest<AccountType>('updateAccountType', url, input);
   }
 
   /**
@@ -102,10 +91,7 @@ export class HttpAccountTypeApiClient
     accountTypeId: string
   ): Promise<void> {
     const url = this.urlBuilder.buildAccountTypeUrl(organizationId, ledgerId, accountTypeId);
-    
-    return this.deleteRequest(
-      'deleteAccountType',
-      url
-    );
+
+    return this.deleteRequest('deleteAccountType', url);
   }
 }

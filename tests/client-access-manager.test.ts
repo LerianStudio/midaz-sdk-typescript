@@ -42,8 +42,7 @@ describe('MidazClient with Access Manager Authentication', () => {
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .build();
+    }).build();
 
     // Create client
     const client = new MidazClient(config);
@@ -65,8 +64,7 @@ describe('MidazClient with Access Manager Authentication', () => {
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .build();
+    }).build();
 
     // Create client
     const client = new MidazClient(config);
@@ -89,8 +87,7 @@ describe('MidazClient with Access Manager Authentication', () => {
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .build();
+    }).build();
 
     // Should still create client without errors
     const client = new MidazClient(config);
@@ -105,8 +102,7 @@ describe('MidazClient with Access Manager Authentication', () => {
 
   it('should work without authentication when Access Manager is not enabled', () => {
     // Create config without Access Manager or API key
-    const config = createClientConfigBuilder()
-      .build();
+    const config = createClientConfigBuilder().build();
 
     // Create client
     const client = new MidazClient(config);
@@ -125,8 +121,7 @@ describe('MidazClient with Access Manager Authentication', () => {
       address: 'https://auth.example.com',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-    })
-      .build();
+    }).build();
 
     // Create client
     const client = new MidazClient(config);

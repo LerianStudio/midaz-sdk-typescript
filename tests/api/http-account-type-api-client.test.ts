@@ -3,7 +3,11 @@
  */
 
 import { HttpAccountTypeApiClient } from '../../src/api/http/http-account-type-api-client';
-import { AccountType, CreateAccountTypeInput, UpdateAccountTypeInput } from '../../src/models/account-type';
+import {
+  AccountType,
+  CreateAccountTypeInput,
+  UpdateAccountTypeInput,
+} from '../../src/models/account-type';
 import { HttpClient } from '../../src/util/network/http-client';
 import { Observability } from '../../src/util/observability/observability';
 import { PaginatedResponse } from '../../src/models/common';
@@ -30,10 +34,12 @@ const mockObservability = {
 
 // Mock UrlBuilder
 const mockUrlBuilder = {
-  buildAccountTypeUrl: jest.fn().mockImplementation((orgId: string, ledgerId: string, accountTypeId?: string) => {
-    const baseUrl = `https://api.example.com/organizations/${orgId}/ledgers/${ledgerId}/account-types`;
-    return accountTypeId ? `${baseUrl}/${accountTypeId}` : baseUrl;
-  }),
+  buildAccountTypeUrl: jest
+    .fn()
+    .mockImplementation((orgId: string, ledgerId: string, accountTypeId?: string) => {
+      const baseUrl = `https://api.example.com/organizations/${orgId}/ledgers/${ledgerId}/account-types`;
+      return accountTypeId ? `${baseUrl}/${accountTypeId}` : baseUrl;
+    }),
   getApiVersion: jest.fn().mockReturnValue('v1'),
 } as unknown as jest.Mocked<UrlBuilder>;
 
@@ -95,7 +101,7 @@ describe('HttpAccountTypeApiClient', () => {
 
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         `https://api.example.com/organizations/${organizationId}/ledgers/${ledgerId}/account-types?limit=10&page=2`,
-        {"headers": {"X-API-Version": "v1"}}
+        { headers: { 'X-API-Version': 'v1' } }
       );
     });
 
@@ -103,8 +109,9 @@ describe('HttpAccountTypeApiClient', () => {
       const error = new Error('Network error');
       (mockHttpClient.get as jest.Mock).mockRejectedValue(error);
 
-      await expect(client.listAccountTypes(organizationId, ledgerId))
-        .rejects.toThrow('Network error');
+      await expect(client.listAccountTypes(organizationId, ledgerId)).rejects.toThrow(
+        'Network error'
+      );
     });
   });
 
@@ -127,7 +134,7 @@ describe('HttpAccountTypeApiClient', () => {
 
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         `https://api.example.com/organizations/${organizationId}/ledgers/${ledgerId}/account-types/${accountTypeId}`,
-        {"headers": {"X-API-Version": "v1"}}
+        { headers: { 'X-API-Version': 'v1' } }
       );
       expect(result).toEqual(mockAccountType);
     });
@@ -137,8 +144,9 @@ describe('HttpAccountTypeApiClient', () => {
       const error = new Error('Not found');
       (mockHttpClient.get as jest.Mock).mockRejectedValue(error);
 
-      await expect(client.getAccountType(organizationId, ledgerId, accountTypeId))
-        .rejects.toThrow('Not found');
+      await expect(client.getAccountType(organizationId, ledgerId, accountTypeId)).rejects.toThrow(
+        'Not found'
+      );
     });
   });
 
@@ -167,7 +175,7 @@ describe('HttpAccountTypeApiClient', () => {
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         `https://api.example.com/organizations/${organizationId}/ledgers/${ledgerId}/account-types`,
         input,
-        {"headers": {"X-API-Version": "v1"}}
+        { headers: { 'X-API-Version': 'v1' } }
       );
       expect(result).toEqual(mockCreatedAccountType);
     });
@@ -181,8 +189,9 @@ describe('HttpAccountTypeApiClient', () => {
       const error = new Error('Validation failed');
       (mockHttpClient.post as jest.Mock).mockRejectedValue(error);
 
-      await expect(client.createAccountType(organizationId, ledgerId, input))
-        .rejects.toThrow('Validation failed');
+      await expect(client.createAccountType(organizationId, ledgerId, input)).rejects.toThrow(
+        'Validation failed'
+      );
     });
   });
 
@@ -214,7 +223,7 @@ describe('HttpAccountTypeApiClient', () => {
       expect(mockHttpClient.patch).toHaveBeenCalledWith(
         `https://api.example.com/organizations/${organizationId}/ledgers/${ledgerId}/account-types/${accountTypeId}`,
         input,
-        {"headers": {"X-API-Version": "v1"}}
+        { headers: { 'X-API-Version': 'v1' } }
       );
       expect(result).toEqual(mockUpdatedAccountType);
     });
@@ -228,8 +237,9 @@ describe('HttpAccountTypeApiClient', () => {
       const error = new Error('Update failed');
       (mockHttpClient.patch as jest.Mock).mockRejectedValue(error);
 
-      await expect(client.updateAccountType(organizationId, ledgerId, accountTypeId, input))
-        .rejects.toThrow('Update failed');
+      await expect(
+        client.updateAccountType(organizationId, ledgerId, accountTypeId, input)
+      ).rejects.toThrow('Update failed');
     });
   });
 
@@ -243,7 +253,7 @@ describe('HttpAccountTypeApiClient', () => {
 
       expect(mockHttpClient.delete).toHaveBeenCalledWith(
         `https://api.example.com/organizations/${organizationId}/ledgers/${ledgerId}/account-types/${accountTypeId}`,
-        {"headers": {"X-API-Version": "v1"}}
+        { headers: { 'X-API-Version': 'v1' } }
       );
     });
 
@@ -252,8 +262,9 @@ describe('HttpAccountTypeApiClient', () => {
       const error = new Error('Deletion failed');
       (mockHttpClient.delete as jest.Mock).mockRejectedValue(error);
 
-      await expect(client.deleteAccountType(organizationId, ledgerId, accountTypeId))
-        .rejects.toThrow('Deletion failed');
+      await expect(
+        client.deleteAccountType(organizationId, ledgerId, accountTypeId)
+      ).rejects.toThrow('Deletion failed');
     });
   });
 
@@ -267,9 +278,9 @@ describe('HttpAccountTypeApiClient', () => {
       };
 
       (mockObservability.startSpan as jest.Mock).mockReturnValue(mockSpan);
-      (mockHttpClient.get as jest.Mock).mockResolvedValue({ 
-        items: [], 
-        meta: { total: 0, count: 0, nextCursor: undefined, prevCursor: undefined } 
+      (mockHttpClient.get as jest.Mock).mockResolvedValue({
+        items: [],
+        meta: { total: 0, count: 0, nextCursor: undefined, prevCursor: undefined },
       });
 
       await client.listAccountTypes(organizationId, ledgerId);

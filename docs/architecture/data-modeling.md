@@ -45,10 +45,10 @@ Base models define common patterns and structures used throughout the SDK:
 interface BaseModel {
   /** Unique identifier */
   id: string;
-  
+
   /** Creation timestamp in ISO 8601 format */
   createdAt: string;
-  
+
   /** Last update timestamp in ISO 8601 format */
   updatedAt: string;
 }
@@ -73,28 +73,28 @@ Domain models represent core business entities:
 interface Account extends BaseModel, WithMetadata {
   /** Linked organization ID */
   organizationId: string;
-  
+
   /** Linked ledger ID */
   ledgerId: string;
-  
+
   /** Account name */
   name: string;
-  
+
   /** Account type */
   type: AccountType;
-  
+
   /** Associated asset code */
   assetCode: string;
-  
+
   /** Account status */
   status: AccountStatus;
-  
+
   /** Optional account alias for easier reference */
   alias?: string;
-  
+
   /** Tags for categorization */
   tags?: string[];
-  
+
   // Other account-specific properties...
 }
 
@@ -104,22 +104,22 @@ interface Account extends BaseModel, WithMetadata {
 interface Transaction extends BaseModel, WithMetadata {
   /** Linked organization ID */
   organizationId: string;
-  
+
   /** Linked ledger ID */
   ledgerId: string;
-  
+
   /** Transaction code for reference */
   code?: string;
-  
+
   /** Transaction status */
   status: TransactionStatus;
-  
+
   /** Transaction type */
   type: TransactionType;
-  
+
   /** Operations in this transaction */
   operations: Operation[];
-  
+
   // Other transaction-specific properties...
 }
 ```
@@ -135,19 +135,19 @@ Input and output models represent data specific to API operations:
 interface CreateAccountInput {
   /** Account name */
   name: string;
-  
+
   /** Account type */
   type: AccountType;
-  
+
   /** Associated asset code */
   assetCode: string;
-  
+
   /** Optional account alias */
   alias?: string;
-  
+
   /** Optional metadata */
   metadata?: Record<string, any>;
-  
+
   /** Optional tags */
   tags?: string[];
 }
@@ -158,13 +158,13 @@ interface CreateAccountInput {
 interface UpdateAccountInput {
   /** New account name (optional) */
   name?: string;
-  
+
   /** New account alias (optional) */
   alias?: string;
-  
+
   /** New metadata (optional, replaces existing) */
   metadata?: Record<string, any>;
-  
+
   /** New tags (optional, replaces existing) */
   tags?: string[];
 }
@@ -175,15 +175,15 @@ interface UpdateAccountInput {
 interface ListAccountsResponse {
   /** List of accounts */
   items: Account[];
-  
+
   /** Pagination metadata */
   pagination: {
     /** Total number of items matching the query */
     total: number;
-    
+
     /** Next page cursor */
     nextCursor?: string;
-    
+
     /** Previous page cursor */
     prevCursor?: string;
   };
@@ -201,31 +201,28 @@ The SDK uses the builder pattern for creating complex objects:
 interface AccountBuilder {
   /** Set the account name */
   withName(name: string): AccountBuilder;
-  
+
   /** Set the account type */
   withType(type: AccountType): AccountBuilder;
-  
+
   /** Set the asset code */
   withAssetCode(assetCode: string): AccountBuilder;
-  
+
   /** Set an optional alias */
   withAlias(alias: string): AccountBuilder;
-  
+
   /** Add metadata */
   withMetadata(metadata: Record<string, any>): AccountBuilder;
-  
+
   /** Add tags */
   withTags(tags: string[]): AccountBuilder;
-  
+
   /** Build the final account input */
   build(): CreateAccountInput;
 }
 
 // Factory function to create an account builder
-function createAccountBuilder(
-  name: string,
-  assetCode: string
-): AccountBuilder {
+function createAccountBuilder(name: string, assetCode: string): AccountBuilder {
   // Implementation...
 }
 ```
@@ -240,11 +237,7 @@ const accountInput = createAccountBuilder('Savings Account', 'USD')
   .withTags(['personal', 'savings'])
   .build();
 
-const account = await client.entities.accounts.createAccount(
-  orgId,
-  ledgerId,
-  accountInput
-);
+const account = await client.entities.accounts.createAccount(orgId, ledgerId, accountInput);
 ```
 
 ## Enum and Constant Types
@@ -263,13 +256,13 @@ export const AccountType = {
   LOAN: 'loan',
   SYSTEM: 'system',
   EXTERNAL: 'external',
-  OTHER: 'other'
+  OTHER: 'other',
 } as const;
 
 /**
  * Account type string literal union type
  */
-export type AccountType = typeof AccountType[keyof typeof AccountType];
+export type AccountType = (typeof AccountType)[keyof typeof AccountType];
 
 /**
  * Account status constants
@@ -279,13 +272,13 @@ export const AccountStatus = {
   INACTIVE: 'inactive',
   CLOSED: 'closed',
   FROZEN: 'frozen',
-  PENDING: 'pending'
+  PENDING: 'pending',
 } as const;
 
 /**
  * Account status string literal union type
  */
-export type AccountStatus = typeof AccountStatus[keyof typeof AccountStatus];
+export type AccountStatus = (typeof AccountStatus)[keyof typeof AccountStatus];
 ```
 
 This approach provides both runtime constants and compile-time type safety.
@@ -295,12 +288,12 @@ This approach provides both runtime constants and compile-time type safety.
 Models are integrated with the validation system:
 
 ```typescript
-import { 
-  validate, 
-  validateRequired, 
+import {
+  validate,
+  validateRequired,
   validateNotEmpty,
   validateAssetCode,
-  validateAccountType
+  validateAccountType,
 } from 'midaz-sdk/util/validation';
 
 // Validate a model against rules
@@ -309,17 +302,21 @@ function validateAccountInput(input: CreateAccountInput): ValidationResult {
     validateRequired(input, 'account'),
     validateNotEmpty(input.name, 'name'),
     validateAssetCode(input.assetCode),
-    validateAccountType(input.type)
+    validateAccountType(input.type),
   ];
-  
+
   return combineValidationResults(results);
 }
 
 // Usage in service layer
-function createAccount(orgId: string, ledgerId: string, input: CreateAccountInput): Promise<Account> {
+function createAccount(
+  orgId: string,
+  ledgerId: string,
+  input: CreateAccountInput
+): Promise<Account> {
   // Validate input before sending to API
   validate(input, validateAccountInput);
-  
+
   // Proceed with API call...
 }
 ```
@@ -337,7 +334,7 @@ function serializeAccount(account: CreateAccountInput): any {
     asset_code: account.assetCode, // Convert camelCase to snake_case
     alias: account.alias,
     metadata: account.metadata,
-    tags: account.tags
+    tags: account.tags,
   };
 }
 
@@ -355,7 +352,7 @@ function deserializeAccount(data: any): Account {
     metadata: data.metadata,
     tags: data.tags,
     createdAt: data.created_at,
-    updatedAt: data.updated_at
+    updatedAt: data.updated_at,
   };
 }
 ```
@@ -371,21 +368,21 @@ The SDK uses a generic list response type for consistency:
 interface ListResponse<T> {
   /** Array of items */
   items: T[];
-  
+
   /** Pagination metadata */
   pagination: {
     /** Total item count */
     total: number;
-    
+
     /** Page size */
     limit: number;
-    
+
     /** Current page offset */
     offset: number;
-    
+
     /** Next page cursor */
     nextCursor?: string;
-    
+
     /** Previous page cursor */
     prevCursor?: string;
   };
@@ -397,19 +394,19 @@ interface ListResponse<T> {
 interface ListOptions {
   /** Maximum items to return */
   limit?: number;
-  
+
   /** Offset for pagination */
   offset?: number;
-  
+
   /** Cursor for cursor-based pagination */
   cursor?: string;
-  
+
   /** Sort field and direction */
   sort?: {
     field: string;
     direction: 'asc' | 'desc';
   };
-  
+
   /** Filter criteria */
   filter?: Record<string, any>;
 }
@@ -424,7 +421,7 @@ The SDK supports model extensions for customization:
 interface EnhancedAccount extends Account {
   /** Custom calculated balance */
   calculatedBalance?: number;
-  
+
   /** Risk score */
   riskScore?: number;
 }
@@ -434,7 +431,7 @@ function enhanceAccount(account: Account): EnhancedAccount {
   return {
     ...account,
     calculatedBalance: calculateBalance(account),
-    riskScore: calculateRiskScore(account)
+    riskScore: calculateRiskScore(account),
   };
 }
 ```
@@ -469,7 +466,7 @@ function isExternalAccount(account: Account): boolean {
 if (isAccount(obj)) {
   // TypeScript knows obj is an Account
   console.log(obj.name, obj.assetCode);
-  
+
   if (isExternalAccount(obj)) {
     // Handle external account case
   }
@@ -504,13 +501,17 @@ function setMetadataValue<T>(
 ): Record<string, any> {
   return {
     ...(metadata || {}),
-    [key]: value
+    [key]: value,
   };
 }
 
 // Usage
 const purpose = getMetadataValue<string>(account.metadata, 'purpose');
-const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new Date().toISOString());
+const updatedMetadata = setMetadataValue(
+  account.metadata,
+  'lastReviewed',
+  new Date().toISOString()
+);
 ```
 
 ## Best Practices
@@ -518,14 +519,13 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
 ### For SDK Consumers
 
 1. **Use Builders**: Use builder pattern for complex object creation
+
    ```typescript
-   const txInput = createTransactionBuilder('Payment')
-     .withAssetCode('USD')
-     .withAmount(100)
-     .build();
+   const txInput = createTransactionBuilder('Payment').withAssetCode('USD').withAmount(100).build();
    ```
 
 2. **Validate Early**: Validate input objects before sending to API
+
    ```typescript
    try {
      validate(input, validateAccountInput);
@@ -536,14 +536,13 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
    ```
 
 3. **Type Everything**: Use TypeScript types for all variables
+
    ```typescript
-   const accounts: Account[] = await client.entities.accounts.listAccounts(
-     orgId,
-     ledgerId
-   );
+   const accounts: Account[] = await client.entities.accounts.listAccounts(orgId, ledgerId);
    ```
 
 4. **Use Type Guards**: Check object types when necessary
+
    ```typescript
    if (isExternalAccount(account)) {
      // Handle external account case
@@ -551,10 +550,11 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
    ```
 
 5. **Treat Models as Immutable**: Don't modify received models
+
    ```typescript
    // Bad: Modifying a received model
    account.name = 'New Name';
-   
+
    // Good: Creating a new model for updates
    const updatedAccount = await client.entities.accounts.updateAccount(
      orgId,
@@ -567,6 +567,7 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
 ### For SDK Developers
 
 1. **Consistent Naming**: Follow consistent naming conventions
+
    ```typescript
    // Entities are singular: Account, Transaction
    // Collections are plural: accounts, transactions
@@ -574,6 +575,7 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
    ```
 
 2. **Validation Integration**: Integrate validation in data models
+
    ```typescript
    export const validateAccount = (account: Account): ValidationResult => {
      // Implementation
@@ -581,6 +583,7 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
    ```
 
 3. **Extensibility**: Design models for extension
+
    ```typescript
    // Base model that can be extended
    export interface BaseEntity {
@@ -591,6 +594,7 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
    ```
 
 4. **Documentation**: Document all models and properties
+
    ```typescript
    /**
     * Account entity representing a financial account
@@ -601,23 +605,24 @@ const updatedMetadata = setMetadataValue(account.metadata, 'lastReviewed', new D
    export interface Account {
      /** Unique identifier of the account */
      id: string;
-     
+
      // Other properties with documentation...
    }
    ```
 
 5. **Versioning Strategy**: Plan for model versioning
+
    ```typescript
    // Version 1 model
    export interface AccountV1 {
      // Properties
    }
-   
+
    // Version 2 model with additional fields
    export interface AccountV2 extends AccountV1 {
      // Additional properties
    }
-   
+
    // Current version alias
    export type Account = AccountV2;
    ```

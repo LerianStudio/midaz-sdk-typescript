@@ -236,22 +236,22 @@ describe('ClientConfigBuilder', () => {
 
     it('should handle deprecated withApiKey method', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      
+
       const builder = createClientConfigBuilder();
-      
+
       // This should not throw and should show a deprecation warning
       expect(() => {
         builder.withApiKey('deprecated-key');
       }).not.toThrow();
-      
+
       expect(consoleSpy).toHaveBeenCalledWith(
         'WARNING: withApiKey is deprecated. API key authentication is no longer supported. Use Access Manager instead.'
       );
-      
+
       const config = builder.build();
       // API key should not be set in the configuration
       expect(config.accessManager).toBeUndefined();
-      
+
       consoleSpy.mockRestore();
     });
 

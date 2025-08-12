@@ -18,7 +18,7 @@ export function toApiTransaction(input: CreateTransactionInput): any {
   if (input.send) {
     result.send = {
       asset: input.send.asset,
-      value: input.send.value
+      value: input.send.value,
     };
 
     // Transform source operations - API expects 'accountAlias' not 'account'
@@ -26,54 +26,54 @@ export function toApiTransaction(input: CreateTransactionInput): any {
       result.send.source = {
         from: input.send.source.from.map((fromInput: any) => {
           const operation: any = {
-            accountAlias: fromInput.account,  // Transform 'account' to 'accountAlias'
-            amount: fromInput.amount
+            accountAlias: fromInput.account, // Transform 'account' to 'accountAlias'
+            amount: fromInput.amount,
           };
-          
+
           // Add route if provided (operation route reference)
           if (fromInput.route) {
             operation.route = fromInput.route;
           }
-          
+
           // Add other optional fields
           if (fromInput.description) {
             operation.description = fromInput.description;
           }
-          
+
           if (fromInput.metadata) {
             operation.metadata = fromInput.metadata;
           }
-          
+
           return operation;
-        })
+        }),
       };
     }
 
-    // Transform distribute operations - API expects 'accountAlias' not 'account' 
+    // Transform distribute operations - API expects 'accountAlias' not 'account'
     if (input.send.distribute) {
       result.send.distribute = {
         to: input.send.distribute.to.map((toInput: any) => {
           const operation: any = {
-            accountAlias: toInput.account,  // Transform 'account' to 'accountAlias'
-            amount: toInput.amount
+            accountAlias: toInput.account, // Transform 'account' to 'accountAlias'
+            amount: toInput.amount,
           };
-          
+
           // Add route if provided (operation route reference)
           if (toInput.route) {
             operation.route = toInput.route;
           }
-          
+
           // Add other optional fields
           if (toInput.description) {
             operation.description = toInput.description;
           }
-          
+
           if (toInput.metadata) {
             operation.metadata = toInput.metadata;
           }
-          
+
           return operation;
-        })
+        }),
       };
     }
   }
@@ -101,7 +101,6 @@ export function toApiTransaction(input: CreateTransactionInput): any {
   if (input.code) {
     result.code = input.code;
   }
-
 
   return result;
 }

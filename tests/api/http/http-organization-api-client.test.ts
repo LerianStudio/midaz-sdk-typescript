@@ -16,7 +16,10 @@ import {
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/organization-validator');
-import { validateCreateOrganizationInput, validateUpdateOrganizationInput } from '../../../src/models/validators/organization-validator';
+import {
+  validateCreateOrganizationInput,
+  validateUpdateOrganizationInput,
+} from '../../../src/models/validators/organization-validator';
 // Validation mock
 const validateMock = jest.fn();
 jest.mock('../../../src/util/validation', () => ({

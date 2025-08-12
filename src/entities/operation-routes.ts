@@ -2,24 +2,28 @@
  * Operation Routes Service Interface
  */
 
-import { OperationRoute, CreateOperationRouteInput, UpdateOperationRouteInput } from '../models/operation-route';
+import {
+  OperationRoute,
+  CreateOperationRouteInput,
+  UpdateOperationRouteInput,
+} from '../models/operation-route';
 import { PaginatedResponse, ListOptions } from '../models/common';
 
 /**
  * Service interface for Operation Route operations
- * 
+ *
  * Operation routes define routing configuration for operations,
  * specifying how operations should be processed and directed.
  */
 export interface OperationRoutesService {
   /**
    * Retrieve a paginated list of operation routes for a ledger
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param options - Optional list options for pagination and filtering
    * @returns Promise resolving to paginated operation routes
-   * 
+   *
    * @example
    * ```typescript
    * const operationRoutes = await client.entities.operationRoutes.listOperationRoutes(
@@ -27,7 +31,7 @@ export interface OperationRoutesService {
    *   'ledger_456',
    *   { limit: 10, page: 1 }
    * );
-   * 
+   *
    * console.log(`Found ${operationRoutes.items.length} operation routes`);
    * operationRoutes.items.forEach(route => {
    *   console.log(`${route.title}: ${route.operationType}`);
@@ -42,12 +46,12 @@ export interface OperationRoutesService {
 
   /**
    * Retrieve a specific operation route by ID
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param operationRouteId - The operation route ID
    * @returns Promise resolving to the operation route
-   * 
+   *
    * @example
    * ```typescript
    * const operationRoute = await client.entities.operationRoutes.getOperationRoute(
@@ -55,7 +59,7 @@ export interface OperationRoutesService {
    *   'ledger_456',
    *   'route_789'
    * );
-   * 
+   *
    * console.log(`Operation Route: ${operationRoute.title}`);
    * console.log(`Type: ${operationRoute.operationType}`);
    * if (operationRoute.account) {
@@ -71,16 +75,16 @@ export interface OperationRoutesService {
 
   /**
    * Create a new operation route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param input - The operation route creation data
    * @returns Promise resolving to the created operation route
-   * 
+   *
    * @example
    * ```typescript
    * import { createOperationRouteBuilder } from 'midaz-sdk';
-   * 
+   *
    * const input = createOperationRouteBuilder(
    *   'Payment Source',
    *   'Route for payment source operations',
@@ -92,13 +96,13 @@ export interface OperationRoutesService {
    *     priority: 'high'
    *   })
    *   .build();
-   * 
+   *
    * const operationRoute = await client.entities.operationRoutes.createOperationRoute(
    *   'org_123',
    *   'ledger_456',
    *   input
    * );
-   * 
+   *
    * console.log(`Created operation route: ${operationRoute.id}`);
    * ```
    */
@@ -110,17 +114,17 @@ export interface OperationRoutesService {
 
   /**
    * Update an existing operation route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param operationRouteId - The operation route ID to update
    * @param input - The operation route update data
    * @returns Promise resolving to the updated operation route
-   * 
+   *
    * @example
    * ```typescript
    * import { createUpdateOperationRouteBuilder } from 'midaz-sdk';
-   * 
+   *
    * const input = createUpdateOperationRouteBuilder()
    *   .withTitle('Updated Payment Source')
    *   .withDescription('Updated route for payment source operations')
@@ -131,14 +135,14 @@ export interface OperationRoutesService {
    *     updated: new Date().toISOString()
    *   })
    *   .build();
-   * 
+   *
    * const operationRoute = await client.entities.operationRoutes.updateOperationRoute(
    *   'org_123',
    *   'ledger_456',
    *   'route_789',
    *   input
    * );
-   * 
+   *
    * console.log(`Updated operation route: ${operationRoute.title}`);
    * ```
    */
@@ -151,12 +155,12 @@ export interface OperationRoutesService {
 
   /**
    * Delete an operation route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param operationRouteId - The operation route ID to delete
    * @returns Promise resolving when the operation route is deleted
-   * 
+   *
    * @example
    * ```typescript
    * await client.entities.operationRoutes.deleteOperationRoute(
@@ -164,7 +168,7 @@ export interface OperationRoutesService {
    *   'ledger_456',
    *   'route_789'
    * );
-   * 
+   *
    * console.log('Operation route deleted successfully');
    * ```
    */

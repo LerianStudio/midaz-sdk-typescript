@@ -114,13 +114,13 @@ describe('Metrics Models', () => {
         accountsCount: 75,
         transactionsCount: 300,
         operationsCount: 600,
-        totalTransactionValue: 1500000.50,
+        totalTransactionValue: 1500000.5,
         currency: 'USD',
       };
 
       expect(ledgerMetrics.ledgerId).toBe('ledger_456');
       expect(ledgerMetrics.ledgerName).toBe('Main Ledger');
-      expect(ledgerMetrics.totalTransactionValue).toBe(1500000.50);
+      expect(ledgerMetrics.totalTransactionValue).toBe(1500000.5);
       expect(ledgerMetrics.currency).toBe('USD');
     });
   });

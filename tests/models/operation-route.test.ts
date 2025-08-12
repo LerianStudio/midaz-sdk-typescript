@@ -267,11 +267,7 @@ describe('OperationRoute Models', () => {
 
   describe('Operation Type Validation', () => {
     it('should accept source operation type', () => {
-      const input = createOperationRouteBuilder(
-        'Source Route',
-        'Description',
-        'source'
-      ).build();
+      const input = createOperationRouteBuilder('Source Route', 'Description', 'source').build();
 
       expect(input.operationType).toBe('source');
     });

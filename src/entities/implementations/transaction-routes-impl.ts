@@ -3,7 +3,11 @@
  */
 
 import { TransactionRoutesService } from '../transaction-routes';
-import { TransactionRoute, CreateTransactionRouteInput, UpdateTransactionRouteInput } from '../../models/transaction-route';
+import {
+  TransactionRoute,
+  CreateTransactionRouteInput,
+  UpdateTransactionRouteInput,
+} from '../../models/transaction-route';
 import { PaginatedResponse, ListOptions } from '../../models/common';
 import { TransactionRouteApiClient } from '../../api/interfaces/transaction-route-api-client';
 import { Observability } from '../../util/observability/observability';
@@ -27,21 +31,21 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
     options?: ListOptions
   ): Promise<PaginatedResponse<TransactionRoute>> {
     const span = this.observability?.startSpan('TransactionRoutesService.listTransactionRoutes');
-    
+
     try {
       logger.debug('Listing transaction routes', {
         organizationId,
         ledgerId,
-        options
+        options,
       });
 
       const result = await this.apiClient.listTransactionRoutes(organizationId, ledgerId, options);
-      
+
       logger.debug('Transaction routes listed successfully', {
         organizationId,
         ledgerId,
         count: result.items.length,
-        total: result.totalCount
+        total: result.totalCount,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -50,7 +54,7 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
       logger.error('Failed to list transaction routes', {
         organizationId,
         ledgerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -70,22 +74,26 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
     transactionRouteId: string
   ): Promise<TransactionRoute> {
     const span = this.observability?.startSpan('TransactionRoutesService.getTransactionRoute');
-    
+
     try {
       logger.debug('Getting transaction route', {
         organizationId,
         ledgerId,
-        transactionRouteId
+        transactionRouteId,
       });
 
-      const result = await this.apiClient.getTransactionRoute(organizationId, ledgerId, transactionRouteId);
-      
+      const result = await this.apiClient.getTransactionRoute(
+        organizationId,
+        ledgerId,
+        transactionRouteId
+      );
+
       logger.debug('Transaction route retrieved successfully', {
         organizationId,
         ledgerId,
         transactionRouteId,
         transactionRouteTitle: result.title,
-        operationRoutesCount: result.operationRoutes.length
+        operationRoutesCount: result.operationRoutes.length,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -95,7 +103,7 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
         organizationId,
         ledgerId,
         transactionRouteId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -115,7 +123,7 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
     input: CreateTransactionRouteInput
   ): Promise<TransactionRoute> {
     const span = this.observability?.startSpan('TransactionRoutesService.createTransactionRoute');
-    
+
     try {
       logger.debug('Creating transaction route', {
         organizationId,
@@ -124,8 +132,8 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
           title: input.title,
           hasDescription: !!input.description,
           operationRoutesCount: input.operationRoutes?.length || 0,
-          hasMetadata: !!input.metadata
-        }
+          hasMetadata: !!input.metadata,
+        },
       });
 
       // Basic validation
@@ -140,19 +148,19 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
       }
 
       // Validate operation route IDs
-      const invalidRoutes = input.operationRoutes.filter(routeId => !routeId?.trim());
+      const invalidRoutes = input.operationRoutes.filter((routeId) => !routeId?.trim());
       if (invalidRoutes.length > 0) {
         throw new Error('All operation route IDs must be non-empty strings');
       }
 
       const result = await this.apiClient.createTransactionRoute(organizationId, ledgerId, input);
-      
+
       logger.info('Transaction route created successfully', {
         organizationId,
         ledgerId,
         transactionRouteId: result.id,
         transactionRouteTitle: result.title,
-        operationRoutesCount: result.operationRoutes.length
+        operationRoutesCount: result.operationRoutes.length,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -162,7 +170,7 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
         organizationId,
         ledgerId,
         inputTitle: input.title,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -183,7 +191,7 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
     input: UpdateTransactionRouteInput
   ): Promise<TransactionRoute> {
     const span = this.observability?.startSpan('TransactionRoutesService.updateTransactionRoute');
-    
+
     try {
       logger.debug('Updating transaction route', {
         organizationId,
@@ -194,26 +202,31 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
           hasDescription: !!input.description,
           hasOperationRoutes: !!input.operationRoutes,
           operationRoutesCount: input.operationRoutes?.length || 0,
-          hasMetadata: !!input.metadata
-        }
+          hasMetadata: !!input.metadata,
+        },
       });
 
       // Validate operation route IDs if provided
       if (input.operationRoutes) {
-        const invalidRoutes = input.operationRoutes.filter(routeId => !routeId?.trim());
+        const invalidRoutes = input.operationRoutes.filter((routeId) => !routeId?.trim());
         if (invalidRoutes.length > 0) {
           throw new Error('All operation route IDs must be non-empty strings');
         }
       }
 
-      const result = await this.apiClient.updateTransactionRoute(organizationId, ledgerId, transactionRouteId, input);
-      
+      const result = await this.apiClient.updateTransactionRoute(
+        organizationId,
+        ledgerId,
+        transactionRouteId,
+        input
+      );
+
       logger.info('Transaction route updated successfully', {
         organizationId,
         ledgerId,
         transactionRouteId,
         transactionRouteTitle: result.title,
-        operationRoutesCount: result.operationRoutes.length
+        operationRoutesCount: result.operationRoutes.length,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -223,7 +236,7 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
         organizationId,
         ledgerId,
         transactionRouteId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);
@@ -243,20 +256,20 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
     transactionRouteId: string
   ): Promise<void> {
     const span = this.observability?.startSpan('TransactionRoutesService.deleteTransactionRoute');
-    
+
     try {
       logger.debug('Deleting transaction route', {
         organizationId,
         ledgerId,
-        transactionRouteId
+        transactionRouteId,
       });
 
       await this.apiClient.deleteTransactionRoute(organizationId, ledgerId, transactionRouteId);
-      
+
       logger.info('Transaction route deleted successfully', {
         organizationId,
         ledgerId,
-        transactionRouteId
+        transactionRouteId,
       });
 
       span?.setStatus('ok'); // SUCCESS
@@ -265,7 +278,7 @@ export class TransactionRoutesServiceImpl implements TransactionRoutesService {
         organizationId,
         ledgerId,
         transactionRouteId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       span?.recordException(error as Error);

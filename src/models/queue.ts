@@ -1,6 +1,6 @@
 /**
  * Queue model and related types
- * 
+ *
  * Queues are used to temporarily store transaction data before processing,
  * allowing for batched or asynchronous transaction handling.
  */
@@ -13,7 +13,7 @@ import { BaseModel } from './common';
 export interface QueueData {
   /** Unique identifier for this queue data item */
   id: string;
-  
+
   /** The actual data stored as any object */
   value: any;
 }
@@ -24,16 +24,16 @@ export interface QueueData {
 export interface Queue extends BaseModel {
   /** Organization ID that owns this queue */
   organizationId: string;
-  
+
   /** Ledger ID associated with this queue */
   ledgerId: string;
-  
+
   /** Audit ID for tracking purposes */
   auditId: string;
-  
+
   /** Account ID associated with this queue */
   accountId: string;
-  
+
   /** Collection of data items in this queue */
   queueData: QueueData[];
 }
@@ -44,7 +44,7 @@ export interface Queue extends BaseModel {
 export interface CreateQueueDataInput {
   /** Unique identifier for the queue data item */
   id: string;
-  
+
   /** The data to store */
   value: any;
 }
@@ -79,12 +79,12 @@ export class QueueBuilder {
     if (!this.queue.queueData) {
       this.queue.queueData = [];
     }
-    
+
     this.queue.queueData.push({
       id,
       value,
     });
-    
+
     return this;
   }
 
@@ -95,14 +95,14 @@ export class QueueBuilder {
     if (!this.queue.queueData) {
       this.queue.queueData = [];
     }
-    
-    items.forEach(item => {
+
+    items.forEach((item) => {
       this.queue.queueData!.push({
         id: item.id,
         value: item.value,
       });
     });
-    
+
     return this;
   }
 
@@ -111,7 +111,7 @@ export class QueueBuilder {
    */
   removeQueueData(id: string): QueueBuilder {
     if (this.queue.queueData) {
-      this.queue.queueData = this.queue.queueData.filter(item => item.id !== id);
+      this.queue.queueData = this.queue.queueData.filter((item) => item.id !== id);
     }
     return this;
   }
@@ -171,16 +171,14 @@ export class QueueUtils {
    * Find a queue data item by ID
    */
   static findQueueDataById(queue: Queue, id: string): QueueData | undefined {
-    return queue.queueData.find(item => item.id === id);
+    return queue.queueData.find((item) => item.id === id);
   }
 
   /**
    * Get queue data items by value type
    */
   static getQueueDataByType<T>(queue: Queue, typeCheck: (value: any) => value is T): T[] {
-    return queue.queueData
-      .filter(item => typeCheck(item.value))
-      .map(item => item.value);
+    return queue.queueData.filter((item) => typeCheck(item.value)).map((item) => item.value);
   }
 
   /**
@@ -194,13 +192,13 @@ export class QueueUtils {
    * Check if queue contains data with specific ID
    */
   static hasQueueDataWithId(queue: Queue, id: string): boolean {
-    return queue.queueData.some(item => item.id === id);
+    return queue.queueData.some((item) => item.id === id);
   }
 
   /**
    * Get all queue data IDs
    */
   static getAllQueueDataIds(queue: Queue): string[] {
-    return queue.queueData.map(item => item.id);
+    return queue.queueData.map((item) => item.id);
   }
 }

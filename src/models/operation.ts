@@ -1,6 +1,6 @@
 /**
  * Operation model definitions
- * 
+ *
  * This file contains all operation-related models and interfaces for the Midaz SDK.
  * Operations represent individual accounting entries (debits and credits) within transactions.
  */
@@ -262,7 +262,10 @@ export function createOperationAmount(value: string | number): OperationAmount {
 /**
  * Creates a new operation balance object
  */
-export function createOperationBalance(available: string | number, onHold: string | number = 0): OperationBalance {
+export function createOperationBalance(
+  available: string | number,
+  onHold: string | number = 0
+): OperationBalance {
   return { available, onHold };
 }
 
@@ -294,25 +297,37 @@ export function operationAmountToNumber(amount: OperationAmount): number {
 /**
  * Converts operation balance to numbers
  */
-export function operationBalanceToNumbers(balance: OperationBalance): { available: number; onHold: number } {
-  const available = typeof balance.available === 'number' ? balance.available : parseFloat(balance.available.toString());
-  const onHold = typeof balance.onHold === 'number' ? balance.onHold : parseFloat(balance.onHold.toString());
-  
+export function operationBalanceToNumbers(balance: OperationBalance): {
+  available: number;
+  onHold: number;
+} {
+  const available =
+    typeof balance.available === 'number'
+      ? balance.available
+      : parseFloat(balance.available.toString());
+  const onHold =
+    typeof balance.onHold === 'number' ? balance.onHold : parseFloat(balance.onHold.toString());
+
   return {
     available: isNaN(available) ? 0 : available,
-    onHold: isNaN(onHold) ? 0 : onHold
+    onHold: isNaN(onHold) ? 0 : onHold,
   };
 }
 
 /**
  * Creates a new Create Operation Input with default values
  */
-export function newCreateOperationInput(type: 'DEBIT' | 'CREDIT', accountId: string, amount: string, assetCode: string): CreateOperationInput {
+export function newCreateOperationInput(
+  type: 'DEBIT' | 'CREDIT',
+  accountId: string,
+  amount: string,
+  assetCode: string
+): CreateOperationInput {
   return {
     type,
     accountId,
     amount,
-    assetCode
+    assetCode,
   };
 }
 
@@ -395,14 +410,22 @@ export class UpdateOperationInputBuilder {
 /**
  * Creates a debit operation input
  */
-export function createDebitOperation(accountId: string, amount: string, assetCode: string): CreateOperationInput {
+export function createDebitOperation(
+  accountId: string,
+  amount: string,
+  assetCode: string
+): CreateOperationInput {
   return newCreateOperationInput('DEBIT', accountId, amount, assetCode);
 }
 
 /**
  * Creates a credit operation input
  */
-export function createCreditOperation(accountId: string, amount: string, assetCode: string): CreateOperationInput {
+export function createCreditOperation(
+  accountId: string,
+  amount: string,
+  assetCode: string
+): CreateOperationInput {
   return newCreateOperationInput('CREDIT', accountId, amount, assetCode);
 }
 
@@ -431,7 +454,10 @@ export function getTotalBalance(balance: OperationBalance): number {
 /**
  * Calculates balance change from before and after balances
  */
-export function calculateBalanceChange(before: OperationBalance, after: OperationBalance): {
+export function calculateBalanceChange(
+  before: OperationBalance,
+  after: OperationBalance
+): {
   availableChange: number;
   onHoldChange: number;
   totalChange: number;
@@ -442,7 +468,7 @@ export function calculateBalanceChange(before: OperationBalance, after: Operatio
   return {
     availableChange: afterNumbers.available - beforeNumbers.available,
     onHoldChange: afterNumbers.onHold - beforeNumbers.onHold,
-    totalChange: getTotalBalance(after) - getTotalBalance(before)
+    totalChange: getTotalBalance(after) - getTotalBalance(before),
   };
 }
 

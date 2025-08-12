@@ -56,7 +56,6 @@ export interface WorkerPoolOptions<_T = unknown> {
   signal?: AbortSignal;
 }
 
-
 /**
  * Processes a collection of items in parallel with controlled concurrency
  *
@@ -330,7 +329,6 @@ async function processWithThrottling<T>(
     }
   });
 }
-
 
 /**
  * Worker pool controller for better resource management

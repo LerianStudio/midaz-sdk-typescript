@@ -4,7 +4,11 @@
 
 import { HttpBaseApiClient } from './http-base-api-client';
 import { OperationRouteApiClient } from '../interfaces/operation-route-api-client';
-import { OperationRoute, CreateOperationRouteInput, UpdateOperationRouteInput } from '../../models/operation-route';
+import {
+  OperationRoute,
+  CreateOperationRouteInput,
+  UpdateOperationRouteInput,
+} from '../../models/operation-route';
 import { PaginatedResponse, ListOptions } from '../../models/common';
 import { HttpClient } from '../../util/network/http-client';
 import { buildQueryParams, UrlBuilder } from '../url-builder';
@@ -13,15 +17,11 @@ import { Observability } from '../../util/observability/observability';
 /**
  * HTTP implementation of OperationRouteApiClient
  */
-export class HttpOperationRouteApiClient 
+export class HttpOperationRouteApiClient
   extends HttpBaseApiClient<OperationRoute, CreateOperationRouteInput, UpdateOperationRouteInput>
-  implements OperationRouteApiClient {
-  
-  constructor(
-    httpClient: HttpClient,
-    urlBuilder: UrlBuilder,
-    observability?: Observability
-  ) {
+  implements OperationRouteApiClient
+{
+  constructor(httpClient: HttpClient, urlBuilder: UrlBuilder, observability?: Observability) {
     super(httpClient, urlBuilder, 'operation-routes', observability);
   }
 
@@ -35,7 +35,7 @@ export class HttpOperationRouteApiClient
   ): Promise<PaginatedResponse<OperationRoute>> {
     const url = this.urlBuilder.buildOperationRouteUrl(organizationId, ledgerId);
     const queryParams = buildQueryParams(options || {});
-    
+
     return this.getRequest<PaginatedResponse<OperationRoute>>(
       'listOperationRoutes',
       `${url}${queryParams}`
@@ -51,11 +51,8 @@ export class HttpOperationRouteApiClient
     operationRouteId: string
   ): Promise<OperationRoute> {
     const url = this.urlBuilder.buildOperationRouteUrl(organizationId, ledgerId, operationRouteId);
-    
-    return this.getRequest<OperationRoute>(
-      'getOperationRoute',
-      url
-    );
+
+    return this.getRequest<OperationRoute>('getOperationRoute', url);
   }
 
   /**
@@ -67,12 +64,8 @@ export class HttpOperationRouteApiClient
     input: CreateOperationRouteInput
   ): Promise<OperationRoute> {
     const url = this.urlBuilder.buildOperationRouteUrl(organizationId, ledgerId);
-    
-    return this.postRequest<OperationRoute>(
-      'createOperationRoute',
-      url,
-      input
-    );
+
+    return this.postRequest<OperationRoute>('createOperationRoute', url, input);
   }
 
   /**
@@ -85,12 +78,8 @@ export class HttpOperationRouteApiClient
     input: UpdateOperationRouteInput
   ): Promise<OperationRoute> {
     const url = this.urlBuilder.buildOperationRouteUrl(organizationId, ledgerId, operationRouteId);
-    
-    return this.patchRequest<OperationRoute>(
-      'updateOperationRoute',
-      url,
-      input
-    );
+
+    return this.patchRequest<OperationRoute>('updateOperationRoute', url, input);
   }
 
   /**
@@ -102,10 +91,7 @@ export class HttpOperationRouteApiClient
     operationRouteId: string
   ): Promise<void> {
     const url = this.urlBuilder.buildOperationRouteUrl(organizationId, ledgerId, operationRouteId);
-    
-    return this.deleteRequest(
-      'deleteOperationRoute',
-      url
-    );
+
+    return this.deleteRequest('deleteOperationRoute', url);
   }
 }

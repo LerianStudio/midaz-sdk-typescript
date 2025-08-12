@@ -8,10 +8,7 @@ import { AmountInput, CreateTransactionInput } from './transaction';
  *
  * @returns Properly structured amount input
  */
-export function createAmountInput(
-  value: string,
-  asset: string
-): AmountInput {
+export function createAmountInput(value: string, asset: string): AmountInput {
   return {
     value,
     asset,

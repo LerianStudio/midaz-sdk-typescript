@@ -29,6 +29,7 @@ interface Balance {
 ```
 
 Key components of a Balance:
+
 - **Available**: The amount that can be freely used in transactions
 - **OnHold**: The amount that is reserved but not yet settled (e.g., pending transactions)
 - **Total**: The sum of Available and OnHold amounts
@@ -41,14 +42,10 @@ Key components of a Balance:
 
 ```typescript
 // List all balances in a ledger
-const balances = await client.entities.balances.listBalances(
-  organizationId,
-  ledgerId,
-  { 
-    limit: 50,
-    offset: 0
-  }
-);
+const balances = await client.entities.balances.listBalances(organizationId, ledgerId, {
+  limit: 50,
+  offset: 0,
+});
 
 console.log(`Total balances: ${balances.total}`);
 for (const balance of balances.data) {
@@ -56,7 +53,7 @@ for (const balance of balances.data) {
   const availableAmount = balance.available / balance.scale;
   const onHoldAmount = balance.onHold / balance.scale;
   const totalAmount = (balance.available + balance.onHold) / balance.scale;
-  
+
   console.log(`Account: ${balance.accountId}`);
   console.log(`Asset: ${balance.assetCode}`);
   console.log(`Available: ${availableAmount}`);
@@ -88,11 +85,7 @@ for (const balance of accountBalances.data) {
 
 ```typescript
 // Get a specific balance by ID
-const balance = await client.entities.balances.getBalance(
-  organizationId,
-  ledgerId,
-  balanceId
-);
+const balance = await client.entities.balances.getBalance(organizationId, ledgerId, balanceId);
 
 // Calculate actual monetary values
 const availableAmount = balance.available / balance.scale;
@@ -115,15 +108,12 @@ The SDK provides helper functions for creating balance update inputs:
 import { newUpdateBalanceInput, withAllowSending, withAllowReceiving } from 'midaz-sdk';
 
 // Method 1: Use helper functions
-const updateInput = withAllowSending(
-  withAllowReceiving(newUpdateBalanceInput(), true),
-  false
-);
+const updateInput = withAllowSending(withAllowReceiving(newUpdateBalanceInput(), true), false);
 
 // Method 2: Create input object directly
 const directUpdateInput = {
   allowSending: false,
-  allowReceiving: true
+  allowReceiving: true,
 };
 
 // Update the balance
@@ -140,6 +130,7 @@ console.log(`Receiving allowed: ${updatedBalance.allowReceiving}`);
 ```
 
 Note that:
+
 - Only the permission settings can be updated directly
 - Actual balance amounts are modified through transactions
 - Updates need to include only the fields you want to change
@@ -148,11 +139,7 @@ Note that:
 
 ```typescript
 // Delete a balance
-await client.entities.balances.deleteBalance(
-  organizationId,
-  ledgerId,
-  balanceId
-);
+await client.entities.balances.deleteBalance(organizationId, ledgerId, balanceId);
 
 console.log(`Balance ${balanceId} has been deleted`);
 ```
@@ -165,13 +152,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Update a balance with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.balances.updateBalance(
-    organizationId,
-    ledgerId,
-    balanceId,
-    updateInput
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.balances.updateBalance(organizationId, ledgerId, balanceId, updateInput)
 );
 
 if (result.success) {
@@ -195,55 +177,55 @@ async function manageBalances(client, organizationId, ledgerId, accountId) {
       accountId,
       { limit: 10 }
     );
-    
+
     console.log(`Account ${accountId} has ${accountBalances.data.length} balance(s)`);
-    
+
     if (accountBalances.data.length > 0) {
       // Get the first balance
       const firstBalance = accountBalances.data[0];
       const balanceId = firstBalance.id;
-      
+
       // Calculate actual monetary values
       const availableAmount = firstBalance.available / firstBalance.scale;
       console.log(`Initial balance for ${firstBalance.assetCode}: ${availableAmount}`);
       console.log(`Sending allowed: ${firstBalance.allowSending}`);
       console.log(`Receiving allowed: ${firstBalance.allowReceiving}`);
-      
+
       // Temporarily disable sending from this balance
       const updateInput = {
-        allowSending: false
+        allowSending: false,
       };
-      
+
       const updatedBalance = await client.entities.balances.updateBalance(
         organizationId,
         ledgerId,
         balanceId,
         updateInput
       );
-      
+
       console.log(`Updated balance:`);
       console.log(`Sending allowed: ${updatedBalance.allowSending}`);
       console.log(`Receiving allowed: ${updatedBalance.allowReceiving}`);
-      
+
       // Re-enable sending
       const resetInput = {
-        allowSending: true
+        allowSending: true,
       };
-      
+
       const resetBalance = await client.entities.balances.updateBalance(
         organizationId,
         ledgerId,
         balanceId,
         resetInput
       );
-      
+
       console.log(`Reset balance:`);
       console.log(`Sending allowed: ${resetBalance.allowSending}`);
-      
+
       return {
         initial: firstBalance,
         updated: updatedBalance,
-        reset: resetBalance
+        reset: resetBalance,
       };
     } else {
       console.log(`No balances found for account ${accountId}`);
@@ -272,7 +254,7 @@ async function freezeWithdrawals(client, organizationId, ledgerId, accountId) {
     accountId,
     { limit: 100 }
   );
-  
+
   // Disable sending for all balances
   const results = [];
   for (const balance of accountBalances.data) {
@@ -281,12 +263,12 @@ async function freezeWithdrawals(client, organizationId, ledgerId, accountId) {
       ledgerId,
       balance.id,
       {
-        allowSending: false
+        allowSending: false,
       }
     );
     results.push(updatedBalance);
   }
-  
+
   console.log(`Frozen withdrawals for ${results.length} balance(s) in account ${accountId}`);
   return results;
 }
@@ -300,31 +282,29 @@ Monitor all balances in a ledger for accounting purposes:
 // Calculate total value across all accounts
 async function calculateTotalLedgerValue(client, organizationId, ledgerId) {
   // List all balances in the ledger
-  const balances = await client.entities.balances.listBalances(
-    organizationId,
-    ledgerId,
-    { limit: 1000 }
-  );
-  
+  const balances = await client.entities.balances.listBalances(organizationId, ledgerId, {
+    limit: 1000,
+  });
+
   // Group by asset code
   const assetTotals = {};
-  
+
   for (const balance of balances.data) {
     const assetCode = balance.assetCode;
     const amount = (balance.available + balance.onHold) / balance.scale;
-    
+
     if (!assetTotals[assetCode]) {
       assetTotals[assetCode] = 0;
     }
-    
+
     assetTotals[assetCode] += amount;
   }
-  
+
   // Display totals for each asset
   for (const [assetCode, total] of Object.entries(assetTotals)) {
     console.log(`Total ${assetCode}: ${total}`);
   }
-  
+
   return assetTotals;
 }
 ```

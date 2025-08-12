@@ -3,16 +3,21 @@
  */
 
 import { ApiClient } from './api-client';
-import { TransactionRoute, CreateTransactionRouteInput, UpdateTransactionRouteInput } from '../../models/transaction-route';
+import {
+  TransactionRoute,
+  CreateTransactionRouteInput,
+  UpdateTransactionRouteInput,
+} from '../../models/transaction-route';
 import { PaginatedResponse, ListOptions } from '../../models/common';
 
 /**
  * Interface for Transaction Route API operations
  */
-export interface TransactionRouteApiClient extends ApiClient<TransactionRoute, CreateTransactionRouteInput, UpdateTransactionRouteInput> {
+export interface TransactionRouteApiClient
+  extends ApiClient<TransactionRoute, CreateTransactionRouteInput, UpdateTransactionRouteInput> {
   /**
    * Retrieve a paginated list of transaction routes for a ledger
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param options - Optional list options for pagination and filtering
@@ -26,7 +31,7 @@ export interface TransactionRouteApiClient extends ApiClient<TransactionRoute, C
 
   /**
    * Retrieve a specific transaction route by ID
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param transactionRouteId - The transaction route ID
@@ -40,7 +45,7 @@ export interface TransactionRouteApiClient extends ApiClient<TransactionRoute, C
 
   /**
    * Create a new transaction route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param input - The transaction route creation data
@@ -54,7 +59,7 @@ export interface TransactionRouteApiClient extends ApiClient<TransactionRoute, C
 
   /**
    * Update an existing transaction route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param transactionRouteId - The transaction route ID to update
@@ -70,7 +75,7 @@ export interface TransactionRouteApiClient extends ApiClient<TransactionRoute, C
 
   /**
    * Delete a transaction route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param transactionRouteId - The transaction route ID to delete

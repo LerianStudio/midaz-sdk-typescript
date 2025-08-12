@@ -1,6 +1,6 @@
 /**
  * Transaction Route model and related types
- * 
+ *
  * Transaction routes define routing configuration for transactions,
  * specifying how transactions should be processed using operation routes.
  */
@@ -13,31 +13,31 @@ import { BaseModel, Metadata } from './common';
 export interface TransactionRoute extends BaseModel {
   /** Unique identifier for the transaction route */
   id: string;
-  
+
   /** Organization ID that owns this transaction route */
   organizationId: string;
-  
+
   /** Ledger ID where this transaction route belongs */
   ledgerId: string;
-  
+
   /** Short title summarizing the purpose of the transaction */
   title: string;
-  
+
   /** Detailed description of the transaction route */
   description: string;
-  
+
   /** Array of operation route IDs that make up this transaction route */
   operationRoutes: string[];
-  
+
   /** Custom metadata for the transaction route */
   metadata?: Metadata;
-  
+
   /** Timestamp when the transaction route was created */
   createdAt: string;
-  
+
   /** Timestamp when the transaction route was last updated */
   updatedAt: string;
-  
+
   /** Timestamp when the transaction route was deleted (if applicable) */
   deletedAt?: string;
 }
@@ -48,13 +48,13 @@ export interface TransactionRoute extends BaseModel {
 export interface CreateTransactionRouteInput {
   /** Short title summarizing the purpose of the transaction */
   title: string;
-  
+
   /** Detailed description of the transaction route */
   description: string;
-  
+
   /** Array of operation route IDs that make up this transaction route */
   operationRoutes: string[];
-  
+
   /** Custom metadata for the transaction route */
   metadata?: Metadata;
 }
@@ -65,13 +65,13 @@ export interface CreateTransactionRouteInput {
 export interface UpdateTransactionRouteInput {
   /** Short title summarizing the purpose of the transaction */
   title?: string;
-  
+
   /** Detailed description of the transaction route */
   description?: string;
-  
+
   /** Array of operation route IDs that make up this transaction route */
   operationRoutes?: string[];
-  
+
   /** Custom metadata for the transaction route */
   metadata?: Metadata;
 }
@@ -104,9 +104,7 @@ export class TransactionRouteBuilder {
    * Remove an operation route ID from the transaction route
    */
   removeOperationRoute(operationRouteId: string): TransactionRouteBuilder {
-    this.input.operationRoutes = this.input.operationRoutes.filter(
-      id => id !== operationRouteId
-    );
+    this.input.operationRoutes = this.input.operationRoutes.filter((id) => id !== operationRouteId);
     return this;
   }
 
@@ -122,9 +120,9 @@ export class TransactionRouteBuilder {
    * Build the final CreateTransactionRouteInput
    */
   build(): CreateTransactionRouteInput {
-    return { 
+    return {
       ...this.input,
-      operationRoutes: [...this.input.operationRoutes]
+      operationRoutes: [...this.input.operationRoutes],
     };
   }
 }
@@ -182,7 +180,7 @@ export class UpdateTransactionRouteBuilder {
   removeOperationRoute(operationRouteId: string): UpdateTransactionRouteBuilder {
     if (this.input.operationRoutes) {
       this.input.operationRoutes = this.input.operationRoutes.filter(
-        id => id !== operationRouteId
+        (id) => id !== operationRouteId
       );
     }
     return this;
@@ -200,9 +198,9 @@ export class UpdateTransactionRouteBuilder {
    * Build the final UpdateTransactionRouteInput
    */
   build(): UpdateTransactionRouteInput {
-    return { 
+    return {
       ...this.input,
-      operationRoutes: this.input.operationRoutes ? [...this.input.operationRoutes] : undefined
+      operationRoutes: this.input.operationRoutes ? [...this.input.operationRoutes] : undefined,
     };
   }
 }

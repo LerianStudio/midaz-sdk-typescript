@@ -1,9 +1,7 @@
 /**
  */
 
-import {
-  TransactionBatchOptions,
-} from './transaction-batch';
+import { TransactionBatchOptions } from './transaction-batch';
 
 /**
  * Batch class compatible with the workflow example

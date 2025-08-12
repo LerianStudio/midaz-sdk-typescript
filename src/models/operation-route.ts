@@ -1,6 +1,6 @@
 /**
  * Operation Route model and related types
- * 
+ *
  * Operation routes define routing configuration for operations,
  * specifying how operations should be processed and directed.
  */
@@ -13,7 +13,7 @@ import { BaseModel, Metadata } from './common';
 export interface AccountRule {
   /** Type of rule (alias, account_type, etc.) */
   ruleType: 'alias' | 'account_type';
-  
+
   /** Value to validate against (alias name or array of account types) */
   validIf: string | string[];
 }
@@ -24,34 +24,34 @@ export interface AccountRule {
 export interface OperationRoute extends BaseModel {
   /** Unique identifier for the operation route */
   id: string;
-  
+
   /** Organization ID that owns this operation route */
   organizationId: string;
-  
+
   /** Ledger ID where this operation route belongs */
   ledgerId: string;
-  
+
   /** Short title summarizing the purpose of the operation */
   title: string;
-  
+
   /** Detailed description of the operation route purpose and usage */
   description: string;
-  
+
   /** Type of operation (source, destination) */
   operationType: 'source' | 'destination';
-  
+
   /** Account selection rules */
   account?: AccountRule;
-  
+
   /** Custom metadata for the operation route */
   metadata?: Metadata;
-  
+
   /** Timestamp when the operation route was created */
   createdAt: string;
-  
+
   /** Timestamp when the operation route was last updated */
   updatedAt: string;
-  
+
   /** Timestamp when the operation route was deleted (if applicable) */
   deletedAt?: string;
 }
@@ -62,16 +62,16 @@ export interface OperationRoute extends BaseModel {
 export interface CreateOperationRouteInput {
   /** Short title summarizing the purpose of the operation */
   title: string;
-  
+
   /** Detailed description of the operation route purpose and usage */
   description: string;
-  
+
   /** Type of operation (source, destination) */
   operationType: 'source' | 'destination';
-  
+
   /** Account selection rules */
   account?: AccountRule;
-  
+
   /** Custom metadata for the operation route */
   metadata?: Metadata;
 }
@@ -82,13 +82,13 @@ export interface CreateOperationRouteInput {
 export interface UpdateOperationRouteInput {
   /** Short title summarizing the purpose of the operation */
   title?: string;
-  
+
   /** Detailed description of the operation route purpose and usage */
   description?: string;
-  
+
   /** Account selection rules */
   account?: AccountRule;
-  
+
   /** Custom metadata for the operation route */
   metadata?: Metadata;
 }

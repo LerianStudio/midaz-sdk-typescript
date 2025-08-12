@@ -8,7 +8,7 @@ import { ApiResponse, Status } from './common';
  * Transaction represents a transaction in the Midaz Ledger.
  * A transaction is a financial event that affects one or more accounts
  * through a series of operations (debits and credits).
- * 
+ *
  * Transactions are the core financial records in the Midaz system, representing
  * the movement of assets between accounts. Each transaction consists of one or more
  * operations (debits and credits) that must balance (sum to zero) for each asset type.
@@ -16,58 +16,58 @@ import { ApiResponse, Status } from './common';
 export interface Transaction extends ApiResponse {
   /** Unique identifier for the transaction - system-generated UUID */
   id: string;
-  
+
   /** Template identifier for the transaction template used (optional) */
   template?: string;
-  
+
   /** Numeric value of the transaction as a decimal string (e.g., "100.50") */
   amount: string;
-  
+
   /** Asset code identifying the currency or asset type (e.g., "USD", "EUR", "BTC") */
   assetCode: string;
-  
+
   /** Transaction route identifier that defines the overall flow of the transaction */
   route?: string;
-  
+
   /** Current processing status of the transaction */
   status: Status;
-  
+
   /** Chart of accounts group name for accounting categorization */
   chartOfAccountsGroupName?: string;
-  
+
   /** List of source account aliases used in this transaction */
   source?: string[];
-  
+
   /** List of destination account aliases used in this transaction */
   destination?: string[];
-  
+
   /** Whether the transaction is in a pending state requiring explicit commitment */
   pending?: boolean;
-  
+
   /** Ledger identifier this transaction belongs to */
   ledgerId: string;
-  
+
   /** Organization identifier this transaction belongs to */
   organizationId: string;
-  
+
   /** Individual debit and credit operations (sum must balance to zero) */
   operations?: Operation[];
-  
+
   /** Additional custom data for the transaction */
   metadata?: Record<string, any>;
-  
+
   /** Timestamp when the transaction was created */
   createdAt: string;
-  
+
   /** Timestamp when the transaction was last updated */
   updatedAt: string;
-  
+
   /** Timestamp when the transaction was deleted (if soft-deleted) */
   deletedAt?: string;
-  
+
   /** Optional identifier for linking to external systems */
   externalId?: string;
-  
+
   /** Human-readable description of the transaction */
   description?: string;
 }
@@ -114,40 +114,40 @@ export interface Amount {
 export interface CreateTransactionInput {
   /** Template is an optional identifier for the transaction template to use */
   template?: string;
-  
+
   /** Amount is the numeric value of the transaction as a decimal string (used for validation) */
   amount?: string;
-  
+
   /** AssetCode identifies the currency or asset type for this transaction */
   assetCode?: string;
-  
+
   /** Operations contains the individual debit and credit operations (alternative to Send) */
   operations?: OperationInput[];
-  
+
   /** ChartOfAccountsGroupName is REQUIRED by the API specification */
   chartOfAccountsGroupName: string;
-  
+
   /** Description is a human-readable description of the transaction (REQUIRED by API) */
   description: string;
-  
+
   /** Code is an optional identifier/reference code for the transaction */
   code?: string;
-  
+
   /** Pending indicates whether the transaction should be created in a pending state */
   pending?: boolean;
-  
+
   /** Route is the transaction route identifier (optional) */
   route?: string;
-  
+
   /** Metadata contains additional custom data for the transaction */
   metadata?: Record<string, any>;
-  
+
   /** ExternalID is an optional identifier for linking to external systems */
   externalId?: string;
-  
+
   /** IdempotencyKey is a client-generated key to ensure transaction uniqueness */
   idempotencyKey?: string;
-  
+
   /** Send contains the source and distribution information for the transaction (REQUIRED by API) */
   send?: SendInput;
 }
@@ -159,13 +159,13 @@ export interface CreateTransactionInput {
 export interface SendInput {
   /** Asset identifies the currency or asset type for this transaction */
   asset: string;
-  
+
   /** Value is the numeric value of the transaction as a decimal string */
   value: string;
-  
+
   /** Source contains the source accounts for the transaction */
   source?: SourceInput;
-  
+
   /** Distribute contains the destination accounts for the transaction */
   distribute?: DistributeInput;
 }
@@ -195,22 +195,22 @@ export interface DistributeInput {
 export interface FromToInput {
   /** Account identifies the account affected by this operation */
   account: string;
-  
+
   /** Amount specifies the amount details for this operation */
   amount: AmountInput;
-  
+
   /** Route is the operation route identifier for this operation (optional) */
   route?: string;
-  
+
   /** Description provides additional context for this operation (optional) */
   description?: string;
-  
+
   /** ChartOfAccounts specifies the chart of accounts for this operation (optional) */
   chartOfAccounts?: string;
-  
+
   /** AccountAlias provides an alternative account identifier (optional) */
   accountAlias?: string;
-  
+
   /** Metadata contains additional custom data for this operation */
   metadata?: Record<string, any>;
 }
@@ -223,19 +223,19 @@ export interface FromToInput {
 export interface OperationInput {
   /** Type indicates whether this is a debit or credit operation */
   type: string;
-  
+
   /** AccountID is the identifier of the account to be affected */
   accountId: string;
-  
+
   /** Amount is the numeric value of the operation as a decimal string */
   amount: string;
-  
+
   /** AssetCode identifies the currency or asset type for this operation */
   assetCode?: string;
-  
+
   /** AccountAlias is an optional human-readable name for the account */
   accountAlias?: string;
-  
+
   /** Route is the operation route identifier to use for this operation */
   route?: string;
 }
@@ -262,7 +262,7 @@ export interface AmountInput {
 export interface DSLAmount {
   /** Value is the numeric value of the amount as a decimal string */
   value: string;
-  
+
   /** Asset is the asset code for the amount */
   asset?: string;
 }
@@ -274,25 +274,25 @@ export interface DSLAmount {
 export interface DSLFromTo {
   /** Account is the identifier of the account */
   account: string;
-  
+
   /** Amount specifies the amount details if applicable */
   amount?: DSLAmount;
-  
+
   /** Share is the sharing configuration */
   share?: Share;
-  
+
   /** Remaining is an optional remaining account */
   remaining?: string;
-  
+
   /** Rate is the exchange rate configuration */
   rate?: Rate;
-  
+
   /** Description is a human-readable description */
   description?: string;
-  
+
   /** ChartOfAccounts is the chart of accounts code */
   chartOfAccounts?: string;
-  
+
   /** Metadata contains additional custom data */
   metadata?: Record<string, any>;
 }
@@ -304,7 +304,7 @@ export interface DSLFromTo {
 export interface DSLSource {
   /** Remaining is an optional remaining account */
   remaining?: string;
-  
+
   /** From is a collection of source accounts and amounts */
   from: DSLFromTo[];
 }
@@ -316,7 +316,7 @@ export interface DSLSource {
 export interface DSLDistribute {
   /** Remaining is an optional remaining account */
   remaining?: string;
-  
+
   /** To is a collection of destination accounts and amounts */
   to: DSLFromTo[];
 }
@@ -328,13 +328,13 @@ export interface DSLDistribute {
 export interface DSLSend {
   /** Asset identifies the currency or asset type for this transaction */
   asset: string;
-  
+
   /** Value is the numeric value of the transaction as a decimal string */
   value: string;
-  
+
   /** Source specifies where the funds come from */
   source?: DSLSource;
-  
+
   /** Distribute specifies where the funds go to */
   distribute?: DSLDistribute;
 }
@@ -345,7 +345,7 @@ export interface DSLSend {
 export interface Share {
   /** Percentage of the amount to be shared */
   percent?: number;
-  
+
   /** Remaining account for any leftover amount */
   remaining?: string;
 }
@@ -356,10 +356,10 @@ export interface Share {
 export interface Rate {
   /** From asset code */
   from: string;
-  
+
   /** To asset code */
   to: string;
-  
+
   /** Exchange rate value */
   rate: number;
 }
@@ -370,22 +370,22 @@ export interface Rate {
 export interface TransactionDSLInput {
   /** Chart of accounts group name (REQUIRED by API) */
   chartOfAccountsGroupName: string;
-  
+
   /** Description of the transaction (REQUIRED by API) */
   description: string;
-  
+
   /** DSL send configuration */
   send: DSLSend;
-  
+
   /** Additional custom metadata */
   metadata?: Record<string, any>;
-  
+
   /** Optional external identifier */
   externalId?: string;
-  
+
   /** Route configuration */
   route?: string;
-  
+
   /** Whether transaction should be pending */
   pending?: boolean;
 }
@@ -405,7 +405,10 @@ export interface UpdateTransactionInput {
 /**
  * Creates a new transaction input with default values
  */
-export function createTransactionInput(chartOfAccountsGroupName: string, description: string): CreateTransactionInput {
+export function createTransactionInput(
+  chartOfAccountsGroupName: string,
+  description: string
+): CreateTransactionInput {
   return {
     chartOfAccountsGroupName,
     description,

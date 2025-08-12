@@ -1,9 +1,9 @@
 /**
  * Complete Workflow Example for midaz-sdk-typescript
- * 
+ *
  * This example demonstrates a complete workflow using the Midaz TypeScript SDK, including:
  * - Creating organizations
- * - Creating ledgers  
+ * - Creating ledgers
  * - Creating assets
  * - Creating account types
  * - Creating operation routes
@@ -16,11 +16,11 @@
  * - Testing LIST methods with pagination
  * - Updating and retrieving organizations
  * - Cleanup (deleting resources)
- * 
+ *
  * IMPORTANT: This example requires a running Midaz server and does NOT run in mock mode.
  * To start the server locally, run the following command from the project root:
  *     make up
- * 
+ *
  * Make sure the Midaz Stack is running --default is localhost
  */
 
@@ -36,16 +36,24 @@ console.log('🔧 Loading configuration from environment...');
 const pluginAuthEnabled = process?.env?.PLUGIN_AUTH_ENABLED?.toLowerCase() === 'true';
 
 console.log('🔌 Connecting to Midaz APIs:');
-console.log(`   - Onboarding API: ${process?.env?.MIDAZ_ONBOARDING_URL || 'http://localhost:3000'}/v1`);
-console.log(`   - Transaction API: ${process?.env?.MIDAZ_TRANSACTION_URL || 'http://localhost:3001'}/v1`);
+console.log(
+  `   - Onboarding API: ${process?.env?.MIDAZ_ONBOARDING_URL || 'http://localhost:3000'}/v1`
+);
+console.log(
+  `   - Transaction API: ${process?.env?.MIDAZ_TRANSACTION_URL || 'http://localhost:3001'}/v1`
+);
 console.log(`   - Environment: local`);
 console.log(`   - Debug mode: ${process?.env?.MIDAZ_DEBUG || 'false'}`);
 
 // Display authentication method being used (like Go SDK)
 if (pluginAuthEnabled) {
   console.log(`🔐 Authentication: Plugin Auth`);
-  console.log(`   - Auth Service: ${process?.env?.PLUGIN_AUTH_ADDRESS || process?.env?.PLUGIN_AUTH_HOST || 'http://localhost:4000'}`);
-  console.log(`   - Client ID: ${process?.env?.MIDAZ_CLIENT_ID ? '***' + process?.env?.MIDAZ_CLIENT_ID.slice(-4) : 'not set'}`);
+  console.log(
+    `   - Auth Service: ${process?.env?.PLUGIN_AUTH_ADDRESS || process?.env?.PLUGIN_AUTH_HOST || 'http://localhost:4000'}`
+  );
+  console.log(
+    `   - Client ID: ${process?.env?.MIDAZ_CLIENT_ID ? '***' + process?.env?.MIDAZ_CLIENT_ID.slice(-4) : 'not set'}`
+  );
 } else {
   console.log(`🔐 Authentication: Plugin Auth (Disabled)`);
 }
@@ -55,14 +63,14 @@ console.log('🔑 Initializing SDK client...');
 
 // Configure client using pluginAccessManager
 const clientConfig = createClientConfigWithAccessManager({
-    address: process?.env?.PLUGIN_AUTH_ADDRESS,
-    clientId: process?.env?.MIDAZ_CLIENT_ID,
-    clientSecret: process?.env?.MIDAZ_CLIENT_SECRET,
-    tokenEndpoint: process?.env?.PLUGIN_AUTH_TOKEN_ENDPOINT,
-  })
+  address: process?.env?.PLUGIN_AUTH_ADDRESS,
+  clientId: process?.env?.MIDAZ_CLIENT_ID,
+  clientSecret: process?.env?.MIDAZ_CLIENT_SECRET,
+  tokenEndpoint: process?.env?.PLUGIN_AUTH_TOKEN_ENDPOINT,
+})
   .withBaseUrls({
     onboarding: process?.env?.MIDAZ_ONBOARDING_URL || 'http://localhost:3000',
-    transaction: process?.env?.MIDAZ_TRANSACTION_URL || 'http://localhost:3001'
+    transaction: process?.env?.MIDAZ_TRANSACTION_URL || 'http://localhost:3001',
   })
   .withTimeout(30000);
 
@@ -83,7 +91,7 @@ async function runCompleteWorkflow() {
     // STEP 1: Organization Creation
     console.log('🏢 STEP 1: ORGANIZATION CREATION');
     console.log('==================================================\n');
-    
+
     console.log('Creating organization...');
     const organization = await client.entities.organizations.createOrganization({
       legalName: orgName,
@@ -94,47 +102,47 @@ async function runCompleteWorkflow() {
         city: 'New York',
         state: 'NY',
         zipCode: '10001',
-        country: 'US'
+        country: 'US',
       },
       status: {
-        code: 'ACTIVE'
-      } as any
+        code: 'ACTIVE',
+      } as any,
     });
     console.log(`✅ Organization created: ${organization.legalName}`);
     console.log(`   ID: ${organization.id}`);
     console.log(`   Created: ${organization.createdAt}\n`);
-    
+
     const orgId = organization.id;
 
     // STEP 2: Ledger Creation
     console.log('📒 STEP 2: LEDGER CREATION');
     console.log('==================================================\n');
-    
+
     console.log('Creating ledger...');
     const ledger = await client.entities.ledgers.createLedger(orgId, {
       name: ledgerName,
       status: {
-        code: 'ACTIVE'
-      } as any
+        code: 'ACTIVE',
+      } as any,
     });
     console.log(`✅ Ledger created: ${ledger.name}`);
     console.log(`   ID: ${ledger.id}`);
     console.log(`   Created: ${ledger.createdAt}\n`);
-    
+
     const ledgerId = ledger.id;
 
     // STEP 3: Asset Creation
     console.log('🏦 STEP 3: ASSET CREATION');
     console.log('==================================================');
-    
+
     console.log('Creating USD asset...');
     const asset = await client.entities.assets.createAsset(orgId, ledgerId, {
       name: 'US Dollar',
       type: 'currency',
       code: assetCode,
       status: {
-        code: 'ACTIVE'
-      } as any
+        code: 'ACTIVE',
+      } as any,
     });
     console.log(`✅ USD asset created: ${asset.name}`);
     console.log(`   ID: ${asset.id}`);
@@ -144,7 +152,7 @@ async function runCompleteWorkflow() {
     // STEP 3.5: Organization Update
     console.log('🔄 STEP 3.5: ORGANIZATION UPDATE');
     console.log('==================================================\n');
-    
+
     console.log('Updating organization...');
     const updatedOrg = await client.entities.organizations.updateOrganization(orgId, {
       legalName: orgName,
@@ -152,8 +160,8 @@ async function runCompleteWorkflow() {
       metadata: {
         industry: 'Technology',
         lastUpdatedAt: new Date().toISOString(),
-        size: 'Medium'
-      }
+        size: 'Medium',
+      },
     });
     console.log(`✅ Organization updated: ${updatedOrg.legalName}`);
     console.log(`   ID: ${updatedOrg.id}`);
@@ -163,58 +171,66 @@ async function runCompleteWorkflow() {
     // STEP 4: Account Type Creation
     console.log('📋 STEP 4: ACCOUNT TYPE CREATION');
     console.log('==================================================\n');
-    
+
     console.log('Creating account type...');
     const accountType = await client.entities.accountTypes.createAccountType(orgId, ledgerId, {
       name: 'Cash Account',
       description: 'Account type for liquid assets held in cash or cash equivalents.',
-      keyValue: 'CASH'
+      keyValue: 'CASH',
     });
     console.log(`✅ Account type created: ${accountType.name}`);
     console.log(`   ID: ${accountType.id}`);
     console.log(`   Description: ${accountType.description}`);
     console.log(`   KeyValue: ${accountType.keyValue}`);
     console.log(`   Created: ${accountType.createdAt}\n`);
-    
+
     const accountTypeId = accountType.id;
 
-    // STEP 4.5: Operation Route Creation 
+    // STEP 4.5: Operation Route Creation
     console.log('🛤️ STEP 4.5: OPERATION ROUTE CREATION');
     console.log('==================================================\n');
-    
+
     console.log('Creating source operation route...');
-    const sourceOperationRoute = await client.entities.operationRoutes.createOperationRoute(orgId, ledgerId, {
-      title: 'Source Operation Route',
-      description: 'Operation route for source transactions',
-      operationType: 'source',
-      account: {
-        ruleType: 'account_type',
-        validIf: [accountTypeId]
-      },
-      metadata: {
-        category: 'source',
-        priority: 'high'
+    const sourceOperationRoute = await client.entities.operationRoutes.createOperationRoute(
+      orgId,
+      ledgerId,
+      {
+        title: 'Source Operation Route',
+        description: 'Operation route for source transactions',
+        operationType: 'source',
+        account: {
+          ruleType: 'account_type',
+          validIf: [accountTypeId],
+        },
+        metadata: {
+          category: 'source',
+          priority: 'high',
+        },
       }
-    });
+    );
     console.log(`✅ Source operation route created: ${sourceOperationRoute.title}`);
     console.log(`   ID: ${sourceOperationRoute.id}`);
     console.log(`   Type: ${sourceOperationRoute.operationType}`);
     console.log(`   Created: ${sourceOperationRoute.createdAt}\n`);
 
     console.log('Creating destination operation route...');
-    const destinationOperationRoute = await client.entities.operationRoutes.createOperationRoute(orgId, ledgerId, {
-      title: 'Destination Operation Route',
-      description: 'Operation route for destination transactions',
-      operationType: 'destination',
-      account: {
-        ruleType: 'account_type', 
-        validIf: [accountTypeId]
-      },
-      metadata: {
-        category: 'destination',
-        priority: 'high'
+    const destinationOperationRoute = await client.entities.operationRoutes.createOperationRoute(
+      orgId,
+      ledgerId,
+      {
+        title: 'Destination Operation Route',
+        description: 'Operation route for destination transactions',
+        operationType: 'destination',
+        account: {
+          ruleType: 'account_type',
+          validIf: [accountTypeId],
+        },
+        metadata: {
+          category: 'destination',
+          priority: 'high',
+        },
       }
-    });
+    );
     console.log(`✅ Destination operation route created: ${destinationOperationRoute.title}`);
     console.log(`   ID: ${destinationOperationRoute.id}`);
     console.log(`   Type: ${destinationOperationRoute.operationType}`);
@@ -223,17 +239,21 @@ async function runCompleteWorkflow() {
     // STEP 4.6: Transaction Route Creation
     console.log('🚏 STEP 4.6: TRANSACTION ROUTE CREATION');
     console.log('==================================================\n');
-    
+
     console.log('Creating transaction route...');
-    const transactionRoute = await client.entities.transactionRoutes.createTransactionRoute(orgId, ledgerId, {
-      title: 'Standard Transaction Route',
-      description: 'Route for standard transactions using operation routes',
-      operationRoutes: [sourceOperationRoute.id, destinationOperationRoute.id],
-      metadata: {
-        category: 'standard',
-        flow: 'payment'
+    const transactionRoute = await client.entities.transactionRoutes.createTransactionRoute(
+      orgId,
+      ledgerId,
+      {
+        title: 'Standard Transaction Route',
+        description: 'Route for standard transactions using operation routes',
+        operationRoutes: [sourceOperationRoute.id, destinationOperationRoute.id],
+        metadata: {
+          category: 'standard',
+          flow: 'payment',
+        },
       }
-    });
+    );
     console.log(`✅ Transaction route created: ${transactionRoute.title}`);
     console.log(`   ID: ${transactionRoute.id}`);
     console.log(`   Operation Routes: ${transactionRoute.operationRoutes?.join(', ')}`);
@@ -241,10 +261,15 @@ async function runCompleteWorkflow() {
 
     // Update Account Type
     console.log('📝 Updating Account Type...');
-    const updatedAccountType = await client.entities.accountTypes.updateAccountType(orgId, ledgerId, accountTypeId, {
-      name: 'Premium Business Account - Updated',
-      description: 'Updated premium business account type with new enhanced features'
-    });
+    const updatedAccountType = await client.entities.accountTypes.updateAccountType(
+      orgId,
+      ledgerId,
+      accountTypeId,
+      {
+        name: 'Premium Business Account - Updated',
+        description: 'Updated premium business account type with new enhanced features',
+      }
+    );
     console.log(`✅ Account type updated: ${updatedAccountType.name}`);
     console.log(`   ID: ${updatedAccountType.id}`);
     console.log(`   Description: ${updatedAccountType.description}`);
@@ -252,7 +277,11 @@ async function runCompleteWorkflow() {
 
     // Get Account Type
     console.log('🔍 Retrieving Account Type...');
-    const retrievedAccountType = await client.entities.accountTypes.getAccountType(orgId, ledgerId, accountTypeId);
+    const retrievedAccountType = await client.entities.accountTypes.getAccountType(
+      orgId,
+      ledgerId,
+      accountTypeId
+    );
     console.log(`✅ Account type retrieved: ${retrievedAccountType.name}`);
     console.log(`   ID: ${retrievedAccountType.id}`);
     console.log(`   Description: ${retrievedAccountType.description}`);
@@ -273,7 +302,7 @@ async function runCompleteWorkflow() {
     // STEP 5: Account Creation with Account Type
     console.log('📂 STEP 5: ACCOUNT CREATION WITH ACCOUNT TYPE');
     console.log('==================================================\n');
-    
+
     console.log('Creating customer account with account type...');
     const customerAccount = await client.entities.accounts.createAccount(orgId, ledgerId, {
       name: 'Customer Account',
@@ -282,8 +311,8 @@ async function runCompleteWorkflow() {
       metadata: {
         purpose: 'main',
         account_type_id: accountTypeId,
-        category: 'business'
-      }
+        category: 'business',
+      },
     } as any);
     console.log(`✅ Customer account created: ${customerAccount.name}`);
     console.log(`   ID: ${customerAccount.id}`);
@@ -301,8 +330,8 @@ async function runCompleteWorkflow() {
       metadata: {
         purpose: 'main',
         account_type_id: accountTypeId,
-        category: 'business'
-      }
+        category: 'business',
+      },
     } as any);
     console.log(`✅ Merchant account created: ${merchantAccount.name}`);
     console.log(`   ID: ${merchantAccount.id}`);
@@ -319,8 +348,8 @@ async function runCompleteWorkflow() {
       metadata: {
         purpose: 'dummy',
         account_type_id: accountTypeId,
-        category: 'test'
-      }
+        category: 'test',
+      },
     } as any);
     console.log(`✅ Dummy account 1 created: ${dummy1Account.name}`);
     console.log(`   ID: ${dummy1Account.id}`);
@@ -336,8 +365,8 @@ async function runCompleteWorkflow() {
       metadata: {
         purpose: 'dummy',
         account_type_id: accountTypeId,
-        category: 'test'
-      }
+        category: 'test',
+      },
     } as any);
     console.log(`✅ Dummy account 2 created: ${dummy2Account.name}`);
     console.log(`   ID: ${dummy2Account.id}`);
@@ -348,12 +377,12 @@ async function runCompleteWorkflow() {
     // STEP 6: Transaction Execution with Routes
     console.log('💸 STEP 6: TRANSACTION EXECUTION WITH ROUTES');
     console.log('==================================================\n');
-    
+
     const amount = '1000.00';
     const externalAccountID = '@external/USD';
 
     console.log('Creating transaction using transaction routes and operation routes...');
-    
+
     const transactionInput = {
       chartOfAccountsGroupName: 'FUNDING',
       description: 'Initial deposit from external account using routes',
@@ -363,48 +392,55 @@ async function runCompleteWorkflow() {
         type: 'deposit',
         useRoutes: true,
         transactionRouteID: transactionRoute.id,
-        transactionRouteTitle: transactionRoute.title
+        transactionRouteTitle: transactionRoute.title,
       },
       send: {
         asset: assetCode,
         value: amount,
         source: {
-          from: [{
-            account: externalAccountID,
-            route: sourceOperationRoute.id,
-            amount: {
-              asset: assetCode,
-              value: amount
+          from: [
+            {
+              account: externalAccountID,
+              route: sourceOperationRoute.id,
+              amount: {
+                asset: assetCode,
+                value: amount,
+              },
+              description: 'Debit Operation - External deposit',
+              metadata: {
+                operation: 'funding',
+                type: 'external',
+              },
             },
-            description: 'Debit Operation - External deposit',
-            metadata: {
-              operation: 'funding',
-              type: 'external'
-            }
-          }]
+          ],
         },
         distribute: {
-          to: [{
-            account: customerAccount.alias || customerAccount.id,
-            route: destinationOperationRoute.id,
-            amount: {
-              asset: assetCode,
-              value: amount
+          to: [
+            {
+              account: customerAccount.alias || customerAccount.id,
+              route: destinationOperationRoute.id,
+              amount: {
+                asset: assetCode,
+                value: amount,
+              },
+              description: 'Credit Operation - Customer account',
+              metadata: {
+                operation: 'funding',
+                type: 'account',
+              },
             },
-            description: 'Credit Operation - Customer account',
-            metadata: {
-              operation: 'funding',
-              type: 'account'
-            }
-          }]
-        }
-      }
+          ],
+        },
+      },
     };
-    
-    
+
     try {
-      const transaction = await client.entities.transactions.createTransaction(orgId, ledgerId, transactionInput);
-      
+      const transaction = await client.entities.transactions.createTransaction(
+        orgId,
+        ledgerId,
+        transactionInput
+      );
+
       console.log(`✅ Transaction created: ${transaction.id}`);
       console.log(`   Description: ${transaction.description}`);
       console.log(`   Amount: ${transaction.amount} ${transaction.assetCode}`);
@@ -416,51 +452,59 @@ async function runCompleteWorkflow() {
 
       // Create a second transaction - Payment between accounts using routes
       console.log('Creating payment transaction using routes...');
-      const paymentTransaction = await client.entities.transactions.createTransaction(orgId, ledgerId, {
-        chartOfAccountsGroupName: 'TRANSFER',
-        description: 'Payment for services using routes',
-        route: transactionRoute.id,
-        metadata: {
-          source: 'typescript-sdk-example',
-          type: 'transfer',
-          useRoutes: true,
-          purpose: 'service_payment'
-        },
-        send: {
-          asset: assetCode,
-          value: '250.00',
-          source: {
-            from: [{
-              account: customerAccount.alias || customerAccount.id,
-              route: sourceOperationRoute.id,
-              amount: {
-                asset: assetCode,
-                value: '250.00'
-              },
-              description: 'Debit Operation - Customer payment',
-              metadata: {
-                operation: 'transfer',
-                type: 'payment'
-              }
-            }]
+      const paymentTransaction = await client.entities.transactions.createTransaction(
+        orgId,
+        ledgerId,
+        {
+          chartOfAccountsGroupName: 'TRANSFER',
+          description: 'Payment for services using routes',
+          route: transactionRoute.id,
+          metadata: {
+            source: 'typescript-sdk-example',
+            type: 'transfer',
+            useRoutes: true,
+            purpose: 'service_payment',
           },
-          distribute: {
-            to: [{
-              account: merchantAccount.alias || merchantAccount.id,
-              route: destinationOperationRoute.id,
-              amount: {
-                asset: assetCode,
-                value: '250.00'
-              },
-              description: 'Credit Operation - Merchant account',
-              metadata: {
-                operation: 'transfer',
-                type: 'receipt'
-              }
-            }]
-          }
+          send: {
+            asset: assetCode,
+            value: '250.00',
+            source: {
+              from: [
+                {
+                  account: customerAccount.alias || customerAccount.id,
+                  route: sourceOperationRoute.id,
+                  amount: {
+                    asset: assetCode,
+                    value: '250.00',
+                  },
+                  description: 'Debit Operation - Customer payment',
+                  metadata: {
+                    operation: 'transfer',
+                    type: 'payment',
+                  },
+                },
+              ],
+            },
+            distribute: {
+              to: [
+                {
+                  account: merchantAccount.alias || merchantAccount.id,
+                  route: destinationOperationRoute.id,
+                  amount: {
+                    asset: assetCode,
+                    value: '250.00',
+                  },
+                  description: 'Credit Operation - Merchant account',
+                  metadata: {
+                    operation: 'transfer',
+                    type: 'receipt',
+                  },
+                },
+              ],
+            },
+          },
         }
-      });
+      );
 
       console.log(`✅ Payment transaction created: ${paymentTransaction.id}`);
       console.log(`   Description: ${paymentTransaction.description}`);
@@ -468,7 +512,6 @@ async function runCompleteWorkflow() {
       console.log(`   Route: ${paymentTransaction.route}`);
       console.log(`   Status: ${paymentTransaction.status?.code}`);
       console.log(`   Created: ${paymentTransaction.createdAt}\n`);
-
     } catch (error) {
       console.log(`⚠️ Transaction creation failed: ${(error as any).message}`);
       console.log('🐛 Full error details:');
@@ -489,8 +532,8 @@ async function runCompleteWorkflow() {
       name: 'Main Portfolio',
       entityId: customerAccount.id,
       status: {
-        code: 'ACTIVE'
-      } as any
+        code: 'ACTIVE',
+      } as any,
     } as any);
     console.log(`✅ Portfolio created: ${portfolio.name}`);
     console.log(`   ID: ${portfolio.id}`);
@@ -503,7 +546,10 @@ async function runCompleteWorkflow() {
     const segments = [
       { name: 'North America Region', metadata: { region: 'NA', countries: 'USA,Canada,Mexico' } },
       { name: 'Europe Region', metadata: { region: 'EU', countries: 'UK,France,Germany,Italy' } },
-      { name: 'Asia Pacific Region', metadata: { region: 'APAC', countries: 'Japan,China,Australia,India' } }
+      {
+        name: 'Asia Pacific Region',
+        metadata: { region: 'APAC', countries: 'Japan,China,Australia,India' },
+      },
     ];
 
     console.log('Creating segments...');
@@ -512,9 +558,9 @@ async function runCompleteWorkflow() {
       const segment = await client.entities.segments.createSegment(orgId, ledgerId, {
         name: segmentData.name,
         status: {
-          code: 'ACTIVE'
+          code: 'ACTIVE',
         } as any,
-        metadata: segmentData.metadata as Record<string, any>
+        metadata: segmentData.metadata as Record<string, any>,
       });
       createdSegments.push(segment);
       console.log(`✅ Segment created: ${segment.name}`);
@@ -540,7 +586,7 @@ async function runCompleteWorkflow() {
     // STEP 10: Account Listing
     console.log('📋 STEP 10: ACCOUNT LISTING');
     console.log('==================================================\n');
-    
+
     console.log('Listing all accounts...');
     const accounts = await client.entities.accounts.listAccounts(orgId, ledgerId);
     console.log(`✅ Found ${accounts.items.length} accounts:`);
@@ -562,11 +608,21 @@ async function runCompleteWorkflow() {
     console.log(`✅ Got ledger: ${getLedger.name} (ID: ${getLedger.id})\n`);
 
     console.log('Testing GetAccount...');
-    const getAccount = await client.entities.accounts.getAccount(orgId, ledgerId, customerAccount.id);
-    console.log(`✅ Got account: ${getAccount.name} (ID: ${getAccount.id}, Type: ${getAccount.type})\n`);
+    const getAccount = await client.entities.accounts.getAccount(
+      orgId,
+      ledgerId,
+      customerAccount.id
+    );
+    console.log(
+      `✅ Got account: ${getAccount.name} (ID: ${getAccount.id}, Type: ${getAccount.type})\n`
+    );
 
     console.log('Testing GetPortfolio...');
-    const getPortfolio = await client.entities.portfolios.getPortfolio(orgId, ledgerId, portfolio.id);
+    const getPortfolio = await client.entities.portfolios.getPortfolio(
+      orgId,
+      ledgerId,
+      portfolio.id
+    );
     console.log(`✅ Got portfolio: ${getPortfolio.name} (ID: ${getPortfolio.id})\n`);
 
     console.log('✅ All Get methods tested successfully\n');
@@ -622,10 +678,14 @@ async function runCompleteWorkflow() {
     console.log('==================================================\n');
 
     console.log('Cleaning up created resources...');
-    
+
     try {
       console.log('Deleting transaction route...');
-      await client.entities.transactionRoutes.deleteTransactionRoute(orgId, ledgerId, transactionRoute.id);
+      await client.entities.transactionRoutes.deleteTransactionRoute(
+        orgId,
+        ledgerId,
+        transactionRoute.id
+      );
       console.log('✅ Transaction route deleted successfully');
     } catch (error) {
       console.log(`⚠️ Transaction route deletion failed: ${(error as any).message}`);
@@ -633,8 +693,16 @@ async function runCompleteWorkflow() {
 
     try {
       console.log('Deleting operation routes...');
-      await client.entities.operationRoutes.deleteOperationRoute(orgId, ledgerId, sourceOperationRoute.id);
-      await client.entities.operationRoutes.deleteOperationRoute(orgId, ledgerId, destinationOperationRoute.id);
+      await client.entities.operationRoutes.deleteOperationRoute(
+        orgId,
+        ledgerId,
+        sourceOperationRoute.id
+      );
+      await client.entities.operationRoutes.deleteOperationRoute(
+        orgId,
+        ledgerId,
+        destinationOperationRoute.id
+      );
       console.log('✅ Operation routes deleted successfully');
     } catch (error) {
       console.log(`⚠️ Operation route deletion failed: ${(error as any).message}`);
@@ -705,9 +773,8 @@ async function runCompleteWorkflow() {
 
     console.log('✅ COMPLETE WORKFLOW FINISHED SUCCESSFULLY');
     console.log('==================================================\n');
-    
+
     console.log('🎉 Workflow completed successfully!');
-    
   } catch (error) {
     console.error('❌ Workflow failed:', error);
     throw error;

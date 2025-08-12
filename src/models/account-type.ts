@@ -1,6 +1,6 @@
 /**
  * Account Type model and related types
- * 
+ *
  * Account types define templates or categories for accounts, specifying
  * their behavior and characteristics within the ledger system.
  */
@@ -13,31 +13,31 @@ import { BaseModel, Metadata } from './common';
 export interface AccountType extends BaseModel {
   /** Unique identifier for the account type */
   id: string;
-  
+
   /** Organization ID that owns this account type */
   organizationId: string;
-  
+
   /** Ledger ID where this account type belongs */
   ledgerId: string;
-  
+
   /** Human-readable name for the account type */
   name: string;
-  
+
   /** Detailed description of the account type's purpose */
   description?: string;
-  
+
   /** Unique identifier within the organization/ledger */
   keyValue: string;
-  
+
   /** Custom attributes for account type configuration */
   metadata?: Metadata;
-  
+
   /** Timestamp when the account type was created */
   createdAt: string;
-  
+
   /** Timestamp when the account type was last updated */
   updatedAt: string;
-  
+
   /** Timestamp when the account type was deleted (if applicable) */
   deletedAt?: string;
 }
@@ -48,13 +48,13 @@ export interface AccountType extends BaseModel {
 export interface CreateAccountTypeInput {
   /** Human-readable name for the account type */
   name: string;
-  
+
   /** Unique identifier within the organization/ledger */
   keyValue: string;
-  
+
   /** Detailed description of the account type's purpose */
   description?: string;
-  
+
   /** Custom attributes for account type configuration */
   metadata?: Metadata;
 }
@@ -65,10 +65,10 @@ export interface CreateAccountTypeInput {
 export interface UpdateAccountTypeInput {
   /** Human-readable name for the account type */
   name?: string;
-  
+
   /** Detailed description of the account type's purpose */
   description?: string;
-  
+
   /** Custom attributes for account type configuration */
   metadata?: Metadata;
 }

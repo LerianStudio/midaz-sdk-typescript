@@ -27,20 +27,20 @@ function checkDependency(dep) {
 
 // Map of commands to their required dependencies
 const commandDeps = {
-  'test': ['jest', 'ts-jest'],
-  'lint': ['eslint', '@eslint/eslintrc', '@typescript-eslint/parser'],
-  'format': ['prettier'],
-  'docs': ['typedoc'],
-  'size': ['bundlewatch'],
-  'husky': ['husky']
+  test: ['jest', 'ts-jest'],
+  lint: ['eslint', '@eslint/eslintrc', '@typescript-eslint/parser'],
+  format: ['prettier'],
+  docs: ['typedoc'],
+  size: ['bundlewatch'],
+  husky: ['husky'],
 };
 
 function checkCommandDeps(cmd) {
   const deps = commandDeps[cmd];
   if (!deps) return true;
 
-  const missing = deps.filter(dep => !checkDependency(dep));
-  
+  const missing = deps.filter((dep) => !checkDependency(dep));
+
   if (missing.length > 0) {
     log(`\n⚠️  Missing dependencies for '${cmd}' command:`);
     log(`   ${missing.join(', ')}\n`);
@@ -48,12 +48,12 @@ function checkCommandDeps(cmd) {
     log(`   npm install --production=false\n`);
     return false;
   }
-  
+
   return true;
 }
 
 // For build commands, check if TypeScript is available
-if (command && command.includes('build') || command === 'typecheck') {
+if ((command && command.includes('build')) || command === 'typecheck') {
   if (!checkDependency('typescript')) {
     log('\n⚠️  TypeScript is not installed.');
     log('📦 To fix this, run:');

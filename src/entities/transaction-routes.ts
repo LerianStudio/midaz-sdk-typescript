@@ -2,32 +2,36 @@
  * Transaction Routes Service Interface
  */
 
-import { TransactionRoute, CreateTransactionRouteInput, UpdateTransactionRouteInput } from '../models/transaction-route';
+import {
+  TransactionRoute,
+  CreateTransactionRouteInput,
+  UpdateTransactionRouteInput,
+} from '../models/transaction-route';
 import { PaginatedResponse, ListOptions } from '../models/common';
 
 /**
  * Service interface for Transaction Route operations
- * 
+ *
  * Transaction routes define routing configuration for transactions,
  * specifying how transactions should be processed using operation routes.
  */
 export interface TransactionRoutesService {
   /**
    * Retrieve a paginated list of transaction routes for a ledger
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param options - Optional list options for pagination and filtering
    * @returns Promise resolving to paginated transaction routes
-   * 
+   *
    * @example
    * ```typescript
    * const transactionRoutes = await client.entities.transactionRoutes.listTransactionRoutes(
    *   'org_123',
-   *   'ledger_456', 
+   *   'ledger_456',
    *   { limit: 10, page: 1 }
    * );
-   * 
+   *
    * console.log(`Found ${transactionRoutes.items.length} transaction routes`);
    * transactionRoutes.items.forEach(route => {
    *   console.log(`${route.title}: ${route.operationRoutes.length} operation routes`);
@@ -42,12 +46,12 @@ export interface TransactionRoutesService {
 
   /**
    * Retrieve a specific transaction route by ID
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param transactionRouteId - The transaction route ID
    * @returns Promise resolving to the transaction route
-   * 
+   *
    * @example
    * ```typescript
    * const transactionRoute = await client.entities.transactionRoutes.getTransactionRoute(
@@ -55,7 +59,7 @@ export interface TransactionRoutesService {
    *   'ledger_456',
    *   'txroute_789'
    * );
-   * 
+   *
    * console.log(`Transaction Route: ${transactionRoute.title}`);
    * console.log(`Description: ${transactionRoute.description}`);
    * console.log(`Operation Routes: ${transactionRoute.operationRoutes.join(', ')}`);
@@ -69,16 +73,16 @@ export interface TransactionRoutesService {
 
   /**
    * Create a new transaction route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param input - The transaction route creation data
    * @returns Promise resolving to the created transaction route
-   * 
+   *
    * @example
    * ```typescript
    * import { createTransactionRouteBuilder } from 'midaz-sdk';
-   * 
+   *
    * const input = createTransactionRouteBuilder(
    *   'Standard Payment Route',
    *   'Route for standard payment transactions',
@@ -89,13 +93,13 @@ export interface TransactionRoutesService {
    *     flow: 'standard'
    *   })
    *   .build();
-   * 
+   *
    * const transactionRoute = await client.entities.transactionRoutes.createTransactionRoute(
    *   'org_123',
    *   'ledger_456',
    *   input
    * );
-   * 
+   *
    * console.log(`Created transaction route: ${transactionRoute.id}`);
    * ```
    */
@@ -107,17 +111,17 @@ export interface TransactionRoutesService {
 
   /**
    * Update an existing transaction route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param transactionRouteId - The transaction route ID to update
    * @param input - The transaction route update data
    * @returns Promise resolving to the updated transaction route
-   * 
+   *
    * @example
    * ```typescript
    * import { createUpdateTransactionRouteBuilder } from 'midaz-sdk';
-   * 
+   *
    * const input = createUpdateTransactionRouteBuilder()
    *   .withTitle('Enhanced Payment Route')
    *   .withDescription('Enhanced route for payment transactions with validation')
@@ -128,14 +132,14 @@ export interface TransactionRoutesService {
    *     updated: new Date().toISOString()
    *   })
    *   .build();
-   * 
+   *
    * const transactionRoute = await client.entities.transactionRoutes.updateTransactionRoute(
    *   'org_123',
    *   'ledger_456',
    *   'txroute_789',
    *   input
    * );
-   * 
+   *
    * console.log(`Updated transaction route: ${transactionRoute.title}`);
    * ```
    */
@@ -148,12 +152,12 @@ export interface TransactionRoutesService {
 
   /**
    * Delete a transaction route
-   * 
+   *
    * @param organizationId - The organization ID
    * @param ledgerId - The ledger ID
    * @param transactionRouteId - The transaction route ID to delete
    * @returns Promise resolving when the transaction route is deleted
-   * 
+   *
    * @example
    * ```typescript
    * await client.entities.transactionRoutes.deleteTransactionRoute(
@@ -161,7 +165,7 @@ export interface TransactionRoutesService {
    *   'ledger_456',
    *   'txroute_789'
    * );
-   * 
+   *
    * console.log('Transaction route deleted successfully');
    * ```
    */

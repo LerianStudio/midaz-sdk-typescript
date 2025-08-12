@@ -1,10 +1,7 @@
 /**
  * @file Tests for observability utilities
  */
-import {
-  Observability,
-  ObservabilityOptions,
-} from '../../src/util/observability/observability';
+import { Observability, ObservabilityOptions } from '../../src/util/observability/observability';
 import { OpenTelemetryProvider } from '../../src/util/observability/observability-otel';
 
 // Mock the OpenTelemetryProvider

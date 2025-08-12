@@ -83,9 +83,7 @@ describe('AccountType Models', () => {
     });
 
     it('should create an update input with name', () => {
-      const input = createUpdateAccountTypeBuilder()
-        .withName('Updated Cash Account')
-        .build();
+      const input = createUpdateAccountTypeBuilder().withName('Updated Cash Account').build();
 
       expect(input).toEqual({
         name: 'Updated Cash Account',
@@ -108,9 +106,7 @@ describe('AccountType Models', () => {
         updated: '2023-12-01T00:00:00Z',
       };
 
-      const input = createUpdateAccountTypeBuilder()
-        .withMetadata(metadata)
-        .build();
+      const input = createUpdateAccountTypeBuilder().withMetadata(metadata).build();
 
       expect(input).toEqual({
         metadata,

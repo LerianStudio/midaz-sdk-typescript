@@ -16,7 +16,10 @@ import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/portfolio-validator');
-import { validateCreatePortfolioInput, validateUpdatePortfolioInput } from '../../../src/models/validators/portfolio-validator';
+import {
+  validateCreatePortfolioInput,
+  validateUpdatePortfolioInput,
+} from '../../../src/models/validators/portfolio-validator';
 // Validation mock
 const validateMock = jest.fn();
 jest.mock('../../../src/util/validation', () => ({

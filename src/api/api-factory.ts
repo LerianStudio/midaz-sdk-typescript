@@ -152,11 +152,7 @@ export class ApiFactory {
    * @returns AccountTypeApiClient implementation
    */
   public createAccountTypeApiClient(): AccountTypeApiClient {
-    return new HttpAccountTypeApiClient(
-      this.httpClient,
-      this.urlBuilder,
-      this.observability
-    );
+    return new HttpAccountTypeApiClient(this.httpClient, this.urlBuilder, this.observability);
   }
 
   /**
@@ -165,11 +161,7 @@ export class ApiFactory {
    * @returns OperationRouteApiClient implementation
    */
   public createOperationRouteApiClient(): OperationRouteApiClient {
-    return new HttpOperationRouteApiClient(
-      this.httpClient,
-      this.urlBuilder,
-      this.observability
-    );
+    return new HttpOperationRouteApiClient(this.httpClient, this.urlBuilder, this.observability);
   }
 
   /**
@@ -178,11 +170,7 @@ export class ApiFactory {
    * @returns TransactionRouteApiClient implementation
    */
   public createTransactionRouteApiClient(): TransactionRouteApiClient {
-    return new HttpTransactionRouteApiClient(
-      this.httpClient,
-      this.urlBuilder,
-      this.observability
-    );
+    return new HttpTransactionRouteApiClient(this.httpClient, this.urlBuilder, this.observability);
   }
 
   // All services have now been migrated to the API client pattern

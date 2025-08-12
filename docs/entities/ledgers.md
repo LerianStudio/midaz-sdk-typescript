@@ -29,20 +29,18 @@ import { createLedgerBuilder } from 'midaz-sdk';
 
 // Create a ledger input using the builder
 const ledgerInput = createLedgerBuilder('Main Ledger')
-  .withMetadata({ 
+  .withMetadata({
     description: 'Primary ledger for tracking all financial activities',
-    baseCurrency: 'USD'
+    baseCurrency: 'USD',
   })
   .build();
 
 // Create the ledger
-const ledger = await client.entities.organizations.createLedger(
-  organizationId,
-  ledgerInput
-);
+const ledger = await client.entities.organizations.createLedger(organizationId, ledgerInput);
 ```
 
 Note that:
+
 - The `createLedgerBuilder` function requires the `name` parameter as this is a required field
 - The `status` field is set in the model but not included in the output of the builder
 - Validation happens at runtime rather than during build
@@ -54,10 +52,7 @@ Note that:
 
 ```typescript
 // Get a specific ledger by ID
-const ledger = await client.entities.ledgers.getLedger(
-  organizationId,
-  ledgerId
-);
+const ledger = await client.entities.ledgers.getLedger(organizationId, ledgerId);
 
 console.log(`Ledger: ${ledger.name} (${ledger.id})`);
 ```
@@ -66,10 +61,10 @@ console.log(`Ledger: ${ledger.name} (${ledger.id})`);
 
 ```typescript
 // List ledgers for an organization
-const ledgerList = await client.entities.organizations.listLedgers(
-  organizationId,
-  { limit: 50, offset: 0 }
-);
+const ledgerList = await client.entities.organizations.listLedgers(organizationId, {
+  limit: 50,
+  offset: 0,
+});
 
 console.log(`Total ledgers: ${ledgerList.total}`);
 for (const ledger of ledgerList.data) {
@@ -81,18 +76,14 @@ for (const ledger of ledgerList.data) {
 
 ```typescript
 // Update a ledger
-const updatedLedger = await client.entities.ledgers.updateLedger(
-  organizationId,
-  ledgerId,
-  {
-    name: 'Main Finance Ledger',
-    metadata: {
-      ...ledger.metadata,
-      description: 'Updated primary finance ledger',
-      lastAuditedAt: new Date().toISOString()
-    }
-  }
-);
+const updatedLedger = await client.entities.ledgers.updateLedger(organizationId, ledgerId, {
+  name: 'Main Finance Ledger',
+  metadata: {
+    ...ledger.metadata,
+    description: 'Updated primary finance ledger',
+    lastAuditedAt: new Date().toISOString(),
+  },
+});
 ```
 
 ## Working with Ledger Assets
@@ -101,11 +92,7 @@ const updatedLedger = await client.entities.ledgers.updateLedger(
 
 ```typescript
 // List assets in a ledger
-const assetList = await client.entities.assets.listAssets(
-  organizationId,
-  ledgerId,
-  { limit: 100 }
-);
+const assetList = await client.entities.assets.listAssets(organizationId, ledgerId, { limit: 100 });
 
 console.log(`Total assets in ledger: ${assetList.total}`);
 for (const asset of assetList.data) {
@@ -119,17 +106,13 @@ for (const asset of assetList.data) {
 // Create a new asset in the ledger
 const assetInput = createAssetBuilder('Euro', 'EUR')
   .withType('currency')
-  .withMetadata({ 
+  .withMetadata({
     precision: 2,
-    symbol: '€'
+    symbol: '€',
   })
   .build();
 
-const asset = await client.entities.assets.createAsset(
-  organizationId,
-  ledgerId,
-  assetInput
-);
+const asset = await client.entities.assets.createAsset(organizationId, ledgerId, assetInput);
 ```
 
 ## Working with Ledger Accounts
@@ -138,23 +121,18 @@ const asset = await client.entities.assets.createAsset(
 // Create an account in the ledger
 const accountInput = createAccountBuilder('Corporate Treasury', ledgerId)
   .withAssetIds(['asset1', 'asset2'])
-  .withMetadata({ 
+  .withMetadata({
     accountType: 'treasury',
-    department: 'Finance'
+    department: 'Finance',
   })
   .build();
 
-const account = await client.entities.accounts.createAccount(
-  organizationId,
-  accountInput
-);
+const account = await client.entities.accounts.createAccount(organizationId, accountInput);
 
 // List accounts in a ledger
-const accountList = await client.entities.accounts.listAccounts(
-  organizationId,
-  ledgerId,
-  { limit: 100 }
-);
+const accountList = await client.entities.accounts.listAccounts(organizationId, ledgerId, {
+  limit: 100,
+});
 
 console.log(`Total accounts in ledger: ${accountList.total}`);
 for (const acct of accountList.data) {
@@ -169,11 +147,11 @@ for (const acct of accountList.data) {
 const transactionList = await client.entities.transactions.listTransactions(
   organizationId,
   ledgerId,
-  { 
-    limit: 50, 
+  {
+    limit: 50,
     offset: 0,
     fromDate: '2023-01-01T00:00:00Z',
-    toDate: '2023-12-31T23:59:59Z'
+    toDate: '2023-12-31T23:59:59Z',
   }
 );
 
@@ -191,11 +169,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Create a ledger with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.organizations.createLedger(
-    organizationId,
-    ledgerInput
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.organizations.createLedger(organizationId, ledgerInput)
 );
 
 if (result.success) {
@@ -214,77 +189,57 @@ async function manageLedgers(client, organizationId) {
   try {
     // Create a new ledger
     const ledgerInput = createLedgerBuilder('Finance Department')
-      .withMetadata({ 
+      .withMetadata({
         description: 'Main finance department ledger',
         baseCurrency: 'USD',
-        fiscalYear: '2023'
+        fiscalYear: '2023',
       })
       .build();
 
-    const ledger = await client.entities.organizations.createLedger(
-      organizationId,
-      ledgerInput
-    );
+    const ledger = await client.entities.organizations.createLedger(organizationId, ledgerInput);
     console.log(`Created ledger: ${ledger.name} (${ledger.id})`);
 
     // Get the ledger details
-    const retrievedLedger = await client.entities.ledgers.getLedger(
-      organizationId,
-      ledger.id
-    );
+    const retrievedLedger = await client.entities.ledgers.getLedger(organizationId, ledger.id);
     console.log(`Retrieved ledger: ${retrievedLedger.name}`);
 
     // Create assets in the ledger
     const assetInput = createAssetBuilder('US Dollar', 'USD')
       .withType('currency')
-      .withMetadata({ 
+      .withMetadata({
         precision: 2,
-        symbol: '$'
+        symbol: '$',
       })
       .build();
 
-    const asset = await client.entities.assets.createAsset(
-      organizationId,
-      ledger.id,
-      assetInput
-    );
+    const asset = await client.entities.assets.createAsset(organizationId, ledger.id, assetInput);
     console.log(`Created asset: ${asset.name} (${asset.id})`);
 
     // Create an account in the ledger
     const accountInput = createAccountBuilder('Operating Account', ledger.id)
       .withAssetIds([asset.id])
-      .withMetadata({ 
+      .withMetadata({
         accountType: 'operating',
-        department: 'Finance'
+        department: 'Finance',
       })
       .build();
 
-    const account = await client.entities.accounts.createAccount(
-      organizationId,
-      accountInput
-    );
+    const account = await client.entities.accounts.createAccount(organizationId, accountInput);
     console.log(`Created account: ${account.name} (${account.id})`);
 
     // Update the ledger
-    const updatedLedger = await client.entities.ledgers.updateLedger(
-      organizationId,
-      ledger.id,
-      {
-        name: 'Finance Department - 2023',
-        metadata: {
-          ...ledger.metadata,
-          lastUpdatedBy: 'Finance Manager',
-          lastUpdatedAt: new Date().toISOString()
-        }
-      }
-    );
+    const updatedLedger = await client.entities.ledgers.updateLedger(organizationId, ledger.id, {
+      name: 'Finance Department - 2023',
+      metadata: {
+        ...ledger.metadata,
+        lastUpdatedBy: 'Finance Manager',
+        lastUpdatedAt: new Date().toISOString(),
+      },
+    });
     console.log(`Updated ledger: ${updatedLedger.name}`);
 
     // List all ledgers for the organization
-    const ledgers = await client.entities.organizations.listLedgers(
-      organizationId,
-      { limit: 10 }
-    );
+    const ledgers = await client.entities.organizations.listLedgers(organizationId, { limit: 10 });
     console.log(`Listed ${ledgers.data.length} ledgers`);
 
     return {
@@ -292,7 +247,7 @@ async function manageLedgers(client, organizationId) {
       updated: updatedLedger,
       asset: asset,
       account: account,
-      ledgers: ledgers.data
+      ledgers: ledgers.data,
     };
   } catch (error) {
     console.error(`Ledger management error: ${error.message}`);

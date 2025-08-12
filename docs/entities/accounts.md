@@ -36,13 +36,11 @@ const accountInput = createAccountBuilder('Savings Account', ledgerId)
   .build();
 
 // Create the account
-const account = await client.entities.accounts.createAccount(
-  organizationId,
-  accountInput
-);
+const account = await client.entities.accounts.createAccount(organizationId, accountInput);
 ```
 
 Note that:
+
 - The `createAccountBuilder` function requires the `name` and `ledgerId` parameters as these are required fields
 - The `status` field is set in the model but not included in the output of the builder
 - Validation happens at runtime rather than during build
@@ -54,10 +52,7 @@ Note that:
 
 ```typescript
 // Get a specific account by ID
-const account = await client.entities.accounts.getAccount(
-  organizationId,
-  accountId
-);
+const account = await client.entities.accounts.getAccount(organizationId, accountId);
 
 console.log(`Account: ${account.name} (${account.id})`);
 console.log(`Associated assets: ${account.assetIds.join(', ')}`);
@@ -67,11 +62,10 @@ console.log(`Associated assets: ${account.assetIds.join(', ')}`);
 
 ```typescript
 // List accounts with pagination
-const accountList = await client.entities.accounts.listAccounts(
-  organizationId,
-  ledgerId,
-  { limit: 50, offset: 0 }
-);
+const accountList = await client.entities.accounts.listAccounts(organizationId, ledgerId, {
+  limit: 50,
+  offset: 0,
+});
 
 console.log(`Total accounts: ${accountList.total}`);
 for (const account of accountList.data) {
@@ -84,29 +78,22 @@ for (const account of accountList.data) {
 
 ```typescript
 // Update an account
-const updatedAccount = await client.entities.accounts.updateAccount(
-  organizationId,
-  accountId,
-  {
-    name: 'Premium Savings Account',
-    assetIds: [...account.assetIds, 'newAssetId'],
-    metadata: {
-      ...account.metadata,
-      accountType: 'premium-savings',
-      interestRate: 3.0
-    }
-  }
-);
+const updatedAccount = await client.entities.accounts.updateAccount(organizationId, accountId, {
+  name: 'Premium Savings Account',
+  assetIds: [...account.assetIds, 'newAssetId'],
+  metadata: {
+    ...account.metadata,
+    accountType: 'premium-savings',
+    interestRate: 3.0,
+  },
+});
 ```
 
 ## Getting Account Balances
 
 ```typescript
 // Get balances for an account
-const balances = await client.entities.accounts.getAccountBalances(
-  organizationId,
-  accountId
-);
+const balances = await client.entities.accounts.getAccountBalances(organizationId, accountId);
 
 for (const balance of balances) {
   console.log(`Asset: ${balance.assetId}, Balance: ${balance.amount}`);
@@ -121,11 +108,8 @@ Use enhanced recovery for critical operations:
 import { withEnhancedRecovery } from 'midaz-sdk/util';
 
 // Create an account with enhanced recovery
-const result = await withEnhancedRecovery(
-  () => client.entities.accounts.createAccount(
-    organizationId,
-    accountInput
-  )
+const result = await withEnhancedRecovery(() =>
+  client.entities.accounts.createAccount(organizationId, accountInput)
 );
 
 if (result.success) {
@@ -145,31 +129,22 @@ async function manageAccounts(client, organizationId, ledgerId, assetIds) {
     // Create a new account
     const accountInput = createAccountBuilder('Investment Account', ledgerId)
       .withAssetIds(assetIds)
-      .withMetadata({ 
+      .withMetadata({
         accountType: 'investment',
         riskProfile: 'moderate',
-        autoRebalance: true
+        autoRebalance: true,
       })
       .build();
 
-    const account = await client.entities.accounts.createAccount(
-      organizationId,
-      accountInput
-    );
+    const account = await client.entities.accounts.createAccount(organizationId, accountInput);
     console.log(`Created account: ${account.name} (${account.id})`);
 
     // Get the account details
-    const retrievedAccount = await client.entities.accounts.getAccount(
-      organizationId,
-      account.id
-    );
+    const retrievedAccount = await client.entities.accounts.getAccount(organizationId, account.id);
     console.log(`Retrieved account: ${retrievedAccount.name}`);
-    
+
     // Get account balances
-    const balances = await client.entities.accounts.getAccountBalances(
-      organizationId,
-      account.id
-    );
+    const balances = await client.entities.accounts.getAccountBalances(organizationId, account.id);
     console.log('Account balances:');
     for (const balance of balances) {
       console.log(`- Asset: ${balance.assetId}, Balance: ${balance.amount}`);
@@ -184,25 +159,23 @@ async function manageAccounts(client, organizationId, ledgerId, assetIds) {
         metadata: {
           ...account.metadata,
           riskProfile: 'aggressive',
-          lastReviewDate: new Date().toISOString()
-        }
+          lastReviewDate: new Date().toISOString(),
+        },
       }
     );
     console.log(`Updated account: ${updatedAccount.name}`);
 
     // List all accounts
-    const accounts = await client.entities.accounts.listAccounts(
-      organizationId,
-      ledgerId,
-      { limit: 10 }
-    );
+    const accounts = await client.entities.accounts.listAccounts(organizationId, ledgerId, {
+      limit: 10,
+    });
     console.log(`Listed ${accounts.data.length} accounts`);
 
     return {
       created: account,
       updated: updatedAccount,
       balances: balances,
-      list: accounts.data
+      list: accounts.data,
     };
   } catch (error) {
     console.error(`Account management error: ${error.message}`);

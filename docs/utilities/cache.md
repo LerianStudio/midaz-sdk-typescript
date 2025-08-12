@@ -36,19 +36,19 @@ You can customize the cache behavior with options:
 ```typescript
 // Create a cache with custom options
 const cache = new Cache<any>({
-  ttl: 5 * 60 * 1000,     // 5 minutes TTL
-  maxEntries: 1000,       // Maximum of 1000 entries
-  useLRU: true            // Use LRU eviction policy
+  ttl: 5 * 60 * 1000, // 5 minutes TTL
+  maxEntries: 1000, // Maximum of 1000 entries
+  useLRU: true, // Use LRU eviction policy
 });
 ```
 
 Cache options include:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `ttl` | number | 60000 | Time-to-live in milliseconds |
-| `maxEntries` | number | 100 | Maximum number of entries to keep in cache |
-| `useLRU` | boolean | true | Whether to use a least-recently-used eviction policy |
+| Option       | Type    | Default | Description                                          |
+| ------------ | ------- | ------- | ---------------------------------------------------- |
+| `ttl`        | number  | 60000   | Time-to-live in milliseconds                         |
+| `maxEntries` | number  | 100     | Maximum number of entries to keep in cache           |
+| `useLRU`     | boolean | true    | Whether to use a least-recently-used eviction policy |
 
 ## Function Memoization
 
@@ -58,13 +58,11 @@ The cache utility also provides a `memoize` function to cache the results of fun
 import { memoize } from 'midaz-sdk/util/cache';
 
 // Memoize a function with default options
-const getUser = memoize(
-  async (userId: string) => {
-    console.log(`Fetching user ${userId}...`);
-    // Expensive operation like API call
-    return { id: userId, name: `User ${userId}` };
-  }
-);
+const getUser = memoize(async (userId: string) => {
+  console.log(`Fetching user ${userId}...`);
+  // Expensive operation like API call
+  return { id: userId, name: `User ${userId}` };
+});
 
 // First call will execute the function
 const user1 = await getUser('123');
@@ -118,7 +116,7 @@ const getAsset = memoize(
   // Cache options
   {
     ttl: 300000, // 5 minutes
-    maxEntries: 50
+    maxEntries: 50,
   }
 );
 ```
@@ -136,21 +134,21 @@ const apiCache = new Cache<any>({ ttl: 120000 });
 async function fetchData(endpoint: string, params: Record<string, any>) {
   // Create a cache key from endpoint and params
   const cacheKey = `${endpoint}:${JSON.stringify(params)}`;
-  
+
   // Check if result is in cache
   const cachedResult = apiCache.get(cacheKey);
   if (cachedResult) {
     console.log(`Cache hit for ${endpoint}`);
     return cachedResult;
   }
-  
+
   // If not in cache, fetch from API
   console.log(`Cache miss for ${endpoint}`);
   const result = await makeApiCall(endpoint, params);
-  
+
   // Store in cache
   apiCache.set(cacheKey, result);
-  
+
   return result;
 }
 ```
@@ -165,16 +163,13 @@ const calculateTotals = memoize(
   (accountIds: string[], ledgerId: string) => {
     console.log('Running expensive calculation...');
     // Perform expensive calculation
-    return accountIds.reduce(
-      (result, id) => {
-        // Complex calculation logic
-        return {
-          ...result,
-          [id]: Math.random() * 1000 // Simulated calculation
-        };
-      },
-      {}
-    );
+    return accountIds.reduce((result, id) => {
+      // Complex calculation logic
+      return {
+        ...result,
+        [id]: Math.random() * 1000, // Simulated calculation
+      };
+    }, {});
   },
   // Custom key function that handles arrays
   (accountIds, ledgerId) => `${ledgerId}:${accountIds.sort().join(',')}`

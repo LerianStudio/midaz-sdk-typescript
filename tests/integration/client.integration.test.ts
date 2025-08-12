@@ -59,8 +59,8 @@ describeIntegration('MidazClient Integration Tests', () => {
         name: 'Integration Test Ledger',
         status: {
           code: 'ACTIVE',
-          description: 'Active for testing'
-        }
+          description: 'Active for testing',
+        },
       });
       ledgerId = ledger.id;
 
@@ -71,9 +71,9 @@ describeIntegration('MidazClient Integration Tests', () => {
         code: 'USD',
         status: {
           code: 'ACTIVE',
-          description: 'Active for testing'
+          description: 'Active for testing',
         },
-        scale: 2
+        scale: 2,
       });
       assetId = asset.id;
 
@@ -82,8 +82,8 @@ describeIntegration('MidazClient Integration Tests', () => {
         name: 'Integration Test Portfolio',
         status: {
           code: 'ACTIVE',
-          description: 'Active for testing'
-        }
+          description: 'Active for testing',
+        },
       });
       portfolioId = portfolio.id;
     } catch (error) {
@@ -117,9 +117,9 @@ describeIntegration('MidazClient Integration Tests', () => {
       expect(orgs.items).toBeDefined();
       expect(Array.isArray(orgs.items)).toBe(true);
       expect(orgs.items.length).toBeGreaterThan(0);
-      
+
       // Verify our test organization is included
-      const testOrg = orgs.items.find(org => org.id === organizationId);
+      const testOrg = orgs.items.find((org) => org.id === organizationId);
       expect(testOrg).toBeDefined();
       expect(testOrg?.legalName).toContain('Integration Test Org');
     });
@@ -136,7 +136,7 @@ describeIntegration('MidazClient Integration Tests', () => {
     test('should update organization', async () => {
       const updatedOrg = await client.entities.organizations.updateOrganization(organizationId, {
         doingBusinessAs: 'Updated Integration Test',
-        metadata: { updated: true }
+        metadata: { updated: true },
       });
 
       expect(updatedOrg).toBeDefined();
@@ -154,9 +154,9 @@ describeIntegration('MidazClient Integration Tests', () => {
       expect(ledgers.items).toBeDefined();
       expect(Array.isArray(ledgers.items)).toBe(true);
       expect(ledgers.items.length).toBeGreaterThan(0);
-      
+
       // Verify our test ledger is included
-      const testLedger = ledgers.items.find(ledger => ledger.id === ledgerId);
+      const testLedger = ledgers.items.find((ledger) => ledger.id === ledgerId);
       expect(testLedger).toBeDefined();
       expect(testLedger?.name).toBe('Integration Test Ledger');
     });
@@ -179,9 +179,9 @@ describeIntegration('MidazClient Integration Tests', () => {
       expect(assets.items).toBeDefined();
       expect(Array.isArray(assets.items)).toBe(true);
       expect(assets.items.length).toBeGreaterThan(0);
-      
+
       // Verify our test asset is included
-      const testAsset = assets.items.find(asset => asset.id === assetId);
+      const testAsset = assets.items.find((asset) => asset.id === assetId);
       expect(testAsset).toBeDefined();
       expect(testAsset?.name).toBe('Integration Test USD');
       expect(testAsset?.code).toBe('USD');
@@ -210,7 +210,6 @@ describeIntegration('MidazClient Integration Tests', () => {
         client.entities.ledgers.getLedger(organizationId, 'non-existent-ledger-id')
       ).rejects.toThrow();
     });
-
   });
 
   describe('Portfolios API', () => {
@@ -221,15 +220,19 @@ describeIntegration('MidazClient Integration Tests', () => {
       expect(portfolios.items).toBeDefined();
       expect(Array.isArray(portfolios.items)).toBe(true);
       expect(portfolios.items.length).toBeGreaterThan(0);
-      
+
       // Verify our test portfolio is included
-      const testPortfolio = portfolios.items.find(portfolio => portfolio.id === portfolioId);
+      const testPortfolio = portfolios.items.find((portfolio) => portfolio.id === portfolioId);
       expect(testPortfolio).toBeDefined();
       expect(testPortfolio?.name).toBe('Integration Test Portfolio');
     });
 
     test('should get portfolio by ID', async () => {
-      const portfolio = await client.entities.portfolios.getPortfolio(organizationId, ledgerId, portfolioId);
+      const portfolio = await client.entities.portfolios.getPortfolio(
+        organizationId,
+        ledgerId,
+        portfolioId
+      );
 
       expect(portfolio).toBeDefined();
       expect(portfolio.id).toBe(portfolioId);
@@ -260,8 +263,8 @@ describeIntegration('MidazClient Integration Tests', () => {
       const accounts = await client.entities.accounts.listAccounts(organizationId, ledgerId);
       expect(accounts).toBeDefined();
       expect(accounts.items).toBeDefined();
-      
-      const testAccount = accounts.items.find(acc => acc.id === accountId);
+
+      const testAccount = accounts.items.find((acc) => acc.id === accountId);
       expect(testAccount).toBeDefined();
       expect(testAccount?.name).toBe('Integration Test Account');
 
@@ -295,7 +298,7 @@ describeIntegration('MidazClient Integration Tests', () => {
       // Should complete within timeout
       const orgs = await fastClient.entities.organizations.listOrganizations();
       expect(orgs).toBeDefined();
-      
+
       await fastClient.destroy();
     });
 
@@ -326,7 +329,7 @@ describeIntegration('MidazClient Integration Tests', () => {
       // Should work normally with retry config
       const orgs = await retryClient.entities.organizations.listOrganizations();
       expect(orgs).toBeDefined();
-      
+
       await retryClient.destroy();
     });
   });

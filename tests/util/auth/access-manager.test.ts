@@ -114,7 +114,6 @@ describe('AccessManager', () => {
       );
     });
 
-
     it('should handle token fetch errors', async () => {
       const accessManager = new AccessManager({
         enabled: true,

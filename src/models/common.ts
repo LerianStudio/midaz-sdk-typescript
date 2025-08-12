@@ -130,13 +130,13 @@ export type PaginatedResponse<T> = ListResponse<T>;
 export interface BaseModel {
   /** Unique system-generated identifier */
   id: string;
-  
+
   /** Timestamp when the resource was created */
   createdAt: string;
-  
+
   /** Timestamp when the resource was last updated */
   updatedAt: string;
-  
+
   /** Timestamp when the resource was deleted (null if active) */
   deletedAt?: string;
 }
@@ -347,12 +347,13 @@ export function newListOptions(): ListOptions {
  * This method validates that the limit is within acceptable bounds
  */
 export function withLimit(options: ListOptions, limit: number): ListOptions {
-  const validatedLimit = limit <= 0 
-    ? PaginationDefaults.DEFAULT_LIMIT 
-    : limit > PaginationDefaults.MAX_LIMIT 
-    ? PaginationDefaults.MAX_LIMIT 
-    : limit;
-  
+  const validatedLimit =
+    limit <= 0
+      ? PaginationDefaults.DEFAULT_LIMIT
+      : limit > PaginationDefaults.MAX_LIMIT
+        ? PaginationDefaults.MAX_LIMIT
+        : limit;
+
   return { ...options, limit: validatedLimit };
 }
 
@@ -389,7 +390,11 @@ export function withOrderDirection(options: ListOptions, direction: 'asc' | 'des
  */
 export function withPage(options: ListOptions, page: number): ListOptions {
   const validatedPage = Math.max(1, page);
-  return { ...options, page: validatedPage, offset: (validatedPage - 1) * (options.limit || PaginationDefaults.DEFAULT_LIMIT) };
+  return {
+    ...options,
+    page: validatedPage,
+    offset: (validatedPage - 1) * (options.limit || PaginationDefaults.DEFAULT_LIMIT),
+  };
 }
 
 /**
@@ -402,7 +407,11 @@ export function withFilters(options: ListOptions, filters: Record<string, string
 /**
  * Sets the date range for filtering
  */
-export function withDateRange(options: ListOptions, startDate: string, endDate: string): ListOptions {
+export function withDateRange(
+  options: ListOptions,
+  startDate: string,
+  endDate: string
+): ListOptions {
   return { ...options, startDate, endDate };
 }
 
@@ -436,11 +445,12 @@ export function toQueryParams(options: ListOptions): Record<string, string> {
  */
 function addPaginationParams(options: ListOptions, params: Record<string, string>): void {
   // Always include limit parameter with at least the default
-  const limit = !options.limit || options.limit <= 0 
-    ? PaginationDefaults.DEFAULT_LIMIT 
-    : options.limit > PaginationDefaults.MAX_LIMIT 
-    ? PaginationDefaults.MAX_LIMIT 
-    : options.limit;
+  const limit =
+    !options.limit || options.limit <= 0
+      ? PaginationDefaults.DEFAULT_LIMIT
+      : options.limit > PaginationDefaults.MAX_LIMIT
+        ? PaginationDefaults.MAX_LIMIT
+        : options.limit;
   params[QueryParamNames.LIMIT] = limit.toString();
 
   // Add offset if specified
@@ -601,7 +611,13 @@ export function totalPages(pagination: Pagination): number {
 /**
  * Creates a new pagination object
  */
-export function createPagination(limit: number, offset: number, total: number, nextCursor?: string, prevCursor?: string): Pagination {
+export function createPagination(
+  limit: number,
+  offset: number,
+  total: number,
+  nextCursor?: string,
+  prevCursor?: string
+): Pagination {
   return {
     limit,
     offset,
@@ -704,10 +720,11 @@ export class FieldErrors extends Error {
   public readonly errors: FieldError[];
 
   constructor(errors: FieldError[] = []) {
-    const message = errors.length > 0 
-      ? `Validation failed with ${errors.length} field errors:\n${errors.map((e, i) => `${i + 1}. ${formatFieldError(e)}`).join('\n')}`
-      : 'No validation errors';
-    
+    const message =
+      errors.length > 0
+        ? `Validation failed with ${errors.length} field errors:\n${errors.map((e, i) => `${i + 1}. ${formatFieldError(e)}`).join('\n')}`
+        : 'No validation errors';
+
     super(message);
     this.name = 'FieldErrors';
     this.errors = errors;
@@ -732,7 +749,7 @@ export class FieldErrors extends Error {
 
   /** Returns all errors for a specific field */
   getErrorsForField(field: string): FieldError[] {
-    return this.errors.filter(err => err.field === field || err.field.startsWith(field + '.'));
+    return this.errors.filter((err) => err.field === field || err.field.startsWith(field + '.'));
   }
 }
 
@@ -746,11 +763,14 @@ export function buildFieldError(field: string, value: any, message: string): Fie
 /**
  * Adds additional properties to a field error
  */
-export function enhanceFieldError(error: FieldError, options: {
-  code?: string;
-  constraint?: string;
-  suggestions?: string[];
-}): FieldError {
+export function enhanceFieldError(
+  error: FieldError,
+  options: {
+    code?: string;
+    constraint?: string;
+    suggestions?: string[];
+  }
+): FieldError {
   return {
     ...error,
     code: options.code,
@@ -764,23 +784,23 @@ export function enhanceFieldError(error: FieldError, options: {
  */
 export function formatFieldError(error: FieldError): string {
   let result = `Invalid field '${error.field}'`;
-  
+
   if (error.value !== undefined) {
     result += `: '${error.value}'`;
   }
-  
+
   if (error.message) {
     result += ` - ${error.message}`;
   }
-  
+
   if (error.constraint) {
     result += ` (constraint: ${error.constraint})`;
   }
-  
+
   if (error.suggestions && error.suggestions.length > 0) {
-    result += '\\nSuggestions:\\n' + error.suggestions.map(s => `- ${s}`).join('\\n');
+    result += '\\nSuggestions:\\n' + error.suggestions.map((s) => `- ${s}`).join('\\n');
   }
-  
+
   return result;
 }
 
@@ -821,17 +841,20 @@ export function validateAssetCode(assetCode: string): FieldError | null {
   if (!assetCode) {
     return buildFieldError('assetCode', assetCode, 'Asset code is required');
   }
-  
+
   if (!ASSET_CODE_PATTERN.test(assetCode)) {
     return enhanceFieldError(
       buildFieldError('assetCode', assetCode, 'Asset code must be 3-4 uppercase letters'),
       {
         constraint: 'pattern',
-        suggestions: ['Use standard currency codes like USD, EUR, BRL', 'Ensure all letters are uppercase']
+        suggestions: [
+          'Use standard currency codes like USD, EUR, BRL',
+          'Ensure all letters are uppercase',
+        ],
       }
     );
   }
-  
+
   return null;
 }
 
@@ -842,17 +865,24 @@ export function validateAccountAlias(alias: string): FieldError | null {
   if (!alias) {
     return buildFieldError('accountAlias', alias, 'Account alias is required');
   }
-  
+
   if (!ACCOUNT_ALIAS_PATTERN.test(alias)) {
     return enhanceFieldError(
-      buildFieldError('accountAlias', alias, 'Account alias must be 1-50 characters using only letters, numbers, underscore, and hyphen'),
+      buildFieldError(
+        'accountAlias',
+        alias,
+        'Account alias must be 1-50 characters using only letters, numbers, underscore, and hyphen'
+      ),
       {
         constraint: 'pattern',
-        suggestions: ['Use only alphanumeric characters, underscore (_), and hyphen (-)', 'Keep length between 1-50 characters']
+        suggestions: [
+          'Use only alphanumeric characters, underscore (_), and hyphen (-)',
+          'Keep length between 1-50 characters',
+        ],
       }
     );
   }
-  
+
   return null;
 }
 
@@ -863,17 +893,20 @@ export function validateExternalAccount(account: string): FieldError | null {
   if (!account) {
     return buildFieldError('account', account, 'Account reference is required');
   }
-  
+
   if (!EXTERNAL_ACCOUNT_PATTERN.test(account)) {
     return enhanceFieldError(
       buildFieldError('account', account, 'External account must be in format @external/ASSETCODE'),
       {
         constraint: 'pattern',
-        suggestions: ['Use format @external/USD for external accounts', 'Ensure asset code is 3-4 uppercase letters']
+        suggestions: [
+          'Use format @external/USD for external accounts',
+          'Ensure asset code is 3-4 uppercase letters',
+        ],
       }
     );
   }
-  
+
   return null;
 }
 
@@ -884,17 +917,21 @@ export function validateTransactionCode(code: string): FieldError | null {
   if (!code) {
     return buildFieldError('transactionCode', code, 'Transaction code is required');
   }
-  
+
   if (code.length < 3 || code.length > 50) {
     return enhanceFieldError(
-      buildFieldError('transactionCode', code, 'Transaction code must be between 3 and 50 characters'),
+      buildFieldError(
+        'transactionCode',
+        code,
+        'Transaction code must be between 3 and 50 characters'
+      ),
       {
         constraint: 'length',
-        suggestions: ['Use descriptive codes like "transfer", "payment", "deposit"']
+        suggestions: ['Use descriptive codes like "transfer", "payment", "deposit"'],
       }
     );
   }
-  
+
   return null;
 }
 
@@ -905,39 +942,30 @@ export function validateAmount(amount: string | number, scale?: number): FieldEr
   if (amount === undefined || amount === null || amount === '') {
     return buildFieldError('amount', amount, 'Amount is required');
   }
-  
+
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (isNaN(numericAmount)) {
-    return enhanceFieldError(
-      buildFieldError('amount', amount, 'Amount must be a valid number'),
-      {
-        constraint: 'type',
-        suggestions: ['Use numeric values like "100.50" or 100.50', 'Avoid non-numeric characters']
-      }
-    );
+    return enhanceFieldError(buildFieldError('amount', amount, 'Amount must be a valid number'), {
+      constraint: 'type',
+      suggestions: ['Use numeric values like "100.50" or 100.50', 'Avoid non-numeric characters'],
+    });
   }
-  
+
   if (numericAmount <= 0) {
-    return enhanceFieldError(
-      buildFieldError('amount', amount, 'Amount must be positive'),
-      {
-        constraint: 'min',
-        suggestions: ['Use positive values greater than 0']
-      }
-    );
+    return enhanceFieldError(buildFieldError('amount', amount, 'Amount must be positive'), {
+      constraint: 'min',
+      suggestions: ['Use positive values greater than 0'],
+    });
   }
-  
+
   if (scale !== undefined && scale < 0) {
-    return enhanceFieldError(
-      buildFieldError('scale', scale, 'Scale must be non-negative'),
-      {
-        constraint: 'min',
-        suggestions: ['Use 0 or positive integers for decimal precision']
-      }
-    );
+    return enhanceFieldError(buildFieldError('scale', scale, 'Scale must be non-negative'), {
+      constraint: 'min',
+      suggestions: ['Use 0 or positive integers for decimal precision'],
+    });
   }
-  
+
   return null;
 }
 
@@ -946,94 +974,119 @@ export function validateAmount(amount: string | number, scale?: number): FieldEr
  */
 export function validateMetadata(metadata: Record<string, any>): FieldErrors {
   const errors = newFieldErrors();
-  
+
   if (!metadata) {
     return errors;
   }
-  
+
   // Check total size
   const metadataStr = JSON.stringify(metadata);
   const metadataSize = new Blob([metadataStr]).size;
-  
+
   if (metadataSize > MAX_METADATA_SIZE) {
-    errors.addError(enhanceFieldError(
-      buildFieldError('metadata', metadata, `Metadata size (${metadataSize} bytes) exceeds maximum allowed size of ${MAX_METADATA_SIZE} bytes`),
-      {
-        constraint: 'size',
-        suggestions: ['Reduce the amount of metadata', 'Use shorter key names and values']
-      }
-    ));
+    errors.addError(
+      enhanceFieldError(
+        buildFieldError(
+          'metadata',
+          metadata,
+          `Metadata size (${metadataSize} bytes) exceeds maximum allowed size of ${MAX_METADATA_SIZE} bytes`
+        ),
+        {
+          constraint: 'size',
+          suggestions: ['Reduce the amount of metadata', 'Use shorter key names and values'],
+        }
+      )
+    );
   }
-  
+
   // Validate individual keys and values
   for (const [key, value] of Object.entries(metadata)) {
     if (key.length > 100) {
-      errors.addError(enhanceFieldError(
-        buildFieldError(`metadata.${key}`, key, 'Metadata key must not exceed 100 characters'),
-        {
-          constraint: 'length',
-          suggestions: ['Use shorter, descriptive key names']
-        }
-      ));
+      errors.addError(
+        enhanceFieldError(
+          buildFieldError(`metadata.${key}`, key, 'Metadata key must not exceed 100 characters'),
+          {
+            constraint: 'length',
+            suggestions: ['Use shorter, descriptive key names'],
+          }
+        )
+      );
     }
-    
+
     if (typeof value === 'string' && value.length > 2000) {
-      errors.addError(enhanceFieldError(
-        buildFieldError(`metadata.${key}`, value, 'Metadata value must not exceed 2000 characters'),
-        {
-          constraint: 'length',
-          suggestions: ['Use shorter values or split into multiple keys']
-        }
-      ));
+      errors.addError(
+        enhanceFieldError(
+          buildFieldError(
+            `metadata.${key}`,
+            value,
+            'Metadata value must not exceed 2000 characters'
+          ),
+          {
+            constraint: 'length',
+            suggestions: ['Use shorter values or split into multiple keys'],
+          }
+        )
+      );
     }
   }
-  
+
   return errors;
 }
 
 /**
  * Validates date range
  */
-export function validateDateRange(startDate: string, endDate: string, startField = 'startDate', endField = 'endDate'): FieldErrors {
+export function validateDateRange(
+  startDate: string,
+  endDate: string,
+  startField = 'startDate',
+  endField = 'endDate'
+): FieldErrors {
   const errors = newFieldErrors();
-  
+
   if (!startDate && !endDate) {
     return errors;
   }
-  
+
   const start = startDate ? new Date(startDate) : null;
   const end = endDate ? new Date(endDate) : null;
-  
+
   if (startDate && (!start || isNaN(start.getTime()))) {
-    errors.addError(enhanceFieldError(
-      buildFieldError(startField, startDate, 'Start date must be a valid ISO 8601 date'),
-      {
-        constraint: 'format',
-        suggestions: ['Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ']
-      }
-    ));
+    errors.addError(
+      enhanceFieldError(
+        buildFieldError(startField, startDate, 'Start date must be a valid ISO 8601 date'),
+        {
+          constraint: 'format',
+          suggestions: ['Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ'],
+        }
+      )
+    );
   }
-  
+
   if (endDate && (!end || isNaN(end.getTime()))) {
-    errors.addError(enhanceFieldError(
-      buildFieldError(endField, endDate, 'End date must be a valid ISO 8601 date'),
-      {
-        constraint: 'format',
-        suggestions: ['Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ']
-      }
-    ));
+    errors.addError(
+      enhanceFieldError(
+        buildFieldError(endField, endDate, 'End date must be a valid ISO 8601 date'),
+        {
+          constraint: 'format',
+          suggestions: ['Use ISO 8601 format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ'],
+        }
+      )
+    );
   }
-  
+
   if (start && end && start >= end) {
-    errors.addError(enhanceFieldError(
-      buildFieldError(startField, startDate, 'Start date must be before end date'),
-      {
-        constraint: 'range',
-        suggestions: ['Ensure start date is earlier than end date']
-      }
-    ));
+    errors.addError(
+      enhanceFieldError(
+        buildFieldError(startField, startDate, 'Start date must be before end date'),
+        {
+          constraint: 'range',
+          suggestions: ['Ensure start date is earlier than end date'],
+        }
+      )
+    );
   }
-  
+
   return errors;
 }
 
@@ -1042,56 +1095,55 @@ export function validateDateRange(startDate: string, endDate: string, startField
  */
 export function validateRequired(value: any, fieldName: string): FieldError | null {
   if (value === undefined || value === null || value === '') {
-    return enhanceFieldError(
-      buildFieldError(fieldName, value, `${fieldName} is required`),
-      {
-        constraint: 'required',
-        suggestions: [`Provide a valid value for ${fieldName}`]
-      }
-    );
+    return enhanceFieldError(buildFieldError(fieldName, value, `${fieldName} is required`), {
+      constraint: 'required',
+      suggestions: [`Provide a valid value for ${fieldName}`],
+    });
   }
-  
+
   return null;
 }
 
 /**
  * Validates string length
  */
-export function validateStringLength(value: string, fieldName: string, min?: number, max?: number): FieldError | null {
+export function validateStringLength(
+  value: string,
+  fieldName: string,
+  min?: number,
+  max?: number
+): FieldError | null {
   if (!value && (min === undefined || min === 0)) {
     return null;
   }
-  
+
   if (!value) {
-    return enhanceFieldError(
-      buildFieldError(fieldName, value, `${fieldName} is required`),
-      {
-        constraint: 'required',
-        suggestions: [`Provide a valid value for ${fieldName}`]
-      }
-    );
+    return enhanceFieldError(buildFieldError(fieldName, value, `${fieldName} is required`), {
+      constraint: 'required',
+      suggestions: [`Provide a valid value for ${fieldName}`],
+    });
   }
-  
+
   if (min !== undefined && value.length < min) {
     return enhanceFieldError(
       buildFieldError(fieldName, value, `${fieldName} must be at least ${min} characters`),
       {
         constraint: 'minLength',
-        suggestions: [`Use at least ${min} characters for ${fieldName}`]
+        suggestions: [`Use at least ${min} characters for ${fieldName}`],
       }
     );
   }
-  
+
   if (max !== undefined && value.length > max) {
     return enhanceFieldError(
       buildFieldError(fieldName, value, `${fieldName} must not exceed ${max} characters`),
       {
         constraint: 'maxLength',
-        suggestions: [`Keep ${fieldName} under ${max} characters`]
+        suggestions: [`Keep ${fieldName} under ${max} characters`],
       }
     );
   }
-  
+
   return null;
 }
 
@@ -1100,26 +1152,23 @@ export function validateStringLength(value: string, fieldName: string, min?: num
  */
 export function validateUUID(value: string, fieldName: string): FieldError | null {
   if (!value) {
-    return enhanceFieldError(
-      buildFieldError(fieldName, value, `${fieldName} is required`),
-      {
-        constraint: 'required',
-        suggestions: [`Provide a valid UUID for ${fieldName}`]
-      }
-    );
+    return enhanceFieldError(buildFieldError(fieldName, value, `${fieldName} is required`), {
+      constraint: 'required',
+      suggestions: [`Provide a valid UUID for ${fieldName}`],
+    });
   }
-  
+
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  
+
   if (!uuidPattern.test(value)) {
     return enhanceFieldError(
       buildFieldError(fieldName, value, `${fieldName} must be a valid UUID`),
       {
         constraint: 'format',
-        suggestions: ['Use a valid UUID format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx']
+        suggestions: ['Use a valid UUID format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'],
       }
     );
   }
-  
+
   return null;
 }

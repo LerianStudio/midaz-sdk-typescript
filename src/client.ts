@@ -399,12 +399,12 @@ export class MidazClient {
         const options = args[method === 'get' || method === 'delete' ? 1 : 2] || {};
         options.headers = options.headers || {};
         const token = await this.getAuthToken();
-        
+
         // Only add Authorization header if token is not empty
         if (token) {
           options.headers['Authorization'] = token;
         }
-        
+
         if (method === 'get' || method === 'delete') {
           return originalMethod(args[0], options);
         } else {

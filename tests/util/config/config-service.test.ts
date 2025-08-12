@@ -9,7 +9,7 @@ const originalEnv = { ...process.env };
 // Helper function to reset the environment variables
 function resetEnv(): void {
   // Clear all MIDAZ and PLUGIN environment variables
-  Object.keys(process.env).forEach(key => {
+  Object.keys(process.env).forEach((key) => {
     if (key.startsWith('MIDAZ_') || key.startsWith('PLUGIN_')) {
       delete process.env[key];
     }

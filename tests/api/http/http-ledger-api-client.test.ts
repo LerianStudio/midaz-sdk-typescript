@@ -12,7 +12,10 @@ import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
 jest.mock('../../../src/models/validators/ledger-validator');
-import { validateCreateLedgerInput, validateUpdateLedgerInput } from '../../../src/models/validators/ledger-validator';
+import {
+  validateCreateLedgerInput,
+  validateUpdateLedgerInput,
+} from '../../../src/models/validators/ledger-validator';
 // Validation mock
 const validateMock = jest.fn();
 jest.mock('../../../src/util/validation', () => ({
