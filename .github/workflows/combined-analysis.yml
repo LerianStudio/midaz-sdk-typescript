@@ -29,7 +29,7 @@ jobs:
     name: Run npm audit and fix vulnerabilities
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Prepare project for build (TypeScript compile)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -79,7 +79,7 @@ jobs:
       matrix:
         node-version: [22.x]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4

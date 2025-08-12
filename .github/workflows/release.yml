@@ -48,7 +48,7 @@ jobs:
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ steps.generate-token.outputs.token }}
           fetch-depth: 0
@@ -120,7 +120,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js for GitHub Packages
         uses: actions/setup-node@v4
