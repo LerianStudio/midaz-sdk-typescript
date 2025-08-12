@@ -1,3 +1,20 @@
+# Changelog
+
+All notable changes to the Midaz SDK for TypeScript will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+=======
+## [v2.0.0-beta.2] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.0.0-beta.1...v2.0.0-beta.2)
+Contributors: lerian-studio
+
+### 🔧 Maintenance
+- **Updated Dependencies and Build Configurations**: We've refreshed the project's underlying infrastructure by updating dependencies and build configurations. This ensures compatibility with the latest tools and libraries, enhancing the reliability and stability of the development environment. Although these changes do not directly impact user-facing features, they lay the groundwork for smoother future updates and feature additions.
+
+
+
 ## [1.2.0](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.1.0...v1.2.0) (2025-08-12)
 
 
@@ -66,10 +83,22 @@
 
 ## [1.2.0-develop.2](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.2.0-develop.1...v1.2.0-develop.2) (2025-08-12)
 
+## [v2.0.0-beta.1] - 2025-08-12
+
+[Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v1.2.0-develop.2...v2.0.0-beta.1)
+Contributors: LF Barrile
+
+### ⚠️ Breaking Changes
+- **Pure TypeScript SDK**: The SDK has been fully transitioned to TypeScript. This change enhances type safety and maintainability but requires updates to your projects to accommodate TypeScript syntax. Users will need to refactor their codebases to align with TypeScript standards. [Migration Guide](#)
 
 ### ✨ Features
+- **Controlled Release Configuration**: Releases are now restricted to the 'develop' and 'main' branches, ensuring a more predictable and secure deployment process. This change minimizes the risk of accidental releases from feature branches, providing greater control over your development workflow.
 
-* create account type, transaction-route, operation-route and testes. ([1dcce6f](https://github.com/LerianStudio/midaz-sdk-typescript/commit/1dcce6fcdcbc1164c3a62a2485d4446095c38410))
+### 🔧 Maintenance
+- **Build and Dependencies Update**: The build processes and dependencies have been updated to support the new TypeScript-based SDK. This ensures compatibility with modern TypeScript tooling, improving the stability and efficiency of the development environment.
+
+
+sdk-typescript/commit/1dcce6fcdcbc1164c3a62a2485d4446095c38410))
 * create account type, transaction-route, operation-route and testes. BREAKING CHANGE: removing the scale fields ([2ccc4c8](https://github.com/LerianStudio/midaz-sdk-typescript/commit/2ccc4c8dd3adfc710c3a0e3bab8ef62a293d5732))
 * create account type, transaction-route, operation-route and testes. BREAKING CHANGE: removing the scale fields ([bd446a3](https://github.com/LerianStudio/midaz-sdk-typescript/commit/bd446a31fc08d297f5a69b9d51f428586e90a48e))
 
