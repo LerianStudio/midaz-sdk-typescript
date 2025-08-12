@@ -80,7 +80,7 @@ describe('SegmentsServiceImpl', () => {
 
     // Create a mock SegmentApiClient
     segmentApiClient = {
-      listSegments: jest.fn().mockImplementation((orgId, ledgerId, options) => {
+      listSegments: jest.fn().mockImplementation((orgId, ledgerId, _options) => {
         if (!orgId) throw new ValidationError('Organization ID is required');
         if (!ledgerId) throw new ValidationError('Ledger ID is required');
         return Promise.resolve(mockSegmentsList);
@@ -97,7 +97,7 @@ describe('SegmentsServiceImpl', () => {
         if (!input.name) throw new ValidationError('Segment name is required');
         return Promise.resolve(mockSegment);
       }),
-      updateSegment: jest.fn().mockImplementation((orgId, ledgerId, id, input) => {
+      updateSegment: jest.fn().mockImplementation((orgId, ledgerId, id, _input) => {
         if (!orgId) throw new ValidationError('Organization ID is required');
         if (!ledgerId) throw new ValidationError('Ledger ID is required');
         if (!id) throw new ValidationError('Segment ID is required');
