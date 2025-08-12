@@ -253,7 +253,7 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
     return this;
   }
 
-  withApiKey(apiKey: string): ClientConfigBuilder {
+  withApiKey(_apiKey: string): ClientConfigBuilder {
     // For backward compatibility only - not used for authentication
     // This method is deprecated and will be removed in a future version
     console.warn('WARNING: withApiKey is deprecated. API key authentication is no longer supported. Use Access Manager instead.');

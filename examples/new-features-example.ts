@@ -25,7 +25,7 @@
  */
 
 import { config } from 'dotenv';
-import { MidazClient, createClientConfigBuilder, createClientConfigWithAccessManager } from '../src/index';
+import { MidazClient, createClientConfigWithAccessManager } from '../src/index';
 
 // Load environment variables
 config();
