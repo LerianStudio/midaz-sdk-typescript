@@ -14,78 +14,212 @@ This document outlines the security features and best practices for using the Mi
 
 ### 1. Automatic Sanitization
 
-The SDK automatically sanitizes sensitive data in logs and errors:
+The SDK automatically sanitizes sensitive data in logs and errors using built-in sanitization utilities:
 
 ```typescript
-// Sensitive fields are automatically redacted
-const client = new MidazClient({
-  apiKey: 'sk-1234567890', // Will be logged as 'sk-****'
-  security: {
-    sanitizer: {
-      customPatterns: [/custom-secret/gi],
-      customFields: ['mySecretField'],
-    },
-  },
-});
+// Sensitive fields are automatically redacted in logs and error messages
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'client-1234567890', // Will be logged as 'client-****'
+    clientSecret: 'secret-abcdef123456', // Will be logged as 'secret-****'
+  })
+);
+
+// The SDK automatically sanitizes OAuth credentials, API keys, and other sensitive data
+// No additional configuration required - sanitization is built-in
 ```
 
 ### 2. HTTPS Enforcement
 
-By default, the SDK enforces HTTPS connections:
+Configure HTTPS enforcement and certificate validation:
 
 ```typescript
-const client = new MidazClient({
-  baseUrls: {
-    onboarding: 'https://api.midaz.com', // HTTPS required
-  },
-  security: {
-    enforceHttps: true, // Default: true
-    allowInsecureHttp: false, // Must explicitly allow HTTP
-  },
-});
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.midaz.com', // HTTPS recommended
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withBaseUrls({
+      onboarding: 'https://api.midaz.com', // HTTPS recommended
+    })
+    .withSecurity({
+      enforceHttps: true, // Enforce HTTPS connections
+      allowInsecureHttp: false, // Block HTTP connections
+      certificateValidation: {
+        enabled: true, // Validate SSL certificates
+        rejectUnauthorized: true, // Reject invalid certificates
+        minVersion: 'TLSv1.2', // Minimum TLS version
+      },
+    })
+);
 ```
 
-### 3. Request Signing
+### 3. Request Authentication
 
-All requests are automatically signed with your API key:
+All requests are automatically authenticated using OAuth tokens from PluginAccessManager:
 
 ```typescript
-// API key is securely transmitted in headers
-// Never exposed in URLs or logs
-const client = new MidazClient({
-  apiKey: process.env.MIDAZ_API_KEY,
-});
+// OAuth tokens are securely managed by PluginAccessManager
+// Credentials never exposed in URLs or logs
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: process.env.MIDAZ_AUTH_ADDRESS,
+    clientId: process.env.MIDAZ_CLIENT_ID,
+    clientSecret: process.env.MIDAZ_CLIENT_SECRET,
+  })
+);
 ```
 
 ### 4. Circuit Breaker Protection
 
-Protects against cascading failures:
+Protects against cascading failures and provides connection pooling:
 
 ```typescript
-const client = new MidazClient({
-  security: {
-    circuitBreaker: {
-      failureThreshold: 5,
-      timeout: 60000,
-      rollingWindow: 60000,
-    },
-  },
-});
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withSecurity({
+      circuitBreaker: {
+        failureThreshold: 5, // Open circuit after 5 failures
+        successThreshold: 2, // Close circuit after 2 successes
+        timeout: 60000, // Wait 60s before retry
+        rollingWindow: 60000, // Count failures over 60s window
+      },
+      connectionPool: {
+        maxConnectionsPerHost: 6, // Max connections per host
+        maxTotalConnections: 20, // Max total connections
+        maxQueueSize: 100, // Max queue size per host
+        requestTimeout: 30000, // Request timeout in ms
+        enableCoalescing: true, // Enable request coalescing
+        coalescingWindow: 100, // Coalescing window in ms
+      },
+      // Per-endpoint circuit breakers
+      endpointCircuitBreakers: {
+        '/api/v1/accounts': {
+          failureThreshold: 3,
+          timeout: 30000,
+        },
+      },
+    })
+);
 ```
 
 ### 5. Timeout Protection
 
-Prevents hanging requests:
+Prevents hanging requests with timeout budgets:
 
 ```typescript
-const client = new MidazClient({
-  timeout: 30000, // 30 seconds
-  security: {
-    timeoutBudget: {
-      enabled: true,
-      minRequestTimeout: 1000,
-    },
-  },
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withTimeout(30000) // Global timeout: 30 seconds
+    .withSecurity({
+      timeoutBudget: {
+        enabled: true, // Enable timeout budget tracking
+        minRequestTimeout: 1000, // Minimum timeout per request: 1 second
+        bufferTime: 100, // Buffer between retries: 100ms
+      },
+    })
+);
+```
+
+### 6. Complete Security Configuration
+
+Here's a comprehensive example showing all available security features:
+
+```typescript
+import { MidazClient, createClientConfigWithAccessManager, RateLimiter } from 'midaz-sdk';
+
+// Create a fully configured secure client
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: process.env.MIDAZ_AUTH_ADDRESS,
+    clientId: process.env.MIDAZ_CLIENT_ID,
+    clientSecret: process.env.MIDAZ_CLIENT_SECRET,
+  })
+    .withBaseUrls({
+      onboarding: process.env.MIDAZ_ONBOARDING_URL,
+      transaction: process.env.MIDAZ_TRANSACTION_URL,
+    })
+    .withTimeout(30000)
+    .withSecurity({
+      // HTTPS enforcement
+      enforceHttps: true,
+      allowInsecureHttp: false,
+      
+      // Certificate validation
+      certificateValidation: {
+        enabled: true,
+        rejectUnauthorized: true,
+        minVersion: 'TLSv1.2',
+        // ca: ['-----BEGIN CERTIFICATE-----...'], // Custom CA if needed
+      },
+      
+      // Connection pool management
+      connectionPool: {
+        maxConnectionsPerHost: 6,
+        maxTotalConnections: 20,
+        maxQueueSize: 100,
+        requestTimeout: 30000,
+        enableCoalescing: true,
+        coalescingWindow: 100,
+      },
+      
+      // Global circuit breaker
+      circuitBreaker: {
+        failureThreshold: 5,
+        successThreshold: 2,
+        timeout: 60000,
+        rollingWindow: 60000,
+      },
+      
+      // Per-endpoint circuit breakers
+      endpointCircuitBreakers: {
+        '/api/v1/accounts': {
+          failureThreshold: 3,
+          timeout: 30000,
+        },
+        '/api/v1/transactions': {
+          failureThreshold: 2,
+          timeout: 45000,
+        },
+      },
+      
+      // Timeout budget
+      timeoutBudget: {
+        enabled: true,
+        minRequestTimeout: 1000,
+        bufferTime: 100,
+      },
+    })
+    .withRetryPolicy({
+      maxRetries: 3,
+      initialDelay: 100,
+      maxDelay: 1000,
+      retryableStatusCodes: [408, 429, 500, 502, 503, 504],
+    })
+    .withObservability({
+      enableTracing: true,
+      enableMetrics: true,
+      enableLogging: true,
+      serviceName: 'my-midaz-app',
+    })
+);
+
+// Optional: Set up rate limiting
+const rateLimiter = new RateLimiter({
+  maxRequests: 100,
+  timeWindowMs: 60000, // 100 requests per minute
+  queueExceeded: true,
+  maxQueueSize: 1000,
 });
 ```
 
@@ -97,17 +231,23 @@ Store sensitive configuration in environment variables:
 
 ```bash
 # .env file (never commit to version control)
-MIDAZ_API_KEY=sk-your-api-key
+MIDAZ_AUTH_ADDRESS=https://auth.midaz.com
+MIDAZ_CLIENT_ID=your-client-id
+MIDAZ_CLIENT_SECRET=your-client-secret
 MIDAZ_BASE_URL=https://api.midaz.com
 ```
 
 ```typescript
-const client = new MidazClient({
-  apiKey: process.env.MIDAZ_API_KEY,
-  baseUrls: {
-    onboarding: process.env.MIDAZ_BASE_URL,
-  },
-});
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: process.env.MIDAZ_AUTH_ADDRESS,
+    clientId: process.env.MIDAZ_CLIENT_ID,
+    clientSecret: process.env.MIDAZ_CLIENT_SECRET,
+  })
+    .withBaseUrls({
+      onboarding: process.env.MIDAZ_BASE_URL,
+    })
+);
 ```
 
 ### Secure Headers
@@ -120,12 +260,13 @@ The SDK automatically includes security headers:
 
 ## Best Practices
 
-### 1. API Key Management
+### 1. OAuth Credential Management
 
-- **Never** hard-code API keys in your source code
+- **Never** hard-code OAuth client secrets in your source code
 - Use environment variables or secure key management systems
-- Rotate API keys regularly
-- Use different keys for different environments
+- Rotate OAuth client credentials regularly
+- Use different credentials for different environments
+- Leverage PluginAccessManager for automatic token lifecycle management
 
 ### 2. Input Validation
 
@@ -173,15 +314,33 @@ try {
 
 ### 5. Rate Limiting
 
-Implement client-side rate limiting to prevent abuse:
+Implement client-side rate limiting to prevent abuse using the SDK's rate limiter utility:
 
 ```typescript
-const client = new MidazClient({
-  rateLimiting: {
-    maxRequestsPerSecond: 10,
-    maxBurst: 20,
-  },
+import { RateLimiter } from 'midaz-sdk';
+
+// Create a rate limiter allowing 10 requests per second
+const rateLimiter = new RateLimiter({
+  maxRequests: 10,
+  timeWindowMs: 1000, // 1 second
+  queueExceeded: true,
+  maxQueueSize: 100,
 });
+
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
+
+// Apply rate limiting to your requests
+async function createAccountWithRateLimit(orgId: string, ledgerId: string, data: any) {
+  return await rateLimiter.execute(async () => {
+    return client.entities.accounts.createAccount(orgId, ledgerId, data);
+  });
+}
 ```
 
 ## Threat Model
@@ -189,14 +348,14 @@ const client = new MidazClient({
 ### Protected Against
 
 1. **Man-in-the-Middle Attacks**: HTTPS enforcement
-2. **API Key Exposure**: Automatic sanitization in logs
-3. **Replay Attacks**: Idempotency keys
+2. **OAuth Credential Exposure**: Automatic sanitization in logs and secure token management
+3. **Replay Attacks**: Idempotency keys and token-based authentication
 4. **DoS Attacks**: Circuit breaker and timeouts
 5. **Information Disclosure**: Error sanitization
 
 ### Not Protected Against
 
-1. **Compromised API Keys**: Implement key rotation
+1. **Compromised OAuth Credentials**: Implement credential rotation
 2. **Client-Side Attacks**: Validate all inputs
 3. **Server-Side Vulnerabilities**: Keep SDK updated
 
@@ -215,13 +374,16 @@ If you discover a security vulnerability, please email security@lerianstudio.com
 
 Before deploying to production:
 
-- [ ] API keys stored securely (not in code)
-- [ ] HTTPS enforced for all connections
+- [ ] OAuth credentials stored securely (not in code)
+- [ ] PluginAccessManager configured properly
+- [ ] HTTPS enforced (`enforceHttps: true`, `allowInsecureHttp: false`)
+- [ ] Certificate validation enabled (`certificateValidation.enabled: true`)
 - [ ] Input validation implemented
 - [ ] Error handling doesn't expose sensitive data
-- [ ] Logging configured to sanitize sensitive data
-- [ ] Rate limiting configured appropriately
-- [ ] Circuit breaker thresholds set
-- [ ] Timeout values configured
-- [ ] Security headers verified
+- [ ] Connection pool limits configured appropriately
+- [ ] Circuit breaker thresholds set for your load patterns
+- [ ] Timeout values configured (`timeoutBudget` enabled)
+- [ ] Rate limiting implemented where needed (using `RateLimiter`)
+- [ ] Per-endpoint circuit breakers configured for critical paths
+- [ ] Observability enabled for security monitoring
 - [ ] Latest SDK version installed

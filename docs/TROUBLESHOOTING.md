@@ -56,32 +56,38 @@ npm run setup
 
 ### Authentication Issues
 
-#### Invalid API Key
+#### Invalid OAuth Credentials
 
 **Problem**: 401 Unauthorized errors
 
 ```typescript
-MidazError: Invalid API key provided
+MidazError: Invalid OAuth credentials provided
 ```
 
 **Solution**:
 
 ```typescript
-// Check API key is set correctly
-const client = new MidazClient({
-  apiKey: process.env.MIDAZ_API_KEY, // Ensure this is set
-});
+// Check OAuth credentials are set correctly using PluginAccessManager
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: process.env.MIDAZ_AUTH_ADDRESS, // Ensure this is set
+    clientId: process.env.MIDAZ_CLIENT_ID, // Ensure this is set  
+    clientSecret: process.env.MIDAZ_CLIENT_SECRET, // Ensure this is set
+  })
+);
 
-// Verify environment variable
-console.log('API Key exists:', !!process.env.MIDAZ_API_KEY);
+// Verify environment variables
+console.log('Auth Address exists:', !!process.env.MIDAZ_AUTH_ADDRESS);
+console.log('Client ID exists:', !!process.env.MIDAZ_CLIENT_ID);
+console.log('Client Secret exists:', !!process.env.MIDAZ_CLIENT_SECRET);
 ```
 
-#### API Key Exposure
+#### OAuth Credential Exposure
 
-**Problem**: API key visible in logs
+**Problem**: OAuth credentials visible in logs
 
 ```
-[WARN] Using API key: sk-1234567890abcdef
+[WARN] Using client secret: secret-1234567890abcdef
 ```
 
 **Solution**: The SDK should sanitize this automatically. Update to latest version:
@@ -253,14 +259,14 @@ const client = new MidazClient({
 
 ### HTTP Status Codes
 
-| Code | Meaning             | Solution                          |
-| ---- | ------------------- | --------------------------------- |
-| 400  | Bad Request         | Check request data and validation |
-| 401  | Unauthorized        | Verify API key is correct         |
-| 403  | Forbidden           | Check permissions for the API key |
-| 404  | Not Found           | Verify resource ID and endpoint   |
-| 429  | Too Many Requests   | Implement rate limiting/backoff   |
-| 500  | Server Error        | Retry with exponential backoff    |
+| Code | Meaning             | Solution                                    |
+| ---- | ------------------- | ------------------------------------------- |
+| 400  | Bad Request         | Check request data and validation           |
+| 401  | Unauthorized        | Verify OAuth credentials are correct        |
+| 403  | Forbidden           | Check permissions for the OAuth client      |
+| 404  | Not Found           | Verify resource ID and endpoint             |
+| 429  | Too Many Requests   | Implement rate limiting/backoff             |
+| 500  | Server Error        | Retry with exponential backoff              |
 | 503  | Service Unavailable | Wait and retry                    |
 
 ### SDK Error Types

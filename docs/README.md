@@ -63,34 +63,26 @@ This SDK follows a layered architecture with clear separation of concerns and em
 
 ## Authentication
 
-The SDK supports multiple authentication methods:
+The SDK uses PluginAccessManager for authentication with external identity providers:
 
-### API Key Authentication
-
-Simple authentication using an API key:
-
-```typescript
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'sandbox',
-});
-```
-
-### Access Manager Authentication
+### PluginAccessManager Authentication
 
 For integration with external identity providers using OAuth:
 
 ```typescript
-// Using the createClient function
-const client = createClient({
-  accessManager: {
-    enabled: true,
+// Using the createClient function with PluginAccessManager
+import { createClient, createClientConfigWithAccessManager } from 'midaz-sdk';
+
+const client = createClient(
+  createClientConfigWithAccessManager({
     address: 'https://auth.example.com',
     clientId: 'your-client-id',
     clientSecret: 'your-client-secret',
-  },
-  environment: 'sandbox',
-});
+    tokenEndpoint: '/oauth/token', // Optional, defaults to '/oauth/token'
+    refreshThresholdSeconds: 300, // Optional, defaults to 300 (5 minutes)
+  })
+    .withEnvironment('sandbox')
+);
 
 // Using the builder pattern with environment-specific configurations
 import { createSandboxConfigWithAccessManager, MidazClient } from 'midaz-sdk';
@@ -104,7 +96,7 @@ const client = new MidazClient(
 );
 ```
 
-The Access Manager automatically handles:
+The PluginAccessManager automatically handles:
 
 - OAuth token acquisition using client credentials flow
 - Token caching to minimize authentication requests
@@ -114,13 +106,17 @@ The Access Manager automatically handles:
 ## Basic Usage
 
 ```typescript
-// Create a client
-import { createClient } from 'midaz-sdk';
+// Create a client with PluginAccessManager
+import { createClient, createClientConfigWithAccessManager } from 'midaz-sdk';
 
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'sandbox',
-});
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('sandbox')
+);
 
 // Create an asset
 import { createAssetBuilder } from 'midaz-sdk';

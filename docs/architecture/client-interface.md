@@ -56,15 +56,19 @@ import { createClient } from 'midaz-sdk';
 // Create client with default configuration
 const client = createClient();
 
-// Create client with custom configuration
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'production',
-  httpOptions: {
-    timeout: 30000,
-    keepAlive: true,
-  },
-});
+// Create client with custom configuration using PluginAccessManager
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('production')
+    .withHttpOptions({
+      timeout: 30000,
+      keepAlive: true,
+    })
+);
 ```
 
 The factory function accepts configuration options and returns a fully initialized client instance.
@@ -106,16 +110,16 @@ class Client {
           transactionUrl: config.transactionUrl,
         },
         httpClient: {
-          apiKey: config.apiKey,
+          accessManager: config.accessManager,
           timeout: config.httpOptions?.timeout,
           keepAlive: config.httpOptions?.keepAlive,
         },
       });
     }
 
-    // Initialize HTTP client
+    // Initialize HTTP client with PluginAccessManager
     this.httpClient = new HttpClient({
-      apiKey: config.apiKey,
+      accessManager: config.accessManager,
     });
   }
 
@@ -192,8 +196,15 @@ The client can be configured with various options:
  * Client configuration options
  */
 interface ClientConfig {
-  /** API key for authentication */
-  apiKey?: string;
+  /** PluginAccessManager configuration for authentication */
+  accessManager?: {
+    enabled: boolean;
+    address: string;
+    clientId: string;
+    clientSecret: string;
+    tokenEndpoint?: string;
+    refreshThresholdSeconds?: number;
+  };
 
   /** Environment (production, sandbox, development) */
   environment?: 'production' | 'sandbox' | 'development';
@@ -330,11 +341,15 @@ interface UtilityServices {
 The client interface manages resources to ensure efficient usage and proper cleanup:
 
 ```typescript
-// Creating a client with proper resource management
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'production',
-});
+// Creating a client with proper resource management using PluginAccessManager
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('production')
+);
 
 try {
   // Use the client...
@@ -351,36 +366,55 @@ The SDK supports both singleton and multiple client patterns:
 
 ```typescript
 // Singleton pattern (reuse the same client)
-const defaultClient = createClient({
-  apiKey: 'your-api-key',
-  environment: 'production',
-});
+const defaultClient = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('production')
+);
 
 // Multiple clients pattern (different configurations)
-const productionClient = createClient({
-  apiKey: 'prod-api-key',
-  environment: 'production',
-});
+const productionClient = createClient(
+  createProductionConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'prod-client-id',
+    clientSecret: 'prod-client-secret',
+  })
+);
 
-const sandboxClient = createClient({
-  apiKey: 'sandbox-api-key',
-  environment: 'sandbox',
-});
+const sandboxClient = createClient(
+  createSandboxConfigWithAccessManager({
+    address: 'https://auth-sandbox.example.com',
+    clientId: 'sandbox-client-id',
+    clientSecret: 'sandbox-client-secret',
+  })
+);
 ```
 
 ## Authentication Management
 
-The client handles authentication through API keys:
+The client handles authentication through PluginAccessManager:
 
 ```typescript
-// Create client with API key
-const client = createClient({
-  apiKey: 'your-api-key',
-});
+// Create client with PluginAccessManager
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
 
-// Update API key later
+// Update PluginAccessManager configuration later
 client.updateConfig({
-  apiKey: 'new-api-key',
+  accessManager: {
+    enabled: true,
+    address: 'https://new-auth.example.com',
+    clientId: 'new-client-id',
+    clientSecret: 'new-client-secret',
+  },
 });
 ```
 
@@ -389,11 +423,15 @@ client.updateConfig({
 The client supports multiple API versions:
 
 ```typescript
-// Create client with specific API version
-const client = createClient({
-  apiKey: 'your-api-key',
-  apiVersion: '2023-01-01',
-});
+// Create client with specific API version and PluginAccessManager
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+    apiVersion: '2023-01-01',
+  })
+);
 ```
 
 ## Builder Support
@@ -438,11 +476,15 @@ const result = await withEnhancedRecovery(
 ```typescript
 import { createClient } from 'midaz-sdk';
 
-// Create a client
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'production',
-});
+// Create a client with PluginAccessManager
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('production')
+);
 
 // Use the client
 async function processAccounts() {
@@ -506,9 +548,13 @@ ConfigService.configure({
 });
 
 // Create a client with minimal config (will use configured settings)
-const client = createClient({
-  apiKey: 'your-api-key',
-});
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
 
 // Use the client...
 ```
@@ -571,10 +617,14 @@ class EnhancedClient {
 }
 
 // Usage
-const enhancedClient = new EnhancedClient({
-  apiKey: 'your-api-key',
-  environment: 'production',
-});
+const enhancedClient = new EnhancedClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('production')
+);
 
 const account = await enhancedClient.createAccountWithInitialBalance(
   'org_123',
