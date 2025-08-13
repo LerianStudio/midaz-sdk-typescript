@@ -98,11 +98,6 @@ export interface HttpConfig {
   timeout: number;
 
   /**
-   * API key for authentication
-   */
-  apiKey?: string;
-
-  /**
    * Whether to enable debug logging
    * @default false
    */

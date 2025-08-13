@@ -37,11 +37,14 @@ const createdAsset = await httpClient.post<AssetResponse>(
 When initializing the SDK, you can configure the HTTP client behavior:
 
 ```typescript
-import { MidazClient, ClientConfigBuilder } from 'midaz-sdk';
+import { MidazClient, createClientConfigWithAccessManager } from 'midaz-sdk';
 
 const client = new MidazClient(
-  new ClientConfigBuilder()
-    .withApiKey('your-api-key')
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
     .withEnvironment('sandbox')
     .withHttpClientConfig({
       baseUrl: 'https://api.custom-domain.com/v1',
@@ -53,7 +56,6 @@ const client = new MidazClient(
         'Custom-Header': 'custom-value',
       },
     })
-    .build()
 );
 ```
 
@@ -104,6 +106,12 @@ The HTTP client can automatically retry failed requests:
 
 ```typescript
 const httpClient = new HttpClient({
+  accessManager: {
+    enabled: true,
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  },
   retries: 3, // Number of retry attempts
   retryDelay: 500, // Base delay in milliseconds
   exponentialBackoff: true, // Use exponential backoff
@@ -124,6 +132,12 @@ You can set custom headers for all requests:
 
 ```typescript
 const httpClient = new HttpClient({
+  accessManager: {
+    enabled: true,
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  },
   headers: {
     'Custom-Header': 'value',
     'Idempotency-Key': 'unique-key-123',
@@ -148,6 +162,12 @@ The HTTP client integrates with the SDK's observability system:
 ```typescript
 // The HttpClient automatically creates spans for requests
 const httpClient = new HttpClient({
+  accessManager: {
+    enabled: true,
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  },
   observability: observabilityInstance,
 });
 

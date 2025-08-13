@@ -22,10 +22,14 @@ let client: MidazClient | null = null;
 
 function getMidazClient(): MidazClient {
   if (!client) {
-    client = new MidazClient({
-      apiKey: process.env.MIDAZ_API_KEY!,
-      baseUrls: { onboarding: process.env.MIDAZ_API_URL! },
-      // Minimal initial config
+    client = new MidazClient(
+      createClientConfigWithAccessManager({
+        address: process.env.MIDAZ_AUTH_ADDRESS!,
+        clientId: process.env.MIDAZ_CLIENT_ID!,
+        clientSecret: process.env.MIDAZ_CLIENT_SECRET!,
+      })
+        .withBaseUrls({ onboarding: process.env.MIDAZ_API_URL! })
+        // Minimal initial config
       cache: { ttl: 300000, maxSize: 50 },
       security: {
         connectionPool: {

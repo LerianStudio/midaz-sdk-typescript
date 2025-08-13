@@ -163,9 +163,16 @@ interface HttpConfig {
   timeout: number;
 
   /**
-   * API key for authentication
+   * PluginAccessManager configuration for authentication
    */
-  apiKey?: string;
+  accessManager?: {
+    enabled: boolean;
+    address: string;
+    clientId: string;
+    clientSecret: string;
+    tokenEndpoint?: string;
+    refreshThresholdSeconds?: number;
+  };
 
   /**
    * Enable debug mode for HTTP client
@@ -279,9 +286,15 @@ process.env.MIDAZ_TRANSACTION_URL = 'https://api.example.com/v1/transaction';
 process.env.MIDAZ_HTTP_TIMEOUT = '30000';
 process.env.MIDAZ_RETRY_MAX_RETRIES = '5';
 
-// Create a client that will use the environment variables
-import { createClient } from 'midaz-sdk';
-const client = createClient();
+// Create a client with PluginAccessManager that will use the environment variables
+import { createClient, createClientConfigWithAccessManager } from 'midaz-sdk';
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
 ```
 
 ### Combining Configuration Approaches
@@ -306,8 +319,14 @@ ConfigService.configure({
   },
 });
 
-// Create a client that will use both environment variables and programmatic configuration
-const client = createClient();
+// Create a client with PluginAccessManager that will use both environment variables and programmatic configuration
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
 ```
 
 ### Custom Environment Configuration
@@ -363,6 +382,12 @@ function setupEnvironment(env: 'development' | 'staging' | 'production') {
 
 // Usage
 setupEnvironment('staging');
-import { createClient } from 'midaz-sdk';
-const client = createClient();
+import { createClient, createClientConfigWithAccessManager } from 'midaz-sdk';
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
 ```

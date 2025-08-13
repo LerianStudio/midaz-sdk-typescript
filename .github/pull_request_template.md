@@ -1,40 +1,31 @@
-## Description
+# Pull Request Checklist
 
-<!-- Please provide a brief description of the changes in this PR -->
+## Pull Request Type
 
-## Type of change
+[//]: # 'Check the appropriate box for the type of pull request.'
 
-<!-- Please check the relevant options by marking with an X -->
-
-- [ ] Bug fix (non-breaking change that fixes an issue)
-- [ ] New feature (non-breaking change that adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Code refactoring
-- [ ] Performance improvement
+- [ ] Feature
+- [ ] Fix
+- [ ] Refactor
+- [ ] Pipeline
 - [ ] Tests
-- [ ] Build/CI changes
-- [ ] Other (please describe):
+- [ ] Documentation
 
-## Motivation and Context
+## Checklist
 
-<!-- Why is this change required? What problem does it solve? -->
-<!-- If it fixes an open issue, please link to the issue here by writing "Fixes #ISSUE_NUMBER" -->
+Please check each item after it's completed.
 
-## How Has This Been Tested?
+- [ ] I have tested these changes locally.
+- [ ] I have updated the documentation accordingly.
+- [ ] I have added necessary comments to the code, especially in complex areas.
+- [ ] I have ensured that my changes adhere to the project's coding standards.
+- [ ] I have checked for any potential security issues.
+- [ ] I have ensured that all tests pass.
+- [ ] I have updated the version appropriately (if applicable).
+- [ ] I have confirmed this code is ready for review.
 
-<!-- Please describe the tests that you ran to verify your changes. -->
-<!-- Provide instructions so we can reproduce the tests. -->
+## Additional Notes
 
-## Checklist:
+[//]: # 'Add any additional notes, context, or explanation that could be helpful for reviewers.'
 
-<!-- Please check the relevant options by marking with an X -->
-
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published in downstream modules
+## Obs: Please, always remember to target your PR to develop branch instead of main.
