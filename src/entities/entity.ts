@@ -194,7 +194,6 @@ export class Entity {
     // TODO: Implement updateConfig in HttpClient wrapper
     // this.httpClient.updateConfig({
     //   baseUrls: config.baseUrls || {},
-    //   apiKey: config.authToken || config.apiKey,
     //   timeout: config.timeout,
     // });
 

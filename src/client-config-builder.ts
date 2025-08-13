@@ -158,6 +158,45 @@ export interface ClientConfigBuilder {
   withHttpClient(httpClient: HttpClient): ClientConfigBuilder;
 
   /**
+   * Configure security settings (HTTPS enforcement, connection pool, circuit breaker)
+   */
+  withSecurity(security: {
+    enforceHttps?: boolean;
+    allowInsecureHttp?: boolean;
+    certificateValidation?: {
+      enabled?: boolean;
+      rejectUnauthorized?: boolean;
+      ca?: string[];
+      minVersion?: 'TLSv1.2' | 'TLSv1.3';
+    };
+    connectionPool?: {
+      maxConnectionsPerHost?: number;
+      maxTotalConnections?: number;
+      maxQueueSize?: number;
+      requestTimeout?: number;
+      enableCoalescing?: boolean;
+      coalescingWindow?: number;
+    };
+    circuitBreaker?: {
+      failureThreshold?: number;
+      successThreshold?: number;
+      timeout?: number;
+      rollingWindow?: number;
+    };
+    endpointCircuitBreakers?: Record<string, {
+      failureThreshold?: number;
+      successThreshold?: number;
+      timeout?: number;
+      rollingWindow?: number;
+    }>;
+    timeoutBudget?: {
+      enabled?: boolean;
+      minRequestTimeout?: number;
+      bufferTime?: number;
+    };
+  }): ClientConfigBuilder;
+
+  /**
    * Configure Access Manager for plugin-based authentication
    */
   withAccessManager(config: AccessManagerConfig): ClientConfigBuilder;
@@ -245,6 +284,45 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
 
   withHttpClient(httpClient: HttpClient): ClientConfigBuilder {
     this.config.httpClient = httpClient;
+    return this;
+  }
+
+  withSecurity(security: {
+    enforceHttps?: boolean;
+    allowInsecureHttp?: boolean;
+    certificateValidation?: {
+      enabled?: boolean;
+      rejectUnauthorized?: boolean;
+      ca?: string[];
+      minVersion?: 'TLSv1.2' | 'TLSv1.3';
+    };
+    connectionPool?: {
+      maxConnectionsPerHost?: number;
+      maxTotalConnections?: number;
+      maxQueueSize?: number;
+      requestTimeout?: number;
+      enableCoalescing?: boolean;
+      coalescingWindow?: number;
+    };
+    circuitBreaker?: {
+      failureThreshold?: number;
+      successThreshold?: number;
+      timeout?: number;
+      rollingWindow?: number;
+    };
+    endpointCircuitBreakers?: Record<string, {
+      failureThreshold?: number;
+      successThreshold?: number;
+      timeout?: number;
+      rollingWindow?: number;
+    }>;
+    timeoutBudget?: {
+      enabled?: boolean;
+      minRequestTimeout?: number;
+      bufferTime?: number;
+    };
+  }): ClientConfigBuilder {
+    this.config.security = security;
     return this;
   }
 

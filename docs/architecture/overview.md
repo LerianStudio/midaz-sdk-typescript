@@ -87,11 +87,15 @@ const config = ConfigService.getInstance();
 Factory methods create and return instances of services:
 
 ```typescript
-// Factory function to create a client
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'production',
-});
+// Factory function to create a client with PluginAccessManager
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('production')
+);
 ```
 
 ### Facade Pattern
@@ -99,8 +103,14 @@ const client = createClient({
 The client interface acts as a facade to simplify the complex subsystems:
 
 ```typescript
-// Instead of interacting with HTTP client directly
-const client = createClient({ apiKey: 'your-key' });
+// Instead of interacting with HTTP client directly, use PluginAccessManager
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+);
 
 // Simple interface to complex operations
 const accounts = await client.entities.accounts.listAccounts(orgId, ledgerId);
@@ -133,10 +143,14 @@ The client is the main entry point to the SDK. It manages authentication and pro
 ```typescript
 import { createClient } from 'midaz-sdk';
 
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'production',
-});
+const client = createClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withEnvironment('production')
+);
 
 // Access entity services
 const accountsService = client.entities.accounts;
@@ -295,7 +309,7 @@ The SDK provides several extension points:
 
 The SDK is designed with security in mind:
 
-1. **API Key Management**: Secure handling of API keys
+1. **Authentication Management**: Secure handling of OAuth credentials through PluginAccessManager
 2. **TLS Support**: Secure communication with API endpoints
 3. **Input Validation**: Prevents injection attacks
 4. **Output Sanitization**: Prevents leakage of sensitive information

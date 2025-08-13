@@ -49,13 +49,17 @@ npm run build
 ## Quick Start
 
 ```typescript
-import { createClient } from 'midaz-sdk';
+import { MidazClient, createClientConfigWithAccessManager } from 'midaz-sdk';
 
-// Initialize the client
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'sandbox', // Options: 'development', 'sandbox', 'production'
-});
+// Initialize the client with PluginAccessManager
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com', // Plugin Auth address
+    clientId: 'your-client-id', // OAuth client ID
+    clientSecret: 'your-client-secret', // OAuth client secret
+  })
+    .withEnvironment('sandbox') // Options: 'development', 'sandbox', 'production'
+);
 
 // Create an asset using the builder pattern
 import { createAssetBuilder } from 'midaz-sdk';
@@ -114,9 +118,9 @@ const result = await withEnhancedRecovery(
 client.close();
 ```
 
-### Using Access Manager for Authentication
+### Using PluginAccessManager for Authentication
 
-For applications that need to integrate with external identity providers, the SDK provides an Access Manager:
+For applications that need to integrate with external identity providers, the SDK provides a PluginAccessManager:
 
 ```typescript
 import { createClientConfigWithAccessManager, MidazClient } from 'midaz-sdk';
@@ -153,36 +157,28 @@ client.close();
 
 ## Authentication
 
-The SDK supports multiple authentication methods:
+The SDK uses PluginAccessManager for authentication with external identity providers:
 
-### API Key Authentication
+### PluginAccessManager Authentication
 
-Simple authentication using an API key:
-
-```typescript
-const client = createClient({
-  apiKey: 'your-api-key',
-  environment: 'sandbox',
-});
-```
-
-### Access Manager Authentication
-
-For integration with external identity providers using OAuth:
+The SDK integrates with external identity providers using OAuth through the PluginAccessManager:
 
 ```typescript
-const client = createClient({
-  accessManager: {
-    enabled: true,
-    address: 'https://auth.example.com',
-    clientId: 'your-client-id',
-    clientSecret: 'your-client-secret',
-  },
-  environment: 'sandbox',
-});
+import { MidazClient, createClientConfigWithAccessManager } from 'midaz-sdk';
+
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com', // Plugin Auth address
+    clientId: 'your-client-id', // OAuth client ID
+    clientSecret: 'your-client-secret', // OAuth client secret
+    tokenEndpoint: '/oauth/token', // Optional, defaults to '/oauth/token'
+    refreshThresholdSeconds: 300, // Optional, defaults to 300 (5 minutes)
+  })
+    .withEnvironment('sandbox')
+);
 ```
 
-The Access Manager automatically handles token acquisition, caching, and renewal, eliminating the need to manage authentication tokens manually.
+The PluginAccessManager automatically handles token acquisition, caching, and renewal, eliminating the need to manage authentication tokens manually.
 
 ## Documentation
 

@@ -16,11 +16,14 @@ The observability system in the Midaz SDK includes:
 The observability features are automatically enabled when you initialize the SDK:
 
 ```typescript
-import { MidazClient, ClientConfigBuilder } from 'midaz-sdk';
+import { MidazClient, createClientConfigWithAccessManager } from 'midaz-sdk';
 
 const client = new MidazClient(
-  new ClientConfigBuilder()
-    .withApiKey('your-api-key')
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
     .withEnvironment('sandbox')
     .withObservabilityConfig({
       serviceName: 'my-application',
@@ -29,7 +32,6 @@ const client = new MidazClient(
       metricsEnabled: true,
       loggingEnabled: true,
     })
-    .build()
 );
 ```
 
@@ -39,8 +41,11 @@ You can configure the observability system to meet your specific requirements:
 
 ```typescript
 const client = new MidazClient(
-  new ClientConfigBuilder()
-    .withApiKey('your-api-key')
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
     .withEnvironment('sandbox')
     .withObservabilityConfig({
       serviceName: 'my-application',
@@ -136,8 +141,11 @@ The SDK's observability system is built on OpenTelemetry standards, allowing int
 ```typescript
 // Configure integration with external systems
 const client = new MidazClient(
-  new ClientConfigBuilder()
-    .withApiKey('your-api-key')
+  createClientConfigWithAccessManager({
+    address: 'https://auth.example.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
     .withEnvironment('sandbox')
     .withObservabilityConfig({
       // Connect to Jaeger for tracing

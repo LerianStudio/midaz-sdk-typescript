@@ -13,12 +13,16 @@ The Midaz SDK supports code splitting, allowing you to load only the parts of th
 ```typescript
 import { MidazClient } from 'midaz-sdk';
 
-const client = new MidazClient({
-  apiKey: 'your-api-key',
-  baseUrls: {
-    onboarding: 'https://api.midaz.com',
-  },
-});
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.midaz.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withBaseUrls({
+      onboarding: 'https://api.midaz.com',
+    })
+);
 ```
 
 Bundle size: ~100KB (minified + gzipped)
@@ -125,9 +129,13 @@ The SDK is built with tree shaking in mind:
 import { MidazClient } from 'midaz-sdk/core';
 import { createOrganizationsService } from 'midaz-sdk/entities/organizations';
 
-const client = new MidazClient({
-  apiKey: 'your-api-key',
-  baseUrls: { onboarding: 'https://api.midaz.com' },
+const client = new MidazClient(
+  createClientConfigWithAccessManager({
+    address: 'https://auth.midaz.com',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+  })
+    .withBaseUrls({ onboarding: 'https://api.midaz.com' }),
 });
 
 const organizations = createOrganizationsService(client);
