@@ -5,6 +5,23 @@ All notable changes to the Midaz SDK for TypeScript will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 =======
+## [v2.1.0] - 2025-08-13
+
+[Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.0.0...v2.1.0)
+Contributors: Jefferson Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **Frontend**: Streamlined the codebase by removing unused methods, reducing complexity, and improving maintainability and performance.
+- **Config**: Enhanced the configuration management process by eliminating obsolete methods, which reduces the risk of errors and improves system reliability.
+
+### 📚 Documentation
+- Updated documentation across `frontend`, `config`, and `auth` components to improve clarity and accuracy. These changes make it easier for developers to understand and use the SDK effectively.
+
+### 🔧 Maintenance
+- **Dependencies**: Conducted routine maintenance by removing outdated methods and updating documentation within the `deps` component to keep dependencies current and the codebase clutter-free.
+- **Auth and Backend**: Refactored the `auth` and `backend` components to remove unused methods and update documentation, enhancing the security, performance, and efficiency of authentication processes.
+
+
 ## [v2.0.0-beta.3] - 2025-08-13
 
 [Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.0.0-beta.2...v2.0.0-beta.3)
