@@ -5,6 +5,27 @@ All notable changes to the Midaz SDK for TypeScript will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 =======
+## [v2.2.0-beta.1] - 2025-08-29
+
+[Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.1.0...v2.2.0-beta.1)
+Contributors: Jefferson Rodrigues, lerian-studio
+
+### ✨ Features
+- **Enhanced Transaction Management**: Added transaction and operation routes to the frontend models, allowing developers to integrate complex transaction workflows into their applications. This feature empowers users with more control and flexibility over transaction handling.
+
+### 🐛 Bug Fixes
+- **Code Quality Improvements**: Resolved linting issues across the build configurations and documentation, ensuring adherence to coding standards. This fix enhances code maintainability and reduces potential errors, leading to a smoother development experience.
+
+### ⚡ Performance
+- **Optimized Dependencies**: Updated and optimized frontend dependencies, resulting in faster load times and improved interface stability. Users will notice a more responsive and reliable application performance.
+
+### 📚 Documentation
+- **Changelog Updates**: Revised the changelog to accurately reflect recent changes, providing users with a clear and concise history of modifications. This update ensures transparency and keeps users informed about the project's evolution.
+
+### 🔧 Maintenance
+- **Dependency Upgrades**: Upgraded various dependencies to their latest versions, enhancing security and compatibility with newer technologies. This maintenance task ensures the project remains up-to-date with industry standards.
+
+
 ## [v2.1.0] - 2025-08-13
 
 [Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.0.0...v2.1.0)
