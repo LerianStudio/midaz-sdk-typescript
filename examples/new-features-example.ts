@@ -553,7 +553,7 @@ async function runCompleteWorkflow() {
     ];
 
     console.log('Creating segments...');
-    const createdSegments = [];
+    const createdSegments: any[] = [];
     for (const segmentData of segments) {
       const segment = await client.entities.segments.createSegment(orgId, ledgerId, {
         name: segmentData.name,

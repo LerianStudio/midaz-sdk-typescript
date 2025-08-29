@@ -183,12 +183,15 @@ export interface ClientConfigBuilder {
       timeout?: number;
       rollingWindow?: number;
     };
-    endpointCircuitBreakers?: Record<string, {
-      failureThreshold?: number;
-      successThreshold?: number;
-      timeout?: number;
-      rollingWindow?: number;
-    }>;
+    endpointCircuitBreakers?: Record<
+      string,
+      {
+        failureThreshold?: number;
+        successThreshold?: number;
+        timeout?: number;
+        rollingWindow?: number;
+      }
+    >;
     timeoutBudget?: {
       enabled?: boolean;
       minRequestTimeout?: number;
@@ -310,12 +313,15 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
       timeout?: number;
       rollingWindow?: number;
     };
-    endpointCircuitBreakers?: Record<string, {
-      failureThreshold?: number;
-      successThreshold?: number;
-      timeout?: number;
-      rollingWindow?: number;
-    }>;
+    endpointCircuitBreakers?: Record<
+      string,
+      {
+        failureThreshold?: number;
+        successThreshold?: number;
+        timeout?: number;
+        rollingWindow?: number;
+      }
+    >;
     timeoutBudget?: {
       enabled?: boolean;
       minRequestTimeout?: number;

@@ -291,10 +291,12 @@ export async function createUserTransfer(
   const transaction = createTransferTransaction(
     sourceAccountId,
     destinationAccountId,
-    amount,
+    amount.toString(),
     assetCode,
-    mergedOptions.scale,
     mergedOptions.description,
+    undefined, // transactionRouteId
+    undefined, // sourceOperationRouteId
+    undefined, // destinationOperationRouteId
     mergedOptions.metadata
   );
 
@@ -544,10 +546,12 @@ export async function createRoundupSavings(
   const transaction = createTransferTransaction(
     spendingAccountId,
     savingsAccountId,
-    roundupAmount,
+    roundupAmount.toString(),
     assetCode,
-    scale,
     mergedOptions.description,
+    undefined, // transactionRouteId
+    undefined, // sourceOperationRouteId
+    undefined, // destinationOperationRouteId
     mergedOptions.metadata
   );
 
@@ -671,10 +675,12 @@ export async function createRecurringPayment(
   const transaction = createTransferTransaction(
     sourceAccountId,
     destinationAccountId,
-    amount,
+    amount.toString(),
     assetCode,
-    mergedOptions.scale,
     mergedOptions.description,
+    undefined, // transactionRouteId
+    undefined, // sourceOperationRouteId
+    undefined, // destinationOperationRouteId
     mergedOptions.metadata
   );
 
@@ -812,10 +818,12 @@ export function createCreditDebitPair(
   const creditTx = createTransferTransaction(
     sourceAccountId,
     destinationAccountId,
-    amount,
+    amount.toString(),
     assetCode,
-    scale,
     creditDescription,
+    undefined, // transactionRouteId
+    undefined, // sourceOperationRouteId
+    undefined, // destinationOperationRouteId
     { ...commonMetadata, transactionType: 'credit' }
   );
 
@@ -824,10 +832,12 @@ export function createCreditDebitPair(
   const debitTx = createTransferTransaction(
     destinationAccountId,
     sourceAccountId,
-    amount,
+    amount.toString(),
     assetCode,
-    scale,
     debitDescription,
+    undefined, // transactionRouteId
+    undefined, // sourceOperationRouteId
+    undefined, // destinationOperationRouteId
     { ...commonMetadata, transactionType: 'debit' }
   );
 
@@ -921,10 +931,12 @@ export async function createMultiAccountTransfer(
       createTransferTransaction(
         sourceAccount,
         destinationAccount,
-        amount,
+        amount.toString(),
         assetCode,
-        mergedOptions.scale,
         description,
+        undefined, // transactionRouteId
+        undefined, // sourceOperationRouteId
+        undefined, // destinationOperationRouteId
         {
           ...mergedOptions.metadata,
           stepIndex: i + 1,
@@ -1027,10 +1039,12 @@ export async function createSplitPayment(
     return createTransferTransaction(
       sourceAccountId,
       dest.accountId,
-      dest.amount,
+      dest.amount.toString(),
       assetCode,
-      mergedOptions.scale,
       description,
+      undefined, // transactionRouteId
+      undefined, // sourceOperationRouteId
+      undefined, // destinationOperationRouteId
       {
         ...mergedOptions.metadata,
         portionIndex: index + 1,

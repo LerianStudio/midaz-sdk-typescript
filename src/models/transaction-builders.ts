@@ -178,27 +178,32 @@ export function createWithdrawalTransaction(
 export function createTransferTransaction(
   sourceAccount: string,
   destinationAccount: string,
-  amount: number,
+  amount: string,
   assetCode: string,
-  _scale = 0,
   description?: string,
+  transactionRouteId?: string,
+  sourceOperationRouteId?: string,
+  destinationOperationRouteId?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   // Create the transaction with debit and credit operations
   return {
     chartOfAccountsGroupName: 'default',
     description: description || `Transfer from ${sourceAccount} to ${destinationAccount}`,
+    route: transactionRouteId,
     operations: [
       {
+        route: sourceOperationRouteId,
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: amount.toString(),
+        amount,
         assetCode,
       },
       {
+        route: destinationOperationRouteId,
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: amount.toString(),
+        amount,
         assetCode,
       },
     ],
@@ -222,13 +227,11 @@ export function createTransferTransaction(
  * // Create a USD to EUR exchange
  * const exchangeTx = createMultiCurrencyTransaction(
  *   "acc_usd",      // USD account
- *   100,            // $100
+ *   "100",            // $100
  *   "USD",
- *   100,            // 2 decimal places
  *   "acc_eur",      // EUR account
- *   92,             // €92
+ *   "92",             // €92
  *   "EUR",
- *   100,            // 2 decimal places
  *   "USD to EUR exchange at 0.92 rate"
  * );
  *
@@ -242,30 +245,34 @@ export function createTransferTransaction(
  */
 export function createMultiCurrencyTransaction(
   sourceAccount: string,
-  sourceAmount: number,
+  sourceAmount: string,
   sourceAssetCode: string,
-  _sourceScale: number,
   destinationAccount: string,
-  destinationAmount: number,
+  destinationAmount: string,
   destinationAssetCode: string,
-  _destinationScale: number,
   description?: string,
+  transactionRouteId?: string,
+  sourceOperationRouteId?: string,
+  destinationOperationRouteId?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   return {
     chartOfAccountsGroupName: 'default',
     description: description || `Exchange ${sourceAssetCode} to ${destinationAssetCode}`,
+    route: transactionRouteId,
     operations: [
       {
+        route: sourceOperationRouteId,
         accountId: sourceAccount,
         type: 'DEBIT',
-        amount: sourceAmount.toString(),
+        amount: sourceAmount,
         assetCode: sourceAssetCode,
       },
       {
+        route: destinationOperationRouteId,
         accountId: destinationAccount,
         type: 'CREDIT',
-        amount: destinationAmount.toString(),
+        amount: destinationAmount,
         assetCode: destinationAssetCode,
       },
     ],
@@ -274,7 +281,7 @@ export function createMultiCurrencyTransaction(
       exchangeRate: {
         from: sourceAssetCode,
         to: destinationAssetCode,
-        rate: destinationAmount / _destinationScale / (sourceAmount / _sourceScale),
+        rate: Number(destinationAmount) / Number(sourceAmount),
       },
       ...metadata,
     },
