@@ -181,9 +181,9 @@ export function createTransferTransaction(
   amount: string,
   assetCode: string,
   description?: string,
-  transactionRouteId? : string,
-  sourceOperationRouteId? : string,
-  destinationOperationRouteId? : string,
+  transactionRouteId?: string,
+  sourceOperationRouteId?: string,
+  destinationOperationRouteId?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   // Create the transaction with debit and credit operations
@@ -251,9 +251,9 @@ export function createMultiCurrencyTransaction(
   destinationAmount: string,
   destinationAssetCode: string,
   description?: string,
-  transactionRouteId? : string,
-  sourceOperationRouteId? : string,
-  destinationOperationRouteId? : string,
+  transactionRouteId?: string,
+  sourceOperationRouteId?: string,
+  destinationOperationRouteId?: string,
   metadata?: Record<string, any>
 ): CreateTransactionInput {
   return {
