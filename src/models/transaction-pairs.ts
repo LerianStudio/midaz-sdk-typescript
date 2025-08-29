@@ -140,11 +140,13 @@ export async function createTransactionPair(
     const creditTx = createTransferTransaction(
       sourceAccountId,
       destinationAccountId,
-      creditAmount,
+      creditAmount.toString(),
       assetCode,
-      0,
       `Credit to ${destinationAccountId} from ${sourceAccountId}`,
-      { ...metadata, transactionType: 'credit' }
+      undefined,
+      undefined,
+      undefined,
+      { ...metadata, transactionType: 'credit' },
     );
 
     const { status: creditStatus, error: creditError } = await executeTransaction(
@@ -171,11 +173,13 @@ export async function createTransactionPair(
     const debitTx = createTransferTransaction(
       destinationAccountId,
       sourceAccountId,
-      debitAmount,
+      debitAmount.toString(),
       assetCode,
-      0,
       `Debit from ${destinationAccountId} to ${sourceAccountId}`,
-      { ...metadata, transactionType: 'debit' }
+      undefined,
+      undefined,
+      undefined,
+      { ...metadata, transactionType: 'debit' },
     );
 
     const { status: debitStatus, error: debitError } = await executeTransaction(
@@ -384,12 +388,14 @@ export async function createTransactionCycle(
     const transferTx = createTransferTransaction(
       sourceAccount.id,
       destinationAccount.id,
-      amount,
+      amount.toString(),
       assetCode,
-      0,
       `Cycle transfer from ${sourceAccount.name || sourceAccount.id} to ${
         destinationAccount.name || destinationAccount.id
       }`,
+      undefined,
+      undefined,
+      undefined,
       {
         ...mergedOptions.metadata,
         transactionType: 'cycle',
