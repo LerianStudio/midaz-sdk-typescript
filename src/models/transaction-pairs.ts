@@ -146,7 +146,7 @@ export async function createTransactionPair(
       undefined,
       undefined,
       undefined,
-      { ...metadata, transactionType: 'credit' },
+      { ...metadata, transactionType: 'credit' }
     );
 
     const { status: creditStatus, error: creditError } = await executeTransaction(
@@ -179,7 +179,7 @@ export async function createTransactionPair(
       undefined,
       undefined,
       undefined,
-      { ...metadata, transactionType: 'debit' },
+      { ...metadata, transactionType: 'debit' }
     );
 
     const { status: debitStatus, error: debitError } = await executeTransaction(
