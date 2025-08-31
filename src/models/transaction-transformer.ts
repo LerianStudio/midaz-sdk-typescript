@@ -94,7 +94,6 @@ export function toApiTransaction(input: CreateTransactionInput): any {
     result.metadata = input.metadata;
   }
 
-
   if (input.code) {
     result.code = input.code;
   }
