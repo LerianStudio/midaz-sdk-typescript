@@ -5,6 +5,21 @@ All notable changes to the Midaz SDK for TypeScript will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 =======
+## [v2.2.1-beta.1] - 2025-08-31
+
+[Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.2.0...v2.2.1-beta.1)
+Contributors: Jefferson Rodrigues, lerian-studio
+
+### 🔄 Changes
+- **API Request Simplification**: The `idempotencyKey` has been removed from the request body. This change reduces unnecessary data transmission, making API calls more efficient and easier to manage. Developers will find it simpler to implement and maintain integrations with a cleaner request structure.
+
+### 📚 Documentation
+- **Enhanced Clarity**: Updated API documentation to reflect the removal of `idempotencyKey`, ensuring that examples and guidelines are clear and up-to-date. This improvement aids developers in understanding and utilizing the API more effectively.
+
+### 🔧 Maintenance
+- **Changelog Update**: The CHANGELOG has been refreshed to include the latest modifications and improvements. This ensures users have access to a transparent history of project changes, aiding in tracking and understanding the evolution of the software.
+
+
 ## [v2.2.0] - 2025-08-29
 
 [Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.1.0...v2.2.0)
