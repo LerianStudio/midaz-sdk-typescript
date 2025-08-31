@@ -26,6 +26,7 @@
 
 import { config } from 'dotenv';
 import { MidazClient, createClientConfigWithAccessManager } from '../src/index';
+import { randomUUID } from 'node:crypto';
 
 // Load environment variables
 config();
@@ -456,6 +457,7 @@ async function runCompleteWorkflow() {
         orgId,
         ledgerId,
         {
+          idempotencyKey: randomUUID(),
           chartOfAccountsGroupName: 'TRANSFER',
           description: 'Payment for services using routes',
           route: transactionRoute.id,
@@ -753,21 +755,9 @@ async function runCompleteWorkflow() {
       console.log(`⚠️ Asset deletion failed: ${(error as any).message}`);
     }
 
-    try {
-      console.log('Deleting ledger...');
-      await client.entities.ledgers.deleteLedger(orgId, ledgerId);
-      console.log('✅ Ledger deleted successfully');
-    } catch (error) {
-      console.log(`⚠️ Ledger deletion failed: ${(error as any).message}`);
-    }
-
-    try {
-      console.log('Deleting organization...');
-      await client.entities.organizations.deleteOrganization(orgId);
-      console.log('✅ Organization deleted successfully');
-    } catch (error) {
-      console.log(`⚠️ Organization deletion failed: ${(error as any).message}`);
-    }
+    // Note: Ledger and Organization cannot be deleted because they contain transaction history
+    // This is expected behavior in financial systems to maintain audit trails and data integrity
+    console.log('ℹ️  Skipping ledger and organization deletion (contains transaction history)');
 
     console.log('\n✅ Cleanup completed\n');
 
