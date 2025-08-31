@@ -94,9 +94,6 @@ export function toApiTransaction(input: CreateTransactionInput): any {
     result.metadata = input.metadata;
   }
 
-  if (input.idempotencyKey) {
-    result.idempotencyKey = input.idempotencyKey;
-  }
 
   if (input.code) {
     result.code = input.code;
