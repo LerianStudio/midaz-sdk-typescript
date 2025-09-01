@@ -81,7 +81,7 @@ jobs:
         run: npm install --save-dev @semantic-release/exec
 
       - name: Run Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@v5
         with:
           ci: false
           semantic_version: 23.0.8
