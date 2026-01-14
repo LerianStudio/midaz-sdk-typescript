@@ -1,0 +1,34 @@
+name: 'Test Shared TypeScript CI'
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  actions: read
+  security-events: write
+
+jobs:
+  typescript-ci:
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/typescript-ci.yml@v1.8.0
+    with:
+      node_versions: '["20.x", "22.x"]'
+      node_version_primary: '22.x'
+      lint_cmd: 'npm run lint:check'
+      typecheck_cmd: 'npm run typecheck'
+      enable_coverage: true
+      coverage_cmd: 'npm run test:coverage'
+      enable_security_audit: true
+      audit_level: 'moderate'
+      enable_docs: true
+      docs_cmd: 'npm run docs'
