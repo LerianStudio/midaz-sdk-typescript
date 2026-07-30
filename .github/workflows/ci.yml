@@ -104,7 +104,29 @@ jobs:
         run: npm ci
 
       - name: Run security audit
-        run: npm audit --audit-level=moderate
+        run: |
+          # Two advisories are currently unfixable and are allowlisted below:
+          # - GHSA-mh99-v99m-4gvg (brace-expansion): the fix (5.0.8+) is API-incompatible
+          #   with minimatch@3 consumers (eslint/jest toolchains) and no patched 1.x/2.x
+          #   backport exists.
+          # - GHSA-r292-9mhp-454m (tar): only present inside npm's bundled dependencies
+          #   (via semantic-release -> @semantic-release/npm -> npm); bundled deps cannot
+          #   be overridden and no npm release ships the patched tar yet.
+          # Remove these entries once upstream releases include the fixes.
+          # The step still fails on any other advisory at moderate severity or above.
+          ALLOWLIST='["GHSA-mh99-v99m-4gvg","GHSA-r292-9mhp-454m"]'
+          npm audit --audit-level=moderate --json > /tmp/audit.json || true
+          UNEXPECTED=$(jq -r --argjson allow "$ALLOWLIST" \
+            '[.vulnerabilities[].via[]? | objects
+              | select(.severity == "moderate" or .severity == "high" or .severity == "critical")
+              | .url | split("/")[-1]] | unique - $allow | .[]' /tmp/audit.json)
+          if [ -n "$UNEXPECTED" ]; then
+            echo "Vulnerabilities found outside the allowlist:"
+            echo "$UNEXPECTED"
+            npm audit --audit-level=moderate || true
+            exit 1
+          fi
+          echo "Security audit passed (allowlisted advisories only)."
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/init@v3

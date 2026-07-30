@@ -132,5 +132,9 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "overrides": {
+    "axios": "^1.19.0",
+    "npm": "^11.19.0"
   }
 }
