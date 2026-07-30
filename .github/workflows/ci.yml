@@ -20,7 +20,7 @@ concurrency:
 jobs:
   lint-and-format:
     name: Lint and Format
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout repository
@@ -49,7 +49,7 @@ jobs:
 
   build-and-test:
     name: Build and Test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: lint-and-format
     strategy:
       matrix:
@@ -88,7 +88,7 @@ jobs:
 
   security-audit:
     name: Security Audit
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout repository
@@ -116,7 +116,7 @@ jobs:
 
   docs-build:
     name: Documentation Build
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout repository
@@ -143,7 +143,7 @@ jobs:
 
   package-size:
     name: Package Size Analysis
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout repository
