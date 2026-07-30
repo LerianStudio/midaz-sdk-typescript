@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   npm-audit:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     name: Run npm audit and fix vulnerabilities
     steps:
       - name: Checkout code
@@ -55,7 +55,7 @@ jobs:
         run: npm audit fix --omit=dev || true
 
   prepare-build:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     name: Prepare project for build (TypeScript compile)
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
         run: npm run build
 
   lint-build-test-docs:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     name: Lint, Build, Test, Docs
     strategy:
       matrix:
