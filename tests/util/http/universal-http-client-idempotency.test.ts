@@ -41,8 +41,7 @@ afterEach(() => {
 });
 
 describe('UniversalHttpClient idempotency header', () => {
-  const client = () =>
-    new UniversalHttpClient({ baseURL: 'http://localhost:3000', retries: 0 });
+  const client = () => new UniversalHttpClient({ baseURL: 'http://localhost:3000', retries: 0 });
 
   it('sends a caller-supplied key under X-Idempotency', async () => {
     await client().request('/transactions', {
@@ -102,9 +101,7 @@ describe('UniversalHttpClient idempotency header', () => {
   });
 
   it('reuses the same key across retries of a single call', async () => {
-    mockFetch
-      .mockRejectedValueOnce(new Error('network down'))
-      .mockResolvedValueOnce(okResponse());
+    mockFetch.mockRejectedValueOnce(new Error('network down')).mockResolvedValueOnce(okResponse());
 
     const retryingClient = new UniversalHttpClient({
       baseURL: 'http://localhost:3000',
