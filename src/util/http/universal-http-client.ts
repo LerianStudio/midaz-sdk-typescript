@@ -3,13 +3,18 @@
  * Uses the Fetch API which is available in modern browsers and Node.js 18+
  */
 
-import { createIdempotencyKey } from '../crypto';
 import { createLogger, UniversalLogger } from '../logger/universal-logger';
 import { sanitizeHeaders } from '../security/sanitizer';
 import { ConnectionPool, ConnectionPoolOptions } from './connection-pool';
 import { TimeoutBudget } from '../timeout/timeout-budget';
 import { MetricsCollector } from '../monitoring/metrics';
 import { CorrelationManager } from '../tracing/correlation';
+
+/**
+ * Header the Midaz backend reads the idempotency key from
+ * (LerianStudio/lib-commons commons/constants/headers.go).
+ */
+const IDEMPOTENCY_HEADER = 'X-Idempotency';
 
 export interface HttpClientOptions {
   baseURL?: string;
@@ -141,15 +146,10 @@ export class UniversalHttpClient {
       });
     }
 
-    // Add idempotency key if needed
+    // Forward a caller-supplied idempotency key. Without one the ledger falls
+    // back to deduplicating by a hash of the request body, so send no header.
     if (options.idempotencyKey) {
-      headers['Idempotency-Key'] = options.idempotencyKey;
-    } else if (['POST', 'PUT', 'PATCH'].includes(method)) {
-      headers['Idempotency-Key'] = await createIdempotencyKey(
-        method,
-        fullUrl,
-        JSON.stringify(options.body)
-      );
+      headers[IDEMPOTENCY_HEADER] = options.idempotencyKey;
     }
 
     let lastError: Error | undefined;

@@ -109,6 +109,9 @@ export function generateRandomString(
 /**
  * Create an idempotency key
  * @param components Parts to include in the key
+ * @deprecated For idempotency, supply your own key via `idempotencyKey` on the
+ * request, or send none and let the backend deduplicate by request-body hash.
+ * For a random hex string, call `sha256` directly.
  */
 export async function createIdempotencyKey(...components: string[]): Promise<string> {
   const combined = components.join(':');

@@ -119,7 +119,7 @@ export class HttpTransactionApiClient
       'createTransaction',
       url,
       libTransaction,
-      undefined,
+      { idempotencyKey: input.idempotencyKey },
       attributes
     );
 
