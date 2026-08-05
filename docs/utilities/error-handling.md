@@ -304,24 +304,32 @@ async function updateAccount(client, orgId, ledgerId, account) {
 import { withEnhancedRecovery, createTransactionVerification } from 'midaz-sdk/util/error';
 
 async function processCriticalPayment(client, orgId, ledgerId, payment) {
+  // Tag the payment with a reference we own so verification can find it again.
+  // An idempotency key cannot serve this purpose: it is a deduplication token, not an
+  // addressable identifier, and there is no lookup-by-idempotency-key endpoint.
+  const externalId = payment.externalId ?? `payment-${crypto.randomUUID()}`;
+  const input = { ...payment, externalId };
+
   // Create verification function
   const verifyTransaction = createTransactionVerification(async () => {
     try {
-      // Check if transaction exists by ID
-      const tx = await client.entities.transactions.getTransaction(
-        orgId,
-        ledgerId,
-        payment.idempotencyKey || payment.id
+      // Check whether a transaction carrying our reference already landed
+      const page = await client.entities.transactions.listTransactions(orgId, ledgerId, {
+        limit: 100,
+      });
+      return page.items.some(
+        (tx) => tx.externalId === externalId && tx.status?.code === 'APPROVED'
       );
-      return tx && tx.status === 'completed';
     } catch (error) {
       return false;
     }
   });
 
-  // Execute with enhanced recovery and verification
+  // Execute with enhanced recovery and verification.
+  // The same `input` object is sent on every retry, so the server deduplicates by
+  // request-body hash even though no explicit idempotency key was set.
   const result = await withEnhancedRecovery(
-    () => client.entities.transactions.createTransaction(orgId, ledgerId, payment),
+    () => client.entities.transactions.createTransaction(orgId, ledgerId, input),
     {
       // Retry settings
       maxRetries: 5,

@@ -40,7 +40,7 @@ import { OrganizationsService } from 'midaz-sdk/entities/organizations';
 import { AccountsService } from 'midaz-sdk/entities/accounts';
 
 // Import specific utilities
-import { createIdempotencyKey } from 'midaz-sdk/utils/crypto';
+import { sha256 } from 'midaz-sdk/utils/crypto';
 ```
 
 Bundle size: ~30-50KB depending on usage

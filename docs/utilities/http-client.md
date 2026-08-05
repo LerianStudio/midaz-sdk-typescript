@@ -140,7 +140,6 @@ const httpClient = new HttpClient({
   },
   headers: {
     'Custom-Header': 'value',
-    'Idempotency-Key': 'unique-key-123',
   },
 });
 ```
@@ -150,10 +149,14 @@ Or for individual requests:
 ```typescript
 const response = await httpClient.post(url, data, {
   headers: {
-    'Idempotency-Key': 'unique-key-456',
+    'X-Custom-Value': 'some-value',
   },
 });
 ```
+
+> Do not set `X-Idempotency` as a client-level default header. A single key reused
+> across every request would make the server treat unrelated transactions as
+> duplicates. Pass it per request instead — see below.
 
 ## Observability Integration
 
@@ -181,17 +184,35 @@ const httpClient = new HttpClient({
 
 ## Best Practices
 
-1. **Use Idempotency Keys for Mutations**
+1. **Idempotency on Transaction Creation**
 
-   Always include idempotency keys for non-idempotent operations:
+   The only header Midaz reads for idempotency is `X-Idempotency`, and it only applies
+   to transaction creation. There are two ways to use it:
+
+   **Let the server deduplicate (default).** If you send no `X-Idempotency` header, the
+   server derives a deduplication key from the SHA-256 hash of the request body. Two
+   identical bodies are treated as the same transaction. The SDK does not generate a key
+   for you.
+
+   ```typescript
+   // No idempotency header sent — server deduplicates by request body hash
+   const response = await httpClient.post('/transactions', transactionData);
+   ```
+
+   **Supply your own key.** Pass an explicit key when you need control over the
+   deduplication window — for example, to retry a transaction whose body legitimately
+   changed, or to deduplicate across bodies that differ only in a timestamp.
 
    ```typescript
    const response = await httpClient.post('/transactions', transactionData, {
      headers: {
-       'Idempotency-Key': `tx-${uuidv4()}`,
+       'X-Idempotency': `tx-${uuidv4()}`,
      },
    });
    ```
+
+   Generate the key once per logical operation and reuse it across retries of that
+   operation. A key generated inside a retry loop defeats the purpose.
 
 2. **Configure Appropriate Timeouts**
 

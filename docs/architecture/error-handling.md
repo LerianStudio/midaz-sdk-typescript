@@ -384,7 +384,7 @@ enum TransactionErrorCategory {
   /** Invalid amount (e.g., negative or zero) */
   INVALID_AMOUNT = 'invalid_amount',
 
-  /** Duplicate transaction (idempotency key already used) */
+  /** Duplicate transaction (matched an existing `X-Idempotency` key or request-body hash) */
   DUPLICATE_TRANSACTION = 'duplicate_transaction',
 
   /** Account has been frozen or suspended */
