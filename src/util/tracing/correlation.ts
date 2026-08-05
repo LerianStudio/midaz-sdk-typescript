@@ -2,7 +2,7 @@
  * Error correlation and distributed tracing utilities
  */
 
-import { createIdempotencyKey } from '../crypto';
+import { generateRandomString, sha256 } from '../crypto';
 
 export interface TraceContext {
   traceId: string;
@@ -270,7 +270,7 @@ export class CorrelationManager {
    */
   private async generateCorrelationId(): Promise<string> {
     const timestamp = Date.now().toString(36);
-    const random = await createIdempotencyKey('correlation', timestamp);
+    const random = await sha256(`correlation:${timestamp}:${generateRandomString(8)}`);
     return `corr_${timestamp}_${random.substring(0, 8)}`;
   }
 
