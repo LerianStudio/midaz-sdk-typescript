@@ -57,23 +57,31 @@ interface BaseUrlDefaults {
  * Resolves the base URL map for an environment from `MIDAZ_LEDGER_URL` and the deprecated
  * `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair.
  *
- * When `MIDAZ_LEDGER_URL` is the only URL variable set, the legacy keys are omitted so the
- * unified `ledger` key serves every service. Supplying a legacy variable keeps that key, which
- * still wins for its own service family.
+ * When `MIDAZ_LEDGER_URL` is set, only the legacy keys the caller supplied are carried over:
+ * each keeps winning for its own service family while `ledger` serves everything else. Default
+ * legacy URLs are emitted only when no ledger URL is configured, so a placeholder host can
+ * never shadow a configured ledger.
  */
 function resolveBaseUrls(defaults: BaseUrlDefaults): Record<string, string> {
   const ledgerUrl = getEnvVar('MIDAZ_LEDGER_URL');
   const onboardingUrl = getEnvVar('MIDAZ_ONBOARDING_URL');
   const transactionUrl = getEnvVar('MIDAZ_TRANSACTION_URL');
 
-  if (ledgerUrl && !onboardingUrl && !transactionUrl) {
-    return { ledger: ledgerUrl };
+  if (ledgerUrl) {
+    const baseUrls: Record<string, string> = { ledger: ledgerUrl };
+    if (onboardingUrl) {
+      baseUrls.onboarding = onboardingUrl;
+    }
+    if (transactionUrl) {
+      baseUrls.transaction = transactionUrl;
+    }
+    return baseUrls;
   }
 
   return {
     onboarding: onboardingUrl || defaults.onboarding,
     transaction: transactionUrl || defaults.transaction,
-    ledger: ledgerUrl || defaults.ledger,
+    ledger: defaults.ledger,
   };
 }
 

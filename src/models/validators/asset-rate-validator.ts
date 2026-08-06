@@ -74,6 +74,8 @@ export function validateUpdateAssetRateInput(input: UpdateAssetRateInput): Valid
     errors.rate = 'rate is required';
   } else if (!Number.isInteger(input.rate)) {
     errors.rate = `rate must be an integer, use scale to express decimals (5.20 is rate 520 with scale 2)`;
+  } else if (input.rate <= 0) {
+    errors.rate = 'rate must be greater than zero';
   }
 
   validateNonNegativeInteger(errors, 'scale', input.scale);

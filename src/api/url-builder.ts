@@ -122,8 +122,8 @@ export class UrlBuilder {
   /**
    * Gets the base URL for a specific service
    *
-   * Resolution order: explicit service key, unified `ledger` key, legacy key of the
-   * service family. Throws when none of them is configured.
+   * Resolution order: explicit service key, legacy key of the service family, unified
+   * `ledger` key. Throws when none of them is configured.
    *
    * @returns The base URL for the service
    */
@@ -134,16 +134,16 @@ export class UrlBuilder {
       return explicitUrl;
     }
 
-    const ledgerUrl = this.baseUrls[LEDGER_KEY];
-    if (ledgerUrl) {
-      return ledgerUrl;
-    }
-
     const legacyKey = LEGACY_SERVICE_FAMILY[service];
     const legacyUrl = legacyKey ? this.baseUrls[legacyKey] : undefined;
     if (legacyUrl) {
       this.warnOnLegacyKeyOnce(legacyKey);
       return legacyUrl;
+    }
+
+    const ledgerUrl = this.baseUrls[LEDGER_KEY];
+    if (ledgerUrl) {
+      return ledgerUrl;
     }
 
     throw new MidazConfigError(

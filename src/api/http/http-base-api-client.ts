@@ -251,6 +251,20 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   }
 
   /**
+   * Validates required parameters inside a span that is always terminated
+   *
+   */
+  protected validateParamsInSpan(params: ValidationParams, attributes?: Record<string, any>): void {
+    const span = this.startSpan('validateParams', attributes);
+
+    try {
+      this.validateRequiredParams(span, params);
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
    * Records metrics for an operation
    *
    */

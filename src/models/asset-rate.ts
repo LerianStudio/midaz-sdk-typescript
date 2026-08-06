@@ -29,7 +29,57 @@ import type { components } from '../generated/ledger-v1';
  * };
  * ```
  */
-export type AssetRate = components['schemas']['AssetRate'];
+export interface AssetRate {
+  /** Unique identifier of the rate */
+  id: string;
+
+  /** Organization that owns the rate */
+  organizationId: string;
+
+  /** Ledger the rate belongs to */
+  ledgerId: string;
+
+  /** Identifier used to correlate the rate with an external system */
+  externalId: string;
+
+  /** Source asset code */
+  from: string;
+
+  /** Target asset code */
+  to: string;
+
+  /** Unscaled exchange rate */
+  rate: number;
+
+  /** Number of decimal places applied to `rate` */
+  scale: number | null;
+
+  /** Free-form origin of the rate information */
+  source: string | null;
+
+  /** Time-to-live in seconds */
+  ttl: number;
+
+  /** Creation timestamp */
+  createdAt: string;
+
+  /** Last update timestamp */
+  updatedAt: string;
+
+  /** Additional custom attributes */
+  metadata: { [key: string]: unknown };
+}
+
+// Structural check against the generated spec type: it is declared here rather than aliased so
+// the published declarations do not reference `src/generated`, which ships no runtime module.
+type GeneratedAssetRate = components['schemas']['AssetRate'];
+
+const assetRateMatchesSpec: (value: AssetRate) => GeneratedAssetRate = (value) => value;
+
+const specMatchesAssetRate: (value: GeneratedAssetRate) => AssetRate = (value) => value;
+
+void assetRateMatchesSpec;
+void specMatchesAssetRate;
 
 /**
  * Input for creating or updating an asset rate

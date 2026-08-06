@@ -13,6 +13,8 @@ import { UrlBuilder } from '../url-builder';
 
 import { HttpBaseApiClient } from './http-base-api-client';
 
+const ASSET_RATE_PAGE_LIMIT = 100;
+
 /**
  * HTTP implementation of the AssetRateApiClient interface
  *
@@ -49,7 +51,7 @@ export class HttpAssetRateApiClient
       destinationAssetCode,
     };
 
-    this.validateRequiredParams(this.startSpan('validateParams', attributes), attributes);
+    this.validateParamsInSpan(attributes, attributes);
 
     if (sourceAssetCode === destinationAssetCode) {
       this.recordMetrics('assetRate.get.sameAsset', 1, attributes);
@@ -58,14 +60,27 @@ export class HttpAssetRateApiClient
 
     const url = this.urlBuilder.buildAssetRateFromUrl(organizationId, ledgerId, sourceAssetCode);
 
-    const response = await this.getRequest<ListResponse<AssetRate>>(
-      'getAssetRate',
-      url,
-      undefined,
-      attributes
-    );
+    let cursor: string | undefined;
+    let rate: AssetRate | undefined;
 
-    const rate = response.items?.find((item) => item.to === destinationAssetCode);
+    do {
+      const params: Record<string, unknown> = { limit: ASSET_RATE_PAGE_LIMIT };
+      if (cursor) {
+        params.cursor = cursor;
+      }
+
+      const response = await this.getRequest<ListResponse<AssetRate>>(
+        'getAssetRate',
+        url,
+        { params },
+        attributes
+      );
+
+      rate = response.items?.find((item) => item.to === destinationAssetCode);
+
+      const nextCursor = this.readNextCursor(response);
+      cursor = nextCursor && nextCursor !== cursor ? nextCursor : undefined;
+    } while (!rate && cursor);
 
     if (!rate) {
       throw newNotFoundError('assetRate', `${sourceAssetCode}-${destinationAssetCode}`, {
@@ -90,7 +105,7 @@ export class HttpAssetRateApiClient
   ): Promise<AssetRate> {
     const attributes = { organizationId, ledgerId, externalId };
 
-    this.validateRequiredParams(this.startSpan('validateParams', attributes), attributes);
+    this.validateParamsInSpan(attributes, attributes);
 
     const url = this.urlBuilder.buildAssetRateByExternalIdUrl(organizationId, ledgerId, externalId);
 
@@ -114,10 +129,7 @@ export class HttpAssetRateApiClient
       to: input?.to,
     };
 
-    this.validateRequiredParams(this.startSpan('validateParams', attributes), {
-      organizationId,
-      ledgerId,
-    });
+    this.validateParamsInSpan({ organizationId, ledgerId }, attributes);
 
     validate(input, validateUpdateAssetRateInput);
 
@@ -137,6 +149,16 @@ export class HttpAssetRateApiClient
   }
 
   /**
+   * Reads the cursor of the next page from the ledger's list envelope
+   *
+   */
+  private readNextCursor(response: ListResponse<AssetRate>): string | undefined {
+    const nextCursor = response.next_cursor ?? response.meta?.nextCursor;
+
+    return typeof nextCursor === 'string' && nextCursor.length > 0 ? nextCursor : undefined;
+  }
+
+  /**
    * Strips undefined optional fields so the ledger never receives explicit nulls
    *
    */
@@ -145,6 +167,8 @@ export class HttpAssetRateApiClient
       from: input.from,
       to: input.to,
       rate: input.rate,
+      // midaz main dereferences ttl unconditionally, so omitting it answers HTTP 500
+      ttl: input.ttl ?? 0,
     };
 
     if (input.scale !== undefined) {
@@ -152,9 +176,6 @@ export class HttpAssetRateApiClient
     }
     if (input.source !== undefined) {
       body.source = input.source;
-    }
-    if (input.ttl !== undefined) {
-      body.ttl = input.ttl;
     }
     if (input.externalId !== undefined) {
       body.externalId = input.externalId;

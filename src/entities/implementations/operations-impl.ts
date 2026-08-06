@@ -109,8 +109,7 @@ export class OperationsServiceImpl implements OperationsService {
    * Gets an operation by ID
    *
    * Retrieves a single operation by its unique identifier within the specified
-   * organization, ledger, and account. Optionally, a transaction ID can be provided
-   * to narrow down the search.
+   * organization, ledger, and account.
    *
    * @returns Promise resolving to the operation
    */
@@ -118,8 +117,7 @@ export class OperationsServiceImpl implements OperationsService {
     orgId: string,
     ledgerId: string,
     accountId: string,
-    operationId: string,
-    transactionId?: string
+    operationId: string
   ): Promise<Operation> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('getOperation');
@@ -127,9 +125,6 @@ export class OperationsServiceImpl implements OperationsService {
     span.setAttribute('ledgerId', ledgerId);
     span.setAttribute('accountId', accountId);
     span.setAttribute('operationId', operationId);
-    if (transactionId) {
-      span.setAttribute('transactionId', transactionId);
-    }
 
     try {
       // Delegate to the API client
@@ -137,8 +132,7 @@ export class OperationsServiceImpl implements OperationsService {
         orgId,
         ledgerId,
         accountId,
-        operationId,
-        transactionId
+        operationId
       );
 
       // Record metrics
@@ -174,21 +168,20 @@ export class OperationsServiceImpl implements OperationsService {
   public async updateOperation(
     orgId: string,
     ledgerId: string,
-    accountId: string,
+    accountId: string | undefined,
     operationId: string,
     input: Record<string, any>,
-    transactionId?: string
+    transactionId: string
   ): Promise<Operation> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('updateOperation');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('accountId', accountId);
-    span.setAttribute('operationId', operationId);
-
-    if (transactionId) {
-      span.setAttribute('transactionId', transactionId);
+    if (accountId) {
+      span.setAttribute('accountId', accountId);
     }
+    span.setAttribute('operationId', operationId);
+    span.setAttribute('transactionId', transactionId);
 
     if (input.metadata) {
       span.setAttribute('updatedMetadata', true);
@@ -206,13 +199,17 @@ export class OperationsServiceImpl implements OperationsService {
       );
 
       // Record metrics
-      this.observability.recordMetric('operation.update', 1, {
+      const metricTags: Record<string, string> = {
         orgId,
         ledgerId,
-        accountId,
         operationId,
+        transactionId,
         operationType: result.type || 'unknown',
-      });
+      };
+      if (accountId) {
+        metricTags.accountId = accountId;
+      }
+      this.observability.recordMetric('operation.update', 1, metricTags);
 
       span.setStatus('ok');
       return result;

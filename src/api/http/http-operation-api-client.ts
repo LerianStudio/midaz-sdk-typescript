@@ -42,7 +42,7 @@ export class HttpOperationApiClient
   ): Promise<ListResponse<Operation>> {
     const attributes = { orgId, ledgerId, accountId };
 
-    this.validateRequiredParams(this.startSpan('validateParams', attributes), attributes);
+    this.validateParamsInSpan(attributes, attributes);
 
     const url = this.urlBuilder.buildAccountOperationUrl(orgId, ledgerId, accountId);
 
@@ -68,17 +68,11 @@ export class HttpOperationApiClient
     orgId: string,
     ledgerId: string,
     accountId: string,
-    operationId: string,
-    transactionId?: string
+    operationId: string
   ): Promise<Operation> {
-    const attributes = { orgId, ledgerId, accountId, operationId, transactionId };
+    const attributes = { orgId, ledgerId, accountId, operationId };
 
-    this.validateRequiredParams(this.startSpan('validateParams', attributes), {
-      orgId,
-      ledgerId,
-      accountId,
-      operationId,
-    });
+    this.validateParamsInSpan(attributes, attributes);
 
     const url = this.urlBuilder.buildAccountOperationUrl(orgId, ledgerId, accountId, operationId);
 
@@ -100,23 +94,27 @@ export class HttpOperationApiClient
   public async updateOperation(
     orgId: string,
     ledgerId: string,
-    accountId: string,
+    accountId: string | undefined,
     operationId: string,
     input: Record<string, any>,
-    transactionId?: string
+    transactionId: string
   ): Promise<Operation> {
     const attributes = { orgId, ledgerId, accountId, operationId, transactionId };
     const span = this.startSpan('validateParams', attributes);
 
-    this.validateRequiredParams(span, { orgId, ledgerId, accountId, operationId });
+    try {
+      this.validateRequiredParams(span, { orgId, ledgerId, operationId });
 
-    if (!transactionId) {
-      const error = new ValidationError(
-        'transactionId is required: operations are updated through PATCH /organizations/{orgId}/ledgers/{ledgerId}/transactions/{transactionId}/operations/{operationId}',
-        { transactionId: ['transactionId is required'] }
-      );
-      span.recordException(error);
-      throw error;
+      if (!transactionId) {
+        const error = new ValidationError(
+          'transactionId is required: operations are updated through PATCH /organizations/{orgId}/ledgers/{ledgerId}/transactions/{transactionId}/operations/{operationId}',
+          { transactionId: ['transactionId is required'] }
+        );
+        span.recordException(error);
+        throw error;
+      }
+    } finally {
+      span.end();
     }
 
     const requestAttributes: Record<string, any> = { ...attributes };
