@@ -184,13 +184,13 @@ describe('ClientConfigBuilder', () => {
 
     describe('Local', () => {
       it('should create local config', () => {
-        const builder = createLocalConfig(3000);
+        const builder = createLocalConfig(3002);
         const config = builder.build();
 
         expect(config.debug).toBe(true);
         expect(config.apiVersion).toBeDefined(); // Should have some API version
         expect(config.baseUrls).toBeDefined();
-        expect(config.baseUrls?.ledger).toContain('localhost:3002');
+        expect(config.baseUrls?.ledger).toBe('http://localhost:3002');
         expect(config.baseUrls?.onboarding).toBeUndefined();
         expect(config.baseUrls?.transaction).toBeUndefined();
         // No authentication configured by default
@@ -575,10 +575,28 @@ describe('ClientConfigBuilder', () => {
     });
 
     it('should emit the ledger key alone for local configurations', () => {
+      const { createLocalConfig, createLocalConfigWithAccessManager } = loadBuilderModule();
+
+      // The port names the ledger itself: midaz is one service, so there is no offset.
+      expect(createLocalConfig().build().baseUrls).toEqual({ ledger: 'http://localhost:3002' });
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4000' });
+      expect(
+        createLocalConfigWithAccessManager(
+          {
+            address: 'https://auth.example.com',
+            clientId: 'test-client-id',
+            clientSecret: 'test-client-secret',
+          },
+          4000
+        ).build().baseUrls
+      ).toEqual({ ledger: 'http://localhost:4000' });
+    });
+
+    it('should let MIDAZ_LOCAL_PORT override the local ledger port', () => {
+      process.env.MIDAZ_LOCAL_PORT = '4500';
       const { createLocalConfig } = loadBuilderModule();
 
-      expect(createLocalConfig().build().baseUrls).toEqual({ ledger: 'http://localhost:3002' });
-      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4002' });
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4500' });
     });
 
     it('should honour MIDAZ_LEDGER_URL in local configurations', () => {

@@ -3,8 +3,9 @@
  *
  * All three are body-less POSTs returning 201 with a Transaction. Verified live against
  * midaz main @33cb93f: commit only from PENDING, cancel only from PENDING, revert only
- * from APPROVED, and a second commit on a committed transaction returns 409/0486
- * permanently.
+ * from APPROVED, and a second commit on a committed transaction returns 409/0486 for as
+ * long as the ledger holds its 300-second lock — which it does not release when the
+ * transition succeeds.
  */
 import { HttpTransactionApiClient } from '../../../src/api/http/http-transaction-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
@@ -67,6 +68,9 @@ describe('HttpTransactionApiClient state transitions', () => {
     client = new HttpTransactionApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
   });
 
+  /** Every request carries the version header the base client adds. */
+  const versionHeader = { headers: { 'X-API-Version': 'v1' } };
+
   /** Returns [url, body, options] of the single POST the client issued. */
   function postArgs(): [string, unknown, any] {
     expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
@@ -106,30 +110,48 @@ describe('HttpTransactionApiClient state transitions', () => {
     });
   });
 
-  it('never sends an idempotency key on commit, which the server ignores', async () => {
+  it('never sends an idempotency key on commit and forbids a re-send', async () => {
     await client.commitTransaction(orgId, ledgerId, transactionId);
 
     const [, , options] = postArgs();
-    expect(options.idempotencyKey).toBeUndefined();
+    expect(options).toEqual({ ...versionHeader, maxRetries: 0 });
   });
 
-  it('never sends an idempotency key on cancel, which the server ignores', async () => {
+  it('never sends an idempotency key on cancel and forbids a re-send', async () => {
     await client.cancelTransaction(orgId, ledgerId, transactionId);
 
     const [, , options] = postArgs();
-    expect(options.idempotencyKey).toBeUndefined();
+    expect(options).toEqual({ ...versionHeader, maxRetries: 0 });
   });
 
-  it('forwards the idempotency key on revert, which the server honours', async () => {
-    await client.revertTransaction(orgId, ledgerId, transactionId, {
+  it('never sends an idempotency key on revert, which the server discards', async () => {
+    // The route binds no X-Idempotency field, so RevertTransactionOptions no longer
+    // offers the key; a caller reaching for it anyway must not reach the wire.
+    await (client as any).revertTransaction(orgId, ledgerId, transactionId, {
       idempotencyKey: 'estorno-nf123',
     });
 
     const [, , options] = postArgs();
-    expect(options.idempotencyKey).toBe('estorno-nf123');
+    expect(options.idempotencyKey).toBeUndefined();
   });
 
-  describe('the permanent 0486 lock', () => {
+  it('leaves revert re-sendable, since the ledger deduplicates it server-side', async () => {
+    await client.revertTransaction(orgId, ledgerId, transactionId);
+
+    const [, , options] = postArgs();
+    expect(options).toEqual({ ...versionHeader });
+  });
+
+  it('carries the caller timeout and signal into every transition', async () => {
+    const signal = new AbortController().signal;
+
+    await client.commitTransaction(orgId, ledgerId, transactionId, { timeout: 1234, signal });
+
+    const [, , options] = postArgs();
+    expect(options).toEqual({ ...versionHeader, timeout: 1234, signal, maxRetries: 0 });
+  });
+
+  describe('the 0486 lock the ledger holds for 300 seconds', () => {
     const lockedDetail = 'This transaction is currently being processed by another request.';
 
     class HttpErrorLike extends Error {
@@ -177,6 +199,19 @@ describe('HttpTransactionApiClient state transitions', () => {
       expect(error.message).toContain('Please retry shortly');
       expect(error.message).toContain('terminal');
       expect(error.resourceId).toBe(transactionId);
+    });
+
+    it('measures the lock in seconds and stops short of calling it permanent', async () => {
+      mockHttpClient.post.mockRejectedValue(lockedError());
+
+      const error = await client
+        .commitTransaction(orgId, ledgerId, transactionId)
+        .catch((caught) => caught);
+
+      expect(error.message).toContain('300 seconds');
+      expect(error.message).toContain('0099');
+      expect(error.message).not.toMatch(/nanosecond/i);
+      expect(error.message).not.toContain('never releases this lock');
     });
 
     it('reads the code out of a problem document the transport left as a string', async () => {

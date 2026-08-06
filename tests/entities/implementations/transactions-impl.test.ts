@@ -96,6 +96,7 @@ describe('TransactionsServiceImpl', () => {
       listTransactions: jest.fn(),
       getTransaction: jest.fn(),
       createTransaction: jest.fn(),
+      updateTransaction: jest.fn(),
       commitTransaction: jest.fn(),
       cancelTransaction: jest.fn(),
       revertTransaction: jest.fn(),
@@ -345,6 +346,53 @@ describe('TransactionsServiceImpl', () => {
     });
   });
 
+  describe('updateTransaction', () => {
+    const patch = { description: 'audited', metadata: { auditRef: 'X-1' } };
+
+    it('delegates the caller body to the API client under the right ledger', async () => {
+      const patched: Transaction = { ...mockTransaction, description: 'audited' };
+      mockTransactionApiClient.updateTransaction.mockResolvedValueOnce(patched);
+
+      const result = await transactionsService.updateTransaction(
+        orgId,
+        ledgerId,
+        transactionId,
+        patch
+      );
+
+      expect(mockTransactionApiClient.updateTransaction).toHaveBeenCalledTimes(1);
+      expect(mockTransactionApiClient.updateTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        patch
+      );
+      expect(result).toBe(patched);
+    });
+
+    it('forwards an empty patch untouched, which the ledger answers with the stored transaction', async () => {
+      mockTransactionApiClient.updateTransaction.mockResolvedValueOnce(mockTransaction);
+
+      await transactionsService.updateTransaction(orgId, ledgerId, transactionId, {});
+
+      expect(mockTransactionApiClient.updateTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        {}
+      );
+    });
+
+    it('propagates the client-side rejection of a key the endpoint refuses', async () => {
+      const rejected = new Error('externalId is not accepted by this endpoint');
+      mockTransactionApiClient.updateTransaction.mockRejectedValueOnce(rejected);
+
+      await expect(
+        transactionsService.updateTransaction(orgId, ledgerId, transactionId, patch)
+      ).rejects.toBe(rejected);
+    });
+  });
+
   describe('state transitions', () => {
     it('delegates commitTransaction to the API client', async () => {
       mockTransactionApiClient.commitTransaction.mockResolvedValueOnce(mockTransaction);
@@ -374,23 +422,25 @@ describe('TransactionsServiceImpl', () => {
       expect(result).toEqual(mockTransaction);
     });
 
-    it('delegates revertTransaction with its idempotency key', async () => {
+    it('delegates revertTransaction with the options the endpoint honours', async () => {
       const reverted: Transaction = {
         ...mockTransaction,
         id: 'txn_reverted',
         parentTransactionId: transactionId,
       };
       mockTransactionApiClient.revertTransaction.mockResolvedValueOnce(reverted);
+      const signal = new AbortController().signal;
 
       const result = await transactionsService.revertTransaction(orgId, ledgerId, transactionId, {
-        idempotencyKey: 'estorno-nf123',
+        timeout: 5000,
+        signal,
       });
 
       expect(mockTransactionApiClient.revertTransaction).toHaveBeenCalledWith(
         orgId,
         ledgerId,
         transactionId,
-        { idempotencyKey: 'estorno-nf123' }
+        { timeout: 5000, signal }
       );
       expect(result.parentTransactionId).toBe(transactionId);
     });

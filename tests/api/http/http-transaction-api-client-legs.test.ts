@@ -101,6 +101,47 @@ describe('HttpTransactionApiClient leg guards', () => {
     expect(mockHttpClient.post).not.toHaveBeenCalled();
   });
 
+  describe('every endpoint that takes legs', () => {
+    const both = (from: any[], to: any[]) => buildInput(from, to);
+    const inflow = (to: any[]) =>
+      ({ description: 'in', send: { asset: 'BRL', value: '100', distribute: { to } } }) as any;
+    const outflow = (from: any[]) =>
+      ({ description: 'out', send: { asset: 'BRL', value: '100', source: { from } } }) as any;
+
+    const legal = { account: 'acc-a', amount: { asset: 'BRL', value: '100' } };
+    const remaining = { account: 'acc-c', remaining: 'remaining' };
+    const foreign = { account: 'acc-d', amount: { asset: 'USD', value: '100' } };
+
+    const cases: Array<[string, any, any]> = [
+      ['createTransaction', both([legal], [legal, remaining]), both([foreign], [legal])],
+      ['createInflow', inflow([legal, remaining]), inflow([foreign])],
+      ['createOutflow', outflow([legal, remaining]), outflow([foreign])],
+      ['blockFunds', both([legal], [legal, remaining]), both([foreign], [legal])],
+      ['unblockFunds', both([legal], [legal, remaining]), both([foreign], [legal])],
+      ['createAnnotation', both([legal], [legal, remaining]), both([foreign], [legal])],
+    ];
+
+    it.each(cases)(
+      'refuses a remaining leg on %s without issuing a request',
+      async (method, withRemaining) => {
+        await expect((client as any)[method](orgId, ledgerId, withRemaining)).rejects.toThrow(
+          /remaining/
+        );
+        expect(mockHttpClient.post).not.toHaveBeenCalled();
+      }
+    );
+
+    it.each(cases)(
+      'refuses a mismatched leg asset on %s without issuing a request',
+      async (method, _withRemaining, withForeignAsset) => {
+        await expect((client as any)[method](orgId, ledgerId, withForeignAsset)).rejects.toThrow(
+          /amount\.asset/
+        );
+        expect(mockHttpClient.post).not.toHaveBeenCalled();
+      }
+    );
+  });
+
   it('posts a share split and the mirrored asset when the legs are legal', async () => {
     const input = buildInput(
       [{ account: 'acc-a', amount: { value: '100' } }],

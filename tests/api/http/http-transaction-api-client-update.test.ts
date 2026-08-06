@@ -91,12 +91,29 @@ describe('HttpTransactionApiClient.updateTransaction', () => {
     expect(body).toEqual({ description: 'patched desc', metadata: { only: 'this' } });
   });
 
-  it('merges metadata server-side, leaving pre-existing keys in the answer', async () => {
-    const result = await client.updateTransaction(orgId, ledgerId, transactionId, {
+  it('sends only the keys the caller supplied, so the ledger merge keeps the rest', async () => {
+    // The merge is the ledger's: it keeps whatever is already stored and overwrites the
+    // keys in the body. Merging client-side would mean reading first and resending keys
+    // the caller never touched, which the SDK must never do.
+    await client.updateTransaction(orgId, ledgerId, transactionId, {
       metadata: { only: 'this' },
     });
 
-    expect(result.metadata).toEqual({ n: 7, patched: 'yes', only: 'this' });
+    expect(mockHttpClient.get).not.toHaveBeenCalled();
+    const [, body] = patchArgs();
+    expect(body).toEqual({ metadata: { only: 'this' } });
+    expect(Object.keys(body.metadata)).toEqual(['only']);
+    expect(body).not.toHaveProperty('description');
+  });
+
+  it('forwards a null metadata value, which is how the ledger deletes a key', async () => {
+    await client.updateTransaction(orgId, ledgerId, transactionId, {
+      metadata: { drop: null } as unknown as Record<string, unknown>,
+    });
+
+    const [, body] = patchArgs();
+    expect(body.metadata).toEqual({ drop: null });
+    expect('drop' in body.metadata).toBe(true);
   });
 
   it('sends the body as given without reading the transaction first', async () => {

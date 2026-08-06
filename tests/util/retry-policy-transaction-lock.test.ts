@@ -1,8 +1,9 @@
 /**
- * The ledger's `0486 Transaction Locked` is permanent: midaz takes a Redis lock in
- * commitOrCancelTransaction, never releases it on the success path, and builds its TTL
- * as time.Duration(300) — 300 nanoseconds. Its detail says "Please retry shortly" and
- * lies. Every case here counts attempts so a retry fails the test.
+ * The ledger's `0486 Transaction Locked` cannot be retried away: midaz takes a Redis lock
+ * in commitOrCancelTransaction, does not release it on the success path, and holds it for
+ * 300 seconds — the handler builds time.Duration(300) and the repository multiplies it by
+ * time.Second. Its detail says "Please retry shortly" and lies, since no sane attempt
+ * budget outlasts the lock. Every case here counts attempts so a retry fails the test.
  */
 
 import { ErrorCategory, ErrorCode, MidazError } from '../../src/util/error/error-types';
@@ -41,7 +42,7 @@ function countingOperation(error: unknown): { run: () => Promise<never>; calls: 
   };
 }
 
-describe('RetryPolicy against the permanent 0486 transaction lock', () => {
+describe('RetryPolicy against the 300-second 0486 transaction lock', () => {
   const retryEverything = {
     maxRetries: 3,
     initialDelay: 1,
