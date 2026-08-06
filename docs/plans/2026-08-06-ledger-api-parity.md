@@ -9,19 +9,19 @@
 > This document is the living source of truth — task elaboration for later
 > phases is written back into it during execution.
 
-**Goal:** Bring `@lerianstudio/midaz-sdk` (TypeScript) back to parity with the Midaz ledger API on `main`, starting with a contract-drift gate so the SDK can never silently fall behind again.
+**Goal:** Bring `@lerianstudio/midaz-sdk` (TypeScript) back to parity with the Midaz ledger API on `develop`, starting with a contract-drift gate so the SDK can never silently fall behind again.
 
 **Architecture:** The ledger is now a single service exposing 72 v1 paths (+23 v2); the SDK still models two services (`onboarding`/`transaction`) and hand-writes every URL, which is how two clients ended up targeting removed or unversioned paths. The fix is layered: (1) vendor the ledger's OpenAPI spec and gate CI on path drift, (2) route ALL URL construction through `UrlBuilder` against a unified `ledger` base URL, (3) close the endpoint gaps in priority order — broken clients first, then transaction lifecycle, then lookups, then whole new domains. The hand-written ergonomic layer (builders, retry, idempotency) stays; only types and path inventory become spec-derived.
 
 **Tech Stack:** TypeScript 5 (strict, dual CJS/ESM via three `tsc` passes), Jest 30 + ts-jest (DI-seam mocks, no fetch mocking), `openapi-typescript` (types-only codegen, new dev dependency), semantic-release (conventional commits; `develop` = beta channel), GitHub Actions CI.
 
-**Ground truth:** Midaz `main` @ `33cb93f` (2026-08-05), spec at `components/ledger/api/openapi.huma.yaml` (v1) and `openapi.v2.huma.yaml` (v2) in the midaz repo. Gap audit verified live against a local stack on 2026-08-06: old asset-rate path → 404, ledger-level operations → 404, `X-Idempotency` contract confirmed working (SDK v2.3.0).
+**Ground truth:** Midaz `develop` @ `33cb93f` (2026-08-05), spec at `components/ledger/api/openapi.huma.yaml` (v1) and `openapi.v2.huma.yaml` (v2) in the midaz repo. Gap audit verified live against a local stack on 2026-08-06: old asset-rate path → 404, ledger-level operations → 404, `X-Idempotency` contract confirmed working (SDK v2.3.0).
 
 ## Phase Overview
 
 | Phase | Milestone | Epics | Status |
 |-------|-----------|-------|--------|
-| 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz main | 1.1, 1.2, 1.3, 1.4 | Complete |
+| 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz develop | 1.1, 1.2, 1.3, 1.4 | Complete |
 | 2 | Full transaction lifecycle: pending commit/cancel, revert, inflow/outflow, block/unblock, annotation, updates; model field parity; money-safety guards | 2.0, 2.1, 2.2, 2.3, 2.4 | Complete |
 | 3 | Account lookups (alias/external), balance history, metrics counts, ledger settings | 3.1, 3.2, 3.3 | Epic-level |
 | 4 | New domains: holders/CRM, billing, encryption/protection, v2 API | 4.1, 4.2, 4.3, 4.4 | Epic-level |
@@ -53,16 +53,18 @@
 
 **Context:** The repo has zero OpenAPI tooling (confirmed by audit). Ground-truth specs live in the midaz repo at `components/ledger/api/openapi.huma.yaml` and `openapi.v2.huma.yaml`. The SDK's models (`src/models/*.ts`) are all hand-written and already drifted (e.g. no `routeId`, `transactionDate`, `skip` on transaction input).
 
-**Elaboration finding (verified 2026-08-06, blocks the naive version of this task):** the ledger's Huma spec types **every one of its 43 request bodies** as `{type: string, format: binary}` (a `RawBody` handler artifact) — there is not one usable request schema in the file. Response bodies are fine: 92 of them resolve to real schemas across 64 components. So **input types cannot be generated** and must stay hand-written; **response types can and should be**. This makes the path-drift gate (Task 1.1.2) the primary anti-drift mechanism rather than a supporting one, since types alone would never have caught the asset-rate break.
+**Elaboration finding (verified 2026-08-06, blocks the naive version of this task):** the ledger's Huma spec types **every one of its 43 request bodies** as `{type: string, format: binary}` (a `RawBody` handler artifact) — there is not one usable request schema in the file. Response bodies are fine: 92 of them resolve to real schemas across 64 components. So **v1 input types cannot be generated** and must stay hand-written; **response types can and should be**. This makes the path-drift gate (Task 1.1.2) the primary anti-drift mechanism rather than a supporting one, since types alone would never have caught the asset-rate break.
 
-**Implementation vision:** Create `spec/` with both YAML files copied verbatim from midaz `main`, plus `spec/VERSION` recording the midaz commit SHA (`33cb93f`) and date. Add `openapi-typescript` as a devDependency (types-only generator — no runtime, no fetch client, keeps bundlewatch's 100kb cap safe). Add scripts: `generate:types` → emits `src/generated/ledger-v1.d.ts` and `ledger-v2.d.ts`; `spec:update` → shell script `scripts/update-spec.sh <midaz-repo-path-or-ref>` that copies the files and rewrites `spec/VERSION`. Generated files are committed (build must not depend on network). Add a CI step in the existing "Lint and Format" job (`.github/workflows/ci.yml:22`) that runs `generate:types` and fails on `git diff --exit-code src/generated` — same pattern as the existing "Check for uncommitted changes" step at `ci.yml:81`. Add a header comment in `spec/VERSION` recording the binary-request-body limitation so the next reader does not re-derive it. Do NOT rewrite existing models to use the generated types yet — that migration happens opportunistically per epic (1.3 onward) to keep this task mechanical.
+**Scope correction (measured 2026-08-06 against the vendored files):** this limitation is v1's, not both specs'. `ledger-v1.openapi.yaml` is 43 of 43 request bodies binary, but `ledger-v2.openapi.yaml` is 11 of 15 — `/transactions/direct`, `/transactions/hold`, `/transactions/block` and `/transactions/unblock` reference a real `CreateTransactionV2Input` schema, which `src/generated/ledger-v2.d.ts` already exposes with typed `amount`, `asset`, `debits` and `credits`. **Epic 4.4 must use those generated v2 request types rather than hand-write them.** `spec/VERSION` carries the same correction.
+
+**Implementation vision:** Create `spec/` with both YAML files copied verbatim from midaz `develop`, plus `spec/VERSION` recording the midaz commit SHA (`33cb93f`) and date. Add `openapi-typescript` as a devDependency (types-only generator — no runtime, no fetch client, keeps bundlewatch's 100kb cap safe). Add scripts: `generate:types` → emits `src/generated/ledger-v1.d.ts` and `ledger-v2.d.ts`; `spec:update` → shell script `scripts/update-spec.sh <midaz-repo-path-or-ref>` that copies the files and rewrites `spec/VERSION`. Generated files are committed (build must not depend on network). Add a CI step in the existing "Lint and Format" job (`.github/workflows/ci.yml:22`) that runs `generate:types` and fails on `git diff --exit-code src/generated` — same pattern as the existing "Check for uncommitted changes" step at `ci.yml:81`. Add a header comment in `spec/VERSION` recording the binary-request-body limitation so the next reader does not re-derive it. Do NOT rewrite existing models to use the generated types yet — that migration happens opportunistically per epic (1.3 onward) to keep this task mechanical.
 
 **Files:**
 - Create: `spec/ledger-v1.openapi.yaml`, `spec/ledger-v2.openapi.yaml`, `spec/VERSION`, `scripts/update-spec.sh`, `src/generated/ledger-v1.d.ts`, `src/generated/ledger-v2.d.ts`
 - Modify: `package.json` (scripts + devDependency), `.github/workflows/ci.yml`
 - Test: covered by Task 1.1.2's suite (generation is verified by the CI diff check)
 
-**Source of truth:** copy the two YAML files from a local midaz checkout at `~/workspace/midaz-smoke` (already on `main` @ `33cb93f`): `components/ledger/api/openapi.huma.yaml` → `spec/ledger-v1.openapi.yaml`, `components/ledger/api/openapi.v2.huma.yaml` → `spec/ledger-v2.openapi.yaml`.
+**Source of truth:** copy the two YAML files from a local midaz checkout at `~/workspace/midaz-smoke` (already on `develop` @ `33cb93f`): `components/ledger/api/openapi.huma.yaml` → `spec/ledger-v1.openapi.yaml`, `components/ledger/api/openapi.v2.huma.yaml` → `spec/ledger-v2.openapi.yaml`.
 
 **Verification:** `npm run generate:types && git diff --exit-code src/generated` passes; `npm run typecheck` clean; `npm run build` clean; `dist/index.js` still under the 100kb bundlewatch cap (generated files are types-only, so this must not move at all).
 
@@ -137,17 +139,17 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 ### Epic 1.3: Asset-rate client rebuilt on `/asset-rates`
 
-**Goal:** Asset-rate operations hit the endpoints that exist on midaz main, carry the `/v1` version segment, and send the body shape the ledger actually accepts.
+**Goal:** Asset-rate operations hit the endpoints that exist on midaz develop, carry the `/v1` version segment, and send the body shape the ledger actually accepts.
 **Scope:** `src/api/http/http-asset-rate-api-client.ts`, `src/api/url-builder.ts`, `src/api/interfaces/asset-rate-api-client.ts`, `src/entities/asset-rates.ts`, `src/models/asset-rate.ts`, `src/models/validators/asset-rate-validator.ts`, tests
 **Dependencies:** Epic 1.2 (uses `ledger` base URL)
-**Done when:** create/update and both GET shapes work against a local midaz main stack; the input model matches the ledger contract; drift suite covers the three paths.
+**Done when:** create/update and both GET shapes work against a local midaz develop stack; the input model matches the ledger contract; drift suite covers the three paths.
 **Status:** Pending
 
 #### Task 1.3.1: Rewrite asset-rate paths and client plumbing
 
 - [x] Done
 
-**Context:** `HttpAssetRateApiClient` (`src/api/http/http-asset-rate-api-client.ts:25`) hand-rolls `${getBaseUrl('transaction')}/organizations/{o}/ledgers/{l}/assets/{code}/rates` (private builder at line 290) — no `/v1`, and the path itself was removed from midaz. Live check on midaz main: that path → 404. Current API: `PUT .../v1/.../asset-rates` (upsert), `GET .../asset-rates/from/{asset_code}` (list by source), `GET .../asset-rates/{external_id}`. The client also does NOT extend `HttpBaseApiClient` — it duplicates observability/validation helpers (lines 305–320). The unused `UrlBuilder.buildAssetRateUrl` (url-builder.ts:176) encodes the same dead path.
+**Context:** `HttpAssetRateApiClient` (`src/api/http/http-asset-rate-api-client.ts:25`) hand-rolls `${getBaseUrl('transaction')}/organizations/{o}/ledgers/{l}/assets/{code}/rates` (private builder at line 290) — no `/v1`, and the path itself was removed from midaz. Live check on midaz develop: that path → 404. Current API: `PUT .../v1/.../asset-rates` (upsert), `GET .../asset-rates/from/{asset_code}` (list by source), `GET .../asset-rates/{external_id}`. The client also does NOT extend `HttpBaseApiClient` — it duplicates observability/validation helpers (lines 305–320). The unused `UrlBuilder.buildAssetRateUrl` (url-builder.ts:176) encodes the same dead path.
 
 **Elaboration finding — the model is broken, not just the path (verified live 2026-08-06).** The spec cannot describe the request body (see Task 1.1.1), so the contract was read from `components/ledger/internal/adapters/postgres/assetrate/assetrate.go:33-74` and confirmed against the running ledger. The accepted body is:
 
@@ -166,23 +168,23 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 **Verification:** `npx jest tests/api/http/http-asset-rate-api-client.test.ts` green; drift suite includes the three paths; live smoke: PUT + both GETs return 2xx against local midaz (`make up` stack, ledger :3002).
 
-**Done when:** all three asset-rate endpoints round-trip against midaz main and no hand-rolled URL remains in the client.
+**Done when:** all three asset-rate endpoints round-trip against midaz develop and no hand-rolled URL remains in the client.
 
 ### Epic 1.4: Operation client versioned paths + decimal-string values
 
 **Goal:** Operation endpoints carry `/v1` and monetary values are serialized as decimal strings with client-side validation.
 **Scope:** `src/api/http/http-operation-api-client.ts`, `src/api/url-builder.ts`, `src/models/validators/`, `src/models/transaction-transformer.ts`, tests
 **Dependencies:** Epic 1.2
-**Done when:** list/get/update operations work against local midaz main; numeric `value` inputs serialize as strings; non-finite numbers are rejected client-side with a clear error.
+**Done when:** list/get/update operations work against local midaz develop; numeric `value` inputs serialize as strings; non-finite numbers are rejected client-side with a clear error.
 **Status:** Pending
 
 #### Task 1.4.1: Route operation client through versioned UrlBuilder
 
 - [x] Done
 
-**Context:** `HttpOperationApiClient` hand-rolls `${getBaseUrl('transaction')}/organizations/{o}/ledgers/{l}/accounts/{a}/operations` (private `buildOperationsUrl` at `http-operation-api-client.ts:234-238`) — missing `/v1`, so every call 404s against midaz main. All methods are account-scoped (correct — ledger-level `/operations` does not exist on main; the dead `UrlBuilder.buildOperationUrl:204` that encodes it must go). The `transactionId` variant (line 256) builds a query-string lookup that must be checked against the spec — main exposes `GET .../accounts/{account_id}/operations/{operation_id}` and `PATCH .../transactions/{transaction_id}/operations/{operation_id}`.
+**Context:** `HttpOperationApiClient` hand-rolls `${getBaseUrl('transaction')}/organizations/{o}/ledgers/{l}/accounts/{a}/operations` (private `buildOperationsUrl` at `http-operation-api-client.ts:234-238`) — missing `/v1`, so every call 404s against midaz develop. All methods are account-scoped (correct — ledger-level `/operations` does not exist on develop; the dead `UrlBuilder.buildOperationUrl:204` that encodes it must go). The `transactionId` variant (line 256) builds a query-string lookup that must be checked against the spec — develop exposes `GET .../accounts/{account_id}/operations/{operation_id}` and `PATCH .../transactions/{transaction_id}/operations/{operation_id}`.
 
-**Implementation vision:** Replace `UrlBuilder.buildOperationUrl` with account-scoped builders emitting versioned paths (`getVersionedUrl` + `accounts/{id}/operations[/{opId}]`), delete the ledger-level template, and point the client's three methods at them. `updateOperation` moves to the spec's PATCH route, which on main is transaction-scoped only (`PATCH .../transactions/{transaction_id}/operations/{operation_id}` — there is no account-scoped PATCH): the method gains a required `transactionId`, taken from the existing optional-options position so the positional signature does not break, and throws a clear validation error when absent. Migrate the client to extend `HttpBaseApiClient`, dropping its duplicated helpers (lines 267–282). Keep the metrics counters (lines 86–99) — wire them through the base client's `recordMetrics`.
+**Implementation vision:** Replace `UrlBuilder.buildOperationUrl` with account-scoped builders emitting versioned paths (`getVersionedUrl` + `accounts/{id}/operations[/{opId}]`), delete the ledger-level template, and point the client's three methods at them. `updateOperation` moves to the spec's PATCH route, which on develop is transaction-scoped only (`PATCH .../transactions/{transaction_id}/operations/{operation_id}` — there is no account-scoped PATCH): the method gains a required `transactionId`, taken from the existing optional-options position so the positional signature does not break, and throws a clear validation error when absent. Migrate the client to extend `HttpBaseApiClient`, dropping its duplicated helpers (lines 267–282). Keep the metrics counters (lines 86–99) — wire them through the base client's `recordMetrics`.
 
 **Files:**
 - Modify: `src/api/http/http-operation-api-client.ts`, `src/api/url-builder.ts:204-218`, `src/api/interfaces/operation-api-client.ts`, `src/entities/operations.ts`, `src/entities/implementations/operations-impl.ts`
@@ -196,7 +198,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 - [x] Done
 
-**Context:** Midaz main requires monetary `value` as a JSON **string** (`pkg/mtransaction/transaction.go:85-111`, `shopspring/decimal`); a JSON number is rejected with the misleading `0053 Unexpected Fields` (verified live). The SDK passes `value` through untouched (`src/models/transaction-transformer.ts:11-105`), so `value: 100` compiles, ships, and dies server-side.
+**Context:** Midaz develop requires monetary `value` as a JSON **string** (`pkg/mtransaction/transaction.go:85-111`, `shopspring/decimal`); a JSON number is rejected with the misleading `0053 Unexpected Fields` (verified live). The SDK passes `value` through untouched (`src/models/transaction-transformer.ts:11-105`), so `value: 100` compiles, ships, and dies server-side.
 
 **Implementation vision:** In the transformer's `toApiTransaction`, coerce `send.value` and every `amount.value` (source + distribute) with: string → validated against a decimal regex (`/^-?\d+(\.\d+)?$/`); number → reject non-finite, reject beyond `Number.MAX_SAFE_INTEGER` magnitude or with float artifacts (use `String(n)` and re-parse check), else serialize `String(n)`; anything else → throw a validation error naming the exact path (`send.source.from[0].amount.value`). Mirror the same rule in `validateCreateTransactionInput` (`src/models/validators/`) so failures surface before the HTTP layer. Type the model fields as `string | number` explicitly. Document string as the recommended form (float precision).
 
@@ -206,18 +208,18 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 **Verification:** `npx jest tests/models` green — cases: string passthrough, integer, float with exact representation, `NaN`/`Infinity` rejected, unsafe integer rejected, nested path named in the error. Live smoke: `value: 100` (number) now succeeds end-to-end.
 
-**Done when:** a numeric `value` works against midaz main and every invalid value fails client-side with the offending path in the message.
+**Done when:** a numeric `value` works against midaz develop and every invalid value fails client-side with the offending path in the message.
 
 ---
 
 ## Phase 2: Transaction lifecycle
 
-**Contract source.** The ledger's Huma spec cannot describe request bodies (Task 1.1.1 finding), so every shape below was read from the Go source on midaz `main` @`33cb93f` and confirmed against a live ledger on 2026-08-06. Implementers must treat these as authoritative and must not re-derive them from `spec/ledger-v1.openapi.yaml`, which only carries response schemas. Response schema for all nine endpoints is `Transaction`; errors are RFC 9457 `application/problem+json` carrying a midaz `code`.
+**Contract source.** The ledger's Huma spec cannot describe request bodies (Task 1.1.1 finding), so every shape below was read from the Go source on midaz `develop` @`33cb93f` and confirmed against a live ledger on 2026-08-06. Implementers must treat these as authoritative and must not re-derive them from `spec/ledger-v1.openapi.yaml`, which only carries response schemas. Response schema for all nine endpoints is `Transaction`; errors are RFC 9457 `application/problem+json` carrying a midaz `code`.
 
 **Three server behaviours the SDK has to defend against — verified, not assumed:**
 
 1. 🔴 **`remaining` silently destroys money.** A leg carrying `remaining` is counted by the server's balance check but never turned into an operation. Measured: send 100 with `acc-b` at 30 and `acc-c` as `remaining` → source debited 100, `acc-b` credited 30, **`acc-c` unchanged**; 70 vanished with a `201 CREATED`. As the sole destination, nothing is credited at all. The SDK therefore **refuses to emit `remaining`** (see Task 2.4.2) — a deliberate divergence from the server contract, reversible once midaz fixes it.
-2. 🔴 **`0486 Transaction Locked` is permanent, not transient.** `commitOrCancelTransaction` takes a Redis lock and never releases it on the success path, and its TTL is built as `time.Duration(300)` — 300 **nanoseconds**, not seconds. A second commit/cancel on an already-committed transaction returns `0486` forever, while its `detail` says "Please retry shortly". Any SDK retry on `0486` loops indefinitely. The honest `0099` only appears where no lock was ever taken.
+2. 🔴 **`0486 Transaction Locked` answers a commit that already succeeded.** `commitOrCancelTransaction` takes a Redis lock and never releases it on the success path, and that lock carries a real **300-second** TTL: `SetNX` multiplies by `time.Second` in `components/ledger/internal/adapters/redis/transaction/consumer.redis.go:216-237`. A commit whose response is lost is retried by the transport within seconds, so it lands well inside that window, hits the lock its own successful first attempt took, and comes back `409/0486` — whose `detail` says "Please retry shortly" — for a settlement that already happened. The SDK must therefore **not** retry `0486`: every retry inside the window reports settled money as failed. The honest `0099` only appears where no lock was ever taken.
 3. ⚠️ **Idempotency replays instead of rejecting.** Same `X-Idempotency` key with a *different* body silently returns the FIRST transaction — no 409, no `0084`. With no key at all, midaz still dedupes on a body hash for 300s, so a bare retry of a create silently no-ops. `X-Idempotency-Replayed: true|false` is the only way to tell a fresh write from a replay, and it is returned on exactly seven operations (json/inflow/outflow/block/unblock/annotation/revert). `commit`/`cancel` accept the header and ignore it.
 
 ### Epic 2.0: Carried-over base URL defaults
@@ -232,7 +234,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 - [x] Done
 
-**Context:** Resolved decision from the Phase 1 checkpoint (see "Phase 1 outcome" above). `resolveBaseUrls` (`src/client-config-builder.ts:65-86`) currently returns all three keys when no `MIDAZ_LEDGER_URL` is set, and `UrlBuilder.getBaseUrl` (`src/api/url-builder.ts:130-153`) consults the legacy family key before `ledger`, so those defaulted legacy entries outrank the ledger default. Measured against the built package: `createDevelopmentConfig()` sends accounts to `:3000` and asset-rates to `:3001`, neither of which midaz main serves.
+**Context:** Resolved decision from the Phase 1 checkpoint (see "Phase 1 outcome" above). `resolveBaseUrls` (`src/client-config-builder.ts:65-86`) currently returns all three keys when no `MIDAZ_LEDGER_URL` is set, and `UrlBuilder.getBaseUrl` (`src/api/url-builder.ts:130-153`) consults the legacy family key before `ledger`, so those defaulted legacy entries outrank the ledger default. Measured against the built package: `createDevelopmentConfig()` sends accounts to `:3000` and asset-rates to `:3001`, neither of which midaz develop serves.
 
 **Implementation vision:** Change only the no-ledger-env branch of `resolveBaseUrls`: emit `onboarding`/`transaction` **only when the caller actually supplied them** (env var present), and always emit `ledger` from the defaults. When nothing is supplied the map is `{ ledger }` alone, so the ledger default is reachable. Do **not** touch the rung order in `getBaseUrl` — an explicitly supplied legacy key must keep winning for its own family, which is what README.md already documents. Apply the same rule to every `ENVIRONMENT_URLS` environment and to `createLocalConfig` (which must stop deriving the `N+1` legacy port unless the caller asked for it). Update `README.md` and `docs/utilities/http-client.md` so the documented default is the single ledger host.
 
@@ -242,7 +244,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 **Verification:** `npx jest tests/client-config-builder.test.ts tests/api/url-builder.test.ts`. New cases: nothing configured → `{ledger}` only and both `buildAccountUrl` and `buildAssetRateUrl` resolve to the ledger host; `MIDAZ_ONBOARDING_URL` set → onboarding still wins for its family; `MIDAZ_TRANSACTION_URL` set → transaction still wins for asset-rates. Then rebuild and confirm empirically that `createDevelopmentConfig()` sends both builders to the ledger host.
 
-**Done when:** zero-config helpers work against midaz main and no existing legacy-configured behaviour changed.
+**Done when:** zero-config helpers work against midaz develop and no existing legacy-configured behaviour changed.
 
 ### Epic 2.1: State transitions — commit, cancel, revert
 
@@ -444,7 +446,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 ## Phase 1 outcome (2026-08-06)
 
-Landed in 9 signed commits on `feat/ledger-api-parity-phase-1`. Gate verified independently by the supervisor: `tsc --noEmit` clean, 75 suites / 1521 tests green, `format:check` clean, and 6/6 live checks through the built SDK against a local midaz main ledger (asset-rate upsert + lookup with the integer-rate contract, client-side float-rate rejection, numeric transaction value serialized to a decimal string, non-finite value rejected naming its path, operations list on the versioned account path).
+Landed in 9 signed commits on `feat/ledger-api-parity`. Gate verified independently by the supervisor: `tsc --noEmit` clean, 75 suites / 1521 tests green, `format:check` clean, and 6/6 live checks through the built SDK against a local midaz develop ledger (asset-rate upsert + lookup with the integer-rate contract, client-side float-rate rejection, numeric transaction value serialized to a decimal string, non-finite value rejected naming its path, operations list on the versioned account path).
 
 **Open decision — base-URL rung order.** Task 1.2.1's Resolution contract above puts `ledger` at rung 2 and the legacy service-family key at rung 3. The code shipped them **swapped**: an explicitly configured `onboarding`/`transaction` wins for its own family, and `ledger` serves everything else. README.md and docs/utilities/http-client.md document the shipped order; only this plan is out of step.
 
@@ -452,7 +454,7 @@ The swap is defensible on its own (a split legacy deployment keeps working), but
 
 ```
 createDevelopmentConfig() -> baseUrls {onboarding: :3000, transaction: :3001, ledger: :3002}
-  accounts  -> http://localhost:3000/v1/...      (midaz main serves nothing here)
+  accounts  -> http://localhost:3000/v1/...      (midaz develop serves nothing here)
   assetRate -> http://localhost:3001/v1/...      (idem)
 withBaseUrls({ledger}) -> both -> http://ledger.example:3002/v1/...   (correct)
 ```
@@ -463,12 +465,12 @@ So the explicit `withBaseUrls({ ledger })` path — Epic 1.2's stated Done-when 
 
 ## Phase 2 outcome (2026-08-06)
 
-Landed in 10 signed commits. Gate verified independently by the supervisor: `tsc --noEmit` clean, 89 suites / 1774 tests green, `format:check` clean, and three live guard checks through the built SDK against a local midaz main ledger.
+Landed in 10 signed commits. Gate verified independently by the supervisor: `tsc --noEmit` clean, 89 suites / 1774 tests green, `format:check` clean, and three live guard checks through the built SDK against a local midaz develop ledger.
 
 **Three midaz server defects were found while mapping the contracts, all reproduced live.** The SDK now carries a guard for each. These guards are deliberate divergences from the server contract and should be removed once the ledger is fixed — file them upstream rather than letting the SDK own them forever:
 
 1. **`remaining` destroys funds.** A leg carrying `remaining` is counted in the server's balance check but never becomes an operation. Measured: send 100 with an explicit leg of 30 and a `remaining` leg → source debited 100, explicit leg credited 30, `remaining` account **unchanged**; 70 gone, response `201 CREATED`. SDK refuses the field (Task 2.4.2).
-2. **A lost commit response reports settled money as failed.** `commitOrCancelTransaction` takes a Redis lock it never releases on success, with a real 300-second TTL (`consumer.redis.go:216-237` multiplies by `time.Second`; an earlier reading of "300 nanoseconds" was wrong). A commit whose response is lost gets retried by the transport, hits the lock its own successful first attempt took, and surfaces `409/0486` — whose message says "Please retry shortly" — for a settlement that already happened. SDK disables transport retries on commit/cancel and surfaces `0486` once carrying `midazCode` (Task 2.1.1 + heal).
+2. **A lost commit response reports settled money as failed.** `commitOrCancelTransaction` takes a Redis lock it never releases on success, with a real 300-second TTL (`consumer.redis.go:216-237` multiplies by `time.Second`). A commit whose response is lost gets retried by the transport, hits the lock its own successful first attempt took, and surfaces `409/0486` — whose message says "Please retry shortly" — for a settlement that already happened. SDK disables transport retries on commit/cancel and surfaces `0486` once carrying `midazCode` (Task 2.1.1 + heal).
 3. **🔴 Endpoint-blind idempotency turns a payment into a no-op.** All six v1 create routes hash the request body alone, with no action discriminator (only v2 prefixes one). Reproduced: `POST /transactions/annotation` then the same body to `POST /transactions/json` within 300s returns the **annotation** — same id, status `NOTED`, `X-Idempotency-Replayed: true`, destination balance `0`. The caller receives `201` for a payment that never moved money. SDK refuses any money-moving response carrying `NOTED` or all-`balanceAffected:false` operations.
 
 **Guard regression caught after the harness self-heal.** The replay guard the heal introduced demanded that *every* operation carry the endpoint label, so a legitimate block on an overdraft-enabled account — which midaz answers with a companion `OVERDRAFT` row (`transaction_create.go:952-960`, where the overdraft branch wins over the block/unblock override) — was refused as a replay "that wrote nothing", with error text inviting a retry that would block the funds twice. Fixed in `c27f247`: a block/unblock is legitimate when at least one operation carries the label and every unlabelled one is an accepted companion; verified live with `ops=BLOCK/BLOCK/OVERDRAFT` now accepted.
@@ -478,5 +480,5 @@ Landed in 10 signed commits. Gate verified independently by the supervisor: `tsc
 ## Cross-cutting verification
 
 - **Per epic:** full `npm test` + `npm run typecheck` + `npm run lint:check` + `npm run build` + drift suite green.
-- **Live smoke per phase boundary:** local midaz main stack (`make up` in the midaz repo; ledger on :3002, auth disabled) — extend the smoke script pattern from the 2026-08-06 idempotency verification (create org → ledger → asset → accounts → exercise the phase's endpoints, assert on response bodies, not just status codes).
+- **Live smoke per phase boundary:** local midaz develop stack (`make up` in the midaz repo; ledger on :3002, auth disabled) — extend the smoke script pattern from the 2026-08-06 idempotency verification (create org → ledger → asset → accounts → exercise the phase's endpoints, assert on response bodies, not just status codes).
 - **Release train:** PRs target `develop` (beta channel); each phase lands as one or more `feat`/`fix` commits; stable release cut from `develop` → `main` after live smoke passes.
