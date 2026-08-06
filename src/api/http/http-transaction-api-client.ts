@@ -2,17 +2,69 @@
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
-import { CreateTransactionInput, Transaction } from '../../models/transaction';
+import {
+  CreateTransactionInput,
+  RevertTransactionOptions,
+  Transaction,
+  TransactionStateTransitionOptions,
+} from '../../models/transaction';
 import { transactionTransformer } from '../../models/transaction-transformer';
 import { validateCreateTransactionInput } from '../../models/validators/transaction-validator';
 import { transformRequest } from '../../util/data/model-transformer';
-import { HttpClient } from '../../util/network/http-client';
+import {
+  ErrorCategory,
+  ErrorCode,
+  MIDAZ_CODE_TRANSACTION_LOCKED,
+  MidazError,
+  readMidazProblem,
+} from '../../util/error/error-types';
+import { HttpClient, RequestOptions } from '../../util/network/http-client';
 import { Observability } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
 import { TransactionApiClient } from '../interfaces/transaction-api-client';
-import { UrlBuilder } from '../url-builder';
+import { TransactionStateTransition, UrlBuilder } from '../url-builder';
 
 import { HttpBaseApiClient } from './http-base-api-client';
+
+const TRANSACTION_LOCKED_STATUS = 409;
+
+const TERMINAL_LOCK_NOTE =
+  'The ledger never releases this lock, so the condition is terminal despite what the ' +
+  'message above says: the SDK will not retry it.';
+
+/**
+ * Translates the ledger's terminal `0486` into an error carrying its midaz code, and
+ * leaves every other failure exactly as raised. The server's own `detail` is kept
+ * verbatim so callers see what midaz said, with the SDK's correction appended.
+ */
+function asTransactionLockedError(
+  error: unknown,
+  operation: string,
+  transactionId: string
+): unknown {
+  const problem = readMidazProblem(error);
+
+  if (
+    problem.status !== TRANSACTION_LOCKED_STATUS ||
+    problem.code !== MIDAZ_CODE_TRANSACTION_LOCKED
+  ) {
+    return error;
+  }
+
+  const detail = problem.detail ?? 'Transaction Locked';
+
+  return new MidazError({
+    category: ErrorCategory.CONFLICT,
+    code: ErrorCode.TRANSACTION_LOCKED,
+    midazCode: MIDAZ_CODE_TRANSACTION_LOCKED,
+    message: `${detail} ${TERMINAL_LOCK_NOTE}`,
+    statusCode: TRANSACTION_LOCKED_STATUS,
+    operation,
+    resource: 'transaction',
+    resourceId: transactionId,
+    cause: error,
+  });
+}
 
 /**
  * HTTP implementation of the TransactionApiClient interface
@@ -134,5 +186,101 @@ export class HttpTransactionApiClient
     }
 
     return result;
+  }
+
+  /**
+   * Commits a pending transaction, settling the funds it holds
+   *
+   * @returns Promise resolving to the committed transaction
+   */
+  public async commitTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction> {
+    return this.postStateTransition('commit', orgId, ledgerId, transactionId, options);
+  }
+
+  /**
+   * Cancels a pending transaction, releasing the funds it holds
+   *
+   * @returns Promise resolving to the canceled transaction
+   */
+  public async cancelTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction> {
+    return this.postStateTransition('cancel', orgId, ledgerId, transactionId, options);
+  }
+
+  /**
+   * Reverts an approved transaction
+   *
+   * The ledger answers with a brand-new transaction carrying `parentTransactionId` and
+   * the original legs swapped, not with the reverted one.
+   *
+   * @returns Promise resolving to the reversing transaction
+   */
+  public async revertTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: RevertTransactionOptions
+  ): Promise<Transaction> {
+    return this.postStateTransition('revert', orgId, ledgerId, transactionId, options, {
+      idempotencyKey: options?.idempotencyKey,
+    });
+  }
+
+  /**
+   * Issues the body-less POST behind a state transition
+   *
+   * @returns Promise resolving to the transaction the ledger answered with
+   */
+  private async postStateTransition(
+    transition: TransactionStateTransition,
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions,
+    extraRequestOptions?: RequestOptions
+  ): Promise<Transaction> {
+    const attributes = { orgId, ledgerId, transactionId, transition };
+
+    this.validateRequiredParams(this.startSpan('validateParams', attributes), {
+      orgId,
+      ledgerId,
+      transactionId,
+    });
+
+    const url = this.urlBuilder.buildTransactionUrl(
+      orgId,
+      ledgerId,
+      transactionId,
+      false,
+      transition
+    );
+
+    const requestOptions: RequestOptions = {
+      ...extraRequestOptions,
+      timeout: options?.timeout,
+      signal: options?.signal,
+    };
+
+    try {
+      // The ledger accepts a body here and ignores it, so none is sent.
+      return await this.postRequest<Transaction>(
+        `${transition}Transaction`,
+        url,
+        undefined,
+        requestOptions,
+        attributes
+      );
+    } catch (error) {
+      throw asTransactionLockedError(error, `${transition}Transaction`, transactionId);
+    }
   }
 }

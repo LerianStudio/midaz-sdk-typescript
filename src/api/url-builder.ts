@@ -40,6 +40,11 @@ const LEGACY_SERVICE_FAMILY: Record<string, string> = {
 };
 
 /**
+ * Sub-paths of a transaction that carry its lifecycle state transitions
+ */
+export type TransactionStateTransition = 'commit' | 'cancel' | 'revert';
+
+/**
  * UrlBuilder provides centralized URL construction logic for all API endpoints.
  * It builds URLs based on the SDK configuration and service type.
  */
@@ -233,7 +238,8 @@ export class UrlBuilder {
     orgId: string,
     ledgerId: string,
     transactionId?: string,
-    isCreate = false
+    isCreate = false,
+    stateTransition?: TransactionStateTransition
   ): string {
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
@@ -241,6 +247,10 @@ export class UrlBuilder {
 
     if (transactionId) {
       url += `/${transactionId}`;
+
+      if (stateTransition) {
+        url += `/${stateTransition}`;
+      }
     } else if (isCreate) {
       url += '/json';
     }

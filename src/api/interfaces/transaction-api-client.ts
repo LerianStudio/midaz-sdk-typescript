@@ -2,7 +2,12 @@
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
-import { CreateTransactionInput, Transaction } from '../../models/transaction';
+import {
+  CreateTransactionInput,
+  RevertTransactionOptions,
+  Transaction,
+  TransactionStateTransitionOptions,
+} from '../../models/transaction';
 
 import { ApiClient } from './api-client';
 
@@ -41,5 +46,41 @@ export interface TransactionApiClient
     orgId: string,
     ledgerId: string,
     input: CreateTransactionInput
+  ): Promise<Transaction>;
+
+  /**
+   * Commits a pending transaction
+   *
+   * @returns Promise resolving to the committed transaction
+   */
+  commitTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction>;
+
+  /**
+   * Cancels a pending transaction
+   *
+   * @returns Promise resolving to the canceled transaction
+   */
+  cancelTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction>;
+
+  /**
+   * Reverts an approved transaction
+   *
+   * @returns Promise resolving to the reversing transaction
+   */
+  revertTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: RevertTransactionOptions
   ): Promise<Transaction>;
 }

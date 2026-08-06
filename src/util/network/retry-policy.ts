@@ -2,7 +2,28 @@
  */
 
 import { ConfigService } from '../config';
-import { MidazError } from '../error';
+import { MIDAZ_CODE_TRANSACTION_LOCKED, MidazError, readMidazProblem } from '../error';
+
+const TRANSACTION_LOCKED_STATUS = 409;
+
+/**
+ * The ledger's `0486` is permanent, not transient: `commitOrCancelTransaction` takes a
+ * Redis lock, never releases it on the success path, and builds its TTL as
+ * `time.Duration(300)` — 300 nanoseconds. Its `detail` says "Please retry shortly" and
+ * lies, so retrying loops until the attempts run out. Recognised on both the raw
+ * transport error and the `MidazError` the transaction client raises from it.
+ */
+function isPermanentTransactionLock(error: unknown): boolean {
+  const problem = readMidazProblem(error);
+
+  if (problem.status !== TRANSACTION_LOCKED_STATUS) {
+    return false;
+  }
+
+  const midazCode = (error as { midazCode?: unknown }).midazCode ?? problem.code;
+
+  return midazCode === MIDAZ_CODE_TRANSACTION_LOCKED;
+}
 
 /**
  * Retry configuration options for controlling retry behavior
@@ -141,6 +162,10 @@ export class RetryPolicy {
 
   /** Checks if an error is retryable @private */
   private isRetryable(error: unknown): boolean {
+    if (isPermanentTransactionLock(error)) {
+      return false;
+    }
+
     if (this.retryCondition && error instanceof Error) {
       return this.retryCondition(error);
     }

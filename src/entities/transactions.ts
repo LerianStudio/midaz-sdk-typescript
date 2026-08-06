@@ -3,7 +3,12 @@
  */
 
 import { ListOptions, ListResponse } from '../models/common';
-import { CreateTransactionInput, Transaction } from '../models/transaction';
+import {
+  CreateTransactionInput,
+  RevertTransactionOptions,
+  Transaction,
+  TransactionStateTransitionOptions,
+} from '../models/transaction';
 
 /**
  * Service for managing transactions
@@ -67,6 +72,50 @@ export interface TransactionsService {
     orgId: string,
     ledgerId: string,
     input: CreateTransactionInput
+  ): Promise<Transaction>;
+
+  /**
+   * Commits a pending transaction, settling the funds held since it was created
+   *
+   * Legal only from `PENDING`. A second commit on an already-committed transaction
+   * returns a terminal `0486` conflict, which the SDK never retries.
+   *
+   * @returns Promise resolving to the committed transaction
+   */
+  commitTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction>;
+
+  /**
+   * Cancels a pending transaction, releasing the funds held since it was created
+   *
+   * Legal only from `PENDING`, and produces a single `RELEASE` operation on the source.
+   *
+   * @returns Promise resolving to the canceled transaction
+   */
+  cancelTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction>;
+
+  /**
+   * Reverts an approved transaction by creating its mirror image
+   *
+   * Legal only from `APPROVED`. The result is a new transaction carrying
+   * `parentTransactionId` with the legs swapped, not the reverted one.
+   *
+   * @returns Promise resolving to the reversing transaction
+   */
+  revertTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: RevertTransactionOptions
   ): Promise<Transaction>;
 
   /**

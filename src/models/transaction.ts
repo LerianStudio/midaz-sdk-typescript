@@ -44,6 +44,12 @@ export interface Transaction extends ApiResponse {
   /** Whether the transaction is in a pending state requiring explicit commitment */
   pending?: boolean;
 
+  /**
+   * Identifier of the transaction this one reverses, set only on transactions the
+   * ledger creates in response to a revert
+   */
+  parentTransactionId?: string;
+
   /** Ledger identifier this transaction belongs to */
   ledgerId: string;
 
@@ -105,6 +111,33 @@ export interface Amount {
   asset: string;
   /** Value is the numeric value of the amount as a decimal string */
   value: string;
+}
+
+/**
+ * Per-request options accepted by every transaction state transition.
+ *
+ * `idempotencyKey` is deliberately absent: the ledger accepts `X-Idempotency` on
+ * commit and cancel but ignores it, so offering one would imply a guarantee that
+ * does not exist.
+ */
+export interface TransactionStateTransitionOptions {
+  /** Overrides the client's request timeout, in milliseconds */
+  timeout?: number;
+
+  /** Aborts the request when the signal fires */
+  signal?: AbortSignal;
+}
+
+/**
+ * Per-request options for reverting a transaction
+ */
+export interface RevertTransactionOptions extends TransactionStateTransitionOptions {
+  /**
+   * Sent as `X-Idempotency`. Midaz replays rather than rejecting: the same key with a
+   * different body silently returns the first transaction, and `X-Idempotency-Replayed`
+   * on the response is the only way to tell a fresh revert from a replay.
+   */
+  idempotencyKey?: string;
 }
 
 /**

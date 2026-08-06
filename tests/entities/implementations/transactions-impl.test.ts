@@ -9,6 +9,7 @@ import {
 } from '../../../src/entities/implementations/transactions-impl';
 import { CreateTransactionInput, Operation, Transaction } from '../../../src/models/transaction';
 import { ListResponse } from '../../../src/models/common';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error/error-types';
 import { Observability } from '../../../src/util/observability';
 import { TransactionApiClient } from '../../../src/api/interfaces/transaction-api-client';
 
@@ -95,6 +96,9 @@ describe('TransactionsServiceImpl', () => {
       listTransactions: jest.fn(),
       getTransaction: jest.fn(),
       createTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      cancelTransaction: jest.fn(),
+      revertTransaction: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance
@@ -335,6 +339,73 @@ describe('TransactionsServiceImpl', () => {
       ).rejects.toThrow('API Error');
     });
   });
+
+  describe('state transitions', () => {
+    it('delegates commitTransaction to the API client', async () => {
+      mockTransactionApiClient.commitTransaction.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.commitTransaction(orgId, ledgerId, transactionId);
+
+      expect(mockTransactionApiClient.commitTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        undefined
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates cancelTransaction to the API client', async () => {
+      mockTransactionApiClient.cancelTransaction.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.cancelTransaction(orgId, ledgerId, transactionId);
+
+      expect(mockTransactionApiClient.cancelTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        undefined
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates revertTransaction with its idempotency key', async () => {
+      const reverted: Transaction = {
+        ...mockTransaction,
+        id: 'txn_reverted',
+        parentTransactionId: transactionId,
+      };
+      mockTransactionApiClient.revertTransaction.mockResolvedValueOnce(reverted);
+
+      const result = await transactionsService.revertTransaction(orgId, ledgerId, transactionId, {
+        idempotencyKey: 'estorno-nf123',
+      });
+
+      expect(mockTransactionApiClient.revertTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        { idempotencyKey: 'estorno-nf123' }
+      );
+      expect(result.parentTransactionId).toBe(transactionId);
+    });
+
+    it('issues exactly one commit request when the ledger reports the permanent lock', async () => {
+      const locked = new MidazError({
+        category: ErrorCategory.CONFLICT,
+        code: ErrorCode.TRANSACTION_LOCKED,
+        midazCode: '0486',
+        message: 'Transaction Locked',
+        statusCode: 409,
+      });
+      mockTransactionApiClient.commitTransaction.mockRejectedValue(locked);
+
+      await expect(
+        transactionsService.commitTransaction(orgId, ledgerId, transactionId)
+      ).rejects.toBe(locked);
+      expect(mockTransactionApiClient.commitTransaction).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 describe('TransactionPaginatorImpl', () => {
@@ -393,6 +464,9 @@ describe('TransactionPaginatorImpl', () => {
       listTransactions: jest.fn(),
       getTransaction: jest.fn(),
       createTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      cancelTransaction: jest.fn(),
+      revertTransaction: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance

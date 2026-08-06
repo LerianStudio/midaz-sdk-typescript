@@ -3,7 +3,12 @@
 
 import { TransactionApiClient } from '../../api/interfaces/transaction-api-client';
 import { ListOptions, ListResponse } from '../../models/common';
-import { CreateTransactionInput, Transaction } from '../../models/transaction';
+import {
+  CreateTransactionInput,
+  RevertTransactionOptions,
+  Transaction,
+  TransactionStateTransitionOptions,
+} from '../../models/transaction';
 import { BasePaginator, PaginatorConfig } from '../../util/data/pagination-abstraction';
 import { Observability } from '../../util/observability/observability';
 import { TransactionPaginator, TransactionsService } from '../transactions';
@@ -268,6 +273,85 @@ export class TransactionsServiceImpl implements TransactionsService {
       }
 
       span.setAttribute('transactionId', result.id);
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async commitTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction> {
+    return this.traceStateTransition('commit', orgId, ledgerId, transactionId, () =>
+      this.apiClient.commitTransaction(orgId, ledgerId, transactionId, options)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async cancelTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction> {
+    return this.traceStateTransition('cancel', orgId, ledgerId, transactionId, () =>
+      this.apiClient.cancelTransaction(orgId, ledgerId, transactionId, options)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async revertTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: RevertTransactionOptions
+  ): Promise<Transaction> {
+    return this.traceStateTransition('revert', orgId, ledgerId, transactionId, () =>
+      this.apiClient.revertTransaction(orgId, ledgerId, transactionId, options)
+    );
+  }
+
+  /**
+   * Traces a state transition and records its metric
+   *
+   * @returns Promise resolving to the transaction the API client answered with
+   */
+  private async traceStateTransition(
+    transition: string,
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    call: () => Promise<Transaction>
+  ): Promise<Transaction> {
+    const span = this.observability.startSpan(`${transition}Transaction`);
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('transactionId', transactionId);
+
+    try {
+      const result = await call();
+
+      this.observability.recordMetric(`transactions.${transition}`, 1, {
+        orgId,
+        ledgerId,
+        transactionId,
+      });
+
       span.setStatus('ok');
       return result;
     } catch (error) {

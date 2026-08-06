@@ -106,6 +106,21 @@ const builderCases: BuilderCase[] = [
     verbs: ['get'],
     build: (b) => b.buildTransactionUrl(ORG, LEDGER, TRANSACTION),
   },
+  {
+    method: 'buildTransactionUrl',
+    verbs: ['post'],
+    build: (b) => b.buildTransactionUrl(ORG, LEDGER, TRANSACTION, false, 'commit'),
+  },
+  {
+    method: 'buildTransactionUrl',
+    verbs: ['post'],
+    build: (b) => b.buildTransactionUrl(ORG, LEDGER, TRANSACTION, false, 'cancel'),
+  },
+  {
+    method: 'buildTransactionUrl',
+    verbs: ['post'],
+    build: (b) => b.buildTransactionUrl(ORG, LEDGER, TRANSACTION, false, 'revert'),
+  },
   { method: 'buildAssetRateUrl', verbs: ['put'], build: (b) => b.buildAssetRateUrl(ORG, LEDGER) },
   {
     method: 'buildAssetRateFromUrl',
@@ -223,7 +238,10 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/json',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/cancel',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/commit',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/operations/{operation_id}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/revert',
 ];
 
 describe('UrlBuilder path drift against the vendored ledger spec', () => {

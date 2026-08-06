@@ -150,7 +150,9 @@ export {
   CreateTransactionInput,
   Operation,
   OperationInput,
+  RevertTransactionOptions,
   Transaction,
+  TransactionStateTransitionOptions,
   UpdateTransactionInput,
 } from './models/transaction';
 

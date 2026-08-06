@@ -254,7 +254,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 2.1.1: Commit, cancel and revert with a non-retry guard on 0486
 
-- [ ] Done
+- [x] Done
 
 **Context:** `HttpTransactionApiClient` (`src/api/http/http-transaction-api-client.ts`) exposes only create/get/list. The three state endpoints are `POST .../transactions/{id}/{commit|cancel|revert}`, all **body-less** (a body is accepted and ignored), all returning **201** with a `Transaction`. Legal transitions, verified: commit only from `PENDING`, cancel only from `PENDING`, revert only from `APPROVED`. Illegal transitions return `409/0099`; a second commit on a committed transaction returns `409/0486` permanently because of the server's leaked lock (see the phase preamble). Revert creates a **new** transaction carrying `parentTransactionId`, with the legs swapped and status `CREATED`. Cancel emits a single `RELEASE` operation on the source only.
 
