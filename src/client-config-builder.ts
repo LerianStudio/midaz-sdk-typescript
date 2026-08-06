@@ -45,20 +45,24 @@ function parseNumber(value: string | undefined, defaultValue: number): number {
 }
 
 /**
- * Resolves the base URL map for an environment from `MIDAZ_LEDGER_URL` and the deprecated
- * `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair.
+ * Resolves the base URL map from what the caller passed, then `MIDAZ_LEDGER_URL` and the
+ * deprecated `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair, then `defaultLedgerUrl`.
  *
- * `ledger` is always emitted, from the environment when set and from `defaultLedgerUrl`
- * otherwise. The legacy keys are emitted only when the caller actually supplied them: each
- * keeps winning for its own service family, while a caller who configures nothing gets a map
- * that points every service at the single ledger host midaz serves.
+ * `ledger` is always emitted. `callerLedgerUrl` is a URL the caller named in code, so it
+ * wins over any ambient variable; the environment only fills a gap. The legacy keys are
+ * emitted only when the caller actually supplied them: each keeps winning for its own
+ * service family, while a caller who configures nothing gets a map that points every
+ * service at the single ledger host midaz serves.
  */
-function resolveBaseUrls(defaultLedgerUrl: string): Record<string, string> {
+function resolveBaseUrls(
+  defaultLedgerUrl: string,
+  callerLedgerUrl?: string
+): Record<string, string> {
   const onboardingUrl = getEnvVar('MIDAZ_ONBOARDING_URL');
   const transactionUrl = getEnvVar('MIDAZ_TRANSACTION_URL');
 
   const baseUrls: Record<string, string> = {
-    ledger: getEnvVar('MIDAZ_LEDGER_URL') || defaultLedgerUrl,
+    ledger: callerLedgerUrl || getEnvVar('MIDAZ_LEDGER_URL') || defaultLedgerUrl,
   };
   if (onboardingUrl) {
     baseUrls.onboarding = onboardingUrl;
@@ -70,13 +74,39 @@ function resolveBaseUrls(defaultLedgerUrl: string): Record<string, string> {
 }
 
 /**
- * Environment-specific base URLs
+ * Ledger URL each environment falls back to when nothing else names one
  */
-const ENVIRONMENT_URLS: Record<string, Record<string, string>> = {
-  development: resolveBaseUrls('http://localhost:3002'),
-  sandbox: resolveBaseUrls('https://yourdomain.sandbox.midaz.io'),
-  production: resolveBaseUrls('https://yourdomain.api.midaz.io'),
+const ENVIRONMENT_DEFAULT_LEDGER_URLS: Record<string, string> = {
+  development: 'http://localhost:3002',
+  sandbox: 'https://yourdomain.sandbox.midaz.io',
+  production: 'https://yourdomain.api.midaz.io',
 };
+
+/**
+ * Builds the base URL map for an environment from the variables set right now.
+ *
+ * Resolving per call rather than at module load is what lets a process that exports
+ * `MIDAZ_LEDGER_URL` after importing this module still be heard.
+ *
+ * @returns The base URL map, empty for an environment this SDK does not know
+ */
+function environmentBaseUrls(environment: string): Record<string, string> {
+  const defaultLedgerUrl = ENVIRONMENT_DEFAULT_LEDGER_URLS[environment];
+
+  return defaultLedgerUrl === undefined ? {} : resolveBaseUrls(defaultLedgerUrl);
+}
+
+/**
+ * Builds the base URL map for a local ledger.
+ *
+ * @returns The base URL map, honouring an explicit port over `MIDAZ_LOCAL_PORT`
+ */
+function localBaseUrls(port?: number): Record<string, string> {
+  const environmentPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), 3002);
+  const callerLedgerUrl = port === undefined ? undefined : `http://localhost:${port}`;
+
+  return resolveBaseUrls(`http://localhost:${environmentPort}`, callerLedgerUrl);
+}
 
 /**
  * Default configuration values
@@ -243,7 +273,7 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
   withEnvironment(environment: 'development' | 'sandbox' | 'production'): ClientConfigBuilder {
     this.config.environment = environment;
     // Set default base URLs for the environment
-    this.config.baseUrls = { ...ENVIRONMENT_URLS[environment] };
+    this.config.baseUrls = environmentBaseUrls(environment);
     return this;
   }
 
@@ -404,7 +434,7 @@ class ClientConfigBuilderImpl implements ClientConfigBuilder {
 
     // Set up base URLs based on environment if not already set
     if (!config.baseUrls && config.environment) {
-      config.baseUrls = { ...ENVIRONMENT_URLS[config.environment] };
+      config.baseUrls = environmentBaseUrls(config.environment);
     }
 
     return config;
@@ -535,18 +565,18 @@ export function createProductionConfigWithAccessManager(
 /**
  * Creates a local development configuration builder
  *
- * @param port Port the local midaz ledger listens on. Defaults to 3002, the port the
- *   stack serves, or to `MIDAZ_LOCAL_PORT` when that is set. Midaz is a single service:
+ * @param port Port the local midaz ledger listens on. It wins over `MIDAZ_LOCAL_PORT`
+ *   and `MIDAZ_LEDGER_URL`; leave it unset to take `MIDAZ_LOCAL_PORT`, then
+ *   `MIDAZ_LEDGER_URL`, then 3002, the port the stack serves. Midaz is a single service:
  *   the retired onboarding/transaction pair this helper used to offset from is gone.
  * @param apiVersion API version segment, `v1` unless overridden
  * @returns A new client configuration builder with local development defaults
  */
 export function createLocalConfig(port?: number, apiVersion?: string): ClientConfigBuilder {
-  const ledgerPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3002);
   const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
 
   return createClientConfigBuilder()
-    .withBaseUrls(resolveBaseUrls(`http://localhost:${ledgerPort}`))
+    .withBaseUrls(localBaseUrls(port))
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }
@@ -555,7 +585,8 @@ export function createLocalConfig(port?: number, apiVersion?: string): ClientCon
  * Creates a local development configuration builder with Access Manager authentication
  *
  * @param config Access Manager connection settings
- * @param port Port the local midaz ledger listens on, 3002 by default
+ * @param port Port the local midaz ledger listens on. It wins over `MIDAZ_LOCAL_PORT`
+ *   and `MIDAZ_LEDGER_URL`; 3002 when nothing names one
  * @param apiVersion API version segment, `v1` unless overridden
  * @returns A new client configuration builder with local development defaults and Access Manager
  */
@@ -570,7 +601,6 @@ export function createLocalConfigWithAccessManager(
   port?: number,
   apiVersion?: string
 ): ClientConfigBuilder {
-  const ledgerPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3002);
   const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
 
   const accessManagerConfig = {
@@ -584,7 +614,7 @@ export function createLocalConfigWithAccessManager(
   };
 
   return createClientConfigWithAccessManager(accessManagerConfig)
-    .withBaseUrls(resolveBaseUrls(`http://localhost:${ledgerPort}`))
+    .withBaseUrls(localBaseUrls(port))
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }

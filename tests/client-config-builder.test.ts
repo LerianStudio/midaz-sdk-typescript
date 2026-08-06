@@ -527,6 +527,27 @@ describe('ClientConfigBuilder', () => {
       expect(config.baseUrls).toEqual({ ledger: 'http://ledger.test:3002' });
     });
 
+    it('should read MIDAZ_LEDGER_URL exported after the module was imported', () => {
+      const { createDevelopmentConfig } = loadBuilderModule();
+      process.env.MIDAZ_LEDGER_URL = 'http://exported-late.test:3002';
+
+      expect(createDevelopmentConfig('v1').build().baseUrls).toEqual({
+        ledger: 'http://exported-late.test:3002',
+      });
+    });
+
+    it('should read MIDAZ_LEDGER_URL exported after the module was imported, per environment', () => {
+      const { createClientConfigBuilder } = loadBuilderModule();
+      process.env.MIDAZ_LEDGER_URL = 'http://exported-late.test:3002';
+
+      expect(createClientConfigBuilder().withEnvironment('production').build().baseUrls).toEqual({
+        ledger: 'http://exported-late.test:3002',
+      });
+      expect(createClientConfigBuilder().withEnvironment('sandbox').build().baseUrls).toEqual({
+        ledger: 'http://exported-late.test:3002',
+      });
+    });
+
     it('should drive every UrlBuilder path from a MIDAZ_LEDGER_URL-only configuration', () => {
       process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
       const { createDevelopmentConfig } = loadBuilderModule();
@@ -592,11 +613,35 @@ describe('ClientConfigBuilder', () => {
       ).toEqual({ ledger: 'http://localhost:4000' });
     });
 
-    it('should let MIDAZ_LOCAL_PORT override the local ledger port', () => {
+    it('should let MIDAZ_LOCAL_PORT set the local ledger port the caller left unset', () => {
       process.env.MIDAZ_LOCAL_PORT = '4500';
       const { createLocalConfig } = loadBuilderModule();
 
-      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4500' });
+      expect(createLocalConfig().build().baseUrls).toEqual({ ledger: 'http://localhost:4500' });
+    });
+
+    it('should let an explicit port beat MIDAZ_LOCAL_PORT', () => {
+      process.env.MIDAZ_LOCAL_PORT = '4500';
+      const { createLocalConfig, createLocalConfigWithAccessManager } = loadBuilderModule();
+
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4000' });
+      expect(
+        createLocalConfigWithAccessManager(
+          {
+            address: 'https://auth.example.com',
+            clientId: 'test-client-id',
+            clientSecret: 'test-client-secret',
+          },
+          4000
+        ).build().baseUrls
+      ).toEqual({ ledger: 'http://localhost:4000' });
+    });
+
+    it('should let an explicit port beat MIDAZ_LEDGER_URL', () => {
+      process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
+      const { createLocalConfig } = loadBuilderModule();
+
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4000' });
     });
 
     it('should honour MIDAZ_LEDGER_URL in local configurations', () => {

@@ -57,8 +57,7 @@ const client = new MidazClient(
     address: 'https://auth.example.com', // Plugin Auth address
     clientId: 'your-client-id', // OAuth client ID
     clientSecret: 'your-client-secret', // OAuth client secret
-  })
-    .withEnvironment('sandbox') // Options: 'development', 'sandbox', 'production'
+  }).withEnvironment('sandbox') // Options: 'development', 'sandbox', 'production'
 );
 
 // Create an asset using the builder pattern
@@ -126,9 +125,7 @@ Midaz serves the whole API from a single ledger host, so one base URL is enough:
 import { MidazClient, createClientConfigBuilder } from 'midaz-sdk';
 
 const client = new MidazClient(
-  createClientConfigBuilder()
-    .withBaseUrls({ ledger: 'http://localhost:3002' })
-    .withApiVersion('v1')
+  createClientConfigBuilder().withBaseUrls({ ledger: 'http://localhost:3002' }).withApiVersion('v1')
 );
 ```
 
@@ -137,6 +134,13 @@ The same value can come from the environment instead:
 ```bash
 export MIDAZ_LEDGER_URL=http://localhost:3002
 ```
+
+Base URLs resolve most specific first: what you pass in code, then the environment, then the
+built-in default. A `MIDAZ_*` variable therefore fills a gap and never replaces a URL you passed
+in code, so a host pinned in code is not silently redirected by a container that exports its own.
+The same holds for `createLocalConfig(port)`: an explicit `port` wins over `MIDAZ_LOCAL_PORT` and
+`MIDAZ_LEDGER_URL`. The variables are read when the configuration is built, not when the module is
+imported, so exporting one after the import still takes effect.
 
 `createDevelopmentConfig()`, `createLocalConfig()`, `createSandboxConfig()` and
 `createProductionConfig()` need no base URL at all: with nothing configured they emit `ledger`
@@ -216,8 +220,7 @@ const client = new MidazClient(
     clientSecret: 'your-client-secret', // OAuth client secret
     tokenEndpoint: '/oauth/token', // Optional, defaults to '/oauth/token'
     refreshThresholdSeconds: 300, // Optional, defaults to 300 (5 minutes)
-  })
-    .withEnvironment('sandbox')
+  }).withEnvironment('sandbox')
 );
 ```
 

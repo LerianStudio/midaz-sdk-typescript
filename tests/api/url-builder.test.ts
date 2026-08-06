@@ -149,10 +149,39 @@ describe('UrlBuilder base URL resolution', () => {
       expect(builder.getBaseUrl('transaction')).toBe('https://env-transaction.example.com');
     });
 
-    it('lets MIDAZ_LEDGER_URL override a ledger key from config', () => {
+    it('lets a ledger key from config beat MIDAZ_LEDGER_URL', () => {
       process.env.MIDAZ_LEDGER_URL = 'https://env-ledger.example.com';
 
       const builder = new UrlBuilder({ baseUrls: { ledger: 'https://config-ledger.example.com' } });
+
+      expect(builder.getBaseUrl('ledger')).toBe('https://config-ledger.example.com');
+      expect(builder.getBaseUrl('accounts')).toBe('https://config-ledger.example.com');
+    });
+
+    it('lets an onboarding key from config beat MIDAZ_ONBOARDING_URL', () => {
+      process.env.MIDAZ_ONBOARDING_URL = 'https://env-onboarding.example.com';
+
+      const builder = new UrlBuilder({
+        baseUrls: { onboarding: 'https://config-onboarding.example.com' },
+      });
+
+      expect(builder.getBaseUrl('onboarding')).toBe('https://config-onboarding.example.com');
+    });
+
+    it('lets a transaction key from config beat MIDAZ_TRANSACTION_URL', () => {
+      process.env.MIDAZ_TRANSACTION_URL = 'https://env-transaction.example.com';
+
+      const builder = new UrlBuilder({
+        baseUrls: { transaction: 'https://config-transaction.example.com' },
+      });
+
+      expect(builder.getBaseUrl('transaction')).toBe('https://config-transaction.example.com');
+    });
+
+    it('still applies MIDAZ_LEDGER_URL when the caller configured no ledger key', () => {
+      process.env.MIDAZ_LEDGER_URL = 'https://env-ledger.example.com';
+
+      const builder = new UrlBuilder({});
 
       expect(builder.getBaseUrl('ledger')).toBe('https://env-ledger.example.com');
     });

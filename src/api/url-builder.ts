@@ -81,25 +81,38 @@ export class UrlBuilder {
   private legacyWarningEmitted = false;
 
   /**
-   * Creates a new UrlBuilder instance
+   * Creates a new UrlBuilder instance.
    *
+   * Base URLs resolve in this order, most specific first:
+   *
+   *   1. `config.baseUrls`, what the caller wrote in code;
+   *   2. `MIDAZ_LEDGER_URL`, or the deprecated `MIDAZ_ONBOARDING_URL` and
+   *      `MIDAZ_TRANSACTION_URL` when no ledger URL is known by then;
+   *   3. the built-in localhost defaults.
+   *
+   * An ambient variable therefore fills a gap and never replaces a value passed in code,
+   * so a host pinned in code survives a container that exports its own. Within a
+   * resolved map a legacy key still wins for its own service family, whichever step
+   * supplied it, and `ledger` covers everything else.
    */
   constructor(config: MidazConfig) {
     this.baseUrls = { ...config.baseUrls };
     this.apiVersion = config.apiVersion || 'v1';
 
-    const ledgerEnvUrl = getEnv('MIDAZ_LEDGER_URL');
-    if (ledgerEnvUrl) {
-      this.baseUrls[LEDGER_KEY] = ledgerEnvUrl;
+    if (!this.baseUrls[LEDGER_KEY]) {
+      const ledgerEnvUrl = getEnv('MIDAZ_LEDGER_URL');
+      if (ledgerEnvUrl) {
+        this.baseUrls[LEDGER_KEY] = ledgerEnvUrl;
+      }
     }
 
     if (!this.baseUrls[LEDGER_KEY]) {
       const onboardingEnvUrl = getEnv('MIDAZ_ONBOARDING_URL');
-      if (onboardingEnvUrl) {
+      if (onboardingEnvUrl && !this.baseUrls[LEGACY_ONBOARDING_KEY]) {
         this.baseUrls[LEGACY_ONBOARDING_KEY] = onboardingEnvUrl;
       }
       const transactionEnvUrl = getEnv('MIDAZ_TRANSACTION_URL');
-      if (transactionEnvUrl) {
+      if (transactionEnvUrl && !this.baseUrls[LEGACY_TRANSACTION_KEY]) {
         this.baseUrls[LEGACY_TRANSACTION_KEY] = transactionEnvUrl;
       }
     }
