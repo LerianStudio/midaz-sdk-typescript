@@ -7,11 +7,14 @@ import { MIDAZ_CODE_TRANSACTION_LOCKED, MidazError, readMidazProblem } from '../
 const TRANSACTION_LOCKED_STATUS = 409;
 
 /**
- * The ledger's `0486` is permanent, not transient: `commitOrCancelTransaction` takes a
- * Redis lock, never releases it on the success path, and builds its TTL as
- * `time.Duration(300)` — 300 nanoseconds. Its `detail` says "Please retry shortly" and
- * lies, so retrying loops until the attempts run out. Recognised on both the raw
- * transport error and the `MidazError` the transaction client raises from it.
+ * The ledger's `0486` cannot be retried away: `commitOrCancelTransaction` takes a Redis
+ * lock and does not release it on the success path, and the lock lives 300 seconds — the
+ * handler builds `time.Duration(300)` and the repository multiplies it by `time.Second`.
+ * Its `detail` says "Please retry shortly" and lies: no retry inside any sane attempt
+ * budget can outlast the lock. Once it expires the same call answers `0099` if the
+ * transition already happened, so the condition is not permanent, only unretryable here.
+ * Recognised on both the raw transport error and the `MidazError` the transaction client
+ * raises from it.
  */
 function isPermanentTransactionLock(error: unknown): boolean {
   const problem = readMidazProblem(error);

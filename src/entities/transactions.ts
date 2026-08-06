@@ -135,12 +135,21 @@ export interface TransactionsService {
    * operation type differs. The endpoint takes the full transaction body but does not
    * honour `pending`, which it forces to false.
    *
+   * Give each call a distinct `idempotencyKey`. Block, unblock, annotation and the plain
+   * create send the same body, and the ledger deduplicates on a hash of that body alone
+   * for 300 seconds — so unblocking with the input that blocked replays the block and
+   * writes nothing. The SDK rejects a response whose operations are not labelled `BLOCK`.
+   *
    * @returns Promise resolving to the created transaction
    */
   blockFunds(orgId: string, ledgerId: string, input: BlockFundsInput): Promise<Transaction>;
 
   /**
    * Unblocks funds, the mirror of `blockFunds`, labelling the operations `UNBLOCK`
+   *
+   * Give each call a distinct `idempotencyKey`: reusing the body that blocked the funds
+   * replays the block inside the ledger's 300-second body-hash slot and releases nothing.
+   * The SDK rejects a response whose operations are not labelled `UNBLOCK`.
    *
    * @returns Promise resolving to the created transaction
    */
@@ -153,6 +162,10 @@ export interface TransactionsService {
    * `amount.value: "0"` with `balanceAffected: false`, so every balance stays exactly
    * as it was. `NOTED` is terminal — a subsequent commit or revert returns `409/0099`,
    * so an annotation must not be used as the first leg of a two-phase flow.
+   *
+   * Give each call a distinct `idempotencyKey`: an annotation whose body matches a
+   * transaction written in the last 300 seconds is answered with that transaction. The
+   * SDK rejects a response whose operations moved a balance.
    *
    * @returns Promise resolving to the created transaction
    */
@@ -196,6 +209,11 @@ export interface TransactionsService {
    *
    * Legal only from `APPROVED`. The result is a new transaction carrying
    * `parentTransactionId` with the legs swapped, not the reverted one.
+   *
+   * The endpoint reads no idempotency key and deduplicates on a hash of the mirrored
+   * body for 300 seconds, so two look-alike transactions reverted in that window are
+   * both answered with the FIRST reversal. The SDK rejects a reversal whose
+   * `parentTransactionId` is not the transaction that was asked for.
    *
    * @returns Promise resolving to the reversing transaction
    */

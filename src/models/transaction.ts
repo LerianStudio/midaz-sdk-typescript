@@ -103,10 +103,20 @@ export interface Operation {
   accountId: string;
   /** Optional account alias */
   accountAlias?: string;
-  /** Operation type (debit or credit) */
-  type: 'DEBIT' | 'CREDIT';
+  /**
+   * Operation type.
+   *
+   * `BLOCK` and `UNBLOCK` are the labels the block and unblock endpoints persist in
+   * place of `DEBIT`/`CREDIT`; the balances move exactly as they do on a transfer.
+   */
+  type: 'DEBIT' | 'CREDIT' | 'BLOCK' | 'UNBLOCK';
   /** Amount for this operation */
   amount: Amount;
+  /**
+   * Whether this operation moved a balance. Annotations are the only transactions that
+   * write operations flagged `false`.
+   */
+  balanceAffected?: boolean;
   /** Optional description of the operation */
   description?: string;
   /** Chart of accounts code */
@@ -144,16 +154,15 @@ export interface TransactionStateTransitionOptions {
 }
 
 /**
- * Per-request options for reverting a transaction
+ * Per-request options for reverting a transaction.
+ *
+ * `idempotencyKey` is absent for the same reason it is absent on commit and cancel: the
+ * revert route binds no `X-Idempotency` field and hardcodes an empty key server-side, so
+ * a caller key is discarded. The endpoint deduplicates on a hash of the mirrored body for
+ * 300 seconds instead, and that hash carries no parent id — which is why the SDK checks
+ * `parentTransactionId` on the reversal it hands back.
  */
-export interface RevertTransactionOptions extends TransactionStateTransitionOptions {
-  /**
-   * Sent as `X-Idempotency`. Midaz replays rather than rejecting: the same key with a
-   * different body silently returns the first transaction, and `X-Idempotency-Replayed`
-   * on the response is the only way to tell a fresh revert from a replay.
-   */
-  idempotencyKey?: string;
-}
+export type RevertTransactionOptions = TransactionStateTransitionOptions;
 
 /**
  * Per-call control opt-outs.
@@ -331,7 +340,15 @@ interface FlowInputBase {
    */
   idempotencyKey?: string;
 
-  /** Sent as `X-TTL`. Omitted by default, which leaves the server's own 300-second slot. */
+  /**
+   * Sent as `X-TTL`, in seconds. Omitted by default, which leaves the server's own
+   * 300-second slot.
+   *
+   * Without an `idempotencyKey` this widens the window in which the ledger deduplicates
+   * on a hash of the request body: a later, genuinely different write whose body happens
+   * to hash the same is answered with the FIRST transaction under `201 CREATED` and
+   * never happens. Only lengthen it alongside a distinct `idempotencyKey`.
+   */
   idempotencyTtlSeconds?: number;
 }
 
@@ -370,7 +387,15 @@ export interface NonPendingTransactionInput extends Omit<CreateTransactionInput,
   /** None of these three endpoints honours a pending flag */
   pending?: never;
 
-  /** Sent as `X-TTL`. Omitted by default, which leaves the server's own 300-second slot. */
+  /**
+   * Sent as `X-TTL`, in seconds. Omitted by default, which leaves the server's own
+   * 300-second slot.
+   *
+   * Without an `idempotencyKey` this widens the window in which the ledger deduplicates
+   * on a hash of the request body: a later, genuinely different write whose body happens
+   * to hash the same is answered with the FIRST transaction under `201 CREATED` and
+   * never happens. Only lengthen it alongside a distinct `idempotencyKey`.
+   */
   idempotencyTtlSeconds?: number;
 }
 
@@ -435,11 +460,15 @@ export interface ShareInput {
 }
 
 /**
- * RateInput carries the exchange rate applied to a leg whose asset differs from the
- * transaction asset.
+ * RateInput carries an exchange rate alongside a leg.
  *
- * The ledger requires all four fields when a rate is present, and `externalId` must be
- * a UUID.
+ * The ledger accepts this object and never reads it: `FromTo.Rate` has no read site in
+ * the ledger, so no conversion is applied and the operation is booked at face value in
+ * `send.asset`. Verified live against midaz main @33cb93f — a leg of 100 with
+ * `rate {from: BRL, to: USD, value: 5.2}` under `send.asset: "BRL"` produced a BRL 100
+ * credit and answered `201 CREATED`. Do not use it to express a cross-asset leg: the
+ * SDK also refuses an `amount.asset` that differs from `send.asset`, because the ledger
+ * ignores that too. The field is carried to the wire for forward compatibility only.
  */
 export interface RateInput {
   /** Asset the rate converts from */
@@ -482,7 +511,7 @@ export interface FromToInput {
   /** Share expresses this leg as a percentage of the transaction total */
   share?: ShareInput;
 
-  /** Rate is the exchange rate applied to this leg */
+  /** Rate is accepted and ignored by the ledger; no conversion is applied. See RateInput. */
   rate?: RateInput;
 
   /**

@@ -534,20 +534,29 @@ export function createProductionConfigWithAccessManager(
 
 /**
  * Creates a local development configuration builder
+ *
+ * @param port Port the local midaz ledger listens on. Defaults to 3002, the port the
+ *   stack serves, or to `MIDAZ_LOCAL_PORT` when that is set. Midaz is a single service:
+ *   the retired onboarding/transaction pair this helper used to offset from is gone.
+ * @param apiVersion API version segment, `v1` unless overridden
  * @returns A new client configuration builder with local development defaults
  */
 export function createLocalConfig(port?: number, apiVersion?: string): ClientConfigBuilder {
-  const defaultPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3000);
+  const ledgerPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3002);
   const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
 
   return createClientConfigBuilder()
-    .withBaseUrls(resolveBaseUrls(`http://localhost:${defaultPort + 2}`))
+    .withBaseUrls(resolveBaseUrls(`http://localhost:${ledgerPort}`))
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }
 
 /**
  * Creates a local development configuration builder with Access Manager authentication
+ *
+ * @param config Access Manager connection settings
+ * @param port Port the local midaz ledger listens on, 3002 by default
+ * @param apiVersion API version segment, `v1` unless overridden
  * @returns A new client configuration builder with local development defaults and Access Manager
  */
 export function createLocalConfigWithAccessManager(
@@ -561,7 +570,7 @@ export function createLocalConfigWithAccessManager(
   port?: number,
   apiVersion?: string
 ): ClientConfigBuilder {
-  const defaultPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3000);
+  const ledgerPort = parseNumber(getEnvVar('MIDAZ_LOCAL_PORT'), port || 3002);
   const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
 
   const accessManagerConfig = {
@@ -575,7 +584,7 @@ export function createLocalConfigWithAccessManager(
   };
 
   return createClientConfigWithAccessManager(accessManagerConfig)
-    .withBaseUrls(resolveBaseUrls(`http://localhost:${defaultPort + 2}`))
+    .withBaseUrls(resolveBaseUrls(`http://localhost:${ledgerPort}`))
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }

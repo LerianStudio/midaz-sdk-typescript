@@ -61,8 +61,144 @@ const SKIP_OVERRIDES: Record<string, string> = {
 };
 
 const TERMINAL_LOCK_NOTE =
-  'The ledger never releases this lock, so the condition is terminal despite what the ' +
-  'message above says: the SDK will not retry it.';
+  'The ledger holds this lock for up to 300 seconds and does not release it when the ' +
+  'transition succeeds, so retrying shortly cannot work: the SDK treats it as terminal ' +
+  'for this call and does not retry. It is not permanent, though. Read the transaction ' +
+  'before acting: once the lock ages out the same call answers 0099 if the transition ' +
+  'already happened, and succeeds if it never did.';
+
+/**
+ * Operation label each create variant must come back carrying.
+ *
+ * The ledger keys its idempotency slot on a hash of the request body alone: the endpoint
+ * path is not part of the key and the label it applies is passed to the writer as a
+ * separate argument. Block, unblock, annotation and `/json` all send the same body, so
+ * calling two of them with one input inside the 300-second slot replays the FIRST
+ * transaction under `201 CREATED` while nothing new is written. Verified live against
+ * midaz main @33cb93f: block then unblock with one input returned the block twice and
+ * the funds stayed blocked.
+ */
+const VARIANT_OPERATION_LABEL: Record<'block' | 'unblock', string> = {
+  block: 'BLOCK',
+  unblock: 'UNBLOCK',
+};
+
+const LABEL_ONLY_OPERATION_TYPES = new Set(Object.values(VARIANT_OPERATION_LABEL));
+
+const REPLAY_CAUSE =
+  'The ledger deduplicates on a hash of the request body for 300 seconds, and neither ' +
+  'the endpoint nor the label it applies is part of that hash, so this call was answered ' +
+  'with an earlier transaction and wrote nothing.';
+
+const CREATE_REPLAY_REMEDY = `${REPLAY_CAUSE} Pass a distinct idempotencyKey per call to give each one its own slot.`;
+
+/**
+ * Raises the replay the ledger reports as a success.
+ *
+ * @returns never
+ */
+function throwReplayedTransaction(
+  operation: string,
+  transaction: Transaction,
+  what: string
+): never {
+  throw new MidazError({
+    category: ErrorCategory.CONFLICT,
+    code: ErrorCode.IDEMPOTENCY_ERROR,
+    message: `${operation} was answered with transaction ${transaction.id}, which ${what}. ${CREATE_REPLAY_REMEDY}`,
+    operation,
+    resource: 'transaction',
+    resourceId: transaction.id,
+  });
+}
+
+/**
+ * Refuses a create whose response does not carry the labelling the endpoint was asked for.
+ *
+ * The check reads operations because they are the only place the label survives: the
+ * status is `CREATED` for block, unblock and `/json` alike. A response without operations
+ * is left alone rather than guessed at.
+ *
+ * @returns The transaction the ledger answered with, when it matches the request
+ */
+function assertLabelled(
+  variant: 'json' | 'block' | 'unblock' | 'annotation',
+  operation: string,
+  transaction: Transaction
+): Transaction {
+  const operations = transaction?.operations;
+
+  if (!Array.isArray(operations) || operations.length === 0) {
+    return transaction;
+  }
+
+  if (variant === 'annotation') {
+    if (operations.some((op) => op.balanceAffected !== false)) {
+      return throwReplayedTransaction(
+        operation,
+        transaction,
+        'moved money — an annotation writes operations flagged balanceAffected:false'
+      );
+    }
+
+    return transaction;
+  }
+
+  if (variant === 'json') {
+    if (operations.some((op) => LABEL_ONLY_OPERATION_TYPES.has(op.type))) {
+      return throwReplayedTransaction(
+        operation,
+        transaction,
+        'carries BLOCK or UNBLOCK operations, which this endpoint never produces'
+      );
+    }
+
+    return transaction;
+  }
+
+  const expected = VARIANT_OPERATION_LABEL[variant];
+
+  if (operations.some((op) => op.type !== expected)) {
+    return throwReplayedTransaction(
+      operation,
+      transaction,
+      `carries operations typed ${[...new Set(operations.map((op) => op.type))].join('/')} instead of ${expected}`
+    );
+  }
+
+  return transaction;
+}
+
+/**
+ * Refuses a reversal that belongs to another transaction.
+ *
+ * `/revert` reads no idempotency header and hashes the mirrored body, which carries no
+ * parent id, so two look-alike transactions reverted inside one 300-second slot both get
+ * the FIRST reversal back — the second transaction stays approved and its funds are never
+ * returned. Verified live against midaz main @33cb93f.
+ *
+ * @returns The reversal, when it names the transaction the caller asked to revert
+ */
+function assertReversalOf(transactionId: string, transaction: Transaction): Transaction {
+  const parent = transaction?.parentTransactionId;
+
+  if (parent !== undefined && parent !== transactionId) {
+    throw new MidazError({
+      category: ErrorCategory.CONFLICT,
+      code: ErrorCode.IDEMPOTENCY_ERROR,
+      message:
+        `revertTransaction(${transactionId}) was answered with transaction ${transaction.id}, ` +
+        `which reverses ${parent} instead. ${transactionId} was NOT reverted. ${REPLAY_CAUSE} ` +
+        'The revert endpoint reads no idempotency key, so the only remedy is to retry ' +
+        'once the slot expires.',
+      operation: 'revertTransaction',
+      resource: 'transaction',
+      resourceId: transactionId,
+    });
+  }
+
+  return transaction;
+}
 
 /**
  * Translates the ledger's terminal `0486` into an error carrying its midaz code, and
@@ -253,7 +389,7 @@ export class HttpTransactionApiClient
       });
     }
 
-    return result;
+    return assertLabelled('json', 'createTransaction', result);
   }
 
   /**
@@ -463,9 +599,11 @@ export class HttpTransactionApiClient
         idempotencyTtlSeconds: input.idempotencyTtlSeconds,
       },
       attributes
-    ).catch((error) => {
-      throw asSkipNotPermittedError(error, operation);
-    });
+    )
+      .catch((error) => {
+        throw asSkipNotPermittedError(error, operation);
+      })
+      .then((transaction) => assertLabelled(variant, operation, transaction));
   }
 
   /**
@@ -500,7 +638,10 @@ export class HttpTransactionApiClient
    * Reverts an approved transaction
    *
    * The ledger answers with a brand-new transaction carrying `parentTransactionId` and
-   * the original legs swapped, not with the reverted one.
+   * the original legs swapped, not with the reverted one. That parent is checked against
+   * the transaction the caller named, because the endpoint deduplicates on the mirrored
+   * body — which carries no parent id — and will hand back another transaction's reversal
+   * with `201 CREATED`.
    *
    * @returns Promise resolving to the reversing transaction
    */
@@ -510,9 +651,15 @@ export class HttpTransactionApiClient
     transactionId: string,
     options?: RevertTransactionOptions
   ): Promise<Transaction> {
-    return this.postStateTransition('revert', orgId, ledgerId, transactionId, options, {
-      idempotencyKey: options?.idempotencyKey,
-    });
+    const reversal = await this.postStateTransition(
+      'revert',
+      orgId,
+      ledgerId,
+      transactionId,
+      options
+    );
+
+    return assertReversalOf(transactionId, reversal);
   }
 
   /**
@@ -525,8 +672,7 @@ export class HttpTransactionApiClient
     orgId: string,
     ledgerId: string,
     transactionId: string,
-    options?: TransactionStateTransitionOptions,
-    extraRequestOptions?: RequestOptions
+    options?: TransactionStateTransitionOptions
   ): Promise<Transaction> {
     const attributes = { orgId, ledgerId, transactionId, transition };
 
@@ -545,9 +691,14 @@ export class HttpTransactionApiClient
     );
 
     const requestOptions: RequestOptions = {
-      ...extraRequestOptions,
       timeout: options?.timeout,
       signal: options?.signal,
+      // Commit and cancel are the only writes here with no server-side dedupe, and the
+      // ledger keeps their lock for 300 seconds after a successful transition. A
+      // transport retry of a commit whose response was lost therefore reports a settled
+      // commit as a 0486 failure, so the transport is told not to re-send. Revert is
+      // deduplicated server-side and stays retryable.
+      ...(transition === 'revert' ? {} : { maxRetries: 0 }),
     };
 
     try {
