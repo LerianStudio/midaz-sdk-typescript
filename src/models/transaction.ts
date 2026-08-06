@@ -108,8 +108,16 @@ export interface Operation {
    *
    * `BLOCK` and `UNBLOCK` are the labels the block and unblock endpoints persist in
    * place of `DEBIT`/`CREDIT`; the balances move exactly as they do on a transfer.
+   *
+   * `OVERDRAFT`, `ON_HOLD` and `RELEASE` are system-generated: the ledger writes them
+   * on companion rows the caller never asked for. `OVERDRAFT` marks the leg booked
+   * against the overdraft companion balance and takes precedence over the block/unblock
+   * label (midaz components/ledger/internal/adapters/http/in/transaction_create.go:952);
+   * `ON_HOLD` and `RELEASE` are written by the pending and cancel flows only
+   * (transaction_create.go:700 and :781). The full set is midaz
+   * pkg/constant/operation.go.
    */
-  type: 'DEBIT' | 'CREDIT' | 'BLOCK' | 'UNBLOCK';
+  type: 'DEBIT' | 'CREDIT' | 'BLOCK' | 'UNBLOCK' | 'OVERDRAFT' | 'ON_HOLD' | 'RELEASE';
   /** Amount for this operation */
   amount: Amount;
   /**

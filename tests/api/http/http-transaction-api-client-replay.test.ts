@@ -16,6 +16,8 @@ import { StatusCode } from '../../../src/models/common';
 import {
   BlockFundsInput,
   CreateAnnotationInput,
+  CreateInflowInput,
+  CreateOutflowInput,
   Operation,
   Transaction,
   UnblockFundsInput,
@@ -39,6 +41,24 @@ describe('HttpTransactionApiClient replay refusals', () => {
     },
   };
 
+  const inflowInput: CreateInflowInput = {
+    description: 'Fund 100',
+    send: {
+      asset: 'BRL',
+      value: '100',
+      distribute: { to: [{ account: 'acc-b', amount: { asset: 'BRL', value: '100' } }] },
+    },
+  };
+
+  const outflowInput: CreateOutflowInput = {
+    description: 'Withdraw 100',
+    send: {
+      asset: 'BRL',
+      value: '100',
+      source: { from: [{ account: 'acc-a', amount: { asset: 'BRL', value: '100' } }] },
+    },
+  };
+
   function operation(type: Operation['type'], balanceAffected: boolean): Operation {
     return {
       id: `op-${type}`,
@@ -51,6 +71,34 @@ describe('HttpTransactionApiClient replay refusals', () => {
       updatedAt: new Date().toISOString(),
     } as Operation;
   }
+
+  /**
+   * The transaction a live block on an overdraft-enabled source answers with.
+   *
+   * Captured from midaz main @33cb93f: `POST /transactions/block` moving 50 BRL out of a
+   * balance carrying `settings.allowOverdraft` returned three operations — two labelled
+   * BLOCK and one OVERDRAFT companion row on the `overdraft` balance key. The block
+   * succeeded and the funds moved.
+   */
+  const blockWithOverdraftCompanion = () => [
+    operation('BLOCK', true),
+    operation('BLOCK', true),
+    operation('OVERDRAFT', true),
+  ];
+
+  /**
+   * The transaction a replayed annotation answers with.
+   *
+   * Captured from midaz main @33cb93f: posting a body to `/transactions/annotation` and
+   * then the same body to `/json`, `/inflow` or `/outflow` inside the 300-second slot
+   * returned this under `201 CREATED` with `X-Idempotency-Replayed: true`, and the money
+   * never moved.
+   */
+  const replayedAnnotation = () =>
+    answer({
+      status: { code: 'NOTED', timestamp: new Date().toISOString() },
+      operations: [operation('DEBIT', false), operation('CREDIT', false)],
+    });
 
   function answer(overrides: Partial<Transaction>): Transaction {
     return {
@@ -227,6 +275,173 @@ describe('HttpTransactionApiClient replay refusals', () => {
       await expect(
         client.createAnnotation(orgId, ledgerId, fullInput as CreateAnnotationInput)
       ).resolves.toBe(bare);
+    });
+  });
+
+  describe('a system companion row alongside the label the caller asked for', () => {
+    it('returns a block whose overdraft companion row is not labelled BLOCK', async () => {
+      const blocked = answer({ operations: blockWithOverdraftCompanion() });
+      mockHttpClient.post.mockResolvedValue(blocked);
+
+      await expect(client.blockFunds(orgId, ledgerId, fullInput)).resolves.toBe(blocked);
+    });
+
+    it('returns an unblock whose overdraft companion row is not labelled UNBLOCK', async () => {
+      const unblocked = answer({
+        operations: [operation('UNBLOCK', true), operation('OVERDRAFT', true)],
+      });
+      mockHttpClient.post.mockResolvedValue(unblocked);
+
+      await expect(
+        client.unblockFunds(orgId, ledgerId, fullInput as UnblockFundsInput)
+      ).resolves.toBe(unblocked);
+    });
+
+    it('refuses a block carrying only companion rows and no BLOCK label at all', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        answer({ operations: [operation('OVERDRAFT', true), operation('OVERDRAFT', true)] })
+      );
+
+      const error = await rejection(client.blockFunds(orgId, ledgerId, fullInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.message).toContain('BLOCK');
+      expect(error.message).toContain(replayedId);
+    });
+
+    it('refuses a block carrying a hold, which the block endpoint never produces', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        answer({ operations: [operation('BLOCK', true), operation('ON_HOLD', true)] })
+      );
+
+      const error = await rejection(client.blockFunds(orgId, ledgerId, fullInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.message).toContain('ON_HOLD');
+    });
+
+    it('refuses a block carrying a release, which the block endpoint never produces', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        answer({ operations: [operation('BLOCK', true), operation('RELEASE', true)] })
+      );
+
+      const error = await rejection(client.blockFunds(orgId, ledgerId, fullInput));
+
+      expect(error.message).toContain('RELEASE');
+    });
+  });
+
+  describe('a replayed annotation answering an endpoint that moves money', () => {
+    it('refuses a plain create answered with the annotation it replayed', async () => {
+      mockHttpClient.post.mockResolvedValue(replayedAnnotation());
+
+      const error = await rejection(client.createTransaction(orgId, ledgerId, fullInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.category).toBe(ErrorCategory.CONFLICT);
+      expect(error.resourceId).toBe(replayedId);
+      expect(error.message).toContain('NOTED');
+      expect(error.message).toContain('no money moved');
+    });
+
+    it('refuses an inflow answered with the annotation it replayed', async () => {
+      mockHttpClient.post.mockResolvedValue(replayedAnnotation());
+
+      const error = await rejection(client.createInflow(orgId, ledgerId, inflowInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.resourceId).toBe(replayedId);
+      expect(error.message).toContain('NOTED');
+    });
+
+    it('refuses an outflow answered with the annotation it replayed', async () => {
+      mockHttpClient.post.mockResolvedValue(replayedAnnotation());
+
+      const error = await rejection(client.createOutflow(orgId, ledgerId, outflowInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.resourceId).toBe(replayedId);
+      expect(error.message).toContain('NOTED');
+    });
+
+    it('refuses a NOTED answer carrying no operations at all', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        answer({ status: { code: 'NOTED', timestamp: new Date().toISOString() } })
+      );
+
+      const error = await rejection(client.createTransaction(orgId, ledgerId, fullInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.message).toContain('NOTED');
+    });
+
+    it('refuses a create whose operations all moved nothing, whatever the status says', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        answer({ operations: [operation('DEBIT', false), operation('CREDIT', false)] })
+      );
+
+      const error = await rejection(client.createTransaction(orgId, ledgerId, fullInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.message).toContain('balanceAffected');
+      expect(error.message).toContain('no money moved');
+    });
+
+    it('refuses an inflow answered with a block', async () => {
+      mockHttpClient.post.mockResolvedValue(answer({ operations: [operation('BLOCK', true)] }));
+
+      const error = await rejection(client.createInflow(orgId, ledgerId, inflowInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.message).toContain('BLOCK');
+      expect(error.message).not.toContain('UNBLOCK');
+    });
+
+    it('refuses an outflow answered with an unblock', async () => {
+      mockHttpClient.post.mockResolvedValue(answer({ operations: [operation('UNBLOCK', true)] }));
+
+      const error = await rejection(client.createOutflow(orgId, ledgerId, outflowInput));
+
+      expect(error.code).toBe(ErrorCode.IDEMPOTENCY_ERROR);
+      expect(error.message).toContain('UNBLOCK');
+      expect(error.message).not.toMatch(/(?<!UN)BLOCK/);
+    });
+
+    it('never tells the caller to retry the call the ledger already answered', async () => {
+      mockHttpClient.post.mockResolvedValue(replayedAnnotation());
+
+      const error = await rejection(client.createTransaction(orgId, ledgerId, fullInput));
+
+      expect(error.message).not.toMatch(/\bretry\b/i);
+      expect(error.message).toContain('idempotencyKey');
+    });
+
+    it('returns an inflow the ledger really wrote', async () => {
+      const funded = answer({ operations: [operation('DEBIT', true), operation('CREDIT', true)] });
+      mockHttpClient.post.mockResolvedValue(funded);
+
+      await expect(client.createInflow(orgId, ledgerId, inflowInput)).resolves.toBe(funded);
+    });
+
+    it('returns an outflow the ledger really wrote', async () => {
+      const withdrawn = answer({
+        operations: [operation('DEBIT', true), operation('CREDIT', true)],
+      });
+      mockHttpClient.post.mockResolvedValue(withdrawn);
+
+      await expect(client.createOutflow(orgId, ledgerId, outflowInput)).resolves.toBe(withdrawn);
+    });
+
+    it('returns a pending create, whose hold is not an annotation', async () => {
+      const held = answer({
+        status: { code: 'PENDING', timestamp: new Date().toISOString() },
+        operations: [operation('DEBIT', true), operation('ON_HOLD', true)],
+      });
+      mockHttpClient.post.mockResolvedValue(held);
+
+      await expect(
+        client.createTransaction(orgId, ledgerId, { ...fullInput, pending: true })
+      ).resolves.toBe(held);
     });
   });
 

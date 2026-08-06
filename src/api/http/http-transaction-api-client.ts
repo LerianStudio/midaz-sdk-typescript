@@ -68,7 +68,7 @@ const TERMINAL_LOCK_NOTE =
   'already happened, and succeeds if it never did.';
 
 /**
- * Operation label each create variant must come back carrying.
+ * Operation label at least one operation of each create variant must come back carrying.
  *
  * The ledger keys its idempotency slot on a hash of the request body alone: the endpoint
  * path is not part of the key and the label it applies is passed to the writer as a
@@ -85,12 +85,61 @@ const VARIANT_OPERATION_LABEL: Record<'block' | 'unblock', string> = {
 
 const LABEL_ONLY_OPERATION_TYPES = new Set(Object.values(VARIANT_OPERATION_LABEL));
 
+/**
+ * Operation types a block or unblock may carry without being labelled BLOCK/UNBLOCK.
+ *
+ * The overdraft branch wins over the block/unblock override, so a successful block on a
+ * source whose balance has `settings.allowOverdraft` comes back with a MIXED set: the
+ * legs the caller asked for are labelled, and the companion leg booked against the
+ * `overdraft` balance key keeps `OVERDRAFT`
+ * (midaz components/ledger/internal/adapters/http/in/transaction_create.go:952-960).
+ * Verified live against midaz main @33cb93f: blocking 50 BRL out of an overdraft-enabled
+ * balance answered `201 CREATED` with two BLOCK operations plus one OVERDRAFT.
+ *
+ * `ON_HOLD` and `RELEASE` are deliberately absent: they are written only by the pending
+ * and cancel flows (transaction_create.go:700 and :781), and block and unblock force
+ * `Pending = false` before the writer sees the input (transaction.go:74), which makes the
+ * status `CREATED` and stops route validation from ever building the double-entry pair
+ * (pkg/mtransaction/validations.go:396-398). Neither can appear in a genuine block.
+ */
+const BLOCK_COMPANION_OPERATION_TYPES = new Set(['OVERDRAFT']);
+
+/**
+ * Status the ledger stamps on an annotation, and on nothing else.
+ *
+ * `NOTED` is defined at midaz pkg/constant/transaction.go:12 and passed to the writer
+ * only by the annotation shell
+ * (components/ledger/internal/adapters/http/in/transaction_handler_huma.go:150); every
+ * other create passes `InitialStatus()`, which yields `CREATED` or `PENDING`
+ * (pkg/mtransaction/transaction.go:310-316). It is also the one status the write path
+ * never promotes (transaction_create.go:1487 promotes `CREATED` alone), so it survives on
+ * the create response and on every later read.
+ *
+ * The zero `amount.value` an annotation also carries is NOT used here: it is an emergent
+ * consequence of `Before == After` aliasing at
+ * components/ledger/internal/adapters/redis/transaction/consumer.redis.go:933 with no
+ * test pinning it, whereas `NOTED` and `balanceAffected` are explicit.
+ */
+const ANNOTATION_STATUS = 'NOTED';
+
+type CreateVariant = 'json' | 'inflow' | 'outflow' | 'block' | 'unblock' | 'annotation';
+
+type MoneyMovingVariant = Extract<CreateVariant, 'json' | 'inflow' | 'outflow'>;
+
+const MONEY_MOVING_VARIANTS = new Set<CreateVariant>(['json', 'inflow', 'outflow']);
+
+function movesMoney(variant: CreateVariant): variant is MoneyMovingVariant {
+  return MONEY_MOVING_VARIANTS.has(variant);
+}
+
 const REPLAY_CAUSE =
   'The ledger deduplicates on a hash of the request body for 300 seconds, and neither ' +
   'the endpoint nor the label it applies is part of that hash, so this call was answered ' +
   'with an earlier transaction and wrote nothing.';
 
-const CREATE_REPLAY_REMEDY = `${REPLAY_CAUSE} Pass a distinct idempotencyKey per call to give each one its own slot.`;
+const CREATE_REPLAY_REMEDY =
+  `${REPLAY_CAUSE} None of what this endpoint would have written exists, so re-issuing ` +
+  'the same call under a distinct idempotencyKey applies it exactly once.';
 
 /**
  * Raises the replay the ledger reports as a success.
@@ -113,20 +162,37 @@ function throwReplayedTransaction(
 }
 
 /**
+ * @returns The distinct operation types present, in the order they first appear
+ */
+function operationTypes(operations: NonNullable<Transaction['operations']>): string {
+  return [...new Set(operations.map((op) => op.type))].join('/');
+}
+
+/**
  * Refuses a create whose response does not carry the labelling the endpoint was asked for.
  *
- * The check reads operations because they are the only place the label survives: the
- * status is `CREATED` for block, unblock and `/json` alike. A response without operations
- * is left alone rather than guessed at.
+ * The check reads operations because that is where the label survives: `status` is
+ * `CREATED` for block, unblock and `/json` alike, and only an annotation carries a status
+ * of its own. A response without operations is left alone rather than guessed at, except
+ * when the status alone already settles it.
  *
  * @returns The transaction the ledger answered with, when it matches the request
  */
 function assertLabelled(
-  variant: 'json' | 'block' | 'unblock' | 'annotation',
+  variant: CreateVariant,
   operation: string,
   transaction: Transaction
 ): Transaction {
   const operations = transaction?.operations;
+  const settlesFunds = movesMoney(variant);
+
+  if (settlesFunds && transaction?.status?.code === ANNOTATION_STATUS) {
+    return throwReplayedTransaction(
+      operation,
+      transaction,
+      `carries status ${ANNOTATION_STATUS}, which only /transactions/annotation produces — no money moved`
+    );
+  }
 
   if (!Array.isArray(operations) || operations.length === 0) {
     return transaction;
@@ -144,12 +210,21 @@ function assertLabelled(
     return transaction;
   }
 
-  if (variant === 'json') {
+  if (settlesFunds) {
     if (operations.some((op) => LABEL_ONLY_OPERATION_TYPES.has(op.type))) {
       return throwReplayedTransaction(
         operation,
         transaction,
-        'carries BLOCK or UNBLOCK operations, which this endpoint never produces'
+        `carries operations typed ${operationTypes(operations)}, which ${operation} never produces`
+      );
+    }
+
+    if (operations.every((op) => op.balanceAffected === false)) {
+      return throwReplayedTransaction(
+        operation,
+        transaction,
+        'carries only operations flagged balanceAffected:false, which only an annotation ' +
+          'writes — no money moved'
       );
     }
 
@@ -158,11 +233,24 @@ function assertLabelled(
 
   const expected = VARIANT_OPERATION_LABEL[variant];
 
-  if (operations.some((op) => op.type !== expected)) {
+  if (!operations.some((op) => op.type === expected)) {
     return throwReplayedTransaction(
       operation,
       transaction,
-      `carries operations typed ${[...new Set(operations.map((op) => op.type))].join('/')} instead of ${expected}`
+      `carries no operation labelled ${expected} — the types present are ${operationTypes(operations)}`
+    );
+  }
+
+  const foreign = operations.filter(
+    (op) => op.type !== expected && !BLOCK_COMPANION_OPERATION_TYPES.has(op.type)
+  );
+
+  if (foreign.length > 0) {
+    return throwReplayedTransaction(
+      operation,
+      transaction,
+      `carries operations typed ${operationTypes(foreign)} alongside its ${expected} ones, ` +
+        `and a ${expected} never produces those`
     );
   }
 
@@ -485,9 +573,10 @@ export class HttpTransactionApiClient
     validate(input, validator);
 
     const url = this.urlBuilder.buildTransactionUrl(orgId, ledgerId, undefined, variant);
+    const operation = `create${variant === 'inflow' ? 'Inflow' : 'Outflow'}`;
 
     return this.postRequest<Transaction>(
-      `create${variant === 'inflow' ? 'Inflow' : 'Outflow'}`,
+      operation,
       url,
       transformer(input),
       {
@@ -495,7 +584,7 @@ export class HttpTransactionApiClient
         idempotencyTtlSeconds: input.idempotencyTtlSeconds,
       },
       attributes
-    );
+    ).then((transaction) => assertLabelled(variant, operation, transaction));
   }
 
   /**
