@@ -41,8 +41,18 @@ describe('correlation ID format', () => {
   });
 
   it('stays unique across ids minted in the same millisecond', async () => {
-    const ids = await Promise.all(Array.from({ length: 20 }, () => newCorrelationId()));
+    const frozen = Date.now();
+    const realNow = Date.now;
+    Date.now = () => frozen;
 
-    expect(new Set(ids).size).toBe(ids.length);
+    try {
+      const ids = await Promise.all(Array.from({ length: 20 }, () => newCorrelationId()));
+
+      const prefixes = new Set(ids.map((id) => id.split('_')[1]));
+      expect(prefixes.size).toBe(1);
+      expect(new Set(ids).size).toBe(ids.length);
+    } finally {
+      Date.now = realNow;
+    }
   });
 });
