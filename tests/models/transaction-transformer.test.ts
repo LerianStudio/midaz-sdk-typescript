@@ -221,6 +221,40 @@ describe('toApiTransaction leg field parity', () => {
     expect(() => toApiTransaction(input)).toThrow('send.distribute.to[0].amount.asset');
   });
 
+  it('refuses a leg that names no account instead of emitting an undefined alias', () => {
+    const input = buildInput('100');
+    delete (input.send as any).distribute.to[0].account;
+
+    expect(() => toApiTransaction(input)).toThrow(ValidationError);
+    expect(() => toApiTransaction(input)).toThrow('send.distribute.to[0].account');
+  });
+
+  it('refuses a leg that names the account under the wire field name', () => {
+    const input = buildInput('100');
+    (input.send as any).distribute.to[0] = {
+      accountAlias: 'smoke-b',
+      amount: { asset: 'BRL', value: '100' },
+    };
+
+    expect(() => toApiTransaction(input)).toThrow('send.distribute.to[0].account');
+  });
+
+  it('refuses a source that carries no from array instead of crashing', () => {
+    const input = buildInput('100');
+    (input.send as any).source = {};
+
+    expect(() => toApiTransaction(input)).toThrow(ValidationError);
+    expect(() => toApiTransaction(input)).toThrow('send.source.from');
+  });
+
+  it('refuses a distribute that carries no to array instead of crashing', () => {
+    const input = buildInput('100');
+    (input.send as any).distribute = {};
+
+    expect(() => toApiTransaction(input)).toThrow(ValidationError);
+    expect(() => toApiTransaction(input)).toThrow('send.distribute.to');
+  });
+
   it('omits every leg field the caller did not supply', () => {
     const result = toApiTransaction(buildInput('100'));
 

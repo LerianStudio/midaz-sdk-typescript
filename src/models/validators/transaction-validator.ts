@@ -296,11 +296,31 @@ function validateFlowLegs(
   path: string,
   sendAsset: string | undefined
 ): ValidationResult[] {
-  if (!Array.isArray(legs) || legs.length === 0) {
-    return [rejectField(path, 'must contain at least one account')];
+  const collection = validateLegCollection(legs, path);
+
+  if (!collection.valid) {
+    return [collection];
   }
 
-  return legs.map((leg, index) => validateLeg(leg, `${path}[${index}]`, sendAsset));
+  return (legs as FromToInput[]).map((leg, index) =>
+    validateLeg(leg, `${path}[${index}]`, sendAsset)
+  );
+}
+
+/**
+ * Validates the collection a flow side carries, before any of its legs is read.
+ *
+ * @returns ValidationResult naming `path` when the collection cannot be iterated
+ */
+export function validateLegCollection(
+  legs: FromToInput[] | undefined,
+  path: string
+): ValidationResult {
+  if (!Array.isArray(legs) || legs.length === 0) {
+    return rejectField(path, 'must contain at least one account');
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -319,6 +339,16 @@ export function validateLeg(
   }
 
   const results: ValidationResult[] = [];
+
+  if (typeof leg.account !== 'string' || leg.account.length === 0) {
+    results.push(
+      rejectField(
+        `${path}.account`,
+        'is required: it becomes the accountAlias the ledger books the operation against, ' +
+          'and a leg without one reaches the wire with no account at all'
+      )
+    );
+  }
 
   if (leg.remaining !== undefined) {
     results.push(
@@ -396,9 +426,14 @@ function validateLegAsset(
 function validateShare(share: ShareInput | undefined, path: string): ValidationResult[] {
   const results: ValidationResult[] = [];
 
-  if (!Number.isInteger(share?.percentage) || Number(share?.percentage) <= 0) {
+  const percentage = share?.percentage;
+
+  if (!Number.isInteger(percentage) || Number(percentage) < 1 || Number(percentage) > 100) {
     results.push(
-      rejectField(`${path}.percentage`, 'must be a positive integer percentage of send.value')
+      rejectField(
+        `${path}.percentage`,
+        'must be an integer percentage of send.value between 1 and 100'
+      )
     );
   }
 
@@ -683,13 +718,13 @@ export function validateDecimalValue(value: unknown, fieldName: string): Validat
 function validateSendDecimalValues(send: SendInput): ValidationResult[] {
   const results: ValidationResult[] = [validateDecimalValue(send.value, 'send.value')];
 
-  send.source?.from.forEach((from, index) => {
-    results.push(validateLeg(from, `send.source.from[${index}]`, send.asset));
-  });
+  if (send.source !== undefined) {
+    results.push(...validateFlowLegs(send.source.from, 'send.source.from', send.asset));
+  }
 
-  send.distribute?.to.forEach((to, index) => {
-    results.push(validateLeg(to, `send.distribute.to[${index}]`, send.asset));
-  });
+  if (send.distribute !== undefined) {
+    results.push(...validateFlowLegs(send.distribute.to, 'send.distribute.to', send.asset));
+  }
 
   return results;
 }

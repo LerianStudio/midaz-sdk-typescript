@@ -769,6 +769,43 @@ describe('Transaction Validator', () => {
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.['send.distribute.to[0].amount.value']).toBeDefined();
     });
+
+    const buildSendWithoutLegs = (send: Record<string, any>): CreateTransactionInput =>
+      ({
+        chartOfAccountsGroupName: 'group',
+        description: 'transfer',
+        send: { asset: 'BRL', value: '100', ...send },
+      }) as CreateTransactionInput;
+
+    it('shouldRejectASourceThatCarriesNoFromArray', () => {
+      const result = validateCreateTransactionInput(buildSendWithoutLegs({ source: {} }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from']).toBeDefined();
+    });
+
+    it('shouldRejectADistributeThatCarriesNoToArray', () => {
+      const result = validateCreateTransactionInput(buildSendWithoutLegs({ distribute: {} }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to']).toBeDefined();
+    });
+
+    it('shouldRejectAnEmptySourceFromArray', () => {
+      const result = validateCreateTransactionInput(buildSendWithoutLegs({ source: { from: [] } }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from']).toBeDefined();
+    });
+
+    it('shouldRejectAFromThatIsNotAnArray', () => {
+      const result = validateCreateTransactionInput(
+        buildSendWithoutLegs({ source: { from: 'smoke-a' } })
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from']).toBeDefined();
+    });
   });
 
   describe('field parity rules', () => {
@@ -1009,6 +1046,53 @@ describe('Transaction Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.fieldErrors?.['send.distribute.to[0]']).toBeDefined();
+    });
+
+    it('shouldRejectALegThatNamesNoAccount', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs([defaultLeg('smoke-a')], [{ amount: { asset: 'BRL', value: '100' } }])
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].account']).toBeDefined();
+    });
+
+    it('shouldRejectALegWhoseAccountIsAnEmptyString', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs([defaultLeg('')], [defaultLeg('smoke-b')])
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from[0].account']).toBeDefined();
+    });
+
+    it('shouldRejectALegThatNamesTheAccountUnderTheWireFieldName', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs(
+          [defaultLeg('smoke-a')],
+          [{ accountAlias: 'smoke-b', amount: { asset: 'BRL', value: '100' } }]
+        )
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].account']).toBeDefined();
+    });
+
+    it('shouldRejectASharePercentageAbove100', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs([defaultLeg('smoke-a')], [{ account: 'smoke-b', share: { percentage: 101 } }])
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].share.percentage']).toBeDefined();
+    });
+
+    it('shouldAcceptASharePercentageOfExactly100', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs([defaultLeg('smoke-a')], [{ account: 'smoke-b', share: { percentage: 100 } }])
+      );
+
+      expect(result.valid).toBe(true);
     });
 
     it('shouldAcceptTheNewLegFields', () => {

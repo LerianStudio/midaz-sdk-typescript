@@ -11,7 +11,11 @@ import {
   FromToInput,
   Transaction,
 } from './transaction';
-import { validateDecimalValue, validateLeg } from './validators/transaction-validator';
+import {
+  validateDecimalValue,
+  validateLeg,
+  validateLegCollection,
+} from './validators/transaction-validator';
 
 /**
  * Coerces a monetary value to the decimal string the ledger requires.
@@ -103,6 +107,29 @@ function toApiLeg(leg: FromToInput, path: string, sendAsset: string | undefined)
 }
 
 /**
+ * Transforms one side of a flow into the API shape.
+ *
+ * @returns The legs in API format
+ * @throws ValidationError naming `path` when the collection cannot be iterated
+ */
+function toApiLegs(
+  legs: FromToInput[] | undefined,
+  path: string,
+  sendAsset: string | undefined
+): any[] {
+  const collection = validateLegCollection(legs, path);
+
+  if (!collection.valid) {
+    throw new ValidationError(
+      collection.message || `${path} must contain at least one account`,
+      collection.fieldErrors
+    );
+  }
+
+  return (legs as FromToInput[]).map((leg, index) => toApiLeg(leg, `${path}[${index}]`, sendAsset));
+}
+
+/**
  * Copies the envelope fields both flow endpoints share, skipping the ones the ledger
  * takes as headers.
  *
@@ -149,9 +176,7 @@ export function toApiInflow(input: CreateInflowInput): any {
     asset: input.send.asset,
     value: coerceDecimalValue(input.send.value, 'send.value'),
     distribute: {
-      to: (input.send.distribute?.to ?? []).map((to, index) =>
-        toApiLeg(to, `send.distribute.to[${index}]`, input.send.asset)
-      ),
+      to: toApiLegs(input.send.distribute?.to, 'send.distribute.to', input.send.asset),
     },
   };
 
@@ -177,9 +202,7 @@ export function toApiOutflow(input: CreateOutflowInput): any {
     asset: input.send.asset,
     value: coerceDecimalValue(input.send.value, 'send.value'),
     source: {
-      from: (input.send.source?.from ?? []).map((from, index) =>
-        toApiLeg(from, `send.source.from[${index}]`, input.send.asset)
-      ),
+      from: toApiLegs(input.send.source?.from, 'send.source.from', input.send.asset),
     },
   };
 
@@ -205,18 +228,14 @@ export function toApiTransaction(input: CreateTransactionInput): any {
     // Transform source operations - API expects 'accountAlias' not 'account'
     if (input.send.source) {
       result.send.source = {
-        from: input.send.source.from.map((fromInput, index) =>
-          toApiLeg(fromInput, `send.source.from[${index}]`, input.send?.asset)
-        ),
+        from: toApiLegs(input.send.source.from, 'send.source.from', input.send.asset),
       };
     }
 
     // Transform distribute operations - API expects 'accountAlias' not 'account'
     if (input.send.distribute) {
       result.send.distribute = {
-        to: input.send.distribute.to.map((toInput, index) =>
-          toApiLeg(toInput, `send.distribute.to[${index}]`, input.send?.asset)
-        ),
+        to: toApiLegs(input.send.distribute.to, 'send.distribute.to', input.send.asset),
       };
     }
   }

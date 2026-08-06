@@ -498,7 +498,12 @@ export interface RateInput {
  * A leg carries either an `amount` or a `share`, never both and never neither.
  */
 export interface FromToInput {
-  /** Account identifies the account affected by this operation */
+  /**
+   * Account identifies the account affected by this operation.
+   *
+   * It is the only account identifier a leg carries: the ledger's `FromTo` names the
+   * same value `accountAlias`, and the transformer performs that rename on the way out.
+   */
   account: string;
 
   /**
@@ -549,9 +554,6 @@ export interface FromToInput {
 
   /** ChartOfAccounts specifies the chart of accounts for this operation (optional) */
   chartOfAccounts?: string;
-
-  /** AccountAlias provides an alternative account identifier (optional) */
-  accountAlias?: string;
 
   /** Metadata contains additional custom data for this operation */
   metadata?: Record<string, any>;
