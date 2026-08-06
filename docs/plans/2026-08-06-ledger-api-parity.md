@@ -70,7 +70,7 @@
 
 #### Task 1.1.2: Path-drift test suite over UrlBuilder
 
-- [ ] Done
+- [x] Done
 
 **Context:** `UrlBuilder` (`src/api/url-builder.ts:11`) exposes one `buildXxxUrl` method per resource (lines 84–293). Two of them are dead code (`buildAssetRateUrl:176`, `buildOperationUrl:204`) while the corresponding clients hand-roll wrong URLs — exactly the drift class this suite must catch. After Epics 1.3/1.4 remove the hand-rolled URLs, `UrlBuilder` becomes the single choke point, so testing it covers the whole SDK surface.
 
