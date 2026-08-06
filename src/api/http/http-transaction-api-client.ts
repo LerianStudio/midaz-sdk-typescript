@@ -13,6 +13,7 @@ import {
   Transaction,
   TransactionStateTransitionOptions,
   UnblockFundsInput,
+  UpdateTransactionInput,
 } from '../../models/transaction';
 import {
   toApiInflow,
@@ -27,6 +28,7 @@ import {
   validateCreateOutflowInput,
   validateCreateTransactionInput,
   validateUnblockFundsInput,
+  validateUpdateTransactionInput,
 } from '../../models/validators/transaction-validator';
 import { transformRequest } from '../../util/data/model-transformer';
 import {
@@ -252,6 +254,39 @@ export class HttpTransactionApiClient
     }
 
     return result;
+  }
+
+  /**
+   * Patches the description and metadata of an existing transaction
+   *
+   * The ledger answers 200, not the 201 every create on this resource returns, and it
+   * merges `metadata` into what is already stored instead of replacing it: keys absent
+   * from the patch survive, and a key mapped to `null` is removed. An empty-string
+   * `description` is ignored, so a description cannot be cleared. The input is sent as
+   * given — no read-then-write is performed to emulate replace semantics, which would
+   * race against a concurrent patch.
+   *
+   * @returns Promise resolving to the patched transaction
+   */
+  public async updateTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    input: UpdateTransactionInput
+  ): Promise<Transaction> {
+    const attributes = { orgId, ledgerId, transactionId };
+
+    this.validateRequiredParams(this.startSpan('validateParams', attributes), {
+      orgId,
+      ledgerId,
+      transactionId,
+    });
+
+    validate(input, validateUpdateTransactionInput);
+
+    const url = this.urlBuilder.buildTransactionUrl(orgId, ledgerId, transactionId);
+
+    return this.patchRequest<Transaction>('updateTransaction', url, input, undefined, attributes);
   }
 
   /**

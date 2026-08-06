@@ -13,6 +13,7 @@ import {
   Transaction,
   TransactionStateTransitionOptions,
   UnblockFundsInput,
+  UpdateTransactionInput,
 } from '../../models/transaction';
 import { BasePaginator, PaginatorConfig } from '../../util/data/pagination-abstraction';
 import { Observability } from '../../util/observability/observability';
@@ -287,6 +288,20 @@ export class TransactionsServiceImpl implements TransactionsService {
     } finally {
       span.end();
     }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async updateTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    input: UpdateTransactionInput
+  ): Promise<Transaction> {
+    return this.traceStateTransition('update', orgId, ledgerId, transactionId, () =>
+      this.apiClient.updateTransaction(orgId, ledgerId, transactionId, input)
+    );
   }
 
   /**

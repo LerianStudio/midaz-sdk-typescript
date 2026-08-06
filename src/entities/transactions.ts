@@ -13,6 +13,7 @@ import {
   Transaction,
   TransactionStateTransitionOptions,
   UnblockFundsInput,
+  UpdateTransactionInput,
 } from '../models/transaction';
 
 /**
@@ -77,6 +78,34 @@ export interface TransactionsService {
     orgId: string,
     ledgerId: string,
     input: CreateTransactionInput
+  ): Promise<Transaction>;
+
+  /**
+   * Patches the description and metadata of an existing transaction
+   *
+   * Only these two fields are patchable; the endpoint refuses any other key. The
+   * operations, amounts and status of a transaction stay immutable, so a booked
+   * movement is still corrected by a revert rather than an edit.
+   *
+   * Two behaviours are surprising enough to plan around:
+   *
+   * - `metadata` **merges**. `{only: 'this'}` patched over `{n: 7, patched: 'yes'}`
+   *   leaves all three keys. Mapping a key to `null` removes it; there is no way to
+   *   replace the whole map in one call.
+   * - `description: ''` is **ignored**, so a description can be changed but never
+   *   cleared.
+   *
+   * The SDK sends the patch exactly as given. It deliberately does not read the
+   * transaction first to emulate replace semantics, because the read and the write
+   * would race any concurrent patch.
+   *
+   * @returns Promise resolving to the patched transaction
+   */
+  updateTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    input: UpdateTransactionInput
   ): Promise<Transaction>;
 
   /**

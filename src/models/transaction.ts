@@ -708,14 +708,25 @@ export interface TransactionDSLInput {
 
 /**
  * Input for updating an existing transaction
+ *
+ * These are the only two fields `PATCH .../transactions/{id}` accepts; every other key
+ * is refused with `400/0053`, including `externalId`, `code` and `pending`.
  */
 export interface UpdateTransactionInput {
-  /** Updated custom metadata fields for the transaction */
-  metadata?: Record<string, any>;
-  /** Updated description of the transaction */
+  /**
+   * Replacement description, at most 256 characters
+   *
+   * An empty string is ignored by the ledger, so a description cannot be cleared.
+   */
   description?: string;
-  /** Updated external identifier */
-  externalId?: string;
+
+  /**
+   * Metadata keys to merge into the transaction's existing metadata
+   *
+   * The ledger merges rather than replaces: keys absent from this object survive. A key
+   * mapped to `null` is removed.
+   */
+  metadata?: Record<string, any>;
 }
 
 /**

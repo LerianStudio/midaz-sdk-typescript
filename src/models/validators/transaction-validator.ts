@@ -23,6 +23,7 @@ import {
   SendInput,
   ShareInput,
   UnblockFundsInput,
+  UpdateTransactionInput,
 } from '../transaction';
 
 /** Decimal form accepted by the ledger: optional sign, digits, optional fractional part */
@@ -44,6 +45,9 @@ const MAX_TEXT_LENGTH = 256;
 
 /** Longest `code` the ledger accepts before `400/0047` */
 const MAX_CODE_LENGTH = 100;
+
+/** The only two keys `PATCH .../transactions/{id}` accepts; anything else is `400/0053` */
+const UPDATABLE_TRANSACTION_FIELDS = ['description', 'metadata'];
 
 /**
  * Validates a CreateTransactionInput object to ensure it meets all business rules and constraints.
@@ -583,6 +587,39 @@ export function validateCreateAnnotationInput(input: CreateAnnotationInput): Val
     'corrupts the annotation endpoint, which answers with two CREDIT operations instead ' +
       'of a debit and a credit when it is sent'
   );
+}
+
+/**
+ * Validates an UpdateTransactionInput before it reaches the wire.
+ *
+ * An empty object is valid: the ledger accepts it and changes nothing.
+ *
+ * @returns ValidationResult naming the offending field when the input is unusable
+ */
+export function validateUpdateTransactionInput(input: UpdateTransactionInput): ValidationResult {
+  const requiredResult = validateRequired(input, 'input');
+  if (!requiredResult.valid) {
+    return requiredResult;
+  }
+
+  const results: ValidationResult[] = [
+    validateMaxLength(input.description, 'description', MAX_TEXT_LENGTH),
+    validateMetadata(input.metadata),
+  ];
+
+  for (const field of Object.keys(input)) {
+    if (!UPDATABLE_TRANSACTION_FIELDS.includes(field)) {
+      results.push(
+        rejectField(
+          field,
+          'is not accepted by the transaction patch endpoint, which takes only ' +
+            `${UPDATABLE_TRANSACTION_FIELDS.join(' and ')}`
+        )
+      );
+    }
+  }
+
+  return combineValidationResults(results);
 }
 
 /**

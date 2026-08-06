@@ -362,7 +362,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 #### Task 2.4.3: PATCH transaction with merge semantics
 
-- [ ] Done
+- [x] Done
 
 **Context:** `PATCH .../transactions/{id}` accepts **only** `{description?, metadata?}` and returns **200** (not 201). Verified semantics that the SDK must document because they are surprising: `{}` is a no-op; `{"description": ""}` does **not** clear the description; and **`metadata` merges rather than replaces** — `{"metadata":{"only":"this"}}` against `{n:7, patched:"yes"}` yields all three keys, and there is no way to delete a metadata key through PATCH. `description` over 256 characters is `400/0047`.
 

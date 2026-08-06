@@ -12,6 +12,7 @@ import {
   Transaction,
   TransactionStateTransitionOptions,
   UnblockFundsInput,
+  UpdateTransactionInput,
 } from '../../models/transaction';
 
 import { ApiClient } from './api-client';
@@ -51,6 +52,18 @@ export interface TransactionApiClient
     orgId: string,
     ledgerId: string,
     input: CreateTransactionInput
+  ): Promise<Transaction>;
+
+  /**
+   * Patches the description and metadata of an existing transaction
+   *
+   * @returns Promise resolving to the patched transaction
+   */
+  updateTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    input: UpdateTransactionInput
   ): Promise<Transaction>;
 
   /**
