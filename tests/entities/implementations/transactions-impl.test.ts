@@ -507,6 +507,52 @@ describe('TransactionsServiceImpl', () => {
         rejected
       );
     });
+
+    it('names each flow span after its public method, as the transport layer does', async () => {
+      mockTransactionApiClient.createInflow.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.createOutflow.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.blockFunds.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.unblockFunds.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.createAnnotation.mockResolvedValueOnce(mockTransaction);
+
+      const labelInput = {
+        ...inflow,
+        send: {
+          ...inflow.send,
+          source: { from: [{ account: 'acc_1', amount: inflow.send.value }] },
+        },
+      };
+
+      await transactionsService.createInflow(orgId, ledgerId, inflow);
+      await transactionsService.createOutflow(orgId, ledgerId, outflow);
+      await transactionsService.blockFunds(orgId, ledgerId, labelInput as never);
+      await transactionsService.unblockFunds(orgId, ledgerId, labelInput as never);
+      await transactionsService.createAnnotation(orgId, ledgerId, labelInput as never);
+
+      const spanNames = observability.startSpan.mock.calls.map(([name]) => name);
+
+      expect(spanNames).toEqual([
+        'createInflow',
+        'createOutflow',
+        'blockFunds',
+        'unblockFunds',
+        'createAnnotation',
+      ]);
+    });
+
+    it('keeps the lowercase variant on the metric name', async () => {
+      mockTransactionApiClient.blockFunds.mockResolvedValueOnce(mockTransaction);
+
+      await transactionsService.blockFunds(orgId, ledgerId, {
+        ...inflow,
+        send: { ...inflow.send, source: { from: [] } },
+      } as never);
+
+      expect(observability.recordMetric).toHaveBeenCalledWith('transactions.block', 1, {
+        orgId,
+        ledgerId,
+      });
+    });
   });
 
   describe('label-only variants', () => {

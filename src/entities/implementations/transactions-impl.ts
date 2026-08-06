@@ -312,7 +312,7 @@ export class TransactionsServiceImpl implements TransactionsService {
     ledgerId: string,
     input: CreateInflowInput
   ): Promise<Transaction> {
-    return this.traceFlow('inflow', orgId, ledgerId, input.send?.asset, () =>
+    return this.traceFlow('createInflow', 'inflow', orgId, ledgerId, input.send?.asset, () =>
       this.apiClient.createInflow(orgId, ledgerId, input)
     );
   }
@@ -325,7 +325,7 @@ export class TransactionsServiceImpl implements TransactionsService {
     ledgerId: string,
     input: CreateOutflowInput
   ): Promise<Transaction> {
-    return this.traceFlow('outflow', orgId, ledgerId, input.send?.asset, () =>
+    return this.traceFlow('createOutflow', 'outflow', orgId, ledgerId, input.send?.asset, () =>
       this.apiClient.createOutflow(orgId, ledgerId, input)
     );
   }
@@ -338,7 +338,7 @@ export class TransactionsServiceImpl implements TransactionsService {
     ledgerId: string,
     input: BlockFundsInput
   ): Promise<Transaction> {
-    return this.traceFlow('block', orgId, ledgerId, input.send?.asset, () =>
+    return this.traceFlow('blockFunds', 'block', orgId, ledgerId, input.send?.asset, () =>
       this.apiClient.blockFunds(orgId, ledgerId, input)
     );
   }
@@ -351,7 +351,7 @@ export class TransactionsServiceImpl implements TransactionsService {
     ledgerId: string,
     input: UnblockFundsInput
   ): Promise<Transaction> {
-    return this.traceFlow('unblock', orgId, ledgerId, input.send?.asset, () =>
+    return this.traceFlow('unblockFunds', 'unblock', orgId, ledgerId, input.send?.asset, () =>
       this.apiClient.unblockFunds(orgId, ledgerId, input)
     );
   }
@@ -364,24 +364,34 @@ export class TransactionsServiceImpl implements TransactionsService {
     ledgerId: string,
     input: CreateAnnotationInput
   ): Promise<Transaction> {
-    return this.traceFlow('annotation', orgId, ledgerId, input.send?.asset, () =>
-      this.apiClient.createAnnotation(orgId, ledgerId, input)
+    return this.traceFlow(
+      'createAnnotation',
+      'annotation',
+      orgId,
+      ledgerId,
+      input.send?.asset,
+      () => this.apiClient.createAnnotation(orgId, ledgerId, input)
     );
   }
 
   /**
-   * Traces a single-sided flow and records its metric
+   * Traces a single-sided flow and records its metric.
+   *
+   * `operation` names the span and matches both the public method and the operation the
+   * transport layer emits, so a trace can be followed across the two; `variant` is the
+   * metric suffix only.
    *
    * @returns Promise resolving to the transaction the API client answered with
    */
   private async traceFlow(
+    operation: string,
     variant: string,
     orgId: string,
     ledgerId: string,
     asset: string | undefined,
     call: () => Promise<Transaction>
   ): Promise<Transaction> {
-    const span = this.observability.startSpan(`create${variant}`);
+    const span = this.observability.startSpan(operation);
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
 
