@@ -44,6 +44,21 @@ export interface Transaction extends ApiResponse {
   /** Whether the transaction is in a pending state requiring explicit commitment */
   pending?: boolean;
 
+  /** UUID of the transaction route the ledger recorded, echoed from the request's `routeId` */
+  routeId?: string;
+
+  /**
+   * Whether fee computation was actually skipped. This is the only place the outcome of
+   * a requested `skip.fees` appears: the ledger never echoes `skip` back.
+   */
+  feesSkipped?: boolean;
+
+  /**
+   * Whether tracer evaluation was actually skipped. This is the only place the outcome of
+   * a requested `skip.tracer` appears: the ledger never echoes `skip` back.
+   */
+  tracerSkipped?: boolean;
+
   /**
    * Identifier of the transaction this one reverses, set only on transactions the
    * ledger creates in response to a revert
@@ -141,6 +156,22 @@ export interface RevertTransactionOptions extends TransactionStateTransitionOpti
 }
 
 /**
+ * Per-call control opt-outs.
+ *
+ * Each flag is honoured only when the matching per-ledger override is enabled
+ * (`overrides.allowFeeSkip`, `overrides.allowTracerSkip`); otherwise the whole request
+ * is rejected with `422/0490`. The SDK cannot read those settings, so it forwards the
+ * flags without pre-validating them.
+ */
+export interface TransactionSkipInput {
+  /** Skips fee computation. Requires the ledger's `overrides.allowFeeSkip`. */
+  fees?: boolean;
+
+  /** Skips tracer evaluation. Requires the ledger's `overrides.allowTracerSkip`. */
+  tracer?: boolean;
+}
+
+/**
  * CreateTransactionInput is the input for creating a transaction.
  * This structure contains all the fields needed to create a new transaction.
  */
@@ -163,14 +194,40 @@ export interface CreateTransactionInput {
   /** Description is a human-readable description of the transaction (REQUIRED by API) */
   description: string;
 
-  /** Code is an optional identifier/reference code for the transaction */
+  /**
+   * Code is an optional identifier/reference code for the transaction, at most 100
+   * characters. The ledger persists it but never returns it, so the created
+   * `Transaction` carries no `code` — that absence is not a lost write.
+   */
   code?: string;
 
   /** Pending indicates whether the transaction should be created in a pending state */
   pending?: boolean;
 
-  /** Route is the transaction route identifier (optional) */
+  /**
+   * Route is the deprecated free-form transaction route identifier, kept by the ledger
+   * for backwards compatibility and used by nothing. Use `routeId`.
+   */
   route?: string;
+
+  /**
+   * RouteID is the UUID of the transaction route. The ledger accepts a UUID that
+   * matches no existing route while `accounting.validateRoutes` is off, so a typo
+   * surfaces only once that setting is turned on.
+   */
+  routeId?: string;
+
+  /**
+   * TransactionDate backdates the transaction. The ledger writes it straight into the
+   * response's `createdAt`, so the created transaction reports this value rather than
+   * the time it was written. Accepted forms: `YYYY-MM-DD`, `YYYY-MM-DDTHH:mm:ss`,
+   * the same with `Z`, with a numeric offset, and with fractional seconds. A future
+   * date is `400/0121`, and combining it with `pending` is `400/0122`.
+   */
+  transactionDate?: string;
+
+  /** Skip carries the per-call control opt-outs, each gated by a per-ledger override */
+  skip?: TransactionSkipInput;
 
   /** Metadata contains additional custom data for the transaction */
   metadata?: Record<string, any>;

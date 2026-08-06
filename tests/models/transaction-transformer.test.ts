@@ -128,3 +128,50 @@ describe('toApiTransaction decimal value handling', () => {
     }
   });
 });
+
+describe('toApiTransaction field parity', () => {
+  const withFields = (extra: Partial<CreateTransactionInput>): CreateTransactionInput => ({
+    ...buildInput('100'),
+    ...extra,
+  });
+
+  it('puts routeId on the wire', () => {
+    const result = toApiTransaction(
+      withFields({ routeId: 'd389ba81-e807-4bcc-a26a-019edcd12dfc' })
+    );
+
+    expect(result.routeId).toBe('d389ba81-e807-4bcc-a26a-019edcd12dfc');
+  });
+
+  it('puts transactionDate on the wire', () => {
+    const result = toApiTransaction(withFields({ transactionDate: '2025-01-02T03:04:05Z' }));
+
+    expect(result.transactionDate).toBe('2025-01-02T03:04:05Z');
+  });
+
+  it('puts skip on the wire', () => {
+    const result = toApiTransaction(withFields({ skip: { fees: true } }));
+
+    expect(result.skip).toEqual({ fees: true });
+  });
+
+  it('puts a skip that turns everything off on the wire rather than dropping it', () => {
+    const result = toApiTransaction(withFields({ skip: { fees: false, tracer: false } }));
+
+    expect(result.skip).toEqual({ fees: false, tracer: false });
+  });
+
+  it('omits the three fields entirely when the caller supplied none', () => {
+    const result = toApiTransaction(buildInput('100'));
+
+    expect(result).not.toHaveProperty('routeId');
+    expect(result).not.toHaveProperty('transactionDate');
+    expect(result).not.toHaveProperty('skip');
+  });
+
+  it('keeps code on the wire even though the ledger never echoes it back', () => {
+    const result = toApiTransaction(withFields({ code: 'TR-12345' }));
+
+    expect(result.code).toBe('TR-12345');
+  });
+});

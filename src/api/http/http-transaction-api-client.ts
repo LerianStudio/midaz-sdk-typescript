@@ -32,6 +32,7 @@ import { transformRequest } from '../../util/data/model-transformer';
 import {
   ErrorCategory,
   ErrorCode,
+  MIDAZ_CODE_SKIP_NOT_PERMITTED,
   MIDAZ_CODE_TRANSACTION_LOCKED,
   MidazError,
   readMidazProblem,
@@ -45,6 +46,17 @@ import { TransactionCreateVariant, TransactionStateTransition, UrlBuilder } from
 import { HttpBaseApiClient } from './http-base-api-client';
 
 const TRANSACTION_LOCKED_STATUS = 409;
+
+const SKIP_NOT_PERMITTED_STATUS = 422;
+
+/**
+ * Ledger override each skip flag needs, keyed by the word the server's own detail uses.
+ * The server says "enable the matching ledger override" without naming it.
+ */
+const SKIP_OVERRIDES: Record<string, string> = {
+  fees: 'overrides.allowFeeSkip',
+  tracer: 'overrides.allowTracerSkip',
+};
 
 const TERMINAL_LOCK_NOTE =
   'The ledger never releases this lock, so the condition is terminal despite what the ' +
@@ -80,6 +92,40 @@ function asTransactionLockedError(
     operation,
     resource: 'transaction',
     resourceId: transactionId,
+    cause: error,
+  });
+}
+
+/**
+ * Translates the ledger's `422/0490` into an error naming the ledger override the caller
+ * has to enable, and leaves every other failure exactly as raised.
+ *
+ * The SDK cannot pre-validate a `skip` flag because the per-ledger overrides that gate it
+ * are not visible from the request side, so this is the earliest point the refusal can be
+ * made actionable.
+ */
+function asSkipNotPermittedError(error: unknown, operation: string): unknown {
+  const problem = readMidazProblem(error);
+
+  if (
+    problem.status !== SKIP_NOT_PERMITTED_STATUS ||
+    problem.code !== MIDAZ_CODE_SKIP_NOT_PERMITTED
+  ) {
+    return error;
+  }
+
+  const detail = problem.detail ?? 'Skip Not Permitted';
+  const named = Object.keys(SKIP_OVERRIDES).find((flag) => detail.includes(`${flag} skip`));
+  const override = named ? SKIP_OVERRIDES[named] : Object.values(SKIP_OVERRIDES).join(' or ');
+
+  return new MidazError({
+    category: ErrorCategory.VALIDATION,
+    code: ErrorCode.VALIDATION_ERROR,
+    midazCode: MIDAZ_CODE_SKIP_NOT_PERMITTED,
+    message: `${detail} Enable ${override} on the ledger settings, or drop the skip.`,
+    statusCode: SKIP_NOT_PERMITTED_STATUS,
+    operation,
+    resource: 'transaction',
     cause: error,
   });
 }
@@ -191,7 +237,9 @@ export class HttpTransactionApiClient
       libTransaction,
       { idempotencyKey: input.idempotencyKey },
       attributes
-    );
+    ).catch((error) => {
+      throw asSkipNotPermittedError(error, 'createTransaction');
+    });
 
     // Record transaction amount metrics if available
     if (input.amount) {
@@ -380,7 +428,9 @@ export class HttpTransactionApiClient
         idempotencyTtlSeconds: input.idempotencyTtlSeconds,
       },
       attributes
-    );
+    ).catch((error) => {
+      throw asSkipNotPermittedError(error, operation);
+    });
   }
 
   /**

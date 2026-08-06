@@ -242,6 +242,20 @@ export function toApiTransaction(input: CreateTransactionInput): any {
     result.route = input.route;
   }
 
+  if (input.routeId) {
+    result.routeId = input.routeId;
+  }
+
+  if (input.transactionDate) {
+    result.transactionDate = input.transactionDate;
+  }
+
+  // Emitted on presence, not truthiness: `{fees: false}` is a meaningful instruction and
+  // the ledger distinguishes it from an absent skip.
+  if (input.skip) {
+    result.skip = input.skip;
+  }
+
   if (input.metadata) {
     result.metadata = input.metadata;
   }

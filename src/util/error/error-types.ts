@@ -98,6 +98,12 @@ export enum ErrorCode {
 export const MIDAZ_CODE_TRANSACTION_LOCKED = '0486';
 
 /**
+ * Midaz code of the ledger's `Skip Not Permitted` rejection, raised when a requested
+ * `skip` flag is not enabled by the ledger's overrides
+ */
+export const MIDAZ_CODE_SKIP_NOT_PERMITTED = '0490';
+
+/**
  * Fields the SDK reads from a midaz RFC 9457 problem document
  */
 export interface MidazProblem {

@@ -766,4 +766,125 @@ describe('Transaction Validator', () => {
       expect(result.fieldErrors?.['send.distribute.to[0].amount.value']).toBeDefined();
     });
   });
+
+  describe('field parity rules', () => {
+    const build = (extra: Partial<CreateTransactionInput> = {}): CreateTransactionInput =>
+      ({
+        chartOfAccountsGroupName: 'group',
+        description: 'transfer',
+        send: {
+          asset: 'BRL',
+          value: '100',
+          source: { from: [{ account: 'smoke-a', amount: { asset: 'BRL', value: '100' } }] },
+          distribute: { to: [{ account: 'smoke-b', amount: { asset: 'BRL', value: '100' } }] },
+        },
+        ...extra,
+      }) as CreateTransactionInput;
+
+    it('shouldAcceptAUuidRouteId', () => {
+      const result = validateCreateTransactionInput(
+        build({ routeId: 'd389ba81-e807-4bcc-a26a-019edcd12dfc' })
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldRejectANonUuidRouteId', () => {
+      const result = validateCreateTransactionInput(build({ routeId: 'not-a-uuid' }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.routeId).toBeDefined();
+      expect(result.message).toContain('UUID');
+    });
+
+    it.each([
+      ['2025-01-02T03:04:05.123456789Z'],
+      ['2025-01-02T03:04:05Z'],
+      ['2025-01-02T03:04:05-03:00'],
+      ['2025-01-02T03:04:05.000Z'],
+      ['2025-01-02T03:04:05'],
+      ['2025-01-02'],
+    ])('shouldAcceptTheAcceptedTransactionDateFormat %s', (transactionDate) => {
+      const result = validateCreateTransactionInput(build({ transactionDate }));
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldRejectATransactionDateInAnUnsupportedFormat', () => {
+      const result = validateCreateTransactionInput(build({ transactionDate: '04/03/2025' }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.transactionDate).toBeDefined();
+    });
+
+    it('shouldRejectATransactionDateThatIsNotACalendarDate', () => {
+      const result = validateCreateTransactionInput(build({ transactionDate: '2025-02-30' }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.transactionDate).toBeDefined();
+    });
+
+    it('shouldRejectAFutureTransactionDate', () => {
+      const result = validateCreateTransactionInput(build({ transactionDate: '2099-01-01' }));
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('0121');
+    });
+
+    it('shouldRejectATransactionDateOnAPendingTransaction', () => {
+      const result = validateCreateTransactionInput(
+        build({ pending: true, transactionDate: '2025-01-02T03:04:05Z' })
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('0122');
+    });
+
+    it('shouldAcceptAPendingTransactionWithoutATransactionDate', () => {
+      const result = validateCreateTransactionInput(build({ pending: true }));
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldAcceptSkipWithoutConsultingLedgerSettings', () => {
+      const result = validateCreateTransactionInput(build({ skip: { fees: true, tracer: true } }));
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldRejectADescriptionOver256Characters', () => {
+      const result = validateCreateTransactionInput(build({ description: 'x'.repeat(257) }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.description).toBeDefined();
+    });
+
+    it('shouldAcceptADescriptionOfExactly256Characters', () => {
+      const result = validateCreateTransactionInput(build({ description: 'x'.repeat(256) }));
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldRejectAChartOfAccountsGroupNameOver256Characters', () => {
+      const result = validateCreateTransactionInput(
+        build({ chartOfAccountsGroupName: 'x'.repeat(257) })
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.chartOfAccountsGroupName).toBeDefined();
+    });
+
+    it('shouldRejectACodeOver100Characters', () => {
+      const result = validateCreateTransactionInput(build({ code: 'x'.repeat(101) }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.code).toBeDefined();
+    });
+
+    it('shouldAcceptACodeOfExactly100Characters', () => {
+      const result = validateCreateTransactionInput(build({ code: 'x'.repeat(100) }));
+
+      expect(result.valid).toBe(true);
+    });
+  });
 });

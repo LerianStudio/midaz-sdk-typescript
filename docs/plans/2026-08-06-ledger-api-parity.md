@@ -327,7 +327,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 2.4.1: CreateTransactionInput field parity
 
-- [ ] Done
+- [x] Done
 
 **Context:** The SDK's input (`src/models/transaction.ts`, transformed at `src/models/transaction-transformer.ts:11`) lacks `routeId`, `transactionDate` and `skip`, and its allowlist transformer drops them silently. Verified server behaviour: `routeId` must be a UUID (`400/0047` otherwise) but a non-existent one is accepted while `accounting.validateRoutes` is off; `transactionDate` accepts six formats and **overwrites the response `createdAt`**, with a future date rejected as `400/0121`; `skip` is `{fees?: boolean, tracer?: boolean}` and is honoured only when the matching per-ledger override is on — otherwise **`422/0490`** — and its outcome is read from the response's `feesSkipped`/`tracerSkipped`, never from an echoed `skip`. `code` is persisted but **not echoed** in the response.
 

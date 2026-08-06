@@ -27,6 +27,23 @@ import {
 /** Decimal form accepted by the ledger: optional sign, digits, optional fractional part */
 const DECIMAL_STRING_PATTERN = /^-?\d+(\.\d+)?$/;
 
+const UUID_PATTERN =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * The six layouts the ledger's `TransactionDate.UnmarshalJSON` tries, collapsed into
+ * one shape: a date, optionally followed by a time, optional fractional seconds and an
+ * optional `Z` or numeric offset.
+ */
+const TRANSACTION_DATE_PATTERN =
+  /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/;
+
+/** Longest `description` and `chartOfAccountsGroupName` the ledger accepts before `400/0047` */
+const MAX_TEXT_LENGTH = 256;
+
+/** Longest `code` the ledger accepts before `400/0047` */
+const MAX_CODE_LENGTH = 100;
+
 /**
  * Validates a CreateTransactionInput object to ensure it meets all business rules and constraints.
  *
@@ -139,7 +156,118 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
     results.push(...validateSendDecimalValues(input.send));
   }
 
+  results.push(...validateTransactionFieldParity(input));
+
   return combineValidationResults(results);
+}
+
+/**
+ * Validates the fields the ledger checks itself, so the caller fails locally instead of
+ * decoding a `0047`, `0121` or `0122` off the wire.
+ *
+ * `skip` is deliberately absent: whether a flag is honoured depends on per-ledger
+ * overrides the SDK cannot read, so it travels unvalidated and the ledger answers
+ * `422/0490` when it is not permitted.
+ *
+ * @returns One ValidationResult per checked field
+ */
+function validateTransactionFieldParity(input: CreateTransactionInput): ValidationResult[] {
+  const results: ValidationResult[] = [];
+
+  results.push(validateMaxLength(input.description, 'description', MAX_TEXT_LENGTH));
+  results.push(
+    validateMaxLength(input.chartOfAccountsGroupName, 'chartOfAccountsGroupName', MAX_TEXT_LENGTH)
+  );
+  results.push(validateMaxLength(input.code, 'code', MAX_CODE_LENGTH));
+
+  if (input.routeId !== undefined && !UUID_PATTERN.test(String(input.routeId))) {
+    results.push(rejectField('routeId', 'must be a UUID; the ledger rejects any other form'));
+  }
+
+  if (input.transactionDate !== undefined) {
+    results.push(validateTransactionDate(input.transactionDate, input.pending === true));
+  }
+
+  return results;
+}
+
+/**
+ * Rejects a string longer than the ledger allows.
+ *
+ * @returns A valid result when the field is absent or within the limit
+ */
+function validateMaxLength(
+  value: string | undefined,
+  field: string,
+  maximum: number
+): ValidationResult {
+  if (typeof value !== 'string' || value.length <= maximum) {
+    return { valid: true };
+  }
+
+  return rejectField(field, `must be at most ${maximum} characters`);
+}
+
+/**
+ * Checks that a `YYYY-MM-DD` fragment names a day that exists.
+ *
+ * Date.parse rolls an out-of-range day forward (Feb 30 becomes Mar 2) where the ledger's
+ * parser refuses it outright, so the parts are compared back.
+ *
+ * @returns True when the fragment survives a round-trip through UTC
+ */
+function isRealCalendarDay(day: string): boolean {
+  const [year, month, date] = day.split('-').map(Number);
+  const roundTrip = new Date(Date.UTC(year, month - 1, date));
+
+  return (
+    roundTrip.getUTCFullYear() === year &&
+    roundTrip.getUTCMonth() === month - 1 &&
+    roundTrip.getUTCDate() === date
+  );
+}
+
+/**
+ * Validates a backdating timestamp against the layouts the ledger parses and the two
+ * business rules it enforces on it.
+ *
+ * @returns ValidationResult naming `transactionDate` when the value is unusable
+ */
+function validateTransactionDate(value: string, pending: boolean): ValidationResult {
+  if (typeof value !== 'string' || !TRANSACTION_DATE_PATTERN.test(value)) {
+    return rejectField(
+      'transactionDate',
+      'must be an ISO 8601 date or date-time, optionally with fractional seconds and a ' +
+        'Z or numeric offset'
+    );
+  }
+
+  // A layout the ledger accepts without a zone is read as UTC server-side, while
+  // Date.parse would read it as local time.
+  const normalized =
+    value.includes('T') && !/(Z|[+-]\d{2}:\d{2})$/.test(value) ? `${value}Z` : value;
+  const parsed = Date.parse(normalized);
+
+  if (Number.isNaN(parsed) || !isRealCalendarDay(value.slice(0, 10))) {
+    return rejectField('transactionDate', 'is not a valid calendar date');
+  }
+
+  if (parsed > Date.now()) {
+    return rejectField(
+      'transactionDate',
+      'cannot be in the future; the ledger rejects it with 0121'
+    );
+  }
+
+  if (pending) {
+    return rejectField(
+      'transactionDate',
+      'is not supported on a pending transaction, which is timestamped when it commits; ' +
+        'the ledger rejects the pair with 0122'
+    );
+  }
+
+  return { valid: true };
 }
 
 /**
