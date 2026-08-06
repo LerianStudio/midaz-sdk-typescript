@@ -177,20 +177,39 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
  * @returns One ValidationResult per checked field
  */
 function validateTransactionFieldParity(input: CreateTransactionInput): ValidationResult[] {
-  const results: ValidationResult[] = [];
-
-  results.push(validateMaxLength(input.description, 'description', MAX_TEXT_LENGTH));
-  results.push(
-    validateMaxLength(input.chartOfAccountsGroupName, 'chartOfAccountsGroupName', MAX_TEXT_LENGTH)
-  );
-  results.push(validateMaxLength(input.code, 'code', MAX_CODE_LENGTH));
-
-  if (input.routeId !== undefined && !UUID_PATTERN.test(String(input.routeId))) {
-    results.push(rejectField('routeId', 'must be a UUID; the ledger rejects any other form'));
-  }
+  const results = validateLedgerEnvelopeFields(input);
 
   if (input.transactionDate !== undefined) {
     results.push(validateTransactionDate(input.transactionDate, input.pending === true));
+  }
+
+  return results;
+}
+
+/**
+ * The envelope fields every transaction endpoint declares, whatever its input shape.
+ */
+interface LedgerEnvelopeFields {
+  description?: string;
+  chartOfAccountsGroupName?: string;
+  code?: string;
+  routeId?: string;
+}
+
+/**
+ * Validates the envelope fields the create, inflow and outflow input structs share.
+ *
+ * @returns One ValidationResult per checked field
+ */
+function validateLedgerEnvelopeFields(input: LedgerEnvelopeFields): ValidationResult[] {
+  const results: ValidationResult[] = [
+    validateMaxLength(input.description, 'description', MAX_TEXT_LENGTH),
+    validateMaxLength(input.chartOfAccountsGroupName, 'chartOfAccountsGroupName', MAX_TEXT_LENGTH),
+    validateMaxLength(input.code, 'code', MAX_CODE_LENGTH),
+  ];
+
+  if (input.routeId !== undefined && !UUID_PATTERN.test(String(input.routeId))) {
+    results.push(rejectField('routeId', 'must be a UUID; the ledger rejects any other form'));
   }
 
   return results;
@@ -460,13 +479,14 @@ function validateShare(share: ShareInput | undefined, path: string): ValidationR
  * @returns One ValidationResult per checked field
  */
 function validateFlowEnvelope(input: CreateInflowInput | CreateOutflowInput): ValidationResult[] {
-  const results: ValidationResult[] = [];
+  const results = validateLedgerEnvelopeFields(input);
 
   if (!input.send) {
     results.push(rejectField('send', 'is required'));
     return results;
   }
 
+  results.push(validateNotEmpty(input.send.asset, 'send.asset'));
   results.push(validateDecimalValue(input.send.value, 'send.value'));
 
   if (input.metadata) {

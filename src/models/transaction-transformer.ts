@@ -154,6 +154,10 @@ function toApiFlowEnvelope(input: CreateInflowInput | CreateOutflowInput): any {
     result.route = input.route;
   }
 
+  if (input.routeId) {
+    result.routeId = input.routeId;
+  }
+
   if (input.metadata) {
     result.metadata = input.metadata;
   }

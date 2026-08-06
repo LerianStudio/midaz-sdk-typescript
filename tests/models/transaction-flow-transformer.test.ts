@@ -118,6 +118,16 @@ describe('toApiInflow', () => {
     });
   });
 
+  it('puts routeId on the wire, which the inflow input struct validates as a UUID', () => {
+    const body = toApiInflow({ ...input, routeId: '8dbf1c9e-3a2b-4a55-9f1e-2c0f6b7d4e11' });
+
+    expect(body.routeId).toBe('8dbf1c9e-3a2b-4a55-9f1e-2c0f6b7d4e11');
+  });
+
+  it('omits routeId when the caller supplied none', () => {
+    expect(toApiInflow(input)).not.toHaveProperty('routeId');
+  });
+
   it('keeps the idempotency key out of the body, since it rides as a header', () => {
     const body = toApiInflow({ ...input, idempotencyKey: 'dep-1', idempotencyTtlSeconds: 600 });
 

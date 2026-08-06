@@ -338,6 +338,12 @@ interface FlowInputBase {
   /** Route is the transaction route identifier (optional) */
   route?: string;
 
+  /**
+   * RouteID is the UUID of the transaction route. Both flow input structs validate it
+   * as a UUID and reject any other form.
+   */
+  routeId?: string;
+
   /** Metadata contains additional custom data for the transaction */
   metadata?: Record<string, any>;
 

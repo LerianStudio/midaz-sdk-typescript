@@ -86,6 +86,60 @@ describe('validateCreateInflowInput', () => {
     expect(result.valid).toBe(false);
     expect(result.fieldErrors).toHaveProperty(['send.distribute.to[0].amount.value']);
   });
+
+  it('rejects a description over 256 characters, as the ledger does with 0047', () => {
+    const result = validateCreateInflowInput({ ...input, description: 'd'.repeat(257) });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty('description');
+  });
+
+  it('accepts a description of exactly 256 characters', () => {
+    expect(validateCreateInflowInput({ ...input, description: 'd'.repeat(256) }).valid).toBe(true);
+  });
+
+  it('rejects a chartOfAccountsGroupName over 256 characters', () => {
+    const result = validateCreateInflowInput({
+      ...input,
+      chartOfAccountsGroupName: 'c'.repeat(257),
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty('chartOfAccountsGroupName');
+  });
+
+  it('rejects a code over 100 characters', () => {
+    const result = validateCreateInflowInput({ ...input, code: 'c'.repeat(101) });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty('code');
+  });
+
+  it('rejects a non-UUID routeId', () => {
+    const result = validateCreateInflowInput({ ...input, routeId: 'not-a-uuid' });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty('routeId');
+  });
+
+  it('accepts a UUID routeId', () => {
+    expect(
+      validateCreateInflowInput({ ...input, routeId: '8dbf1c9e-3a2b-4a55-9f1e-2c0f6b7d4e11' }).valid
+    ).toBe(true);
+  });
+
+  it('requires send.asset, which the leg asset comparison silently skips without', () => {
+    const result = validateCreateInflowInput({
+      ...input,
+      send: {
+        value: '100',
+        distribute: { to: [{ account: 'acc-a', amount: { asset: 'USD', value: '100' } }] },
+      },
+    } as unknown as CreateInflowInput);
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty(['send.asset']);
+  });
 });
 
 describe('validateCreateOutflowInput', () => {
@@ -135,5 +189,39 @@ describe('validateCreateOutflowInput', () => {
 
     expect(result.valid).toBe(false);
     expect(result.fieldErrors).toHaveProperty(['send.value']);
+  });
+
+  it('rejects a code over 100 characters, as the ledger does with 0047', () => {
+    const result = validateCreateOutflowInput({ ...input, code: 'c'.repeat(101) });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty('code');
+  });
+
+  it('rejects a description over 256 characters', () => {
+    const result = validateCreateOutflowInput({ ...input, description: 'd'.repeat(257) });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty('description');
+  });
+
+  it('rejects a non-UUID routeId', () => {
+    const result = validateCreateOutflowInput({ ...input, routeId: 'not-a-uuid' });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty('routeId');
+  });
+
+  it('requires send.asset', () => {
+    const result = validateCreateOutflowInput({
+      ...input,
+      send: {
+        value: '40',
+        source: { from: [{ account: 'acc-a', amount: { asset: 'BRL', value: '40' } }] },
+      },
+    } as unknown as CreateOutflowInput);
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors).toHaveProperty(['send.asset']);
   });
 });
