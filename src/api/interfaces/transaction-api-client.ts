@@ -3,12 +3,15 @@
 
 import { ListOptions, ListResponse } from '../../models/common';
 import {
+  BlockFundsInput,
+  CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
   CreateTransactionInput,
   RevertTransactionOptions,
   Transaction,
   TransactionStateTransitionOptions,
+  UnblockFundsInput,
 } from '../../models/transaction';
 
 import { ApiClient } from './api-client';
@@ -63,6 +66,31 @@ export interface TransactionApiClient
    * @returns Promise resolving to the created transaction
    */
   createOutflow(orgId: string, ledgerId: string, input: CreateOutflowInput): Promise<Transaction>;
+
+  /**
+   * Blocks funds, labelling the resulting operations `BLOCK`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  blockFunds(orgId: string, ledgerId: string, input: BlockFundsInput): Promise<Transaction>;
+
+  /**
+   * Unblocks funds, labelling the resulting operations `UNBLOCK`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  unblockFunds(orgId: string, ledgerId: string, input: UnblockFundsInput): Promise<Transaction>;
+
+  /**
+   * Creates a `NOTED` annotation that moves no balance
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  createAnnotation(
+    orgId: string,
+    ledgerId: string,
+    input: CreateAnnotationInput
+  ): Promise<Transaction>;
 
   /**
    * Commits a pending transaction

@@ -4,12 +4,15 @@
 
 import { ListOptions, ListResponse } from '../models/common';
 import {
+  BlockFundsInput,
+  CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
   CreateTransactionInput,
   RevertTransactionOptions,
   Transaction,
   TransactionStateTransitionOptions,
+  UnblockFundsInput,
 } from '../models/transaction';
 
 /**
@@ -95,6 +98,40 @@ export interface TransactionsService {
    * @returns Promise resolving to the created transaction
    */
   createOutflow(orgId: string, ledgerId: string, input: CreateOutflowInput): Promise<Transaction>;
+
+  /**
+   * Blocks funds by moving them and labelling the operations `BLOCK`
+   *
+   * Balances move exactly as they would for a plain transfer; only the persisted
+   * operation type differs. The endpoint takes the full transaction body but does not
+   * honour `pending`, which it forces to false.
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  blockFunds(orgId: string, ledgerId: string, input: BlockFundsInput): Promise<Transaction>;
+
+  /**
+   * Unblocks funds, the mirror of `blockFunds`, labelling the operations `UNBLOCK`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  unblockFunds(orgId: string, ledgerId: string, input: UnblockFundsInput): Promise<Transaction>;
+
+  /**
+   * Creates an annotation: a transaction that records intent and moves no money
+   *
+   * The ledger forces status `NOTED` and writes operations carrying
+   * `amount.value: "0"` with `balanceAffected: false`, so every balance stays exactly
+   * as it was. `NOTED` is terminal — a subsequent commit or revert returns `409/0099`,
+   * so an annotation must not be used as the first leg of a two-phase flow.
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  createAnnotation(
+    orgId: string,
+    ledgerId: string,
+    input: CreateAnnotationInput
+  ): Promise<Transaction>;
 
   /**
    * Commits a pending transaction, settling the funds held since it was created

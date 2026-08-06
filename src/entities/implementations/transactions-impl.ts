@@ -4,12 +4,15 @@
 import { TransactionApiClient } from '../../api/interfaces/transaction-api-client';
 import { ListOptions, ListResponse } from '../../models/common';
 import {
+  BlockFundsInput,
+  CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
   CreateTransactionInput,
   RevertTransactionOptions,
   Transaction,
   TransactionStateTransitionOptions,
+  UnblockFundsInput,
 } from '../../models/transaction';
 import { BasePaginator, PaginatorConfig } from '../../util/data/pagination-abstraction';
 import { Observability } from '../../util/observability/observability';
@@ -309,6 +312,45 @@ export class TransactionsServiceImpl implements TransactionsService {
   ): Promise<Transaction> {
     return this.traceFlow('outflow', orgId, ledgerId, input.send?.asset, () =>
       this.apiClient.createOutflow(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async blockFunds(
+    orgId: string,
+    ledgerId: string,
+    input: BlockFundsInput
+  ): Promise<Transaction> {
+    return this.traceFlow('block', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.blockFunds(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async unblockFunds(
+    orgId: string,
+    ledgerId: string,
+    input: UnblockFundsInput
+  ): Promise<Transaction> {
+    return this.traceFlow('unblock', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.unblockFunds(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async createAnnotation(
+    orgId: string,
+    ledgerId: string,
+    input: CreateAnnotationInput
+  ): Promise<Transaction> {
+    return this.traceFlow('annotation', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.createAnnotation(orgId, ledgerId, input)
     );
   }
 

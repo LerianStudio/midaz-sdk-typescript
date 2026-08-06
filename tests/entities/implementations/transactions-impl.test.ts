@@ -101,6 +101,9 @@ describe('TransactionsServiceImpl', () => {
       revertTransaction: jest.fn(),
       createInflow: jest.fn(),
       createOutflow: jest.fn(),
+      blockFunds: jest.fn(),
+      unblockFunds: jest.fn(),
+      createAnnotation: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance
@@ -451,6 +454,63 @@ describe('TransactionsServiceImpl', () => {
       mockTransactionApiClient.createInflow.mockRejectedValueOnce(rejected);
 
       await expect(transactionsService.createInflow(orgId, ledgerId, inflow)).rejects.toBe(
+        rejected
+      );
+    });
+  });
+
+  describe('label-only variants', () => {
+    const fullInput = {
+      chartOfAccountsGroupName: 'BLOCKS',
+      description: 'Block 100',
+      send: {
+        asset: 'USD',
+        value: '100',
+        source: { from: [{ account: 'acc_123', amount: { asset: 'USD', value: '100' } }] },
+        distribute: { to: [{ account: 'acc_456', amount: { asset: 'USD', value: '100' } }] },
+      },
+    };
+
+    it('delegates blockFunds to the API client', async () => {
+      mockTransactionApiClient.blockFunds.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.blockFunds(orgId, ledgerId, fullInput);
+
+      expect(mockTransactionApiClient.blockFunds).toHaveBeenCalledWith(orgId, ledgerId, fullInput);
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates unblockFunds to the API client', async () => {
+      mockTransactionApiClient.unblockFunds.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.unblockFunds(orgId, ledgerId, fullInput);
+
+      expect(mockTransactionApiClient.unblockFunds).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        fullInput
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates createAnnotation to the API client', async () => {
+      mockTransactionApiClient.createAnnotation.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.createAnnotation(orgId, ledgerId, fullInput);
+
+      expect(mockTransactionApiClient.createAnnotation).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        fullInput
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('propagates the annotation validator rejection without swallowing it', async () => {
+      const rejected = new Error('pending is not accepted by the annotation endpoint');
+      mockTransactionApiClient.createAnnotation.mockRejectedValueOnce(rejected);
+
+      await expect(transactionsService.createAnnotation(orgId, ledgerId, fullInput)).rejects.toBe(
         rejected
       );
     });

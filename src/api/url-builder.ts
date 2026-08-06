@@ -47,7 +47,13 @@ export type TransactionStateTransition = 'commit' | 'cancel' | 'revert';
 /**
  * Sub-paths the ledger serves transaction creation on, one per input shape
  */
-export type TransactionCreateVariant = 'json' | 'inflow' | 'outflow';
+export type TransactionCreateVariant =
+  | 'json'
+  | 'inflow'
+  | 'outflow'
+  | 'block'
+  | 'unblock'
+  | 'annotation';
 
 /**
  * UrlBuilder provides centralized URL construction logic for all API endpoints.

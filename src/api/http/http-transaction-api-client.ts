@@ -3,22 +3,30 @@
 
 import { ListOptions, ListResponse } from '../../models/common';
 import {
+  BlockFundsInput,
+  CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
   CreateTransactionInput,
+  NonPendingTransactionInput,
   RevertTransactionOptions,
   Transaction,
   TransactionStateTransitionOptions,
+  UnblockFundsInput,
 } from '../../models/transaction';
 import {
   toApiInflow,
   toApiOutflow,
+  toApiTransaction,
   transactionTransformer,
 } from '../../models/transaction-transformer';
 import {
+  validateBlockFundsInput,
+  validateCreateAnnotationInput,
   validateCreateInflowInput,
   validateCreateOutflowInput,
   validateCreateTransactionInput,
+  validateUnblockFundsInput,
 } from '../../models/validators/transaction-validator';
 import { transformRequest } from '../../util/data/model-transformer';
 import {
@@ -263,6 +271,110 @@ export class HttpTransactionApiClient
       `create${variant === 'inflow' ? 'Inflow' : 'Outflow'}`,
       url,
       transformer(input),
+      {
+        idempotencyKey: input.idempotencyKey,
+        idempotencyTtlSeconds: input.idempotencyTtlSeconds,
+      },
+      attributes
+    );
+  }
+
+  /**
+   * Blocks funds, moving them as a transfer does while labelling the operations `BLOCK`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  public async blockFunds(
+    orgId: string,
+    ledgerId: string,
+    input: BlockFundsInput
+  ): Promise<Transaction> {
+    return this.postNonPendingTransaction(
+      'block',
+      'blockFunds',
+      orgId,
+      ledgerId,
+      input,
+      validateBlockFundsInput
+    );
+  }
+
+  /**
+   * Unblocks funds, the mirror of `blockFunds`, labelling the operations `UNBLOCK`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  public async unblockFunds(
+    orgId: string,
+    ledgerId: string,
+    input: UnblockFundsInput
+  ): Promise<Transaction> {
+    return this.postNonPendingTransaction(
+      'unblock',
+      'unblockFunds',
+      orgId,
+      ledgerId,
+      input,
+      validateUnblockFundsInput
+    );
+  }
+
+  /**
+   * Creates an annotation, a transaction that records intent without moving money
+   *
+   * The ledger answers with status `NOTED` and zero-valued operations flagged
+   * `balanceAffected: false`. `NOTED` is terminal — committing or reverting the result
+   * returns `409/0099`.
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  public async createAnnotation(
+    orgId: string,
+    ledgerId: string,
+    input: CreateAnnotationInput
+  ): Promise<Transaction> {
+    return this.postNonPendingTransaction(
+      'annotation',
+      'createAnnotation',
+      orgId,
+      ledgerId,
+      input,
+      validateCreateAnnotationInput
+    );
+  }
+
+  /**
+   * Issues the POST behind block, unblock and annotation, whose body is the one
+   * `/transactions/json` takes
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  private async postNonPendingTransaction(
+    variant: Extract<TransactionCreateVariant, 'block' | 'unblock' | 'annotation'>,
+    operation: string,
+    orgId: string,
+    ledgerId: string,
+    input: NonPendingTransactionInput,
+    validator: (input: NonPendingTransactionInput) => ReturnType<typeof validateBlockFundsInput>
+  ): Promise<Transaction> {
+    const attributes = {
+      orgId,
+      ledgerId,
+      description: input?.description,
+      asset: input?.send?.asset,
+      variant,
+    };
+
+    this.validateRequiredParams(this.startSpan('validateParams', attributes), { orgId, ledgerId });
+
+    validate(input, validator);
+
+    const url = this.urlBuilder.buildTransactionUrl(orgId, ledgerId, undefined, variant);
+
+    return this.postRequest<Transaction>(
+      operation,
+      url,
+      toApiTransaction(input),
       {
         idempotencyKey: input.idempotencyKey,
         idempotencyTtlSeconds: input.idempotencyTtlSeconds,

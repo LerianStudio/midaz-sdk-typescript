@@ -12,12 +12,16 @@ import {
   ValidationResult,
 } from '../../util/validation';
 import {
+  BlockFundsInput,
+  CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
   CreateTransactionInput,
   FromToInput,
+  NonPendingTransactionInput,
   OperationInput,
   SendInput,
+  UnblockFundsInput,
 } from '../transaction';
 
 /** Decimal form accepted by the ledger: optional sign, digits, optional fractional part */
@@ -254,6 +258,80 @@ export function validateCreateOutflowInput(input: CreateOutflowInput): Validatio
   }
 
   return combineValidationResults(results);
+}
+
+/**
+ * Validates the full transaction body shared by block, unblock and annotation.
+ *
+ * `pendingReason` differs per endpoint because the damage differs: block and unblock
+ * quietly force the flag to false, while annotation keeps `NOTED` but flips both
+ * operations to `CREDIT`.
+ *
+ * @returns ValidationResult naming the offending field when the input is unusable
+ */
+function validateNonPendingTransactionInput(
+  input: NonPendingTransactionInput,
+  pendingReason: string
+): ValidationResult {
+  const requiredResult = validateRequired(input, 'input');
+  if (!requiredResult.valid) {
+    return requiredResult;
+  }
+
+  const results: ValidationResult[] = [validateCreateTransactionInput(input)];
+
+  if (input.pending !== undefined) {
+    results.push(rejectField('pending', pendingReason));
+  }
+
+  if (input.send) {
+    if (input.send.source === undefined) {
+      results.push(rejectField('send.source', 'is required by this endpoint'));
+    }
+
+    if (input.send.distribute === undefined) {
+      results.push(rejectField('send.distribute', 'is required by this endpoint'));
+    }
+  }
+
+  return combineValidationResults(results);
+}
+
+/**
+ * Validates a BlockFundsInput before it reaches the wire.
+ *
+ * @returns ValidationResult naming the offending field when the input is unusable
+ */
+export function validateBlockFundsInput(input: BlockFundsInput): ValidationResult {
+  return validateNonPendingTransactionInput(
+    input,
+    'is not honoured by the block endpoint, which forces it to false'
+  );
+}
+
+/**
+ * Validates an UnblockFundsInput before it reaches the wire.
+ *
+ * @returns ValidationResult naming the offending field when the input is unusable
+ */
+export function validateUnblockFundsInput(input: UnblockFundsInput): ValidationResult {
+  return validateNonPendingTransactionInput(
+    input,
+    'is not honoured by the unblock endpoint, which forces it to false'
+  );
+}
+
+/**
+ * Validates a CreateAnnotationInput before it reaches the wire.
+ *
+ * @returns ValidationResult naming the offending field when the input is unusable
+ */
+export function validateCreateAnnotationInput(input: CreateAnnotationInput): ValidationResult {
+  return validateNonPendingTransactionInput(
+    input,
+    'corrupts the annotation endpoint, which answers with two CREDIT operations instead ' +
+      'of a debit and a credit when it is sent'
+  );
 }
 
 /**

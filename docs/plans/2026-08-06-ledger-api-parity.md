@@ -303,7 +303,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 2.3.1: blockFunds, unblockFunds and createAnnotation
 
-- [ ] Done
+- [x] Done
 
 **Context:** All three take the **full** `CreateTransactionInput` (both `source` and `distribute` required) and differ only in server-side labelling. Block/unblock relabel the persisted operation type to `BLOCK`/`UNBLOCK` while balances move exactly as a normal transfer; **`pending` is accepted but forced to `false`**. Annotation forces status to `NOTED` and writes operations with `amount.value: "0"` and `balanceAffected: false`, leaving balances untouched — and a `NOTED` transaction can be neither committed nor reverted (`0099`). Verified quirk: sending `pending: true` to annotation keeps `NOTED` but flips both operations to `CREDIT`/`CREDIT` via a `DetermineOperation` leak.
 

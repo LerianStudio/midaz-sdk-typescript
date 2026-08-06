@@ -301,6 +301,46 @@ export interface CreateOutflowInput extends FlowInputBase {
 }
 
 /**
+ * Full transaction body shared by the three endpoints that only relabel the result:
+ * `/transactions/block`, `/transactions/unblock` and `/transactions/annotation`.
+ *
+ * The body is byte-for-byte the one `/transactions/json` takes, with one exception:
+ * `pending` is declared as `never` because no endpoint here honours it. Block and
+ * unblock force it to false server-side, so sending it is merely a lie; on annotation
+ * it is actively destructive, flipping both operations to `CREDIT`.
+ */
+export interface NonPendingTransactionInput extends Omit<CreateTransactionInput, 'pending'> {
+  /** None of these three endpoints honours a pending flag */
+  pending?: never;
+
+  /** Sent as `X-TTL`. Omitted by default, which leaves the server's own 300-second slot. */
+  idempotencyTtlSeconds?: number;
+}
+
+/**
+ * Input for `POST /transactions/block`, which moves funds exactly as a transfer does
+ * and relabels the persisted operations to `BLOCK`.
+ */
+export type BlockFundsInput = NonPendingTransactionInput;
+
+/**
+ * Input for `POST /transactions/unblock`, the mirror of block: balances move normally
+ * and the persisted operations are labelled `UNBLOCK`.
+ */
+export type UnblockFundsInput = NonPendingTransactionInput;
+
+/**
+ * Input for `POST /transactions/annotation`, which records a transaction without
+ * moving any money.
+ *
+ * The ledger answers with status `NOTED` and writes operations carrying
+ * `amount.value: "0"` and `balanceAffected: false`, leaving every balance untouched.
+ * `NOTED` is terminal: the resulting transaction can be neither committed nor
+ * reverted, both of which return `409/0099`, so do not build a two-phase flow on it.
+ */
+export type CreateAnnotationInput = NonPendingTransactionInput;
+
+/**
  * SourceInput represents the source information for a transaction.
  * This structure contains the source accounts for a transaction.
  */

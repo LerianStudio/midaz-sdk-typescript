@@ -277,6 +277,24 @@ describe('UrlBuilder transaction create variants', () => {
     );
   });
 
+  it('builds the block path', () => {
+    expect(builder.buildTransactionUrl(orgId, ledgerId, undefined, 'block')).toBe(
+      `${prefix}/transactions/block`
+    );
+  });
+
+  it('builds the unblock path', () => {
+    expect(builder.buildTransactionUrl(orgId, ledgerId, undefined, 'unblock')).toBe(
+      `${prefix}/transactions/unblock`
+    );
+  });
+
+  it('builds the annotation path', () => {
+    expect(builder.buildTransactionUrl(orgId, ledgerId, undefined, 'annotation')).toBe(
+      `${prefix}/transactions/annotation`
+    );
+  });
+
   it('builds the collection path when no variant is asked for', () => {
     expect(builder.buildTransactionUrl(orgId, ledgerId)).toBe(`${prefix}/transactions`);
   });
