@@ -4,10 +4,10 @@ import { join } from 'path';
 import { parse } from 'yaml';
 
 import { UrlBuilder } from '../../src/api/url-builder';
+import { buildSpecPathIndex, normalizePath } from '../support/spec-templates';
 
 const SPEC_PATH = join(__dirname, '..', '..', 'spec', 'ledger-v1.openapi.yaml');
 const BASE_URL = 'http://ledger.test';
-const PLACEHOLDER = '{}';
 const ENV_KEYS = ['MIDAZ_LEDGER_URL', 'MIDAZ_ONBOARDING_URL', 'MIDAZ_TRANSACTION_URL'];
 const SERVED = 'served by the ledger v1 spec';
 
@@ -31,31 +31,15 @@ interface SpecDocument {
   paths?: Record<string, Record<string, unknown>>;
 }
 
-const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
-
 const spec = parse(readFileSync(SPEC_PATH, 'utf8')) as SpecDocument;
 const specPrefix = spec.servers?.[0]?.url ?? '';
 const specPaths = Object.keys(spec.paths ?? {});
 
-function normalize(path: string): string {
-  return path
-    .split('/')
-    .map((segment) =>
-      (segment.startsWith('{') && segment.endsWith('}')) || segment.startsWith('SENTINEL_')
-        ? PLACEHOLDER
-        : segment
-    )
-    .join('/');
-}
+const normalize = normalizePath;
 
-const specTemplates = new Set(specPaths.map(normalize));
-
-const specVerbs = new Map<string, Set<string>>(
-  specPaths.map((path) => [
-    normalize(path),
-    new Set(Object.keys(spec.paths?.[path] ?? {}).filter((key) => HTTP_METHODS.includes(key))),
-  ])
-);
+const specIndex = buildSpecPathIndex(spec.paths ?? {});
+const specTemplates = specIndex.templates;
+const specVerbs = specIndex.verbs;
 
 interface BuilderCase {
   method: string;
@@ -299,6 +283,15 @@ describe('UrlBuilder path drift against the vendored ledger spec', () => {
   it('reads a spec with paths and a versioned server prefix', () => {
     expect(specPaths.length).toBeGreaterThan(0);
     expect(specPrefix).toBe('/v1');
+  });
+
+  it('reduces every spec path to a template of its own', () => {
+    const collapsed = [...specIndex.collisions.entries()].map(
+      ([template, paths]) => `${template} <- ${paths.join(' , ')}`
+    );
+
+    expect(collapsed).toEqual([]);
+    expect(specTemplates.size).toBe(specPaths.length);
   });
 
   it.each(builderCases.map((testCase) => [testCase.method, testCase] as const))(
