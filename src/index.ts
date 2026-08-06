@@ -147,9 +147,13 @@ export * from './util/account/index';
 export {
   Amount,
   AmountInput,
+  CreateInflowInput,
+  CreateOutflowInput,
   CreateTransactionInput,
+  InflowSendInput,
   Operation,
   OperationInput,
+  OutflowSendInput,
   RevertTransactionOptions,
   Transaction,
   TransactionStateTransitionOptions,

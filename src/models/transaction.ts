@@ -209,6 +209,98 @@ export interface SendInput {
 }
 
 /**
+ * Send information accepted by `POST /transactions/inflow`.
+ *
+ * The ledger synthesizes the debit leg from `@external/{asset}`, so `source` is
+ * declared as `never`: supplying one is rejected with `400/0053` on the wire.
+ */
+export interface InflowSendInput {
+  /** Asset identifies the currency or asset type for this transaction */
+  asset: string;
+
+  /** Value is the numeric value of the transaction, as a decimal string or an exactly representable number */
+  value: string | number;
+
+  /** Distribute contains the destination accounts that receive the funds */
+  distribute: DistributeInput;
+
+  /** The inflow endpoint's input struct declares no source field */
+  source?: never;
+}
+
+/**
+ * Send information accepted by `POST /transactions/outflow`.
+ *
+ * The ledger synthesizes the credit leg to `@external/{asset}`, so `distribute` is
+ * declared as `never`: supplying one is rejected with `400/0053` on the wire.
+ */
+export interface OutflowSendInput {
+  /** Asset identifies the currency or asset type for this transaction */
+  asset: string;
+
+  /** Value is the numeric value of the transaction, as a decimal string or an exactly representable number */
+  value: string | number;
+
+  /** Source contains the accounts the funds leave from */
+  source: SourceInput;
+
+  /** The outflow endpoint's input struct declares no distribute field */
+  distribute?: never;
+}
+
+/**
+ * Fields shared by the two single-sided flow inputs
+ */
+interface FlowInputBase {
+  /** ChartOfAccountsGroupName groups the transaction for accounting purposes */
+  chartOfAccountsGroupName?: string;
+
+  /** Description is a human-readable description of the transaction */
+  description?: string;
+
+  /** Code is an optional identifier/reference code for the transaction */
+  code?: string;
+
+  /** Route is the transaction route identifier (optional) */
+  route?: string;
+
+  /** Metadata contains additional custom data for the transaction */
+  metadata?: Record<string, any>;
+
+  /**
+   * Sent as `X-Idempotency`. Midaz replays rather than rejecting: the same key with a
+   * different body silently returns the first transaction, and `X-Idempotency-Replayed`
+   * on the response is the only way to tell a fresh write from a replay.
+   */
+  idempotencyKey?: string;
+
+  /** Sent as `X-TTL`. Omitted by default, which leaves the server's own 300-second slot. */
+  idempotencyTtlSeconds?: number;
+}
+
+/**
+ * Input for `POST /transactions/inflow`, which funds accounts from outside the ledger.
+ */
+export interface CreateInflowInput extends FlowInputBase {
+  /** Send carries the asset, the value and the destinations */
+  send: InflowSendInput;
+
+  /** The inflow endpoint's input struct declares no pending field */
+  pending?: never;
+}
+
+/**
+ * Input for `POST /transactions/outflow`, which moves funds out of the ledger.
+ */
+export interface CreateOutflowInput extends FlowInputBase {
+  /** Send carries the asset, the value and the sources */
+  send: OutflowSendInput;
+
+  /** Pending holds the funds until an explicit commit; outflow supports it, inflow does not */
+  pending?: boolean;
+}
+
+/**
  * SourceInput represents the source information for a transaction.
  * This structure contains the source accounts for a transaction.
  */

@@ -4,7 +4,13 @@
 import { createModelTransformer, ModelTransformer } from '../util/data/model-transformer';
 import { ValidationError } from '../util/validation';
 
-import { CreateTransactionInput, Transaction } from './transaction';
+import {
+  CreateInflowInput,
+  CreateOutflowInput,
+  CreateTransactionInput,
+  FromToInput,
+  Transaction,
+} from './transaction';
 import { validateDecimalValue } from './validators/transaction-validator';
 
 /**
@@ -24,6 +30,119 @@ function coerceDecimalValue(value: unknown, path: string): string {
   }
 
   return String(value);
+}
+
+/**
+ * Transforms one leg into the API shape, which names the account `accountAlias`.
+ *
+ * @returns The leg in API format
+ */
+function toApiLeg(leg: FromToInput, path: string): any {
+  const operation: any = {
+    accountAlias: leg.account,
+    amount: {
+      ...leg.amount,
+      value: coerceDecimalValue(leg?.amount?.value, `${path}.amount.value`),
+    },
+  };
+
+  if (leg.route) {
+    operation.route = leg.route;
+  }
+
+  if (leg.description) {
+    operation.description = leg.description;
+  }
+
+  if (leg.metadata) {
+    operation.metadata = leg.metadata;
+  }
+
+  return operation;
+}
+
+/**
+ * Copies the envelope fields both flow endpoints share, skipping the ones the ledger
+ * takes as headers.
+ *
+ * @returns The envelope in API format
+ */
+function toApiFlowEnvelope(input: CreateInflowInput | CreateOutflowInput): any {
+  const result: any = {};
+
+  if (input.chartOfAccountsGroupName) {
+    result.chartOfAccountsGroupName = input.chartOfAccountsGroupName;
+  }
+
+  if (input.description) {
+    result.description = input.description;
+  }
+
+  if (input.code) {
+    result.code = input.code;
+  }
+
+  if (input.route) {
+    result.route = input.route;
+  }
+
+  if (input.metadata) {
+    result.metadata = input.metadata;
+  }
+
+  return result;
+}
+
+/**
+ * Transforms an inflow input to the API format.
+ *
+ * The emitted body carries `distribute` only. `source` and `pending` are absent from
+ * the ledger's inflow input struct, so emitting either would be `400/0053`.
+ *
+ * @returns The inflow request body
+ */
+export function toApiInflow(input: CreateInflowInput): any {
+  const result = toApiFlowEnvelope(input);
+
+  result.send = {
+    asset: input.send.asset,
+    value: coerceDecimalValue(input.send.value, 'send.value'),
+    distribute: {
+      to: (input.send.distribute?.to ?? []).map((to, index) =>
+        toApiLeg(to, `send.distribute.to[${index}]`)
+      ),
+    },
+  };
+
+  return result;
+}
+
+/**
+ * Transforms an outflow input to the API format.
+ *
+ * The emitted body carries `source` only; `distribute` is absent from the ledger's
+ * outflow input struct. Unlike inflow, `pending` is supported.
+ *
+ * @returns The outflow request body
+ */
+export function toApiOutflow(input: CreateOutflowInput): any {
+  const result = toApiFlowEnvelope(input);
+
+  if (input.pending) {
+    result.pending = input.pending;
+  }
+
+  result.send = {
+    asset: input.send.asset,
+    value: coerceDecimalValue(input.send.value, 'send.value'),
+    source: {
+      from: (input.send.source?.from ?? []).map((from, index) =>
+        toApiLeg(from, `send.source.from[${index}]`)
+      ),
+    },
+  };
+
+  return result;
 }
 
 /**

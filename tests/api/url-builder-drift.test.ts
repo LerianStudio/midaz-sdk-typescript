@@ -103,6 +103,16 @@ const builderCases: BuilderCase[] = [
   },
   {
     method: 'buildTransactionUrl',
+    verbs: ['post'],
+    build: (b) => b.buildTransactionUrl(ORG, LEDGER, undefined, 'inflow'),
+  },
+  {
+    method: 'buildTransactionUrl',
+    verbs: ['post'],
+    build: (b) => b.buildTransactionUrl(ORG, LEDGER, undefined, 'outflow'),
+  },
+  {
+    method: 'buildTransactionUrl',
     verbs: ['get'],
     build: (b) => b.buildTransactionUrl(ORG, LEDGER, TRANSACTION),
   },
@@ -236,7 +246,9 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes/{transaction_route_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/inflow',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/json',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/outflow',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/cancel',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/commit',

@@ -3,13 +3,23 @@
 
 import { ListOptions, ListResponse } from '../../models/common';
 import {
+  CreateInflowInput,
+  CreateOutflowInput,
   CreateTransactionInput,
   RevertTransactionOptions,
   Transaction,
   TransactionStateTransitionOptions,
 } from '../../models/transaction';
-import { transactionTransformer } from '../../models/transaction-transformer';
-import { validateCreateTransactionInput } from '../../models/validators/transaction-validator';
+import {
+  toApiInflow,
+  toApiOutflow,
+  transactionTransformer,
+} from '../../models/transaction-transformer';
+import {
+  validateCreateInflowInput,
+  validateCreateOutflowInput,
+  validateCreateTransactionInput,
+} from '../../models/validators/transaction-validator';
 import { transformRequest } from '../../util/data/model-transformer';
 import {
   ErrorCategory,
@@ -22,7 +32,7 @@ import { HttpClient, RequestOptions } from '../../util/network/http-client';
 import { Observability } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
 import { TransactionApiClient } from '../interfaces/transaction-api-client';
-import { TransactionStateTransition, UrlBuilder } from '../url-builder';
+import { TransactionCreateVariant, TransactionStateTransition, UrlBuilder } from '../url-builder';
 
 import { HttpBaseApiClient } from './http-base-api-client';
 
@@ -186,6 +196,79 @@ export class HttpTransactionApiClient
     }
 
     return result;
+  }
+
+  /**
+   * Creates an inflow, funding accounts from `@external/{asset}`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  public async createInflow(
+    orgId: string,
+    ledgerId: string,
+    input: CreateInflowInput
+  ): Promise<Transaction> {
+    return this.postFlow('inflow', orgId, ledgerId, input, validateCreateInflowInput, toApiInflow);
+  }
+
+  /**
+   * Creates an outflow, moving funds out to `@external/{asset}`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  public async createOutflow(
+    orgId: string,
+    ledgerId: string,
+    input: CreateOutflowInput
+  ): Promise<Transaction> {
+    return this.postFlow(
+      'outflow',
+      orgId,
+      ledgerId,
+      input,
+      validateCreateOutflowInput,
+      toApiOutflow
+    );
+  }
+
+  /**
+   * Issues the POST behind a single-sided flow, validating before anything reaches
+   * the transport
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  private async postFlow<T extends CreateInflowInput | CreateOutflowInput>(
+    variant: Extract<TransactionCreateVariant, 'inflow' | 'outflow'>,
+    orgId: string,
+    ledgerId: string,
+    input: T,
+    validator: (input: T) => ReturnType<typeof validateCreateInflowInput>,
+    transformer: (input: T) => any
+  ): Promise<Transaction> {
+    const attributes = {
+      orgId,
+      ledgerId,
+      description: input?.description,
+      asset: input?.send?.asset,
+      variant,
+    };
+
+    this.validateRequiredParams(this.startSpan('validateParams', attributes), { orgId, ledgerId });
+
+    validate(input, validator);
+
+    const url = this.urlBuilder.buildTransactionUrl(orgId, ledgerId, undefined, variant);
+
+    return this.postRequest<Transaction>(
+      `create${variant === 'inflow' ? 'Inflow' : 'Outflow'}`,
+      url,
+      transformer(input),
+      {
+        idempotencyKey: input.idempotencyKey,
+        idempotencyTtlSeconds: input.idempotencyTtlSeconds,
+      },
+      attributes
+    );
   }
 
   /**

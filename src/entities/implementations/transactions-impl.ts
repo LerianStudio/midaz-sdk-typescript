@@ -4,6 +4,8 @@
 import { TransactionApiClient } from '../../api/interfaces/transaction-api-client';
 import { ListOptions, ListResponse } from '../../models/common';
 import {
+  CreateInflowInput,
+  CreateOutflowInput,
   CreateTransactionInput,
   RevertTransactionOptions,
   Transaction,
@@ -271,6 +273,69 @@ export class TransactionsServiceImpl implements TransactionsService {
           assetCode: input.assetCode || 'unknown',
         });
       }
+
+      span.setAttribute('transactionId', result.id);
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async createInflow(
+    orgId: string,
+    ledgerId: string,
+    input: CreateInflowInput
+  ): Promise<Transaction> {
+    return this.traceFlow('inflow', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.createInflow(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async createOutflow(
+    orgId: string,
+    ledgerId: string,
+    input: CreateOutflowInput
+  ): Promise<Transaction> {
+    return this.traceFlow('outflow', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.createOutflow(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * Traces a single-sided flow and records its metric
+   *
+   * @returns Promise resolving to the transaction the API client answered with
+   */
+  private async traceFlow(
+    variant: string,
+    orgId: string,
+    ledgerId: string,
+    asset: string | undefined,
+    call: () => Promise<Transaction>
+  ): Promise<Transaction> {
+    const span = this.observability.startSpan(`create${variant}`);
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    if (asset) {
+      span.setAttribute('asset', asset);
+    }
+
+    try {
+      const result = await call();
+
+      this.observability.recordMetric(`transactions.${variant}`, 1, { orgId, ledgerId });
 
       span.setAttribute('transactionId', result.id);
       span.setStatus('ok');

@@ -233,3 +233,51 @@ describe('UrlBuilder asset-rate paths', () => {
     );
   });
 });
+
+describe('UrlBuilder transaction create variants', () => {
+  const orgId = 'ORG';
+  const ledgerId = 'LEDGER';
+  const prefix = `https://ledger.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}`;
+  const savedEnv: Record<string, string | undefined> = {};
+  let builder: UrlBuilder;
+
+  beforeEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+    builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
+  });
+
+  afterEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
+  });
+
+  it('keeps the json path for the legacy boolean create flag', () => {
+    expect(builder.buildTransactionUrl(orgId, ledgerId, undefined, true)).toBe(
+      `${prefix}/transactions/json`
+    );
+  });
+
+  it('builds the inflow path', () => {
+    expect(builder.buildTransactionUrl(orgId, ledgerId, undefined, 'inflow')).toBe(
+      `${prefix}/transactions/inflow`
+    );
+  });
+
+  it('builds the outflow path', () => {
+    expect(builder.buildTransactionUrl(orgId, ledgerId, undefined, 'outflow')).toBe(
+      `${prefix}/transactions/outflow`
+    );
+  });
+
+  it('builds the collection path when no variant is asked for', () => {
+    expect(builder.buildTransactionUrl(orgId, ledgerId)).toBe(`${prefix}/transactions`);
+  });
+});

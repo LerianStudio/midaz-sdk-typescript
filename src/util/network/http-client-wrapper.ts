@@ -33,6 +33,8 @@ export interface RequestOptions {
    */
   disableIdempotencyKey?: boolean;
   idempotencyKey?: string;
+  /** Sent as `X-TTL`, in seconds. Omitted, the backend keeps the slot for 300s. */
+  idempotencyTtlSeconds?: number;
   useReadonlyCache?: boolean;
   enableStreamingResponse?: boolean;
   signal?: AbortSignal;
@@ -210,6 +212,7 @@ export class HttpClient {
           timeout: options.timeout,
           retries: options.maxRetries,
           idempotencyKey: options.idempotencyKey,
+          idempotencyTtlSeconds: options.idempotencyTtlSeconds,
           signal: options.signal,
           body: data,
         };

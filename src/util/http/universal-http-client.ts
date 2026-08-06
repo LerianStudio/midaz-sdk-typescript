@@ -16,6 +16,12 @@ import { CorrelationManager } from '../tracing/correlation';
  */
 const IDEMPOTENCY_HEADER = 'X-Idempotency';
 
+/**
+ * Header the Midaz backend reads the idempotency slot lifetime from, in seconds.
+ * Absent, the backend applies its own 300-second default.
+ */
+const IDEMPOTENCY_TTL_HEADER = 'X-TTL';
+
 export interface HttpClientOptions {
   baseURL?: string;
   timeout?: number;
@@ -44,6 +50,7 @@ export interface RequestOptions {
   timeout?: number;
   retries?: number;
   idempotencyKey?: string;
+  idempotencyTtlSeconds?: number;
   signal?: AbortSignal;
   timeoutBudget?: TimeoutBudget; // Optional timeout budget for retry tracking
 }
@@ -150,6 +157,11 @@ export class UniversalHttpClient {
     // back to deduplicating by a hash of the request body, so send no header.
     if (options.idempotencyKey) {
       headers[IDEMPOTENCY_HEADER] = options.idempotencyKey;
+    }
+
+    // Sent even without a key: the backend's body-hash slot honours the same TTL.
+    if (options.idempotencyTtlSeconds !== undefined) {
+      headers[IDEMPOTENCY_TTL_HEADER] = String(options.idempotencyTtlSeconds);
     }
 
     let lastError: Error | undefined;

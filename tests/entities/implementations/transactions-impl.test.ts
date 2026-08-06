@@ -99,6 +99,8 @@ describe('TransactionsServiceImpl', () => {
       commitTransaction: jest.fn(),
       cancelTransaction: jest.fn(),
       revertTransaction: jest.fn(),
+      createInflow: jest.fn(),
+      createOutflow: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance
@@ -406,6 +408,53 @@ describe('TransactionsServiceImpl', () => {
       expect(mockTransactionApiClient.commitTransaction).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('single-sided flows', () => {
+    const inflow = {
+      description: 'Deposit',
+      send: {
+        asset: 'USD',
+        value: '100',
+        distribute: { to: [{ account: 'acc_123', amount: { asset: 'USD', value: '100' } }] },
+      },
+    };
+
+    const outflow = {
+      description: 'Withdrawal',
+      send: {
+        asset: 'USD',
+        value: '40',
+        source: { from: [{ account: 'acc_123', amount: { asset: 'USD', value: '40' } }] },
+      },
+    };
+
+    it('delegates createInflow to the API client', async () => {
+      mockTransactionApiClient.createInflow.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.createInflow(orgId, ledgerId, inflow);
+
+      expect(mockTransactionApiClient.createInflow).toHaveBeenCalledWith(orgId, ledgerId, inflow);
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates createOutflow to the API client', async () => {
+      mockTransactionApiClient.createOutflow.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.createOutflow(orgId, ledgerId, outflow);
+
+      expect(mockTransactionApiClient.createOutflow).toHaveBeenCalledWith(orgId, ledgerId, outflow);
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('propagates a client-side rejection without swallowing it', async () => {
+      const rejected = new Error('send.source is not accepted by the inflow endpoint');
+      mockTransactionApiClient.createInflow.mockRejectedValueOnce(rejected);
+
+      await expect(transactionsService.createInflow(orgId, ledgerId, inflow)).rejects.toBe(
+        rejected
+      );
+    });
+  });
 });
 
 describe('TransactionPaginatorImpl', () => {
@@ -467,6 +516,8 @@ describe('TransactionPaginatorImpl', () => {
       commitTransaction: jest.fn(),
       cancelTransaction: jest.fn(),
       revertTransaction: jest.fn(),
+      createInflow: jest.fn(),
+      createOutflow: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance

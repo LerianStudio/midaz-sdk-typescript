@@ -4,6 +4,8 @@
 
 import { ListOptions, ListResponse } from '../models/common';
 import {
+  CreateInflowInput,
+  CreateOutflowInput,
   CreateTransactionInput,
   RevertTransactionOptions,
   Transaction,
@@ -73,6 +75,26 @@ export interface TransactionsService {
     ledgerId: string,
     input: CreateTransactionInput
   ): Promise<Transaction>;
+
+  /**
+   * Creates an inflow, funding accounts from outside the ledger
+   *
+   * The ledger synthesizes the debit from `@external/{asset}`, so the input carries a
+   * `distribute` only. Inflows are never pending.
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  createInflow(orgId: string, ledgerId: string, input: CreateInflowInput): Promise<Transaction>;
+
+  /**
+   * Creates an outflow, moving funds out of the ledger
+   *
+   * The ledger synthesizes the credit to `@external/{asset}`, so the input carries a
+   * `source` only. Unlike inflows, outflows support `pending`.
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  createOutflow(orgId: string, ledgerId: string, input: CreateOutflowInput): Promise<Transaction>;
 
   /**
    * Commits a pending transaction, settling the funds held since it was created

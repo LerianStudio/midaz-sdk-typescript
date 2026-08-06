@@ -45,6 +45,11 @@ const LEGACY_SERVICE_FAMILY: Record<string, string> = {
 export type TransactionStateTransition = 'commit' | 'cancel' | 'revert';
 
 /**
+ * Sub-paths the ledger serves transaction creation on, one per input shape
+ */
+export type TransactionCreateVariant = 'json' | 'inflow' | 'outflow';
+
+/**
  * UrlBuilder provides centralized URL construction logic for all API endpoints.
  * It builds URLs based on the SDK configuration and service type.
  */
@@ -238,7 +243,7 @@ export class UrlBuilder {
     orgId: string,
     ledgerId: string,
     transactionId?: string,
-    isCreate = false,
+    isCreate: boolean | TransactionCreateVariant = false,
     stateTransition?: TransactionStateTransition
   ): string {
     const baseUrl = this.getBaseUrl('transaction');
@@ -252,7 +257,7 @@ export class UrlBuilder {
         url += `/${stateTransition}`;
       }
     } else if (isCreate) {
-      url += '/json';
+      url += `/${isCreate === true ? 'json' : isCreate}`;
     }
 
     return url;

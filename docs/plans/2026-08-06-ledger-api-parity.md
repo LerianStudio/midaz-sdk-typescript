@@ -278,7 +278,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 2.2.1: createInflow and createOutflow
 
-- [ ] Done
+- [x] Done
 
 **Context:** `POST .../transactions/inflow` takes `SendInflow` — `{asset, value, distribute}` — where **`source` is forbidden** (`400/0053`) and there is **no `pending` field** (sending it is `0053`); the server synthesizes the debit from `@external/{asset}`. `POST .../transactions/outflow` takes `SendOutflow` — `{asset, value, source}` — where **`distribute` is forbidden**, and `pending` **is** supported; the server synthesizes the credit to `@external/{asset}`. Both accept the create-family headers (`X-Idempotency`, `X-TTL`) and return 201 with `X-Idempotency-Replayed`. Body decoding is strict, so any stray field is `0053`.
 

@@ -11,7 +11,14 @@ import {
   validateTransactionCode,
   ValidationResult,
 } from '../../util/validation';
-import { CreateTransactionInput, OperationInput, SendInput } from '../transaction';
+import {
+  CreateInflowInput,
+  CreateOutflowInput,
+  CreateTransactionInput,
+  FromToInput,
+  OperationInput,
+  SendInput,
+} from '../transaction';
 
 /** Decimal form accepted by the ledger: optional sign, digits, optional fractional part */
 const DECIMAL_STRING_PATTERN = /^-?\d+(\.\d+)?$/;
@@ -126,6 +133,124 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
   // If send is provided, we skip operation validation as the server will generate them from DSL
   if (input.send) {
     results.push(...validateSendDecimalValues(input.send));
+  }
+
+  return combineValidationResults(results);
+}
+
+/**
+ * Builds a rejection naming the offending field.
+ *
+ * @returns An invalid ValidationResult keyed by `field`
+ */
+function rejectField(field: string, reason: string): ValidationResult {
+  const message = `${field} ${reason}`;
+
+  return { valid: false, message, fieldErrors: { [field]: [message] } };
+}
+
+/**
+ * Validates every leg of a flow, naming each path.
+ *
+ * @returns One ValidationResult per leg plus one for the collection itself
+ */
+function validateFlowLegs(legs: FromToInput[] | undefined, path: string): ValidationResult[] {
+  if (!Array.isArray(legs) || legs.length === 0) {
+    return [rejectField(path, 'must contain at least one account')];
+  }
+
+  return legs.map((leg, index) =>
+    validateDecimalValue(leg?.amount?.value, `${path}[${index}].amount.value`)
+  );
+}
+
+/**
+ * Validates the envelope both flow inputs share.
+ *
+ * @returns One ValidationResult per checked field
+ */
+function validateFlowEnvelope(input: CreateInflowInput | CreateOutflowInput): ValidationResult[] {
+  const results: ValidationResult[] = [];
+
+  if (!input.send) {
+    results.push(rejectField('send', 'is required'));
+    return results;
+  }
+
+  results.push(validateDecimalValue(input.send.value, 'send.value'));
+
+  if (input.metadata) {
+    results.push(validateMetadata(input.metadata));
+  }
+
+  return results;
+}
+
+/**
+ * Validates a CreateInflowInput before it reaches the wire.
+ *
+ * The type system already forbids `send.source` and `pending`; this is the second
+ * line for JavaScript callers, who would otherwise get an opaque `400/0053` back.
+ *
+ * @returns ValidationResult naming the offending field when the input is unusable
+ */
+export function validateCreateInflowInput(input: CreateInflowInput): ValidationResult {
+  const requiredResult = validateRequired(input, 'input');
+  if (!requiredResult.valid) {
+    return requiredResult;
+  }
+
+  const results = validateFlowEnvelope(input);
+
+  if (input.pending !== undefined) {
+    results.push(
+      rejectField('pending', 'is not accepted by the inflow endpoint, which is never pending')
+    );
+  }
+
+  if (input.send?.source !== undefined) {
+    results.push(
+      rejectField(
+        'send.source',
+        'is not accepted by the inflow endpoint, which debits @external/{asset} itself'
+      )
+    );
+  }
+
+  if (input.send) {
+    results.push(...validateFlowLegs(input.send.distribute?.to, 'send.distribute.to'));
+  }
+
+  return combineValidationResults(results);
+}
+
+/**
+ * Validates a CreateOutflowInput before it reaches the wire.
+ *
+ * The type system already forbids `send.distribute`; this is the second line for
+ * JavaScript callers.
+ *
+ * @returns ValidationResult naming the offending field when the input is unusable
+ */
+export function validateCreateOutflowInput(input: CreateOutflowInput): ValidationResult {
+  const requiredResult = validateRequired(input, 'input');
+  if (!requiredResult.valid) {
+    return requiredResult;
+  }
+
+  const results = validateFlowEnvelope(input);
+
+  if (input.send?.distribute !== undefined) {
+    results.push(
+      rejectField(
+        'send.distribute',
+        'is not accepted by the outflow endpoint, which credits @external/{asset} itself'
+      )
+    );
+  }
+
+  if (input.send) {
+    results.push(...validateFlowLegs(input.send.source?.from, 'send.source.from'));
   }
 
   return combineValidationResults(results);

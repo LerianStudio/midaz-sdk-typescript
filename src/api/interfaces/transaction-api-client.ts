@@ -3,6 +3,8 @@
 
 import { ListOptions, ListResponse } from '../../models/common';
 import {
+  CreateInflowInput,
+  CreateOutflowInput,
   CreateTransactionInput,
   RevertTransactionOptions,
   Transaction,
@@ -47,6 +49,20 @@ export interface TransactionApiClient
     ledgerId: string,
     input: CreateTransactionInput
   ): Promise<Transaction>;
+
+  /**
+   * Creates an inflow, funding accounts from `@external/{asset}`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  createInflow(orgId: string, ledgerId: string, input: CreateInflowInput): Promise<Transaction>;
+
+  /**
+   * Creates an outflow, moving funds out to `@external/{asset}`
+   *
+   * @returns Promise resolving to the created transaction
+   */
+  createOutflow(orgId: string, ledgerId: string, input: CreateOutflowInput): Promise<Transaction>;
 
   /**
    * Commits a pending transaction
