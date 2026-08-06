@@ -138,6 +138,11 @@ The same value can come from the environment instead:
 export MIDAZ_LEDGER_URL=http://localhost:3002
 ```
 
+`createDevelopmentConfig()`, `createLocalConfig()`, `createSandboxConfig()` and
+`createProductionConfig()` need no base URL at all: with nothing configured they emit `ledger`
+alone — `http://localhost:3002` for development and local — so every service resolves to the
+single ledger host. A legacy key appears in the map only when you supply it.
+
 #### Migrating from the split base URLs
 
 Earlier releases required an `onboarding` / `transaction` pair, and that form keeps working:

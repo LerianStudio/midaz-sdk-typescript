@@ -47,9 +47,14 @@ const client = new MidazClient(
 
 `MIDAZ_LEDGER_URL` sets the same value from the environment.
 
+When nothing is configured, the environment helpers default `baseUrls` to `ledger` alone —
+`http://localhost:3002` for `createDevelopmentConfig()` and `createLocalConfig()` — so the HTTP
+client points at the ledger host without any explicit URL.
+
 The deprecated `onboarding` and `transaction` keys are still accepted for configurations written
-against earlier releases. When present, each one wins for its own service family and `ledger`
-covers the rest, so they can be removed one at a time.
+against earlier releases. They are emitted only when you supply them, through `withBaseUrls` or
+`MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL`. When present, each one wins for its own service
+family and `ledger` covers the rest, so they can be removed one at a time.
 
 ## Configuration
 

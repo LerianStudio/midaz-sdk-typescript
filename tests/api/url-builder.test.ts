@@ -64,6 +64,17 @@ describe('UrlBuilder base URL resolution', () => {
       expect(builder.getBaseUrl('anything-else')).toBe('https://ledger.example.com');
     });
 
+    it('builds both service families from a ledger-only map', () => {
+      const builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
+
+      expect(builder.buildAccountUrl('ORG', 'LED')).toBe(
+        'https://ledger.example.com/v1/organizations/ORG/ledgers/LED/accounts'
+      );
+      expect(builder.buildAssetRateUrl('ORG', 'LED')).toBe(
+        'https://ledger.example.com/v1/organizations/ORG/ledgers/LED/asset-rates'
+      );
+    });
+
     it('strips trailing slashes from the ledger URL', () => {
       const builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com//' } });
 

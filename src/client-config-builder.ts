@@ -45,65 +45,37 @@ function parseNumber(value: string | undefined, defaultValue: number): number {
 }
 
 /**
- * Fallback base URLs for a single environment
- */
-interface BaseUrlDefaults {
-  onboarding: string;
-  transaction: string;
-  ledger: string;
-}
-
-/**
  * Resolves the base URL map for an environment from `MIDAZ_LEDGER_URL` and the deprecated
  * `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair.
  *
- * When `MIDAZ_LEDGER_URL` is set, only the legacy keys the caller supplied are carried over:
- * each keeps winning for its own service family while `ledger` serves everything else. Default
- * legacy URLs are emitted only when no ledger URL is configured, so a placeholder host can
- * never shadow a configured ledger.
+ * `ledger` is always emitted, from the environment when set and from `defaultLedgerUrl`
+ * otherwise. The legacy keys are emitted only when the caller actually supplied them: each
+ * keeps winning for its own service family, while a caller who configures nothing gets a map
+ * that points every service at the single ledger host midaz serves.
  */
-function resolveBaseUrls(defaults: BaseUrlDefaults): Record<string, string> {
-  const ledgerUrl = getEnvVar('MIDAZ_LEDGER_URL');
+function resolveBaseUrls(defaultLedgerUrl: string): Record<string, string> {
   const onboardingUrl = getEnvVar('MIDAZ_ONBOARDING_URL');
   const transactionUrl = getEnvVar('MIDAZ_TRANSACTION_URL');
 
-  if (ledgerUrl) {
-    const baseUrls: Record<string, string> = { ledger: ledgerUrl };
-    if (onboardingUrl) {
-      baseUrls.onboarding = onboardingUrl;
-    }
-    if (transactionUrl) {
-      baseUrls.transaction = transactionUrl;
-    }
-    return baseUrls;
-  }
-
-  return {
-    onboarding: onboardingUrl || defaults.onboarding,
-    transaction: transactionUrl || defaults.transaction,
-    ledger: defaults.ledger,
+  const baseUrls: Record<string, string> = {
+    ledger: getEnvVar('MIDAZ_LEDGER_URL') || defaultLedgerUrl,
   };
+  if (onboardingUrl) {
+    baseUrls.onboarding = onboardingUrl;
+  }
+  if (transactionUrl) {
+    baseUrls.transaction = transactionUrl;
+  }
+  return baseUrls;
 }
 
 /**
  * Environment-specific base URLs
  */
 const ENVIRONMENT_URLS: Record<string, Record<string, string>> = {
-  development: resolveBaseUrls({
-    onboarding: 'http://localhost:3000',
-    transaction: 'http://localhost:3001',
-    ledger: 'http://localhost:3002',
-  }),
-  sandbox: resolveBaseUrls({
-    onboarding: 'https://yourdomain.sandbox.midaz.io',
-    transaction: 'https://yourdomain.sandbox.midaz.io',
-    ledger: 'https://yourdomain.sandbox.midaz.io',
-  }),
-  production: resolveBaseUrls({
-    onboarding: 'https://yourdomain.api.midaz.io',
-    transaction: 'https://yourdomain.api.midaz.io',
-    ledger: 'https://yourdomain.api.midaz.io',
-  }),
+  development: resolveBaseUrls('http://localhost:3002'),
+  sandbox: resolveBaseUrls('https://yourdomain.sandbox.midaz.io'),
+  production: resolveBaseUrls('https://yourdomain.api.midaz.io'),
 };
 
 /**
@@ -569,13 +541,7 @@ export function createLocalConfig(port?: number, apiVersion?: string): ClientCon
   const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
 
   return createClientConfigBuilder()
-    .withBaseUrls(
-      resolveBaseUrls({
-        onboarding: `http://localhost:${defaultPort}`,
-        transaction: `http://localhost:${defaultPort + 1}`,
-        ledger: `http://localhost:${defaultPort + 2}`,
-      })
-    )
+    .withBaseUrls(resolveBaseUrls(`http://localhost:${defaultPort + 2}`))
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }
@@ -609,13 +575,7 @@ export function createLocalConfigWithAccessManager(
   };
 
   return createClientConfigWithAccessManager(accessManagerConfig)
-    .withBaseUrls(
-      resolveBaseUrls({
-        onboarding: `http://localhost:${defaultPort}`,
-        transaction: `http://localhost:${defaultPort + 1}`,
-        ledger: `http://localhost:${defaultPort + 2}`,
-      })
-    )
+    .withBaseUrls(resolveBaseUrls(`http://localhost:${defaultPort + 2}`))
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }

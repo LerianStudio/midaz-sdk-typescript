@@ -21,8 +21,8 @@
 
 | Phase | Milestone | Epics | Status |
 |-------|-----------|-------|--------|
-| 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz main | 1.1, 1.2, 1.3, 1.4 | Detailed |
-| 2 | Full transaction lifecycle: pending commit/cancel, revert, inflow/outflow, block/unblock, annotation, updates; model field parity | 2.1, 2.2, 2.3, 2.4 | Epic-level |
+| 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz main | 1.1, 1.2, 1.3, 1.4 | Complete (1 open decision) |
+| 2 | Full transaction lifecycle: pending commit/cancel, revert, inflow/outflow, block/unblock, annotation, updates; model field parity; money-safety guards | 2.0, 2.1, 2.2, 2.3, 2.4 | Detailed |
 | 3 | Account lookups (alias/external), balance history, metrics counts, ledger settings | 3.1, 3.2, 3.3 | Epic-level |
 | 4 | New domains: holders/CRM, billing, encryption/protection, v2 API | 4.1, 4.2, 4.3, 4.4 | Epic-level |
 
@@ -212,37 +212,169 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 ## Phase 2: Transaction lifecycle
 
-### Epic 2.1: Pending flow and revert
+**Contract source.** The ledger's Huma spec cannot describe request bodies (Task 1.1.1 finding), so every shape below was read from the Go source on midaz `main` @`33cb93f` and confirmed against a live ledger on 2026-08-06. Implementers must treat these as authoritative and must not re-derive them from `spec/ledger-v1.openapi.yaml`, which only carries response schemas. Response schema for all nine endpoints is `Transaction`; errors are RFC 9457 `application/problem+json` carrying a midaz `code`.
 
-**Goal:** SDK exposes `commitTransaction`, `cancelTransaction` (two-phase pending flow) and `revertTransaction`; `pending: true` creation is documented and tested end-to-end.
-**Scope:** transaction client/interface/entity, models, tests
-**Dependencies:** Phase 1 (versioned builder, drift suite)
-**Done when:** create-pending → commit and create-pending → cancel and create → revert all round-trip against local midaz main.
+**Three server behaviours the SDK has to defend against — verified, not assumed:**
+
+1. 🔴 **`remaining` silently destroys money.** A leg carrying `remaining` is counted by the server's balance check but never turned into an operation. Measured: send 100 with `acc-b` at 30 and `acc-c` as `remaining` → source debited 100, `acc-b` credited 30, **`acc-c` unchanged**; 70 vanished with a `201 CREATED`. As the sole destination, nothing is credited at all. The SDK therefore **refuses to emit `remaining`** (see Task 2.4.2) — a deliberate divergence from the server contract, reversible once midaz fixes it.
+2. 🔴 **`0486 Transaction Locked` is permanent, not transient.** `commitOrCancelTransaction` takes a Redis lock and never releases it on the success path, and its TTL is built as `time.Duration(300)` — 300 **nanoseconds**, not seconds. A second commit/cancel on an already-committed transaction returns `0486` forever, while its `detail` says "Please retry shortly". Any SDK retry on `0486` loops indefinitely. The honest `0099` only appears where no lock was ever taken.
+3. ⚠️ **Idempotency replays instead of rejecting.** Same `X-Idempotency` key with a *different* body silently returns the FIRST transaction — no 409, no `0084`. With no key at all, midaz still dedupes on a body hash for 300s, so a bare retry of a create silently no-ops. `X-Idempotency-Replayed: true|false` is the only way to tell a fresh write from a replay, and it is returned on exactly seven operations (json/inflow/outflow/block/unblock/annotation/revert). `commit`/`cancel` accept the header and ignore it.
+
+### Epic 2.0: Carried-over base URL defaults
+
+**Goal:** Zero-config helpers point at the single ledger service instead of the retired two-service pair.
+**Scope:** `src/client-config-builder.ts`, tests, README
+**Dependencies:** none
+**Done when:** `createDevelopmentConfig()` and `createLocalConfig()` route every builder at the ledger host; explicitly supplied legacy keys behave exactly as before.
 **Status:** Pending
 
-### Epic 2.2: Inflow and outflow endpoints
+#### Task 2.0.1: Emit `ledger` alone when the caller configures nothing
 
-**Goal:** `createInflow` / `createOutflow` cover the dedicated single-sided endpoints (`POST .../transactions/inflow|outflow`) with their distinct input shapes (`SendInflow`/`SendOutflow` — no source for inflow, no distribute for outflow).
-**Scope:** transaction client/interface/entity, models (new input types from generated spec types), validators, tests
+- [x] Done
+
+**Context:** Resolved decision from the Phase 1 checkpoint (see "Phase 1 outcome" above). `resolveBaseUrls` (`src/client-config-builder.ts:65-86`) currently returns all three keys when no `MIDAZ_LEDGER_URL` is set, and `UrlBuilder.getBaseUrl` (`src/api/url-builder.ts:130-153`) consults the legacy family key before `ledger`, so those defaulted legacy entries outrank the ledger default. Measured against the built package: `createDevelopmentConfig()` sends accounts to `:3000` and asset-rates to `:3001`, neither of which midaz main serves.
+
+**Implementation vision:** Change only the no-ledger-env branch of `resolveBaseUrls`: emit `onboarding`/`transaction` **only when the caller actually supplied them** (env var present), and always emit `ledger` from the defaults. When nothing is supplied the map is `{ ledger }` alone, so the ledger default is reachable. Do **not** touch the rung order in `getBaseUrl` — an explicitly supplied legacy key must keep winning for its own family, which is what README.md already documents. Apply the same rule to every `ENVIRONMENT_URLS` environment and to `createLocalConfig` (which must stop deriving the `N+1` legacy port unless the caller asked for it). Update `README.md` and `docs/utilities/http-client.md` so the documented default is the single ledger host.
+
+**Files:**
+- Modify: `src/client-config-builder.ts`, `README.md`, `docs/utilities/http-client.md`
+- Test: `tests/client-config-builder.test.ts`, `tests/api/url-builder.test.ts`
+
+**Verification:** `npx jest tests/client-config-builder.test.ts tests/api/url-builder.test.ts`. New cases: nothing configured → `{ledger}` only and both `buildAccountUrl` and `buildAssetRateUrl` resolve to the ledger host; `MIDAZ_ONBOARDING_URL` set → onboarding still wins for its family; `MIDAZ_TRANSACTION_URL` set → transaction still wins for asset-rates. Then rebuild and confirm empirically that `createDevelopmentConfig()` sends both builders to the ledger host.
+
+**Done when:** zero-config helpers work against midaz main and no existing legacy-configured behaviour changed.
+
+### Epic 2.1: State transitions — commit, cancel, revert
+
+**Goal:** The two-phase pending flow and reversal are usable from the SDK, and the client never retries the permanent `0486` lock.
+**Scope:** transaction client/interface/entity, error mapping, retry policy, tests
 **Dependencies:** Phase 1
-**Done when:** both endpoints round-trip live; validators reject the field each shape forbids.
+**Done when:** create-pending → commit, create-pending → cancel, and create → revert all round-trip live; a repeated commit surfaces `0486` once without retrying.
 **Status:** Pending
 
-### Epic 2.3: Funds block/unblock and annotation
+#### Task 2.1.1: Commit, cancel and revert with a non-retry guard on 0486
 
-**Goal:** SDK exposes `blockFunds` / `unblockFunds` (`POST .../transactions/block|unblock`) and `createAnnotation` (`POST .../transactions/annotation`).
-**Scope:** transaction client/interface/entity, models, tests
-**Dependencies:** Phase 1
-**Done when:** block → unblock round-trips live; annotation creates and is retrievable.
+- [ ] Done
+
+**Context:** `HttpTransactionApiClient` (`src/api/http/http-transaction-api-client.ts`) exposes only create/get/list. The three state endpoints are `POST .../transactions/{id}/{commit|cancel|revert}`, all **body-less** (a body is accepted and ignored), all returning **201** with a `Transaction`. Legal transitions, verified: commit only from `PENDING`, cancel only from `PENDING`, revert only from `APPROVED`. Illegal transitions return `409/0099`; a second commit on a committed transaction returns `409/0486` permanently because of the server's leaked lock (see the phase preamble). Revert creates a **new** transaction carrying `parentTransactionId`, with the legs swapped and status `CREATED`. Cancel emits a single `RELEASE` operation on the source only.
+
+**Implementation vision:** Add `commitTransaction`, `cancelTransaction`, `revertTransaction` to the client, its interface, the entity service (`src/entities/transactions.ts`) and impl, each `(orgId, ledgerId, transactionId, options?)` and each POSTing **no body**. Extend `UrlBuilder.buildTransactionUrl` with the sub-path forms so the drift suite from Task 1.1.2 covers them. `revertTransaction` accepts an `idempotencyKey`; `commit`/`cancel` must **not** send one — the server ignores it and sending it would imply a guarantee that does not exist. Guard the retry path: whatever the SDK's retry policy currently treats as retryable, `409` carrying midaz code `0486` must be excluded, and the thrown error must carry the `code` so callers can branch. Do not paper over the misleading server `detail` ("retry shortly") — surface it, but add the SDK's own note that the condition is terminal. Model `parentTransactionId` on the response type.
+
+**Files:**
+- Modify: `src/api/http/http-transaction-api-client.ts`, `src/api/interfaces/transaction-api-client.ts`, `src/entities/transactions.ts`, `src/entities/implementations/transactions-impl.ts`, `src/api/url-builder.ts`, `src/models/transaction.ts`
+- Test: `tests/api/http/http-transaction-api-client.test.ts`, `tests/entities/implementations/transactions-impl.test.ts`, plus a new retry-policy test
+
+**Verification:** `npx jest tests/api/http tests/entities` green. Live, against `http://localhost:3002`: create with `pending:true` → account shows `onHold`; commit → `APPROVED` and `onHold` moves to the destination; a second create-pending → cancel → `CANCELED` with one `RELEASE` operation; create (non-pending) → commit → `409/0099`; commit twice on the same approved transaction → `0486` returned **once**, with the request count asserted so a retry would fail the test.
+
+**Done when:** all three transitions round-trip live and the `0486` non-retry is proven by a test that counts requests.
+
+### Epic 2.2: Inflow and outflow
+
+**Goal:** The single-sided endpoints are usable with their own input shapes, and the shape each one forbids is rejected client-side.
+**Scope:** transaction client/interface/entity, new input models, validators, tests
+**Dependencies:** Epic 2.1 (shares the client's request plumbing)
+**Done when:** both endpoints round-trip live; supplying `source` to inflow or `distribute` to outflow fails before the wire.
 **Status:** Pending
 
-### Epic 2.4: Model field parity and strict transformer
+#### Task 2.2.1: createInflow and createOutflow
 
-**Goal:** `CreateTransactionInput` carries `routeId`, `transactionDate`, `skip`, `code`, `chartOfAccountsGroupName`; `FromTo` carries `balanceKey`, `routeId`, `share`, `rate`, `remaining`; `PATCH` transaction/operation update methods exist; transformer throws on unknown fields instead of dropping them.
-**Scope:** models, transformer, validators, transaction + operation clients, tests
-**Dependencies:** Phase 1 (generated types are the field source of truth)
-**Done when:** every field in the spec's create-transaction schema is expressible through the SDK; an unknown field throws naming the field; PATCH methods round-trip live.
+- [ ] Done
+
+**Context:** `POST .../transactions/inflow` takes `SendInflow` — `{asset, value, distribute}` — where **`source` is forbidden** (`400/0053`) and there is **no `pending` field** (sending it is `0053`); the server synthesizes the debit from `@external/{asset}`. `POST .../transactions/outflow` takes `SendOutflow` — `{asset, value, source}` — where **`distribute` is forbidden**, and `pending` **is** supported; the server synthesizes the credit to `@external/{asset}`. Both accept the create-family headers (`X-Idempotency`, `X-TTL`) and return 201 with `X-Idempotency-Replayed`. Body decoding is strict, so any stray field is `0053`.
+
+**Implementation vision:** Add `CreateInflowInput` and `CreateOutflowInput` model types that make the forbidden sub-object **unrepresentable in TypeScript** rather than merely validated — the type system is the first line, the validator the second for JS callers. Two new transformer entry points reusing the decimal-string coercion from Task 1.4.2; do not extend `toApiTransaction` with conditionals, since its allowlist is what pins the `0053` hazard. Validators reject the forbidden sub-object and `pending` on inflow, each naming the field. Wire `X-TTL` alongside the existing idempotency header plumbing as an optional `idempotencyTtlSeconds` request option, defaulting to omitted (server default 300).
+
+**Files:**
+- Create: `src/models/transaction-inflow.ts` or extend `src/models/transaction.ts` (implementer's call — keep it consistent with existing model layout)
+- Modify: `src/api/http/http-transaction-api-client.ts`, its interface, `src/entities/transactions.ts` + impl, `src/models/transaction-transformer.ts`, `src/models/validators/transaction-validator.ts`, `src/api/url-builder.ts`, `src/util/http/universal-http-client.ts` (X-TTL)
+- Test: transformer, validator and client tests alongside the existing ones
+
+**Verification:** `npx jest tests/models tests/api/http` green. Live: inflow funds an account from `@external/BRL` and the response shows `source:["@external/BRL"]`; outflow with `pending:true` yields `PENDING`; a JS-side call passing `source` to inflow throws before any fetch (assert fetch was never called).
+
+**Done when:** both endpoints round-trip live and each forbidden shape fails client-side.
+
+### Epic 2.3: Block, unblock and annotation
+
+**Goal:** The three full-input variants are exposed with their status semantics made explicit.
+**Scope:** transaction client/interface/entity, validators, tests
+**Dependencies:** Epic 2.2
+**Done when:** block and unblock round-trip live producing `BLOCK`/`UNBLOCK` operations; annotation produces a `NOTED` transaction that moves no balance.
 **Status:** Pending
+
+#### Task 2.3.1: blockFunds, unblockFunds and createAnnotation
+
+- [ ] Done
+
+**Context:** All three take the **full** `CreateTransactionInput` (both `source` and `distribute` required) and differ only in server-side labelling. Block/unblock relabel the persisted operation type to `BLOCK`/`UNBLOCK` while balances move exactly as a normal transfer; **`pending` is accepted but forced to `false`**. Annotation forces status to `NOTED` and writes operations with `amount.value: "0"` and `balanceAffected: false`, leaving balances untouched — and a `NOTED` transaction can be neither committed nor reverted (`0099`). Verified quirk: sending `pending: true` to annotation keeps `NOTED` but flips both operations to `CREDIT`/`CREDIT` via a `DetermineOperation` leak.
+
+**Implementation vision:** Three methods reusing the existing `toApiTransaction` path — the body is identical to `/json`, so no new transformer. Because `pending` is either ignored (block/unblock) or actively harmful (annotation), the input types for these three must **omit** `pending` entirely rather than accept-and-drop it; a JS caller who passes it gets a validation error naming the endpoint's behaviour. Document the `NOTED` terminal state on `createAnnotation` so callers do not build a commit flow on it.
+
+**Files:**
+- Modify: `src/api/http/http-transaction-api-client.ts`, its interface, `src/entities/transactions.ts` + impl, `src/models/transaction.ts`, `src/models/validators/transaction-validator.ts`, `src/api/url-builder.ts`
+- Test: client, validator and entity tests
+
+**Verification:** `npx jest tests/api/http tests/models tests/entities` green. Live: block yields operations typed `BLOCK` with balances moved; unblock the same with `UNBLOCK`; annotation yields `NOTED` with `balanceAffected:false` and the account balance byte-identical before and after; committing the annotation returns `0099`.
+
+**Done when:** all three round-trip live and `pending` is unrepresentable on their inputs.
+
+### Epic 2.4: Model field parity and money-safety guards
+
+**Goal:** Every field the ledger accepts is expressible, every field that would silently lose money or be silently ignored is blocked, and transaction metadata can be updated.
+**Scope:** models, transformer, validators, transaction client, tests
+**Dependencies:** Epic 2.1
+**Done when:** the create-transaction input covers the ledger's full field list; `remaining` and a mismatched `amount.asset` fail client-side; PATCH round-trips with documented merge semantics.
+**Status:** Pending
+
+#### Task 2.4.1: CreateTransactionInput field parity
+
+- [ ] Done
+
+**Context:** The SDK's input (`src/models/transaction.ts`, transformed at `src/models/transaction-transformer.ts:11`) lacks `routeId`, `transactionDate` and `skip`, and its allowlist transformer drops them silently. Verified server behaviour: `routeId` must be a UUID (`400/0047` otherwise) but a non-existent one is accepted while `accounting.validateRoutes` is off; `transactionDate` accepts six formats and **overwrites the response `createdAt`**, with a future date rejected as `400/0121`; `skip` is `{fees?: boolean, tracer?: boolean}` and is honoured only when the matching per-ledger override is on — otherwise **`422/0490`** — and its outcome is read from the response's `feesSkipped`/`tracerSkipped`, never from an echoed `skip`. `code` is persisted but **not echoed** in the response.
+
+**Implementation vision:** Add the four fields to the input model and the transformer allowlist. Validate client-side what is cheap and unambiguous: `routeId` as a UUID, `transactionDate` as one of the accepted formats and not in the future, `description`/`chartOfAccountsGroupName` at 256 and `code` at 100 characters. Do **not** try to pre-validate `skip` against ledger settings — the SDK cannot know them; instead surface `0490` with a message naming the ledger override the caller must enable. Document on the type that `code` will not appear in the response and that `transactionDate` rewrites `createdAt`, since both look like bugs otherwise.
+
+**Files:**
+- Modify: `src/models/transaction.ts`, `src/models/transaction-transformer.ts`, `src/models/validators/transaction-validator.ts`
+- Test: `tests/models/transaction-transformer.test.ts`, transaction-validator tests
+
+**Verification:** `npx jest tests/models` green, each new field proven by mutation (drop it from the allowlist → test red). Live: a transaction with `transactionDate` in the past returns that value as `createdAt`; a future date returns `0121`; `skip:{fees:true}` against a ledger with the override off returns `0490`, and against one with `allowFeeSkip:true` returns `feesSkipped:true`.
+
+**Done when:** all four fields reach the wire and each client-side rule is proven by mutation.
+
+#### Task 2.4.2: FromTo field parity, the `remaining` guard and asset mirroring
+
+- [ ] Done
+
+**Context:** The SDK's leg type carries only `account`, `amount`, `route`, `description`, `metadata`. The ledger's `FromTo` also accepts `balanceKey` (defaults to `"default"`, and must reference an **existing** balance — an unknown key is `422/0019`, it is not auto-created), `share` (`{percentage, percentageOfPercentage}` as **integers**, verified: 60/40 of 100 credits 60 and 40; `percentageOfPercentage:0` behaves as 100), `rate`, `chartOfAccounts` and `routeId`. Two verified hazards: **`amount.asset` is ignored entirely** — a leg declaring `USD` under `send.asset: "BRL"` produced a BRL operation — and **`remaining` silently destroys money** as described in the phase preamble.
+
+**Implementation vision:** Add `balanceKey`, `share`, `rate`, `chartOfAccounts` and `routeId` to the leg type and the transformer allowlist. Two guards, both client-side and both loud:
+- `remaining` is **refused**: the field exists on the type only so TypeScript users get a documented deprecation, and the validator throws naming `amount` or `share` as the correct alternative. Record in the JSDoc that this diverges from the server on purpose because the server loses the funds.
+- `amount.asset` must equal `send.asset`. Mismatch throws client-side naming both values rather than letting the server silently coerce. Where the caller omits it, mirror `send.asset` in the transformer so the wire payload stays explicit.
+Keep `share` percentages as integers and reject fractional ones, since the server takes int64.
+
+**Files:**
+- Modify: `src/models/transaction.ts`, `src/models/transaction-transformer.ts`, `src/models/validators/transaction-validator.ts`
+- Test: `tests/models/transaction-transformer.test.ts`, transaction-validator tests
+
+**Verification:** `npx jest tests/models` green. Live: a `share`-split transaction credits 60/40 as asserted on the returned operations; a leg naming a pre-created `balanceKey` produces an operation on that balance; a leg naming an unknown `balanceKey` returns `422/0019`. Client-side: `remaining` and a mismatched `amount.asset` both throw with fetch never called.
+
+**Done when:** the leg type matches the ledger's, and both money-safety guards are proven by tests that assert no request was issued.
+
+#### Task 2.4.3: PATCH transaction with merge semantics
+
+- [ ] Done
+
+**Context:** `PATCH .../transactions/{id}` accepts **only** `{description?, metadata?}` and returns **200** (not 201). Verified semantics that the SDK must document because they are surprising: `{}` is a no-op; `{"description": ""}` does **not** clear the description; and **`metadata` merges rather than replaces** — `{"metadata":{"only":"this"}}` against `{n:7, patched:"yes"}` yields all three keys, and there is no way to delete a metadata key through PATCH. `description` over 256 characters is `400/0047`.
+
+**Implementation vision:** Add `updateTransaction(orgId, ledgerId, transactionId, input)` typed to exactly those two fields, wired to `patchRequest` on the base client (which already exists at `http-base-api-client.ts:133`). No transformer is needed — the body is already the wire shape — but route it through a validator enforcing the 256-character limit so the caller fails locally. Document the merge and empty-string behaviours on the method's JSDoc; do not attempt to emulate replace semantics client-side by reading-then-writing, which would race.
+
+**Files:**
+- Modify: `src/api/http/http-transaction-api-client.ts`, its interface, `src/entities/transactions.ts` + impl, `src/models/transaction.ts`, `src/models/validators/transaction-validator.ts`
+- Test: client and validator tests
+
+**Verification:** `npx jest tests/api/http tests/models` green. Live: patch description and metadata on an approved transaction → 200 with merged metadata; patch `{}` → prior values retained; 257-character description → rejected client-side with fetch never called.
+
+**Done when:** PATCH round-trips live and the merge semantics are covered by a test asserting pre-existing keys survive.
 
 ---
 
@@ -309,6 +441,25 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 **Status:** Pending
 
 ---
+
+## Phase 1 outcome (2026-08-06)
+
+Landed in 9 signed commits on `feat/ledger-api-parity-phase-1`. Gate verified independently by the supervisor: `tsc --noEmit` clean, 75 suites / 1521 tests green, `format:check` clean, and 6/6 live checks through the built SDK against a local midaz main ledger (asset-rate upsert + lookup with the integer-rate contract, client-side float-rate rejection, numeric transaction value serialized to a decimal string, non-finite value rejected naming its path, operations list on the versioned account path).
+
+**Open decision — base-URL rung order.** Task 1.2.1's Resolution contract above puts `ledger` at rung 2 and the legacy service-family key at rung 3. The code shipped them **swapped**: an explicitly configured `onboarding`/`transaction` wins for its own family, and `ledger` serves everything else. README.md and docs/utilities/http-client.md document the shipped order; only this plan is out of step.
+
+The swap is defensible on its own (a split legacy deployment keeps working), but it makes the `ledger` value emitted by `createDevelopmentConfig()` / `createLocalConfig()` / sandbox / production **inert**, because those helpers also emit legacy defaults that outrank it. Measured against the built package:
+
+```
+createDevelopmentConfig() -> baseUrls {onboarding: :3000, transaction: :3001, ledger: :3002}
+  accounts  -> http://localhost:3000/v1/...      (midaz main serves nothing here)
+  assetRate -> http://localhost:3001/v1/...      (idem)
+withBaseUrls({ledger}) -> both -> http://ledger.example:3002/v1/...   (correct)
+```
+
+So the explicit `withBaseUrls({ ledger })` path — Epic 1.2's stated Done-when — works, while the zero-config helpers still describe the two-service topology midaz retired.
+
+**Resolved 2026-08-06:** keep the shipped rung order (an explicit legacy key wins for its own family) and fix the defaults instead — when the caller configures nothing, the SDK emits `ledger` alone rather than a legacy pair, so zero-config points at the single service. Legacy keys are emitted only when the caller actually supplies them, which leaves genuine split deployments untouched. Carried into Phase 2 as Task 2.0.1; the Resolution contract snippet in Task 1.2.1 is superseded by this and by README.md.
 
 ## Cross-cutting verification
 

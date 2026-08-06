@@ -190,8 +190,9 @@ describe('ClientConfigBuilder', () => {
         expect(config.debug).toBe(true);
         expect(config.apiVersion).toBeDefined(); // Should have some API version
         expect(config.baseUrls).toBeDefined();
-        expect(config.baseUrls?.onboarding).toContain('localhost:3000');
-        expect(config.baseUrls?.transaction).toContain('localhost:3001');
+        expect(config.baseUrls?.ledger).toContain('localhost:3002');
+        expect(config.baseUrls?.onboarding).toBeUndefined();
+        expect(config.baseUrls?.transaction).toBeUndefined();
         // No authentication configured by default
         expect(config.accessManager).toBeUndefined();
       });
@@ -445,26 +446,75 @@ describe('ClientConfigBuilder', () => {
       return loaded as typeof import('../src/client-config-builder');
     };
 
-    it('should expose a ledger base URL for the development environment', () => {
+    it('should emit the ledger key alone for the development environment', () => {
       const { createDevelopmentConfig } = loadBuilderModule();
 
       const config = createDevelopmentConfig('v1').build();
 
-      expect(config.baseUrls).toEqual({
-        onboarding: 'http://localhost:3000',
-        transaction: 'http://localhost:3001',
-        ledger: 'http://localhost:3002',
+      expect(config.baseUrls).toEqual({ ledger: 'http://localhost:3002' });
+    });
+
+    it('should route both service families at the ledger host with nothing configured', () => {
+      const { createDevelopmentConfig } = loadBuilderModule();
+
+      const urlBuilder = new UrlBuilder(createDevelopmentConfig('v1').build());
+
+      expect(urlBuilder.buildAccountUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/accounts'
+      );
+      expect(urlBuilder.buildAssetRateUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/asset-rates'
+      );
+    });
+
+    it('should emit the ledger key alone for sandbox and production environments', () => {
+      const { createSandboxConfig, createProductionConfig } = loadBuilderModule();
+
+      expect(createSandboxConfig('v1').build().baseUrls).toEqual({
+        ledger: 'https://yourdomain.sandbox.midaz.io',
+      });
+      expect(createProductionConfig('v1').build().baseUrls).toEqual({
+        ledger: 'https://yourdomain.api.midaz.io',
       });
     });
 
-    it('should expose a ledger base URL for sandbox and production environments', () => {
-      const { createSandboxConfig, createProductionConfig } = loadBuilderModule();
+    it('should keep a legacy onboarding variable winning for its own family', () => {
+      process.env.MIDAZ_ONBOARDING_URL = 'http://legacy-onboarding:9000';
+      const { createDevelopmentConfig } = loadBuilderModule();
+      const config = createDevelopmentConfig('v1').build();
+      delete process.env.MIDAZ_ONBOARDING_URL;
 
-      expect(createSandboxConfig('v1').build().baseUrls?.ledger).toBe(
-        'https://yourdomain.sandbox.midaz.io'
+      const urlBuilder = new UrlBuilder(config);
+
+      expect(config.baseUrls).toEqual({
+        onboarding: 'http://legacy-onboarding:9000',
+        ledger: 'http://localhost:3002',
+      });
+      expect(urlBuilder.buildAccountUrl('org_1', 'ledger_1')).toBe(
+        'http://legacy-onboarding:9000/v1/organizations/org_1/ledgers/ledger_1/accounts'
       );
-      expect(createProductionConfig('v1').build().baseUrls?.ledger).toBe(
-        'https://yourdomain.api.midaz.io'
+      expect(urlBuilder.buildAssetRateUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/asset-rates'
+      );
+    });
+
+    it('should keep a legacy transaction variable winning for asset rates', () => {
+      process.env.MIDAZ_TRANSACTION_URL = 'http://legacy-transaction:9001';
+      const { createDevelopmentConfig } = loadBuilderModule();
+      const config = createDevelopmentConfig('v1').build();
+      delete process.env.MIDAZ_TRANSACTION_URL;
+
+      const urlBuilder = new UrlBuilder(config);
+
+      expect(config.baseUrls).toEqual({
+        transaction: 'http://legacy-transaction:9001',
+        ledger: 'http://localhost:3002',
+      });
+      expect(urlBuilder.buildAssetRateUrl('org_1', 'ledger_1')).toBe(
+        'http://legacy-transaction:9001/v1/organizations/org_1/ledgers/ledger_1/asset-rates'
+      );
+      expect(urlBuilder.buildAccountUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/accounts'
       );
     });
 
@@ -524,19 +574,11 @@ describe('ClientConfigBuilder', () => {
       );
     });
 
-    it('should add a ledger port to local configurations while keeping the legacy pair', () => {
+    it('should emit the ledger key alone for local configurations', () => {
       const { createLocalConfig } = loadBuilderModule();
 
-      expect(createLocalConfig().build().baseUrls).toEqual({
-        onboarding: 'http://localhost:3000',
-        transaction: 'http://localhost:3001',
-        ledger: 'http://localhost:3002',
-      });
-      expect(createLocalConfig(4000).build().baseUrls).toEqual({
-        onboarding: 'http://localhost:4000',
-        transaction: 'http://localhost:4001',
-        ledger: 'http://localhost:4002',
-      });
+      expect(createLocalConfig().build().baseUrls).toEqual({ ledger: 'http://localhost:3002' });
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4002' });
     });
 
     it('should honour MIDAZ_LEDGER_URL in local configurations', () => {
