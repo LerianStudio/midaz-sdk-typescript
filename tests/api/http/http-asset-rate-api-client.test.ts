@@ -99,7 +99,10 @@ describe('HttpAssetRateApiClient', () => {
         ledgerId,
         sourceAssetCode
       );
-      expect(mockHttpClient.get).toHaveBeenCalledWith(fromUrl, expect.anything());
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        fromUrl,
+        expect.objectContaining({ params: { limit: 100 } })
+      );
       expect(mockUrlBuilder.getBaseUrl).not.toHaveBeenCalled();
     });
 
@@ -220,7 +223,7 @@ describe('HttpAssetRateApiClient', () => {
       expect(mockUrlBuilder.getBaseUrl).not.toHaveBeenCalled();
     });
 
-    it('omits optional fields that were not supplied', async () => {
+    it('omits optional fields that were not supplied, keeping the mandatory ttl', async () => {
       mockHttpClient.put.mockResolvedValueOnce(mockAssetRate);
 
       await client.createOrUpdateAssetRate(orgId, ledgerId, {
@@ -230,7 +233,8 @@ describe('HttpAssetRateApiClient', () => {
       });
 
       const body = mockHttpClient.put.mock.calls[0][1] as Record<string, unknown>;
-      expect(Object.keys(body).sort()).toEqual(['from', 'rate', 'to']);
+      expect(Object.keys(body).sort()).toEqual(['from', 'rate', 'to', 'ttl']);
+      expect(body.ttl).toBe(0);
     });
 
     it('forwards externalId and metadata when supplied', async () => {

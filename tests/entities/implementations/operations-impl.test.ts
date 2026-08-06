@@ -204,24 +204,18 @@ describe('OperationsServiceImpl', () => {
         orgId,
         ledgerId,
         accountId,
-        operationId,
-        undefined
+        operationId
       );
       expect(result).toEqual(mockOperation);
     });
 
-    it('should include transaction ID when provided', async () => {
+    it('should forward no transactionId, the ledger serves no transaction-scoped GET', async () => {
       // Execute
-      await operationsService.getOperation(orgId, ledgerId, accountId, operationId, transactionId);
+      await operationsService.getOperation(orgId, ledgerId, accountId, operationId);
 
       // Verify
-      expect(operationApiClient.getOperation).toHaveBeenCalledWith(
-        orgId,
-        ledgerId,
-        accountId,
-        operationId,
-        transactionId
-      );
+      expect(operationApiClient.getOperation.mock.calls[0]).toHaveLength(4);
+      expect(operationsService.getOperation).toHaveLength(4);
     });
 
     it('should throw an error if orgId is missing', async () => {

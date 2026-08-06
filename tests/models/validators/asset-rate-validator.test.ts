@@ -25,10 +25,18 @@ describe('validateUpdateAssetRateInput', () => {
     expect(result.valid).toBe(true);
   });
 
-  it('accepts a rate of zero', () => {
+  it('rejects a rate of zero, which the ledger answers with 400 rate is a required field', () => {
     const result = validateUpdateAssetRateInput({ from: 'BRL', to: 'USD', rate: 0 });
 
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors?.rate?.join(' ')).toMatch(/greater than zero/i);
+  });
+
+  it('rejects a negative rate', () => {
+    const result = validateUpdateAssetRateInput({ from: 'BRL', to: 'USD', rate: -520 });
+
+    expect(result.valid).toBe(false);
+    expect(result.fieldErrors?.rate?.join(' ')).toMatch(/greater than zero/i);
   });
 
   it.each(['from', 'to'] as const)('requires %s', (field) => {

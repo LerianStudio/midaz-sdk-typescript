@@ -184,8 +184,27 @@ describe('UrlBuilder base URL resolution', () => {
 describe('UrlBuilder asset-rate paths', () => {
   const orgId = 'ORG';
   const ledgerId = 'LEDGER';
-  const builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
   const prefix = `https://ledger.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}`;
+  const savedEnv: Record<string, string | undefined> = {};
+  let builder: UrlBuilder;
+
+  beforeEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+    builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
+  });
+
+  afterEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
+  });
 
   it('builds the versioned asset-rates collection path', () => {
     expect(builder.buildAssetRateUrl(orgId, ledgerId)).toBe(`${prefix}/asset-rates`);

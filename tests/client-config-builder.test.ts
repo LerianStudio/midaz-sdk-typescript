@@ -19,9 +19,32 @@ import { UrlBuilder } from '../src/api/url-builder';
 // Mock AccessManager
 jest.mock('../src/util/auth/access-manager');
 
+const URL_ENV_KEYS = [
+  'MIDAZ_LEDGER_URL',
+  'MIDAZ_ONBOARDING_URL',
+  'MIDAZ_TRANSACTION_URL',
+  'MIDAZ_LOCAL_PORT',
+];
+
 describe('ClientConfigBuilder', () => {
+  const savedUrlEnv: Record<string, string | undefined> = {};
+
   beforeEach(() => {
     jest.clearAllMocks();
+    for (const key of URL_ENV_KEYS) {
+      savedUrlEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of URL_ENV_KEYS) {
+      if (savedUrlEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedUrlEnv[key];
+      }
+    }
   });
 
   describe('createClientConfigBuilder', () => {
@@ -479,7 +502,7 @@ describe('ClientConfigBuilder', () => {
       expect(config.baseUrls?.transaction).toBe('http://legacy-transaction:9001');
     });
 
-    it('should keep legacy base URLs winning per service when both forms are configured', () => {
+    it('should keep a legacy URL winning for its own family while the ledger serves the rest', () => {
       process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
       process.env.MIDAZ_ONBOARDING_URL = 'http://legacy-onboarding:9000';
       const { createDevelopmentConfig } = loadBuilderModule();
@@ -489,11 +512,15 @@ describe('ClientConfigBuilder', () => {
 
       const urlBuilder = new UrlBuilder(config);
 
+      expect(config.baseUrls).toEqual({
+        ledger: 'http://ledger.test:3002',
+        onboarding: 'http://legacy-onboarding:9000',
+      });
       expect(urlBuilder.buildOrganizationUrl()).toBe(
         'http://legacy-onboarding:9000/v1/organizations'
       );
       expect(urlBuilder.buildTransactionUrl('org_1', 'ledger_1')).toBe(
-        'http://localhost:3001/v1/organizations/org_1/ledgers/ledger_1/transactions'
+        'http://ledger.test:3002/v1/organizations/org_1/ledgers/ledger_1/transactions'
       );
     });
 
@@ -522,9 +549,7 @@ describe('ClientConfigBuilder', () => {
           address: 'https://auth.example.com',
           clientId: 'test-client-id',
           clientSecret: 'test-client-secret',
-        })
-          .build()
-          .baseUrls
+        }).build().baseUrls
       ).toEqual({ ledger: 'http://ledger.test:3002' });
     });
   });

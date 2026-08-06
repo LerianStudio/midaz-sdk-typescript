@@ -54,6 +54,24 @@ describe('toApiTransaction decimal value handling', () => {
     expect(result.send.distribute.to[0].accountAlias).toBe('smoke-b');
   });
 
+  it('rebuilds each operation amount without dropping the asset the ledger requires', () => {
+    const result = toApiTransaction(buildInput(1));
+
+    expect(result.send.source.from[0].amount).toEqual({ asset: 'BRL', value: '1' });
+    expect(result.send.distribute.to[0].amount).toEqual({ asset: 'BRL', value: '1' });
+  });
+
+  it('carries every other operation amount field through the rebuild', () => {
+    const input = buildInput('10');
+    (input.send as any).source.from[0].amount.scale = 2;
+    (input.send as any).distribute.to[0].amount.scale = 2;
+
+    const result = toApiTransaction(input);
+
+    expect(result.send.source.from[0].amount).toEqual({ asset: 'BRL', scale: 2, value: '10' });
+    expect(result.send.distribute.to[0].amount).toEqual({ asset: 'BRL', scale: 2, value: '10' });
+  });
+
   it('rejects NaN naming the offending path', () => {
     expect(() => toApiTransaction(buildInput(Number.NaN))).toThrow(ValidationError);
     expect(() => toApiTransaction(buildInput(Number.NaN))).toThrow('send.value');

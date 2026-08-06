@@ -10,6 +10,8 @@ import { HttpOperationApiClient } from '../../../src/api/http/http-operation-api
 import { UrlBuilder } from '../../../src/api/url-builder';
 import { ValidationError } from '../../../src/util/validation';
 
+const URL_ENV_KEYS = ['MIDAZ_LEDGER_URL', 'MIDAZ_ONBOARDING_URL', 'MIDAZ_TRANSACTION_URL'];
+
 describe('HttpOperationApiClient', () => {
   // Sample data
   const orgId = 'org-123';
@@ -250,17 +252,21 @@ describe('HttpOperationApiClient', () => {
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
-    it('should keep the account-scoped path when transactionId is provided', async () => {
+    it('should read the account-scoped path only, the ledger serves no transaction-scoped GET', async () => {
       // Arrange
       mockHttpClient.get.mockResolvedValueOnce(mockOperation);
 
       // Act
-      await client.getOperation(orgId, ledgerId, accountId, operationId, transactionId);
+      await client.getOperation(orgId, ledgerId, accountId, operationId);
 
       // Assert
       expect(mockHttpClient.get).toHaveBeenCalledWith(accountOperationUrl, expect.any(Object));
       expect(mockUrlBuilder.buildTransactionOperationUrl).not.toHaveBeenCalled();
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('transactionId', transactionId);
+      expect(mockSpan.setAttribute).not.toHaveBeenCalledWith('transactionId', expect.anything());
+    });
+
+    it('should take no transactionId argument', () => {
+      expect(client.getOperation).toHaveLength(4);
     });
 
     it('should throw error when missing orgId', async () => {
@@ -390,12 +396,34 @@ describe('HttpOperationApiClient', () => {
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
-    it('should throw error when missing accountId', async () => {
-      // Act & Assert
-      await expect(
-        client.updateOperation(orgId, ledgerId, '', operationId, updateInput, transactionId)
-      ).rejects.toThrow('accountId is required');
-      expect(mockSpan.recordException).toHaveBeenCalled();
+    it('should patch the transaction-scoped path without an accountId', async () => {
+      // Arrange
+      mockHttpClient.patch.mockResolvedValueOnce(mockOperation);
+
+      // Act
+      const result = await client.updateOperation(
+        orgId,
+        ledgerId,
+        undefined,
+        operationId,
+        updateInput,
+        transactionId
+      );
+
+      // Assert
+      expect(result).toEqual(mockOperation);
+      expect(mockUrlBuilder.buildTransactionOperationUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        operationId
+      );
+      expect(mockHttpClient.patch).toHaveBeenCalledWith(
+        transactionOperationUrl,
+        updateInput,
+        expect.any(Object)
+      );
+      expect(mockSpan.recordException).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing operationId', async () => {
@@ -422,12 +450,27 @@ describe('HttpOperationApiClient', () => {
 
   describe('versioned paths against midaz main', () => {
     const ledgerBaseUrl = 'https://ledger.example.com';
+    const savedEnv: Record<string, string | undefined> = {};
     let realUrlBuilder: UrlBuilder;
     let realClient: HttpOperationApiClient;
 
     beforeEach(() => {
+      for (const key of URL_ENV_KEYS) {
+        savedEnv[key] = process.env[key];
+        delete process.env[key];
+      }
       realUrlBuilder = new UrlBuilder({ baseUrls: { ledger: ledgerBaseUrl } });
       realClient = new HttpOperationApiClient(mockHttpClient, realUrlBuilder, mockObservability);
+    });
+
+    afterEach(() => {
+      for (const key of URL_ENV_KEYS) {
+        if (savedEnv[key] === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = savedEnv[key];
+        }
+      }
     });
 
     it('lists operations under the versioned account-scoped path', async () => {
