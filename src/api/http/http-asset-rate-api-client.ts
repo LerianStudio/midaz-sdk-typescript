@@ -4,7 +4,7 @@
 import { ListResponse } from '../../models/common';
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
 import { validateUpdateAssetRateInput } from '../../models/validators/asset-rate-validator';
-import { newNotFoundError } from '../../util/error';
+import { newInternalError, newNotFoundError } from '../../util/error';
 import { HttpClient } from '../../util/network/http-client';
 import { Observability } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
@@ -14,6 +14,15 @@ import { UrlBuilder } from '../url-builder';
 import { HttpBaseApiClient } from './http-base-api-client';
 
 const ASSET_RATE_PAGE_LIMIT = 100;
+
+/**
+ * Most pages the rate lookup will walk before it gives up.
+ *
+ * The ledger's cursor is opaque, so a server that alternates two cursors keeps the walk
+ * going forever; the cap bounds that, and at 100 rates a page it still covers far more
+ * destinations than an asset can plausibly have.
+ */
+const ASSET_RATE_MAX_PAGES = 50;
 
 /**
  * HTTP implementation of the AssetRateApiClient interface
@@ -62,6 +71,8 @@ export class HttpAssetRateApiClient
 
     let cursor: string | undefined;
     let rate: AssetRate | undefined;
+    const seenCursors = new Set<string>();
+    let pages = 0;
 
     do {
       const params: Record<string, unknown> = { limit: ASSET_RATE_PAGE_LIMIT };
@@ -76,11 +87,26 @@ export class HttpAssetRateApiClient
         attributes
       );
 
+      pages += 1;
       rate = response.items?.find((item) => item.to === destinationAssetCode);
 
       const nextCursor = this.readNextCursor(response);
-      cursor = nextCursor && nextCursor !== cursor ? nextCursor : undefined;
-    } while (!rate && cursor);
+      cursor = nextCursor && !seenCursors.has(nextCursor) ? nextCursor : undefined;
+
+      if (cursor) {
+        seenCursors.add(cursor);
+      }
+    } while (!rate && cursor && pages < ASSET_RATE_MAX_PAGES);
+
+    if (!rate && cursor) {
+      this.recordMetrics('assetRate.get.pageCapReached', pages, attributes);
+
+      throw newInternalError(
+        `getAssetRate stopped after ${ASSET_RATE_MAX_PAGES} pages of ${sourceAssetCode} rates ` +
+          `without reaching the end of the list; whether ${destinationAssetCode} exists is unknown`,
+        { operation: 'getAssetRate' }
+      );
+    }
 
     if (!rate) {
       throw newNotFoundError('assetRate', `${sourceAssetCode}-${destinationAssetCode}`, {

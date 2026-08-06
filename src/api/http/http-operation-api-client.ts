@@ -53,8 +53,12 @@ export class HttpOperationApiClient
       attributes
     );
 
-    this.recordMetrics('operations.list.count', result.items.length, attributes);
-    this.recordDirectionMetrics(result.items, attributes);
+    // The ledger's list envelope declares `items` without a type, so a page can arrive
+    // without a usable array.
+    const items = Array.isArray(result.items) ? result.items : [];
+
+    this.recordMetrics('operations.list.count', items.length, attributes);
+    this.recordDirectionMetrics(items, attributes);
 
     return result;
   }

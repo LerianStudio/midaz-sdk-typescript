@@ -96,6 +96,28 @@ describe('HttpOperationApiClient contract', () => {
     expect(mockSpan.end).toHaveBeenCalledTimes(1);
   });
 
+  it('records the validation failure on the span it ends', async () => {
+    await expect(client.getOperation('', ledgerId, accountId, operationId)).rejects.toThrow(
+      /orgId is required/
+    );
+
+    expect(mockSpan.recordException).toHaveBeenCalledWith(expect.any(Error));
+    expect(mockSpan.setStatus).toHaveBeenCalledWith('error', expect.stringMatching(/orgId/));
+  });
+
+  it('records no operation for a listing whose items the ledger left out', async () => {
+    mockHttpClient.get.mockResolvedValueOnce({ limit: 10 });
+
+    const result = await client.listOperations(orgId, ledgerId, accountId);
+
+    expect(result).toEqual({ limit: 10 });
+    expect(mockObservability.recordMetric).toHaveBeenCalledWith(
+      'operations.list.count',
+      0,
+      expect.anything()
+    );
+  });
+
   it('ends the validation span when updateOperation is missing its transaction', async () => {
     await expect(
       client.updateOperation(orgId, ledgerId, undefined as unknown as string, operationId, {})

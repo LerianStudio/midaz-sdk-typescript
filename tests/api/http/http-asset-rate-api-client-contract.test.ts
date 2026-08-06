@@ -108,6 +108,36 @@ describe('HttpAssetRateApiClient contract', () => {
       await expect(client.getAssetRate(orgId, ledgerId, 'BRL', 'ZAR')).rejects.toThrow(/BRL-ZAR/);
       expect(mockHttpClient.get).toHaveBeenCalledTimes(2);
     });
+
+    it('stops at the first repeated cursor, without walking to the page cap', async () => {
+      let page = 0;
+      mockHttpClient.get.mockImplementation(() => {
+        page += 1;
+        return Promise.resolve({
+          items: [rate('USD')],
+          limit: 100,
+          next_cursor: page % 2 === 0 ? 'cursor-a' : 'cursor-b',
+        });
+      });
+
+      await expect(client.getAssetRate(orgId, ledgerId, 'BRL', 'ZAR')).rejects.toThrow(/BRL-ZAR/);
+      expect(mockHttpClient.get).toHaveBeenCalledTimes(3);
+    });
+
+    it('says the search was capped rather than reporting the rate as absent', async () => {
+      let page = 0;
+      mockHttpClient.get.mockImplementation(() => {
+        page += 1;
+        return Promise.resolve({
+          items: [rate('USD')],
+          limit: 100,
+          next_cursor: `cursor-page-${page + 1}`,
+        });
+      });
+
+      await expect(client.getAssetRate(orgId, ledgerId, 'BRL', 'ZAR')).rejects.toThrow(/50 pages/);
+      expect(mockHttpClient.get).toHaveBeenCalledTimes(50);
+    });
   });
 
   describe('createOrUpdateAssetRate request body', () => {

@@ -259,6 +259,9 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
 
     try {
       this.validateRequiredParams(span, params);
+    } catch (error) {
+      this.handleError(span, error as Error);
+      throw error;
     } finally {
       span.end();
     }
