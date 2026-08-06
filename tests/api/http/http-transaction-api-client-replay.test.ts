@@ -32,6 +32,7 @@ describe('HttpTransactionApiClient replay refusals', () => {
   const replayedId = 'tx-first-write';
 
   const fullInput: BlockFundsInput = {
+    chartOfAccountsGroupName: 'BLOCKS',
     description: 'Block 100',
     send: {
       asset: 'BRL',
