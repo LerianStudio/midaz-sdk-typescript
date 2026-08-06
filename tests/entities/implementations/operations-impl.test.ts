@@ -285,7 +285,8 @@ describe('OperationsServiceImpl', () => {
         ledgerId,
         accountId,
         operationId,
-        updateInput
+        updateInput,
+        transactionId
       );
 
       // Verify
@@ -294,7 +295,8 @@ describe('OperationsServiceImpl', () => {
         ledgerId,
         accountId,
         operationId,
-        updateInput
+        updateInput,
+        transactionId
       );
       expect(result).toEqual(updatedOperation);
     });

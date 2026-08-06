@@ -4,40 +4,29 @@
 import { ListOptions, ListResponse } from '../../models/common';
 import { Operation } from '../../models/transaction';
 import { HttpClient } from '../../util/network/http-client';
-import { Observability, Span } from '../../util/observability/observability';
+import { Observability } from '../../util/observability/observability';
+import { ValidationError } from '../../util/validation';
 import { OperationApiClient } from '../interfaces/operation-api-client';
 import { UrlBuilder } from '../url-builder';
-import { getEnv } from '../../util/runtime/environment';
+
+import { HttpBaseApiClient } from './http-base-api-client';
+
 /**
  * HTTP implementation of the OperationApiClient interface
  *
  * This class handles HTTP communication with operation endpoints, including
  * URL construction, request formation, response handling, and error management.
  */
-export class HttpOperationApiClient implements OperationApiClient {
-  private readonly observability: Observability;
-
+export class HttpOperationApiClient
+  extends HttpBaseApiClient<Operation, never, Record<string, any>>
+  implements OperationApiClient
+{
   /**
    * Creates a new HttpOperationApiClient
    *
    */
-  constructor(
-    private readonly httpClient: HttpClient,
-    private readonly urlBuilder: UrlBuilder,
-    observability?: Observability
-  ) {
-    // Use provided observability or create a new one
-    this.observability =
-      observability ||
-      new Observability({
-        serviceName: 'midaz-operation-api-client',
-        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
-          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
-          : false,
-        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
-          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
-          : false,
-      });
+  constructor(httpClient: HttpClient, urlBuilder: UrlBuilder, observability?: Observability) {
+    super(httpClient, urlBuilder, 'midaz-operation-api-client', observability);
   }
 
   /**
@@ -51,66 +40,23 @@ export class HttpOperationApiClient implements OperationApiClient {
     accountId: string,
     options?: ListOptions
   ): Promise<ListResponse<Operation>> {
-    // Create a span for tracing this operation
-    const span = this.observability.startSpan('listOperations');
-    span.setAttribute('orgId', orgId);
-    span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('accountId', accountId);
+    const attributes = { orgId, ledgerId, accountId };
 
-    if (options) {
-      span.setAttribute('limit', options.limit || 0);
-      span.setAttribute('offset', options.offset || 0);
-      if (options.filter) {
-        span.setAttribute('hasFilters', true);
-      }
-    }
+    this.validateRequiredParams(this.startSpan('validateParams', attributes), attributes);
 
-    try {
-      // Validate required parameters
-      this.validateRequiredParams(span, { orgId, ledgerId, accountId });
+    const url = this.urlBuilder.buildAccountOperationUrl(orgId, ledgerId, accountId);
 
-      // Build the URL and make the request
-      const url = this.buildOperationsUrl(orgId, ledgerId, accountId);
-      const result = await this.httpClient.get<ListResponse<Operation>>(url, {
-        params: options,
-      });
+    const result = await this.getRequest<ListResponse<Operation>>(
+      'listOperations',
+      url,
+      { params: options },
+      attributes
+    );
 
-      // Record metrics
-      this.recordMetrics('operations.list.count', result.items.length, {
-        orgId,
-        ledgerId,
-        accountId,
-      });
+    this.recordMetrics('operations.list.count', result.items.length, attributes);
+    this.recordDirectionMetrics(result.items, attributes);
 
-      // Record metrics for debit and credit operations if present
-      const debitCount = result.items.filter((op) => op.type === 'DEBIT').length;
-      const creditCount = result.items.filter((op) => op.type === 'CREDIT').length;
-
-      if (debitCount > 0) {
-        this.recordMetrics('operations.debit.count', debitCount, {
-          orgId,
-          ledgerId,
-          accountId,
-        });
-      }
-
-      if (creditCount > 0) {
-        this.recordMetrics('operations.credit.count', creditCount, {
-          orgId,
-          ledgerId,
-          accountId,
-        });
-      }
-
-      span.setStatus('ok');
-      return result;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus('error', (error as Error).message);
-      throw error;
-    } finally {
-      span.end();
-    }
+    return result;
   }
 
   /**
@@ -125,48 +71,25 @@ export class HttpOperationApiClient implements OperationApiClient {
     operationId: string,
     transactionId?: string
   ): Promise<Operation> {
-    // Create a span for tracing this operation
-    const span = this.observability.startSpan('getOperation');
-    span.setAttribute('orgId', orgId);
-    span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('accountId', accountId);
-    span.setAttribute('operationId', operationId);
+    const attributes = { orgId, ledgerId, accountId, operationId, transactionId };
 
-    if (transactionId) {
-      span.setAttribute('transactionId', transactionId);
-    }
+    this.validateRequiredParams(this.startSpan('validateParams', attributes), {
+      orgId,
+      ledgerId,
+      accountId,
+      operationId,
+    });
 
-    try {
-      // Validate required parameters
-      this.validateRequiredParams(span, {
-        orgId,
-        ledgerId,
-        accountId,
-        operationId,
-      });
+    const url = this.urlBuilder.buildAccountOperationUrl(orgId, ledgerId, accountId, operationId);
 
-      // Build the URL and make the request
-      const url = this.buildOperationUrl(orgId, ledgerId, accountId, operationId, transactionId);
-      const result = await this.httpClient.get<Operation>(url);
+    const result = await this.getRequest<Operation>('getOperation', url, undefined, attributes);
 
-      // Record metrics
-      this.recordMetrics('operation.get', 1, {
-        orgId,
-        ledgerId,
-        accountId,
-        operationId,
-        operationType: result.type || 'unknown',
-      });
+    this.recordMetrics('operation.get', 1, {
+      ...attributes,
+      operationType: result.type || 'unknown',
+    });
 
-      span.setStatus('ok');
-      return result;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus('error', (error as Error).message);
-      throw error;
-    } finally {
-      span.end();
-    }
+    return result;
   }
 
   /**
@@ -179,107 +102,65 @@ export class HttpOperationApiClient implements OperationApiClient {
     ledgerId: string,
     accountId: string,
     operationId: string,
-    input: Record<string, any>
-  ): Promise<Operation> {
-    // Create a span for tracing this operation
-    const span = this.observability.startSpan('updateOperation');
-    span.setAttribute('orgId', orgId);
-    span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('accountId', accountId);
-    span.setAttribute('operationId', operationId);
-
-    if (input.metadata) {
-      span.setAttribute('updatedMetadata', true);
-    }
-
-    try {
-      // Validate required parameters
-      this.validateRequiredParams(span, {
-        orgId,
-        ledgerId,
-        accountId,
-        operationId,
-      });
-
-      // Build the URL and make the request
-      const url = this.buildOperationUrl(orgId, ledgerId, accountId, operationId);
-      const result = await this.httpClient.patch<Operation>(url, input);
-
-      // Record metrics
-      this.recordMetrics('operation.update', 1, {
-        orgId,
-        ledgerId,
-        accountId,
-        operationId,
-        operationType: result.type || 'unknown',
-      });
-
-      span.setStatus('ok');
-      return result;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus('error', (error as Error).message);
-      throw error;
-    } finally {
-      span.end();
-    }
-  }
-
-  /**
-   * Builds the URL for operations API calls
-   *
-   * @returns Full URL for the operations API endpoint
-   * @private
-   */
-  private buildOperationsUrl(orgId: string, ledgerId: string, accountId: string): string {
-    // Use the UrlBuilder to construct the URL
-    const baseUrl = this.urlBuilder.getBaseUrl('transaction');
-    return `${baseUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`;
-  }
-
-  /**
-   * Builds the URL for a specific operation
-   *
-   * @returns Full URL for the specific operation
-   * @private
-   */
-  private buildOperationUrl(
-    orgId: string,
-    ledgerId: string,
-    accountId: string,
-    operationId: string,
+    input: Record<string, any>,
     transactionId?: string
-  ): string {
-    const baseUrl = this.buildOperationsUrl(orgId, ledgerId, accountId);
+  ): Promise<Operation> {
+    const attributes = { orgId, ledgerId, accountId, operationId, transactionId };
+    const span = this.startSpan('validateParams', attributes);
 
-    if (transactionId) {
-      return `${baseUrl}?transactionId=${transactionId}&operationId=${operationId}`;
+    this.validateRequiredParams(span, { orgId, ledgerId, accountId, operationId });
+
+    if (!transactionId) {
+      const error = new ValidationError(
+        'transactionId is required: operations are updated through PATCH /organizations/{orgId}/ledgers/{ledgerId}/transactions/{transactionId}/operations/{operationId}',
+        { transactionId: ['transactionId is required'] }
+      );
+      span.recordException(error);
+      throw error;
     }
 
-    return `${baseUrl}/${operationId}`;
+    const requestAttributes: Record<string, any> = { ...attributes };
+    if (input?.metadata) {
+      requestAttributes.updatedMetadata = true;
+    }
+
+    const url = this.urlBuilder.buildTransactionOperationUrl(
+      orgId,
+      ledgerId,
+      transactionId,
+      operationId
+    );
+
+    const result = await this.patchRequest<Operation>(
+      'updateOperation',
+      url,
+      input,
+      undefined,
+      requestAttributes
+    );
+
+    this.recordMetrics('operation.update', 1, {
+      ...attributes,
+      operationType: result.type || 'unknown',
+    });
+
+    return result;
   }
 
   /**
-   * Validates required parameters and throws an error if any are missing
+   * Records the DEBIT and CREDIT breakdown of a listing
    *
-   * @private
    */
-  private validateRequiredParams(span: Span, params: Record<string, any>): void {
-    for (const [key, value] of Object.entries(params)) {
-      if (!value) {
-        const error = new Error(`${key} is required`);
-        span.recordException(error);
-        throw error;
-      }
-    }
-  }
+  private recordDirectionMetrics(items: Operation[], attributes: Record<string, any>): void {
+    const debitCount = items.filter((op) => op.type === 'DEBIT').length;
+    const creditCount = items.filter((op) => op.type === 'CREDIT').length;
 
-  /**
-   * Records metrics for an operation
-   *
-   * @private
-   */
-  private recordMetrics(name: string, value: number, tags: Record<string, any>): void {
-    this.observability.recordMetric(name, value, tags);
+    if (debitCount > 0) {
+      this.recordMetrics('operations.debit.count', debitCount, attributes);
+    }
+
+    if (creditCount > 0) {
+      this.recordMetrics('operations.credit.count', creditCount, attributes);
+    }
   }
 }

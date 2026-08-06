@@ -316,20 +316,42 @@ export class UrlBuilder {
   }
 
   /**
-   * Builds the URL for operation endpoints
+   * Builds the URL for account-scoped operation endpoints
    *
    * @returns The constructed URL
    */
-  public buildOperationUrl(orgId: string, ledgerId: string, operationId?: string): string {
+  public buildAccountOperationUrl(
+    orgId: string,
+    ledgerId: string,
+    accountId: string,
+    operationId?: string
+  ): string {
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
-    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/operations`;
+    let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`;
 
     if (operationId) {
       url += `/${operationId}`;
     }
 
     return url;
+  }
+
+  /**
+   * Builds the URL for transaction-scoped operation endpoints
+   *
+   * @returns The constructed URL
+   */
+  public buildTransactionOperationUrl(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    operationId: string
+  ): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/transactions/${transactionId}/operations/${operationId}`;
   }
 
   /**

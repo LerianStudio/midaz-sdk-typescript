@@ -41,6 +41,9 @@ export interface OperationApiClient extends ApiClient<Operation, never, Record<s
   /**
    * Updates an existing operation
    *
+   * The ledger only exposes the transaction-scoped PATCH route, so `transactionId`
+   * is required at runtime even though it sits in a trailing optional position.
+   *
    * @returns Promise resolving to the updated operation
    */
   updateOperation(
@@ -48,6 +51,7 @@ export interface OperationApiClient extends ApiClient<Operation, never, Record<s
     ledgerId: string,
     accountId: string,
     operationId: string,
-    input: Record<string, any>
+    input: Record<string, any>,
+    transactionId?: string
   ): Promise<Operation>;
 }

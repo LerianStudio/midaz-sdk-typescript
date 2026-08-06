@@ -178,7 +178,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 1.4.1: Route operation client through versioned UrlBuilder
 
-- [ ] Done
+- [x] Done
 
 **Context:** `HttpOperationApiClient` hand-rolls `${getBaseUrl('transaction')}/organizations/{o}/ledgers/{l}/accounts/{a}/operations` (private `buildOperationsUrl` at `http-operation-api-client.ts:234-238`) — missing `/v1`, so every call 404s against midaz main. All methods are account-scoped (correct — ledger-level `/operations` does not exist on main; the dead `UrlBuilder.buildOperationUrl:204` that encodes it must go). The `transactionId` variant (line 256) builds a query-string lookup that must be checked against the spec — main exposes `GET .../accounts/{account_id}/operations/{operation_id}` and `PATCH .../transactions/{transaction_id}/operations/{operation_id}`.
 

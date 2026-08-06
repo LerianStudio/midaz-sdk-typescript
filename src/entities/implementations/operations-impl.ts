@@ -176,7 +176,8 @@ export class OperationsServiceImpl implements OperationsService {
     ledgerId: string,
     accountId: string,
     operationId: string,
-    input: Record<string, any>
+    input: Record<string, any>,
+    transactionId?: string
   ): Promise<Operation> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('updateOperation');
@@ -184,6 +185,10 @@ export class OperationsServiceImpl implements OperationsService {
     span.setAttribute('ledgerId', ledgerId);
     span.setAttribute('accountId', accountId);
     span.setAttribute('operationId', operationId);
+
+    if (transactionId) {
+      span.setAttribute('transactionId', transactionId);
+    }
 
     if (input.metadata) {
       span.setAttribute('updatedMetadata', true);
@@ -196,7 +201,8 @@ export class OperationsServiceImpl implements OperationsService {
         ledgerId,
         accountId,
         operationId,
-        input
+        input,
+        transactionId
       );
 
       // Record metrics
