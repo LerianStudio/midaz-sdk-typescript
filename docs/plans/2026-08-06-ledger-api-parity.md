@@ -94,7 +94,7 @@
 
 #### Task 1.2.1: Resolve `ledger` in UrlBuilder with legacy fallback
 
-- [ ] Done
+- [x] Done
 
 **Context:** `UrlBuilder`'s constructor (`src/api/url-builder.ts:26-50`) populates only `onboarding` (default `localhost:3000`) and `transaction` (default `localhost:3001`), with `MIDAZ_ONBOARDING_URL`/`MIDAZ_TRANSACTION_URL` env overrides at lines 31–36. `getBaseUrl` (line 66) silently falls back to `onboarding` for unknown service names. The real midaz ledger is one service (default local port 3002).
 

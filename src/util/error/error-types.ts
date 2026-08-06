@@ -243,6 +243,31 @@ export class MidazError extends Error {
 }
 
 /**
+ * Error raised when the SDK configuration cannot satisfy a request
+ *
+ * @example
+ * ```typescript
+ * new MidazConfigError("No base URL configured for service 'ledger'");
+ * ```
+ */
+export class MidazConfigError extends MidazError {
+  constructor(message: string, params: { operation?: string; cause?: Error | unknown } = {}) {
+    super({
+      category: ErrorCategory.VALIDATION,
+      code: ErrorCode.VALIDATION_ERROR,
+      message,
+      ...params,
+    });
+
+    this.name = 'MidazConfigError';
+
+    if (typeof (Error as any).captureStackTrace === 'function') {
+      (Error as any).captureStackTrace(this, MidazConfigError);
+    }
+  }
+}
+
+/**
  * Enhanced error information with all data needed for error handling
  */
 export interface EnhancedErrorInfo {

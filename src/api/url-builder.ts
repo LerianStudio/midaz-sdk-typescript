@@ -2,7 +2,42 @@
  */
 
 import { MidazConfig } from '../client';
+import { MidazConfigError } from '../util/error/error-types';
+import { getLogger } from '../util/observability/logger';
 import { getEnv } from '../util/runtime/environment';
+
+const LEDGER_KEY = 'ledger';
+
+const LEGACY_ONBOARDING_KEY = 'onboarding';
+
+const LEGACY_TRANSACTION_KEY = 'transaction';
+
+const DEFAULT_LEDGER_URL = 'http://localhost:3002';
+
+const DEFAULT_ONBOARDING_URL = 'http://localhost:3000';
+
+const DEFAULT_TRANSACTION_URL = 'http://localhost:3001';
+
+/**
+ * Maps every known service name to the legacy base URL key that used to serve it
+ */
+const LEGACY_SERVICE_FAMILY: Record<string, string> = {
+  onboarding: LEGACY_ONBOARDING_KEY,
+  organizations: LEGACY_ONBOARDING_KEY,
+  ledgers: LEGACY_ONBOARDING_KEY,
+  accounts: LEGACY_ONBOARDING_KEY,
+  'account-types': LEGACY_ONBOARDING_KEY,
+  assets: LEGACY_ONBOARDING_KEY,
+  portfolios: LEGACY_ONBOARDING_KEY,
+  segments: LEGACY_ONBOARDING_KEY,
+  transaction: LEGACY_TRANSACTION_KEY,
+  transactions: LEGACY_TRANSACTION_KEY,
+  'transaction-routes': LEGACY_TRANSACTION_KEY,
+  'operation-routes': LEGACY_TRANSACTION_KEY,
+  operations: LEGACY_TRANSACTION_KEY,
+  balances: LEGACY_TRANSACTION_KEY,
+  'asset-rates': LEGACY_TRANSACTION_KEY,
+};
 
 /**
  * UrlBuilder provides centralized URL construction logic for all API endpoints.
@@ -20,27 +55,53 @@ export class UrlBuilder {
   private readonly apiVersion: string;
 
   /**
+   * Legacy base URL keys explicitly supplied by the caller, through config or environment
+   */
+  private readonly suppliedLegacyKeys: Set<string>;
+
+  /**
+   * Guards the deprecation warning so it is emitted at most once per instance
+   */
+  private legacyWarningEmitted = false;
+
+  /**
    * Creates a new UrlBuilder instance
    *
    */
   constructor(config: MidazConfig) {
-    this.baseUrls = config.baseUrls || {};
+    this.baseUrls = { ...config.baseUrls };
     this.apiVersion = config.apiVersion || 'v1';
 
-    // Use environment variables if available
-    if (getEnv('MIDAZ_ONBOARDING_URL')) {
-      this.baseUrls.onboarding = getEnv('MIDAZ_ONBOARDING_URL')!;
-    }
-    if (getEnv('MIDAZ_TRANSACTION_URL')) {
-      this.baseUrls.transaction = getEnv('MIDAZ_TRANSACTION_URL')!;
+    const ledgerEnvUrl = getEnv('MIDAZ_LEDGER_URL');
+    if (ledgerEnvUrl) {
+      this.baseUrls[LEDGER_KEY] = ledgerEnvUrl;
     }
 
-    // Set default base URLs if not provided
-    if (!this.baseUrls.onboarding) {
-      this.baseUrls.onboarding = 'http://localhost:3000';
+    if (!this.baseUrls[LEDGER_KEY]) {
+      const onboardingEnvUrl = getEnv('MIDAZ_ONBOARDING_URL');
+      if (onboardingEnvUrl) {
+        this.baseUrls[LEGACY_ONBOARDING_KEY] = onboardingEnvUrl;
+      }
+      const transactionEnvUrl = getEnv('MIDAZ_TRANSACTION_URL');
+      if (transactionEnvUrl) {
+        this.baseUrls[LEGACY_TRANSACTION_KEY] = transactionEnvUrl;
+      }
     }
-    if (!this.baseUrls.transaction) {
-      this.baseUrls.transaction = 'http://localhost:3001';
+
+    this.suppliedLegacyKeys = new Set(
+      [LEGACY_ONBOARDING_KEY, LEGACY_TRANSACTION_KEY].filter((key) => this.baseUrls[key])
+    );
+
+    if (!this.baseUrls[LEDGER_KEY]) {
+      if (this.suppliedLegacyKeys.size === 0) {
+        this.baseUrls[LEDGER_KEY] = DEFAULT_LEDGER_URL;
+      }
+      if (!this.baseUrls[LEGACY_ONBOARDING_KEY]) {
+        this.baseUrls[LEGACY_ONBOARDING_KEY] = DEFAULT_ONBOARDING_URL;
+      }
+      if (!this.baseUrls[LEGACY_TRANSACTION_KEY]) {
+        this.baseUrls[LEGACY_TRANSACTION_KEY] = DEFAULT_TRANSACTION_URL;
+      }
     }
 
     // Remove any trailing slashes from base URLs
@@ -61,10 +122,46 @@ export class UrlBuilder {
   /**
    * Gets the base URL for a specific service
    *
+   * Resolution order: explicit service key, unified `ledger` key, legacy key of the
+   * service family. Throws when none of them is configured.
+   *
    * @returns The base URL for the service
    */
   public getBaseUrl(service: string): string {
-    return this.baseUrls[service] || this.baseUrls.onboarding;
+    const explicitUrl = this.baseUrls[service];
+    if (explicitUrl) {
+      this.warnOnLegacyKeyOnce(service);
+      return explicitUrl;
+    }
+
+    const ledgerUrl = this.baseUrls[LEDGER_KEY];
+    if (ledgerUrl) {
+      return ledgerUrl;
+    }
+
+    const legacyKey = LEGACY_SERVICE_FAMILY[service];
+    const legacyUrl = legacyKey ? this.baseUrls[legacyKey] : undefined;
+    if (legacyUrl) {
+      this.warnOnLegacyKeyOnce(legacyKey);
+      return legacyUrl;
+    }
+
+    throw new MidazConfigError(
+      `No base URL configured for service '${service}'. Set baseUrls.ledger or MIDAZ_LEDGER_URL.`,
+      { operation: 'getBaseUrl' }
+    );
+  }
+
+  private warnOnLegacyKeyOnce(key: string): void {
+    if (this.legacyWarningEmitted || !this.suppliedLegacyKeys.has(key)) {
+      return;
+    }
+
+    this.legacyWarningEmitted = true;
+    getLogger('url-builder').warn(
+      `baseUrls.${key} is deprecated, use baseUrls.ledger or MIDAZ_LEDGER_URL instead`,
+      { service: key }
+    );
   }
 
   /**
