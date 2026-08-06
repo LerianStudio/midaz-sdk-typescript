@@ -85,6 +85,12 @@ describe('HttpOperationApiClient contract', () => {
       { metadata: { category: 'updated' } },
       expect.anything()
     );
+    expect(mockUrlBuilder.buildAccountOperationUrl).not.toHaveBeenCalled();
+    expect(mockHttpClient.patch).not.toHaveBeenCalledWith(
+      accountOperationUrl,
+      expect.anything(),
+      expect.anything()
+    );
   });
 
   it('ends the validation span when a required parameter is missing', async () => {
