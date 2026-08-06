@@ -15,6 +15,7 @@ import {
   createLocalConfigWithAccessManager,
 } from '../src/client-config-builder';
 import { UrlBuilder } from '../src/api/url-builder';
+import { loadBuilderModule } from './support/load-builder-module';
 
 // Mock AccessManager
 jest.mock('../src/util/auth/access-manager');
@@ -437,14 +438,6 @@ describe('ClientConfigBuilder', () => {
       }
       jest.resetModules();
     });
-
-    const loadBuilderModule = (): typeof import('../src/client-config-builder') => {
-      let loaded: typeof import('../src/client-config-builder') | undefined;
-      jest.isolateModules(() => {
-        loaded = require('../src/client-config-builder');
-      });
-      return loaded as typeof import('../src/client-config-builder');
-    };
 
     it('should emit the ledger key alone for the development environment', () => {
       const { createDevelopmentConfig } = loadBuilderModule();

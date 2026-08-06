@@ -4,16 +4,9 @@
  */
 
 import { UrlBuilder } from '../../src/api/url-builder';
+import { loadBuilderModule } from '../support/load-builder-module';
 
 const URL_ENV_KEYS = ['MIDAZ_LEDGER_URL', 'MIDAZ_ONBOARDING_URL', 'MIDAZ_TRANSACTION_URL'];
-
-const loadBuilderModule = (): typeof import('../../src/client-config-builder') => {
-  let loaded: typeof import('../../src/client-config-builder') | undefined;
-  jest.isolateModules(() => {
-    loaded = require('../../src/client-config-builder');
-  });
-  return loaded as typeof import('../../src/client-config-builder');
-};
 
 describe('base URL precedence', () => {
   const savedEnv: Record<string, string | undefined> = {};
