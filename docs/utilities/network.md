@@ -117,13 +117,28 @@ const result = await httpClient.get('transaction/accounts', {
   // Abort signal for cancellation
   signal: abortController.signal,
 
-  // Disable caching for this request
-  useCache: false,
+  // Skip the cache for this request. Responses are cached only when a `cache`
+  // instance was passed to the client and the method is GET; set this to opt out.
+  bypassCache: true,
+});
+```
 
-  // Custom idempotency key
+#### Idempotency Key
+
+`idempotencyKey` is an additional request option, but it only does something on
+transaction creation — that is the one endpoint where Midaz reads the `X-Idempotency`
+header. Setting it on a GET has no effect.
+
+```typescript
+const result = await httpClient.post('transaction/transactions', transactionData, {
+  // Explicit key, sent as the `X-Idempotency` header
   idempotencyKey: 'custom-idempotency-key-12345',
 });
 ```
+
+The SDK never generates a key on your behalf. Supply one to control the deduplication
+window yourself, or leave it out — with no `X-Idempotency` header present, the server
+deduplicates by hashing the request body (SHA-256).
 
 ### Response Handling
 

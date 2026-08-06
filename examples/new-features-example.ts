@@ -457,6 +457,8 @@ async function runCompleteWorkflow() {
         orgId,
         ledgerId,
         {
+          // Explicit key, sent as the `X-Idempotency` header. Omit it and the server
+          // deduplicates by request-body hash instead; the SDK never generates one.
           idempotencyKey: randomUUID(),
           chartOfAccountsGroupName: 'TRANSFER',
           description: 'Payment for services using routes',

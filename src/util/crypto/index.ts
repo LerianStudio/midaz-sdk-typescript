@@ -27,17 +27,30 @@ export function uint8ArrayToHex(array: Uint8Array): string {
  */
 export async function sha256(input: string): Promise<string> {
   const msgBuffer = stringToUint8Array(input);
+  const subtle = await resolveSubtleCrypto();
+  const hashBuffer = await subtle.digest('SHA-256', msgBuffer as BufferSource);
+  return uint8ArrayToHex(new Uint8Array(hashBuffer));
+}
 
-  // Try Web Crypto API (available in browsers and modern Node.js)
+/**
+ * Resolve a SubtleCrypto implementation.
+ *
+ * Node.js 18 — the minimum this package declares support for — does not expose
+ * `globalThis.crypto` unless started with `--experimental-global-webcrypto`, so
+ * fall back to the `node:crypto` webcrypto instance there.
+ */
+async function resolveSubtleCrypto(): Promise<SubtleCrypto> {
   if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
-    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgBuffer as BufferSource);
-    return uint8ArrayToHex(new Uint8Array(hashBuffer));
+    return globalThis.crypto.subtle;
   }
 
-  // Fallback for older environments - use a pure JS implementation
-  // For production, you might want to include a lightweight SHA-256 library
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    const { webcrypto } = await import('node:crypto');
+    return webcrypto.subtle as SubtleCrypto;
+  }
+
   throw new Error(
-    'SHA-256 hashing not available in this environment. Please use a modern browser or Node.js 15+'
+    'SHA-256 hashing not available in this environment. Please use a modern browser or Node.js 18+'
   );
 }
 
@@ -109,6 +122,10 @@ export function generateRandomString(
 /**
  * Create an idempotency key
  * @param components Parts to include in the key
+ * @deprecated For idempotency, supply your own key via `idempotencyKey` on the
+ * request, or send none and let the backend deduplicate by request-body hash.
+ * For a unique value, use `generateUUID` or `getRandomBytes` — `sha256` hashes
+ * its input and returns the same digest for the same string.
  */
 export async function createIdempotencyKey(...components: string[]): Promise<string> {
   const combined = components.join(':');

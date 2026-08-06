@@ -250,13 +250,27 @@ const client = new MidazClient(
 );
 ```
 
-### Secure Headers
+### Request Headers
 
-The SDK automatically includes security headers:
+The only security-relevant header the SDK sets on its own is `Authorization`, populated
+from the Access Manager token on every request that has one. Beyond that it sets
+`Content-Type` and `Accept`, then merges whatever headers you configured on the client.
 
-- `X-Request-ID`: For request tracing
-- `X-Idempotency-Key`: For safe retries
-- `User-Agent`: SDK version information
+Two headers are worth calling out because they are commonly assumed to be automatic and
+are not:
+
+- **`X-Idempotency`** — sent only when you supply a key explicitly. With no key, the SDK
+  sends no idempotency header and the server deduplicates transaction creation by hashing
+  the request body (SHA-256). See
+  [Working with Transactions](./entities/transactions.md#idempotency).
+- **`X-Request-ID`** — `CorrelationManager.formatForHeaders()` can build tracing headers
+  (`X-Correlation-ID`, `X-Request-ID`, W3C `traceparent`), but the HTTP client does not
+  call it. Nothing is added to outgoing requests unless you merge those headers in
+  yourself.
+
+To add your own headers, pass a `headers` map to the `HttpClient` constructor, call
+`setDefaultHeader(key, value)` on it, or supply per-request `headers` in the request
+options. See [HTTP Client](./utilities/http-client.md#custom-headers).
 
 ## Best Practices
 
@@ -349,7 +363,7 @@ async function createAccountWithRateLimit(orgId: string, ledgerId: string, data:
 
 1. **Man-in-the-Middle Attacks**: HTTPS enforcement
 2. **OAuth Credential Exposure**: Automatic sanitization in logs and secure token management
-3. **Replay Attacks**: Idempotency keys and token-based authentication
+3. **Replay Attacks**: Server-side transaction deduplication (`X-Idempotency` or request-body hash) and token-based authentication
 4. **DoS Attacks**: Circuit breaker and timeouts
 5. **Information Disclosure**: Error sanitization
 

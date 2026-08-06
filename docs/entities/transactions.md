@@ -14,7 +14,6 @@ interface Transaction {
   type: TransactionType;
   status: TransactionStatus;
   entries: TransactionEntry[];
-  idempotencyKey?: string;
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
@@ -28,54 +27,91 @@ interface TransactionEntry {
 }
 ```
 
-## Creating Transactions
+`idempotencyKey` is an input-only field: it belongs to `CreateTransactionInput` and is not
+returned on the `Transaction` response. See [Idempotency](#idempotency).
 
-### Using the Transaction Builder
+## Idempotency
+
+Midaz deduplicates transaction creation — and only transaction creation. No other endpoint
+participates in idempotency.
+
+The single header the server reads is **`X-Idempotency`**. There are two ways to use it:
+
+**Let the server deduplicate (default).** Send no key and the SDK sends no idempotency
+header at all. The server derives a deduplication key from the SHA-256 hash of the request
+body, so two identical creation payloads resolve to the same transaction. This covers the
+common case — a retry after a timeout — without any work on your side.
+
+> **Batches of identical payloads collapse.** Because the default key is the body hash, a
+> batch that contains two or more byte-identical transactions produces a single transaction:
+> the server replays the first one for every repeat. `createTransactionBatch` counts those
+> repeats in `duplicateCount` rather than `successCount`, but still fires the
+> `onTransactionSuccess` callback for them, so callback-driven code sees every item
+> succeed. When a batch can legitimately contain repeats — the same
+> amount to the same account twice — give each item its own `idempotencyKey`, or make the
+> payloads distinct with `externalId` or `metadata`.
 
 ```typescript
-import { createTransactionBuilder } from 'midaz-sdk';
+// No idempotencyKey: the server deduplicates by request-body hash
+const transaction = await client.entities.transactions.createTransaction(organizationId, ledgerId, {
+  chartOfAccountsGroupName: 'TRANSFER',
+  description: 'Monthly transfer',
+  send: {
+    /* ... */
+  },
+});
+```
 
-// Create a transaction using the builder
-const transactionInput = createTransactionBuilder()
-  .withEntry({
-    accountId: 'account1',
-    assetId: 'asset1',
-    amount: '100.00',
-    direction: 'credit',
-  })
-  .withEntry({
-    accountId: 'account2',
-    assetId: 'asset1',
-    amount: '100.00',
-    direction: 'debit',
-  })
-  .withIdempotencyKey('unique-transaction-key-123')
-  .withMetadata({
+**Supply your own key.** Set `idempotencyKey` on the input and the SDK sends it as
+`X-Idempotency`. Do this when the body-hash default is not the deduplication boundary you
+want — for example when the payload carries a timestamp or a generated reference, so two
+attempts at the _same_ logical transaction would hash differently.
+
+```typescript
+const transaction = await client.entities.transactions.createTransaction(organizationId, ledgerId, {
+  idempotencyKey: 'unique-transaction-key-123',
+  chartOfAccountsGroupName: 'TRANSFER',
+  description: 'Monthly transfer',
+  metadata: {
     purpose: 'Monthly transfer',
     category: 'Recurring',
-  })
-  .build();
-
-// Create the transaction
-const transaction = await client.entities.transactions.createTransaction(
-  organizationId,
-  ledgerId,
-  transactionInput
-);
+  },
+  send: {
+    /* ... */
+  },
+});
 ```
+
+Generate the key once per logical operation and reuse it across every retry of that
+operation. A key generated inside the retry loop produces a new key per attempt and
+disables deduplication.
+
+> The SDK no longer auto-generates idempotency keys. The `createIdempotencyKey` helper is
+> deprecated; nothing in the request path calls it.
+
+## Creating Transactions
 
 ### Common Transaction Types
 
 The SDK provides specialized creator functions for common transaction types:
 
+These helpers take positional arguments and return a `CreateTransactionInput`. None of
+them accept an idempotency key — attach one to the returned input when you need an
+explicit key, or omit it and let the server deduplicate by body hash.
+
 ```typescript
 // Create a deposit transaction
 import { createDepositTransaction } from 'midaz-sdk';
 
-const depositTx = createDepositTransaction(accountId, '500.00', assetId, {
-  idempotencyKey: 'deposit-123',
-  metadata: { source: 'Bank transfer' },
-});
+const depositTx = createDepositTransaction(
+  '@external/USD',
+  accountId,
+  '500.00',
+  assetCode,
+  'Bank transfer deposit',
+  'default',
+  { source: 'Bank transfer' }
+);
 
 // Create a transfer transaction
 import { createTransferTransaction } from 'midaz-sdk';
@@ -84,19 +120,29 @@ const transferTx = createTransferTransaction(
   sourceAccountId,
   destinationAccountId,
   '250.00',
-  assetId,
-  {
-    idempotencyKey: 'transfer-123',
-    metadata: { purpose: 'Loan repayment' },
-  }
+  assetCode,
+  'Loan repayment'
 );
 
 // Create a withdrawal transaction
 import { createWithdrawalTransaction } from 'midaz-sdk';
 
-const withdrawalTx = createWithdrawalTransaction(accountId, '100.00', assetId, {
-  idempotencyKey: 'withdrawal-123',
-  metadata: { destination: 'External account' },
+const withdrawalTx = createWithdrawalTransaction(
+  accountId,
+  '@external/USD',
+  100,
+  assetCode,
+  0,
+  'Withdrawal to external account'
+);
+```
+
+To pin an explicit idempotency key on any of these, set it on the returned input:
+
+```typescript
+const deposit = await client.entities.transactions.createTransaction(organizationId, ledgerId, {
+  ...depositTx,
+  idempotencyKey: 'deposit-123',
 });
 ```
 
@@ -139,22 +185,10 @@ for (const tx of transactionList.data) {
 }
 ```
 
-### Get Transaction by Idempotency Key
-
-```typescript
-// Get a transaction by idempotency key
-const transaction = await client.entities.transactions.getTransactionByIdempotencyKey(
-  organizationId,
-  ledgerId,
-  'unique-transaction-key-123'
-);
-
-if (transaction) {
-  console.log(`Found transaction: ${transaction.id}`);
-} else {
-  console.log('No transaction found with that idempotency key');
-}
-```
+> There is no lookup-by-idempotency-key endpoint. An idempotency key is a deduplication
+> token, not an addressable identifier — you cannot resolve one back to a transaction.
+> If you need to find a transaction again later, put your own reference in `metadata` or
+> `externalId` and retain the returned `transaction.id`.
 
 ## Error Handling with Transactions
 
@@ -224,14 +258,22 @@ for (const result of results) {
 ## Example: Complete Transaction Management
 
 ```typescript
+import { randomUUID } from 'node:crypto';
+
 // Transaction management example
 async function manageTransactions(client, organizationId, ledgerId, accounts, assets) {
   try {
-    // Create a deposit transaction
-    const depositTx = createDepositTransaction(accounts[0].id, '1000.00', assets[0].id, {
-      idempotencyKey: `deposit-${Date.now()}`,
-      metadata: { source: 'Initial funding' },
-    });
+    // Create a deposit transaction.
+    // No idempotencyKey: the server deduplicates by request-body hash.
+    const depositTx = createDepositTransaction(
+      '@external/USD',
+      accounts[0].id,
+      '1000.00',
+      assets[0].code,
+      'Initial funding',
+      'default',
+      { source: 'Initial funding' }
+    );
 
     const deposit = await client.entities.transactions.createTransaction(
       organizationId,
@@ -240,22 +282,23 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
     );
     console.log(`Created deposit transaction: ${deposit.id}`);
 
-    // Create a transfer transaction
+    // Create a transfer transaction with an explicit idempotency key.
+    // Generated once, outside any retry loop, so retries reuse the same key.
+    // Use a UUID, not a timestamp: two transfers started in the same millisecond
+    // would share a key and the second would come back as a replay of the first.
+    const transferKey = `transfer-${randomUUID()}`;
     const transferTx = createTransferTransaction(
       accounts[0].id,
       accounts[1].id,
       '500.00',
-      assets[0].id,
-      {
-        idempotencyKey: `transfer-${Date.now()}`,
-        metadata: { purpose: 'Allocation to secondary account' },
-      }
+      assets[0].code,
+      'Allocation to secondary account'
     );
 
     const transfer = await client.entities.transactions.createTransaction(
       organizationId,
       ledgerId,
-      transferTx
+      { ...transferTx, idempotencyKey: transferKey }
     );
     console.log(`Created transfer transaction: ${transfer.id}`);
 
@@ -277,9 +320,23 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
     console.log(`Listed ${transactions.data.length} transactions`);
 
     // Create and execute a batch of transactions
+    // Distinct payloads, so the body-hash default cannot collapse them.
     const batchTransactions = [
-      createDepositTransaction(accounts[1].id, '200.00', assets[0].id),
-      createWithdrawalTransaction(accounts[0].id, '100.00', assets[0].id),
+      createDepositTransaction(
+        '@external/USD',
+        accounts[1].id,
+        '200.00',
+        assets[0].code,
+        'Batch top-up'
+      ),
+      createWithdrawalTransaction(
+        accounts[0].id,
+        '@external/USD',
+        100,
+        assets[0].code,
+        0,
+        'Batch withdrawal'
+      ),
     ];
 
     const batch = createBatch(batchTransactions);

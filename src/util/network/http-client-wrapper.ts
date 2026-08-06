@@ -27,6 +27,10 @@ export interface RequestOptions {
   retryOnStatusCodes?: number[];
   bypassCache?: boolean;
   customCacheKey?: string;
+  /**
+   * @deprecated The SDK no longer generates idempotency keys, so there is nothing
+   * to disable unless you also pass `idempotencyKey`. Omit the key instead.
+   */
   disableIdempotencyKey?: boolean;
   idempotencyKey?: string;
   useReadonlyCache?: boolean;
