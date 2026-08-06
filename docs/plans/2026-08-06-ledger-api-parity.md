@@ -21,8 +21,8 @@
 
 | Phase | Milestone | Epics | Status |
 |-------|-----------|-------|--------|
-| 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz main | 1.1, 1.2, 1.3, 1.4 | Complete (1 open decision) |
-| 2 | Full transaction lifecycle: pending commit/cancel, revert, inflow/outflow, block/unblock, annotation, updates; model field parity; money-safety guards | 2.0, 2.1, 2.2, 2.3, 2.4 | Detailed |
+| 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz main | 1.1, 1.2, 1.3, 1.4 | Complete |
+| 2 | Full transaction lifecycle: pending commit/cancel, revert, inflow/outflow, block/unblock, annotation, updates; model field parity; money-safety guards | 2.0, 2.1, 2.2, 2.3, 2.4 | Complete |
 | 3 | Account lookups (alias/external), balance history, metrics counts, ledger settings | 3.1, 3.2, 3.3 | Epic-level |
 | 4 | New domains: holders/CRM, billing, encryption/protection, v2 API | 4.1, 4.2, 4.3, 4.4 | Epic-level |
 
@@ -460,6 +460,20 @@ withBaseUrls({ledger}) -> both -> http://ledger.example:3002/v1/...   (correct)
 So the explicit `withBaseUrls({ ledger })` path — Epic 1.2's stated Done-when — works, while the zero-config helpers still describe the two-service topology midaz retired.
 
 **Resolved 2026-08-06:** keep the shipped rung order (an explicit legacy key wins for its own family) and fix the defaults instead — when the caller configures nothing, the SDK emits `ledger` alone rather than a legacy pair, so zero-config points at the single service. Legacy keys are emitted only when the caller actually supplies them, which leaves genuine split deployments untouched. Carried into Phase 2 as Task 2.0.1; the Resolution contract snippet in Task 1.2.1 is superseded by this and by README.md.
+
+## Phase 2 outcome (2026-08-06)
+
+Landed in 10 signed commits. Gate verified independently by the supervisor: `tsc --noEmit` clean, 89 suites / 1774 tests green, `format:check` clean, and three live guard checks through the built SDK against a local midaz main ledger.
+
+**Three midaz server defects were found while mapping the contracts, all reproduced live.** The SDK now carries a guard for each. These guards are deliberate divergences from the server contract and should be removed once the ledger is fixed — file them upstream rather than letting the SDK own them forever:
+
+1. **`remaining` destroys funds.** A leg carrying `remaining` is counted in the server's balance check but never becomes an operation. Measured: send 100 with an explicit leg of 30 and a `remaining` leg → source debited 100, explicit leg credited 30, `remaining` account **unchanged**; 70 gone, response `201 CREATED`. SDK refuses the field (Task 2.4.2).
+2. **A lost commit response reports settled money as failed.** `commitOrCancelTransaction` takes a Redis lock it never releases on success, with a real 300-second TTL (`consumer.redis.go:216-237` multiplies by `time.Second`; an earlier reading of "300 nanoseconds" was wrong). A commit whose response is lost gets retried by the transport, hits the lock its own successful first attempt took, and surfaces `409/0486` — whose message says "Please retry shortly" — for a settlement that already happened. SDK disables transport retries on commit/cancel and surfaces `0486` once carrying `midazCode` (Task 2.1.1 + heal).
+3. **🔴 Endpoint-blind idempotency turns a payment into a no-op.** All six v1 create routes hash the request body alone, with no action discriminator (only v2 prefixes one). Reproduced: `POST /transactions/annotation` then the same body to `POST /transactions/json` within 300s returns the **annotation** — same id, status `NOTED`, `X-Idempotency-Replayed: true`, destination balance `0`. The caller receives `201` for a payment that never moved money. SDK refuses any money-moving response carrying `NOTED` or all-`balanceAffected:false` operations.
+
+**Guard regression caught after the harness self-heal.** The replay guard the heal introduced demanded that *every* operation carry the endpoint label, so a legitimate block on an overdraft-enabled account — which midaz answers with a companion `OVERDRAFT` row (`transaction_create.go:952-960`, where the overdraft branch wins over the block/unblock override) — was refused as a replay "that wrote nothing", with error text inviting a retry that would block the funds twice. Fixed in `c27f247`: a block/unblock is legitimate when at least one operation carries the label and every unlabelled one is an accepted companion; verified live with `ops=BLOCK/BLOCK/OVERDRAFT` now accepted.
+
+**Known gap left open on purpose:** `postFlow` (inflow/outflow) lacks the `asSkipNotPermittedError` translation that `/json` and the label-only routes have, so a `422/0490` skip refusal surfaces untranslated there. Small and self-contained — fold into Phase 3.
 
 ## Cross-cutting verification
 
