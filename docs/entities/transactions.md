@@ -44,8 +44,10 @@ common case — a retry after a timeout — without any work on your side.
 
 > **Batches of identical payloads collapse.** Because the default key is the body hash, a
 > batch that contains two or more byte-identical transactions produces a single transaction:
-> the server replays the first one for every repeat. `createTransactionBatch` reports each
-> item as a success either way. When a batch can legitimately contain repeats — the same
+> the server replays the first one for every repeat. `createTransactionBatch` counts those
+> repeats in `duplicateCount` rather than `successCount`, but still fires the
+> `onTransactionSuccess` callback for them, so callback-driven code sees every item
+> succeed. When a batch can legitimately contain repeats — the same
 > amount to the same account twice — give each item its own `idempotencyKey`, or make the
 > payloads distinct with `externalId` or `metadata`.
 
@@ -256,6 +258,8 @@ for (const result of results) {
 ## Example: Complete Transaction Management
 
 ```typescript
+import { randomUUID } from 'node:crypto';
+
 // Transaction management example
 async function manageTransactions(client, organizationId, ledgerId, accounts, assets) {
   try {
@@ -280,7 +284,9 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
 
     // Create a transfer transaction with an explicit idempotency key.
     // Generated once, outside any retry loop, so retries reuse the same key.
-    const transferKey = `transfer-${Date.now()}`;
+    // Use a UUID, not a timestamp: two transfers started in the same millisecond
+    // would share a key and the second would come back as a replay of the first.
+    const transferKey = `transfer-${randomUUID()}`;
     const transferTx = createTransferTransaction(
       accounts[0].id,
       accounts[1].id,
@@ -314,9 +320,23 @@ async function manageTransactions(client, organizationId, ledgerId, accounts, as
     console.log(`Listed ${transactions.data.length} transactions`);
 
     // Create and execute a batch of transactions
+    // Distinct payloads, so the body-hash default cannot collapse them.
     const batchTransactions = [
-      createDepositTransaction(accounts[1].id, '200.00', assets[0].id),
-      createWithdrawalTransaction(accounts[0].id, '100.00', assets[0].id),
+      createDepositTransaction(
+        '@external/USD',
+        accounts[1].id,
+        '200.00',
+        assets[0].code,
+        'Batch top-up'
+      ),
+      createWithdrawalTransaction(
+        accounts[0].id,
+        '@external/USD',
+        100,
+        assets[0].code,
+        0,
+        'Batch withdrawal'
+      ),
     ];
 
     const batch = createBatch(batchTransactions);

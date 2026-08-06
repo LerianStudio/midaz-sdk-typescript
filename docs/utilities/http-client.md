@@ -200,8 +200,9 @@ const httpClient = new HttpClient({
    ```
 
    **Supply your own key.** Pass an explicit key when you need control over the
-   deduplication window — for example, to retry a transaction whose body legitimately
-   changed, or to deduplicate across bodies that differ only in a timestamp.
+   deduplication boundary — which attempts count as the same operation. It does not
+   change how long the server retains the key. Use it to retry a transaction whose body
+   legitimately changed, or to deduplicate across bodies that differ only in a timestamp.
 
    ```typescript
    const response = await httpClient.post('/transactions', transactionData, {
