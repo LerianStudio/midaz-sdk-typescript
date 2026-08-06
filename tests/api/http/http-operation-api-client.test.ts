@@ -332,10 +332,9 @@ describe('HttpOperationApiClient', () => {
       const result = await client.updateOperation(
         orgId,
         ledgerId,
-        accountId,
+        transactionId,
         operationId,
-        updateInput,
-        transactionId
+        updateInput
       );
 
       // Assert
@@ -358,7 +357,6 @@ describe('HttpOperationApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          accountId,
           operationId,
           transactionId,
           operationType: 'DEBIT',
@@ -371,10 +369,22 @@ describe('HttpOperationApiClient', () => {
     it('should throw a validation error when transactionId is missing', async () => {
       // Act & Assert
       await expect(
-        client.updateOperation(orgId, ledgerId, accountId, operationId, updateInput)
+        client.updateOperation(
+          orgId,
+          ledgerId,
+          undefined as unknown as string,
+          operationId,
+          updateInput
+        )
       ).rejects.toThrow(ValidationError);
       await expect(
-        client.updateOperation(orgId, ledgerId, accountId, operationId, updateInput)
+        client.updateOperation(
+          orgId,
+          ledgerId,
+          undefined as unknown as string,
+          operationId,
+          updateInput
+        )
       ).rejects.toThrow(/transactionId is required/);
       expect(mockHttpClient.patch).not.toHaveBeenCalled();
       expect(mockSpan.recordException).toHaveBeenCalled();
@@ -383,7 +393,7 @@ describe('HttpOperationApiClient', () => {
     it('should throw error when missing orgId', async () => {
       // Act & Assert
       await expect(
-        client.updateOperation('', ledgerId, accountId, operationId, updateInput, transactionId)
+        client.updateOperation('', ledgerId, transactionId, operationId, updateInput)
       ).rejects.toThrow('orgId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -391,7 +401,7 @@ describe('HttpOperationApiClient', () => {
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
       await expect(
-        client.updateOperation(orgId, '', accountId, operationId, updateInput, transactionId)
+        client.updateOperation(orgId, '', transactionId, operationId, updateInput)
       ).rejects.toThrow('ledgerId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -404,10 +414,9 @@ describe('HttpOperationApiClient', () => {
       const result = await client.updateOperation(
         orgId,
         ledgerId,
-        undefined,
+        transactionId,
         operationId,
-        updateInput,
-        transactionId
+        updateInput
       );
 
       // Assert
@@ -429,7 +438,7 @@ describe('HttpOperationApiClient', () => {
     it('should throw error when missing operationId', async () => {
       // Act & Assert
       await expect(
-        client.updateOperation(orgId, ledgerId, accountId, '', updateInput, transactionId)
+        client.updateOperation(orgId, ledgerId, transactionId, '', updateInput)
       ).rejects.toThrow('operationId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -441,7 +450,7 @@ describe('HttpOperationApiClient', () => {
 
       // Act & Assert
       await expect(
-        client.updateOperation(orgId, ledgerId, accountId, operationId, updateInput, transactionId)
+        client.updateOperation(orgId, ledgerId, transactionId, operationId, updateInput)
       ).rejects.toThrow('API Error');
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
@@ -498,14 +507,9 @@ describe('HttpOperationApiClient', () => {
     it('updates an operation under the versioned transaction-scoped path', async () => {
       mockHttpClient.patch.mockResolvedValueOnce(mockOperation);
 
-      await realClient.updateOperation(
-        orgId,
-        ledgerId,
-        accountId,
-        operationId,
-        { metadata: {} },
-        transactionId
-      );
+      await realClient.updateOperation(orgId, ledgerId, transactionId, operationId, {
+        metadata: {},
+      });
 
       expect(mockHttpClient.patch).toHaveBeenCalledWith(
         `${ledgerBaseUrl}/v1/organizations/${orgId}/ledgers/${ledgerId}/transactions/${transactionId}/operations/${operationId}`,

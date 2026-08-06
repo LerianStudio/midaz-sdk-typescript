@@ -168,18 +168,14 @@ export class OperationsServiceImpl implements OperationsService {
   public async updateOperation(
     orgId: string,
     ledgerId: string,
-    accountId: string | undefined,
+    transactionId: string,
     operationId: string,
-    input: Record<string, any>,
-    transactionId: string
+    input: Record<string, any>
   ): Promise<Operation> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('updateOperation');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
-    if (accountId) {
-      span.setAttribute('accountId', accountId);
-    }
     span.setAttribute('operationId', operationId);
     span.setAttribute('transactionId', transactionId);
 
@@ -192,24 +188,19 @@ export class OperationsServiceImpl implements OperationsService {
       const result = await this.operationApiClient.updateOperation(
         orgId,
         ledgerId,
-        accountId,
+        transactionId,
         operationId,
-        input,
-        transactionId
+        input
       );
 
       // Record metrics
-      const metricTags: Record<string, string> = {
+      this.observability.recordMetric('operation.update', 1, {
         orgId,
         ledgerId,
         operationId,
         transactionId,
         operationType: result.type || 'unknown',
-      };
-      if (accountId) {
-        metricTags.accountId = accountId;
-      }
-      this.observability.recordMetric('operation.update', 1, metricTags);
+      });
 
       span.setStatus('ok');
       return result;

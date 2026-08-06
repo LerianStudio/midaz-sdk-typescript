@@ -82,13 +82,15 @@ describe('OperationsServiceImpl', () => {
         if (!operationId) throw new ValidationError('Operation ID is required');
         return Promise.resolve(mockOperation);
       }),
-      updateOperation: jest.fn().mockImplementation((orgId, ledgerId, accountId, operationId) => {
-        if (!orgId) throw new ValidationError('Organization ID is required');
-        if (!ledgerId) throw new ValidationError('Ledger ID is required');
-        if (!accountId) throw new ValidationError('Account ID is required');
-        if (!operationId) throw new ValidationError('Operation ID is required');
-        return Promise.resolve(mockOperation);
-      }),
+      updateOperation: jest
+        .fn()
+        .mockImplementation((orgId, ledgerId, transactionId, operationId) => {
+          if (!orgId) throw new ValidationError('Organization ID is required');
+          if (!ledgerId) throw new ValidationError('Ledger ID is required');
+          if (!transactionId) throw new ValidationError('Transaction ID is required');
+          if (!operationId) throw new ValidationError('Operation ID is required');
+          return Promise.resolve(mockOperation);
+        }),
     } as unknown as jest.Mocked<OperationApiClient>;
 
     // Create mock Observability
@@ -277,20 +279,18 @@ describe('OperationsServiceImpl', () => {
       const result = await operationsService.updateOperation(
         orgId,
         ledgerId,
-        accountId,
+        transactionId,
         operationId,
-        updateInput,
-        transactionId
+        updateInput
       );
 
       // Verify
       expect(operationApiClient.updateOperation).toHaveBeenCalledWith(
         orgId,
         ledgerId,
-        accountId,
+        transactionId,
         operationId,
-        updateInput,
-        transactionId
+        updateInput
       );
       expect(result).toEqual(updatedOperation);
     });
@@ -298,28 +298,28 @@ describe('OperationsServiceImpl', () => {
     it('should throw an error if orgId is missing', async () => {
       // Execute & Verify
       await expect(
-        operationsService.updateOperation('', ledgerId, accountId, operationId, {})
+        operationsService.updateOperation('', ledgerId, transactionId, operationId, {})
       ).rejects.toThrow('Organization ID is required');
     });
 
     it('should throw an error if ledgerId is missing', async () => {
       // Execute & Verify
       await expect(
-        operationsService.updateOperation(orgId, '', accountId, operationId, {})
+        operationsService.updateOperation(orgId, '', transactionId, operationId, {})
       ).rejects.toThrow('Ledger ID is required');
     });
 
-    it('should throw an error if accountId is missing', async () => {
+    it('should throw an error if transactionId is missing', async () => {
       // Execute & Verify
       await expect(
         operationsService.updateOperation(orgId, ledgerId, '', operationId, {})
-      ).rejects.toThrow('Account ID is required');
+      ).rejects.toThrow('Transaction ID is required');
     });
 
     it('should throw an error if operationId is missing', async () => {
       // Execute & Verify
       await expect(
-        operationsService.updateOperation(orgId, ledgerId, accountId, '', {})
+        operationsService.updateOperation(orgId, ledgerId, transactionId, '', {})
       ).rejects.toThrow('Operation ID is required');
     });
 
@@ -330,7 +330,7 @@ describe('OperationsServiceImpl', () => {
 
       // Execute & Verify
       await expect(
-        operationsService.updateOperation(orgId, ledgerId, accountId, operationId, {})
+        operationsService.updateOperation(orgId, ledgerId, transactionId, operationId, {})
       ).rejects.toThrow(errorMessage);
     });
   });

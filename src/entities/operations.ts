@@ -50,18 +50,17 @@ export interface OperationsService {
   /**
    * Updates an existing operation
    *
-   * The ledger only exposes the transaction-scoped PATCH route, so `transactionId`
-   * is required and `accountId` is not part of the request.
+   * The ledger only exposes the transaction-scoped PATCH route, so the operation is
+   * addressed by its transaction and no account takes part in the request.
    *
    * @returns Promise resolving to the updated operation
    */
   updateOperation(
     orgId: string,
     ledgerId: string,
-    accountId: string | undefined,
+    transactionId: string,
     operationId: string,
-    input: Record<string, any>,
-    transactionId: string
+    input: Record<string, any>
   ): Promise<Operation>;
 
   /**

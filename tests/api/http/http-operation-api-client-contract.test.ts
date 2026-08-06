@@ -66,17 +66,12 @@ describe('HttpOperationApiClient contract', () => {
     client = new HttpOperationApiClient(mockHttpClient, mockUrlBuilder, mockObservability);
   });
 
-  it('updates an operation without an account, which the route does not carry', async () => {
+  it('takes the transaction the route carries, and no account', async () => {
     mockHttpClient.patch.mockResolvedValueOnce(mockOperation);
 
-    const result = await client.updateOperation(
-      orgId,
-      ledgerId,
-      undefined,
-      operationId,
-      { metadata: { category: 'updated' } },
-      transactionId
-    );
+    const result = await client.updateOperation(orgId, ledgerId, transactionId, operationId, {
+      metadata: { category: 'updated' },
+    });
 
     expect(result).toEqual(mockOperation);
     expect(mockUrlBuilder.buildTransactionOperationUrl).toHaveBeenCalledWith(
@@ -84,6 +79,11 @@ describe('HttpOperationApiClient contract', () => {
       ledgerId,
       transactionId,
       operationId
+    );
+    expect(mockHttpClient.patch).toHaveBeenCalledWith(
+      transactionOperationUrl,
+      { metadata: { category: 'updated' } },
+      expect.anything()
     );
   });
 
@@ -98,14 +98,7 @@ describe('HttpOperationApiClient contract', () => {
 
   it('ends the validation span when updateOperation is missing its transaction', async () => {
     await expect(
-      client.updateOperation(
-        orgId,
-        ledgerId,
-        accountId,
-        operationId,
-        {},
-        undefined as unknown as string
-      )
+      client.updateOperation(orgId, ledgerId, undefined as unknown as string, operationId, {})
     ).rejects.toThrow(/transactionId is required/);
 
     expect(mockSpan.end).toHaveBeenCalledTimes(1);

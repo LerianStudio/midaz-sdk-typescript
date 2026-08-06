@@ -94,12 +94,11 @@ export class HttpOperationApiClient
   public async updateOperation(
     orgId: string,
     ledgerId: string,
-    accountId: string | undefined,
+    transactionId: string,
     operationId: string,
-    input: Record<string, any>,
-    transactionId: string
+    input: Record<string, any>
   ): Promise<Operation> {
-    const attributes = { orgId, ledgerId, accountId, operationId, transactionId };
+    const attributes = { orgId, ledgerId, operationId, transactionId };
     const span = this.startSpan('validateParams', attributes);
 
     try {
