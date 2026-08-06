@@ -32,6 +32,25 @@ const createdAsset = await httpClient.post<AssetResponse>(
 );
 ```
 
+## Base URL
+
+The HTTP client's base URL comes from the SDK configuration. Midaz serves every service from a
+single ledger host, so `baseUrls.ledger` is the only key you need:
+
+```typescript
+import { MidazClient, createClientConfigBuilder } from 'midaz-sdk';
+
+const client = new MidazClient(
+  createClientConfigBuilder().withBaseUrls({ ledger: 'http://localhost:3002' })
+);
+```
+
+`MIDAZ_LEDGER_URL` sets the same value from the environment.
+
+The deprecated `onboarding` and `transaction` keys are still accepted for configurations written
+against earlier releases. When present, each one wins for its own service family and `ledger`
+covers the rest, so they can be removed one at a time.
+
 ## Configuration
 
 When initializing the SDK, you can configure the HTTP client behavior:

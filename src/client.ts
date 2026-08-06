@@ -325,7 +325,10 @@ export class MidazClient {
     this.httpClient =
       this.config.httpClient ||
       new HttpClient({
-        baseURL: this.config.baseUrls?.onboarding || 'http://localhost:3000',
+        baseURL:
+          this.config.baseUrls?.ledger ||
+          this.config.baseUrls?.onboarding ||
+          'http://localhost:3000',
         timeout: this.config.timeout,
         maxRetries: this.config.retries?.maxRetries,
         retryDelay: this.config.retries?.initialDelay,

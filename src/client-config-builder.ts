@@ -45,31 +45,57 @@ function parseNumber(value: string | undefined, defaultValue: number): number {
 }
 
 /**
+ * Fallback base URLs for a single environment
+ */
+interface BaseUrlDefaults {
+  onboarding: string;
+  transaction: string;
+  ledger: string;
+}
+
+/**
+ * Resolves the base URL map for an environment from `MIDAZ_LEDGER_URL` and the deprecated
+ * `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair.
+ *
+ * When `MIDAZ_LEDGER_URL` is the only URL variable set, the legacy keys are omitted so the
+ * unified `ledger` key serves every service. Supplying a legacy variable keeps that key, which
+ * still wins for its own service family.
+ */
+function resolveBaseUrls(defaults: BaseUrlDefaults): Record<string, string> {
+  const ledgerUrl = getEnvVar('MIDAZ_LEDGER_URL');
+  const onboardingUrl = getEnvVar('MIDAZ_ONBOARDING_URL');
+  const transactionUrl = getEnvVar('MIDAZ_TRANSACTION_URL');
+
+  if (ledgerUrl && !onboardingUrl && !transactionUrl) {
+    return { ledger: ledgerUrl };
+  }
+
+  return {
+    onboarding: onboardingUrl || defaults.onboarding,
+    transaction: transactionUrl || defaults.transaction,
+    ledger: ledgerUrl || defaults.ledger,
+  };
+}
+
+/**
  * Environment-specific base URLs
  */
 const ENVIRONMENT_URLS: Record<string, Record<string, string>> = {
-  development: {
-    onboarding:
-      getEnvVar('MIDAZ_ONBOARDING_URL', 'http://localhost:3000') || 'http://localhost:3000',
-    transaction:
-      getEnvVar('MIDAZ_TRANSACTION_URL', 'http://localhost:3001') || 'http://localhost:3001',
-  },
-  sandbox: {
-    onboarding:
-      getEnvVar('MIDAZ_ONBOARDING_URL', 'https://yourdomain.sandbox.midaz.io') ||
-      'https://yourdomain.sandbox.midaz.io',
-    transaction:
-      getEnvVar('MIDAZ_TRANSACTION_URL', 'https://yourdomain.sandbox.midaz.io') ||
-      'https://yourdomain.sandbox.midaz.io',
-  },
-  production: {
-    onboarding:
-      getEnvVar('MIDAZ_ONBOARDING_URL', 'https://yourdomain.api.midaz.io') ||
-      'https://yourdomain.api.midaz.io',
-    transaction:
-      getEnvVar('MIDAZ_TRANSACTION_URL', 'https://yourdomain.api.midaz.io') ||
-      'https://yourdomain.api.midaz.io',
-  },
+  development: resolveBaseUrls({
+    onboarding: 'http://localhost:3000',
+    transaction: 'http://localhost:3001',
+    ledger: 'http://localhost:3002',
+  }),
+  sandbox: resolveBaseUrls({
+    onboarding: 'https://yourdomain.sandbox.midaz.io',
+    transaction: 'https://yourdomain.sandbox.midaz.io',
+    ledger: 'https://yourdomain.sandbox.midaz.io',
+  }),
+  production: resolveBaseUrls({
+    onboarding: 'https://yourdomain.api.midaz.io',
+    transaction: 'https://yourdomain.api.midaz.io',
+    ledger: 'https://yourdomain.api.midaz.io',
+  }),
 };
 
 /**
@@ -117,6 +143,10 @@ export interface ClientConfigBuilder {
 
   /**
    * Set custom base URLs for services
+   *
+   * Accepts three keys: `ledger` — the unified midaz ledger host, which serves every service —
+   * plus the deprecated `onboarding` and `transaction` keys, kept for existing configurations.
+   * A legacy key still wins for its own service family; `ledger` covers everything else.
    */
   withBaseUrls(baseUrls: Record<string, string>): ClientConfigBuilder;
 
@@ -531,10 +561,13 @@ export function createLocalConfig(port?: number, apiVersion?: string): ClientCon
   const defaultApiVersion = getEnvVar('MIDAZ_API_VERSION', apiVersion || 'v1') || 'v1';
 
   return createClientConfigBuilder()
-    .withBaseUrls({
-      onboarding: getEnvVar('MIDAZ_ONBOARDING_URL') || `http://localhost:${defaultPort}`,
-      transaction: getEnvVar('MIDAZ_TRANSACTION_URL') || `http://localhost:${defaultPort + 1}`,
-    })
+    .withBaseUrls(
+      resolveBaseUrls({
+        onboarding: `http://localhost:${defaultPort}`,
+        transaction: `http://localhost:${defaultPort + 1}`,
+        ledger: `http://localhost:${defaultPort + 2}`,
+      })
+    )
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }
@@ -568,10 +601,13 @@ export function createLocalConfigWithAccessManager(
   };
 
   return createClientConfigWithAccessManager(accessManagerConfig)
-    .withBaseUrls({
-      onboarding: getEnvVar('MIDAZ_ONBOARDING_URL') || `http://localhost:${defaultPort}`,
-      transaction: getEnvVar('MIDAZ_TRANSACTION_URL') || `http://localhost:${defaultPort + 1}`,
-    })
+    .withBaseUrls(
+      resolveBaseUrls({
+        onboarding: `http://localhost:${defaultPort}`,
+        transaction: `http://localhost:${defaultPort + 1}`,
+        ledger: `http://localhost:${defaultPort + 2}`,
+      })
+    )
     .withApiVersion(defaultApiVersion)
     .withDebugMode(parseBool(getEnvVar('MIDAZ_DEBUG'), true));
 }

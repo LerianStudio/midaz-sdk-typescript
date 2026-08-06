@@ -118,6 +118,44 @@ const result = await withEnhancedRecovery(
 client.close();
 ```
 
+### Pointing the SDK at a Midaz Ledger
+
+Midaz serves the whole API from a single ledger host, so one base URL is enough:
+
+```typescript
+import { MidazClient, createClientConfigBuilder } from 'midaz-sdk';
+
+const client = new MidazClient(
+  createClientConfigBuilder()
+    .withBaseUrls({ ledger: 'http://localhost:3002' })
+    .withApiVersion('v1')
+);
+```
+
+The same value can come from the environment instead:
+
+```bash
+export MIDAZ_LEDGER_URL=http://localhost:3002
+```
+
+#### Migrating from the split base URLs
+
+Earlier releases required an `onboarding` / `transaction` pair, and that form keeps working:
+
+```typescript
+const client = new MidazClient(
+  createClientConfigBuilder().withBaseUrls({
+    onboarding: 'http://localhost:3000',
+    transaction: 'http://localhost:3001',
+  })
+);
+```
+
+`onboarding` and `transaction` (and the matching `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL`
+variables) are deprecated. Each still wins for its own service family, so a partial migration is
+safe: set `ledger` and drop the legacy keys as you go. Using a legacy key logs a deprecation
+warning once per client.
+
 ### Using PluginAccessManager for Authentication
 
 For applications that need to integrate with external identity providers, the SDK provides a PluginAccessManager:

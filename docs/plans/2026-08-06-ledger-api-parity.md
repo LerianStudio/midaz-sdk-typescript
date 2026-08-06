@@ -121,7 +121,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 1.2.2: Surface `ledger` in config builders and env plumbing
 
-- [ ] Done
+- [x] Done
 
 **Context:** `ENVIRONMENT_URLS` (`src/client-config-builder.ts:~50-73`) hardcodes `onboarding`+`transaction` pairs per environment, evaluated at module load. `createLocalConfig` (~530) derives ports N and N+1 from `MIDAZ_LOCAL_PORT`. `client.ts:328` defaults the HTTP client's baseURL to `config.baseUrls?.onboarding`.
 
