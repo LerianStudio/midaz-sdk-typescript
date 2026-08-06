@@ -416,18 +416,96 @@ export interface DistributeInput {
 }
 
 /**
+ * ShareInput expresses a leg's value as a percentage of the transaction total instead
+ * of an absolute amount.
+ *
+ * Both percentages are integers: the ledger reads them as `int64`, so a fractional
+ * value is refused client-side rather than truncated on the wire.
+ */
+export interface ShareInput {
+  /** Percentage of `send.value` this leg takes, as an integer between 1 and 100 */
+  percentage: number;
+
+  /**
+   * Percentage of `percentage` actually applied, as an integer.
+   *
+   * The ledger treats `0` and an omitted value identically, both meaning 100.
+   */
+  percentageOfPercentage?: number;
+}
+
+/**
+ * RateInput carries the exchange rate applied to a leg whose asset differs from the
+ * transaction asset.
+ *
+ * The ledger requires all four fields when a rate is present, and `externalId` must be
+ * a UUID.
+ */
+export interface RateInput {
+  /** Asset the rate converts from */
+  from: string;
+
+  /** Asset the rate converts to */
+  to: string;
+
+  /** Rate value; a decimal string is the recommended form, as for every other value */
+  value: string | number;
+
+  /** UUID identifying the rate in the system that produced it */
+  externalId: string;
+}
+
+/**
  * FromToInput represents a single source or destination account in a transaction.
- * This structure contains the account and amount details.
+ *
+ * A leg carries either an `amount` or a `share`, never both and never neither.
  */
 export interface FromToInput {
   /** Account identifies the account affected by this operation */
   account: string;
 
-  /** Amount specifies the amount details for this operation */
-  amount: AmountInput;
+  /**
+   * Amount specifies the amount details for this operation.
+   *
+   * Omitted on a `share` leg, where the ledger derives the value from the total.
+   */
+  amount?: AmountInput;
 
-  /** Route is the operation route identifier for this operation (optional) */
+  /**
+   * BalanceKey selects which of the account's balances this operation moves.
+   *
+   * Defaults to `"default"`. The key must name a balance that already exists: the
+   * ledger does not create one on demand and answers `422/0019` for an unknown key.
+   */
+  balanceKey?: string;
+
+  /** Share expresses this leg as a percentage of the transaction total */
+  share?: ShareInput;
+
+  /** Rate is the exchange rate applied to this leg */
+  rate?: RateInput;
+
+  /**
+   * Remaining is not emitted by this SDK.
+   *
+   * @deprecated The ledger counts a `remaining` leg in its balance check but never
+   * turns it into an operation, so the money it names disappears while the request
+   * answers `201 CREATED`. The SDK refuses the field rather than losing funds; use
+   * `amount` or `share` to name the value explicitly. This is a deliberate divergence
+   * from the server contract and will be reverted once midaz creates the operation.
+   */
+  remaining?: string;
+
+  /**
+   * Route is the operation route identifier for this operation (optional).
+   *
+   * The ledger persists it but validates nothing against it; `routeId` is the field
+   * route validation and accounting rules read.
+   */
   route?: string;
+
+  /** RouteID is the UUID of the operation route governing this operation (optional) */
+  routeId?: string;
 
   /** Description provides additional context for this operation (optional) */
   description?: string;
@@ -472,8 +550,14 @@ export interface OperationInput {
  * This structure contains the value and asset code for an amount input.
  */
 export interface AmountInput {
-  /** Asset identifies the currency or asset type for this amount */
-  asset: string;
+  /**
+   * Asset identifies the currency or asset type for this amount.
+   *
+   * The ledger ignores it — every operation is booked in `send.asset` — so the SDK
+   * refuses a value that differs from `send.asset` and mirrors `send.asset` here when
+   * it is omitted.
+   */
+  asset?: string;
   /**
    * Value is the numeric value of the amount. A decimal string is the
    * recommended form; a number is accepted and serialized, but only when it can

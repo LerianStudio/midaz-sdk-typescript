@@ -1,4 +1,8 @@
-import { toApiTransaction } from '../../src/models/transaction-transformer';
+import {
+  toApiInflow,
+  toApiOutflow,
+  toApiTransaction,
+} from '../../src/models/transaction-transformer';
 import { CreateTransactionInput } from '../../src/models/transaction';
 import { ValidationError } from '../../src/util/validation';
 
@@ -126,6 +130,138 @@ describe('toApiTransaction decimal value handling', () => {
         'send.distribute.to[0].amount.value',
       ]);
     }
+  });
+});
+
+describe('toApiTransaction leg field parity', () => {
+  const withLegFields = (extra: Record<string, any>): CreateTransactionInput => {
+    const input = buildInput('100');
+    Object.assign((input.send as any).source.from[0], extra);
+
+    return input;
+  };
+
+  it('puts balanceKey on the wire', () => {
+    const result = toApiTransaction(withLegFields({ balanceKey: 'asset-freeze' }));
+
+    expect(result.send.source.from[0].balanceKey).toBe('asset-freeze');
+  });
+
+  it('puts chartOfAccounts on the wire', () => {
+    const result = toApiTransaction(withLegFields({ chartOfAccounts: '1000' }));
+
+    expect(result.send.source.from[0].chartOfAccounts).toBe('1000');
+  });
+
+  it('puts routeId on the wire', () => {
+    const result = toApiTransaction(
+      withLegFields({ routeId: '8dbf1c9e-3a2b-4a55-9f1e-2c0f6b7d4e11' })
+    );
+
+    expect(result.send.source.from[0].routeId).toBe('8dbf1c9e-3a2b-4a55-9f1e-2c0f6b7d4e11');
+  });
+
+  it('puts an integer share on the wire and omits the amount it replaces', () => {
+    const input = buildInput('100');
+    (input.send as any).distribute.to = [
+      { account: 'smoke-b', share: { percentage: 60 } },
+      { account: 'smoke-c', share: { percentage: 40, percentageOfPercentage: 100 } },
+    ];
+
+    const result = toApiTransaction(input);
+
+    expect(result.send.distribute.to[0].share).toEqual({ percentage: 60 });
+    expect(result.send.distribute.to[0]).not.toHaveProperty('amount');
+    expect(result.send.distribute.to[1].share).toEqual({
+      percentage: 40,
+      percentageOfPercentage: 100,
+    });
+  });
+
+  it('puts a rate on the wire with its value coerced to a decimal string', () => {
+    const result = toApiTransaction(
+      withLegFields({
+        rate: {
+          from: 'BRL',
+          to: 'USD',
+          value: 550,
+          externalId: '00000000-0000-0000-0000-000000000000',
+        },
+      })
+    );
+
+    expect(result.send.source.from[0].rate).toEqual({
+      from: 'BRL',
+      to: 'USD',
+      value: '550',
+      externalId: '00000000-0000-0000-0000-000000000000',
+    });
+  });
+
+  it('mirrors send.asset into an amount that omits it', () => {
+    const input = buildInput('100');
+    delete (input.send as any).source.from[0].amount.asset;
+
+    const result = toApiTransaction(input);
+
+    expect(result.send.source.from[0].amount).toEqual({ asset: 'BRL', value: '100' });
+  });
+
+  it('refuses a leg carrying remaining, which the ledger counts but never credits', () => {
+    const input = withLegFields({ remaining: 'remaining' });
+
+    expect(() => toApiTransaction(input)).toThrow(ValidationError);
+    expect(() => toApiTransaction(input)).toThrow('send.source.from[0].remaining');
+  });
+
+  it('refuses an amount asset that differs from send.asset instead of letting it be ignored', () => {
+    const input = buildInput('100');
+    (input.send as any).distribute.to[0].amount.asset = 'USD';
+
+    expect(() => toApiTransaction(input)).toThrow('send.distribute.to[0].amount.asset');
+  });
+
+  it('omits every leg field the caller did not supply', () => {
+    const result = toApiTransaction(buildInput('100'));
+
+    expect(result.send.source.from[0]).not.toHaveProperty('balanceKey');
+    expect(result.send.source.from[0]).not.toHaveProperty('share');
+    expect(result.send.source.from[0]).not.toHaveProperty('rate');
+    expect(result.send.source.from[0]).not.toHaveProperty('routeId');
+    expect(result.send.source.from[0]).not.toHaveProperty('chartOfAccounts');
+    expect(result.send.source.from[0]).not.toHaveProperty('remaining');
+  });
+});
+
+describe('toApiInflow and toApiOutflow leg field parity', () => {
+  it('mirrors send.asset and carries the new leg fields on an inflow', () => {
+    const result = toApiInflow({
+      send: {
+        asset: 'BRL',
+        value: '100',
+        distribute: {
+          to: [{ account: 'smoke-b', amount: { value: '100' }, balanceKey: 'default' } as any],
+        },
+      },
+    } as any);
+
+    expect(result.send.distribute.to[0].amount).toEqual({ asset: 'BRL', value: '100' });
+    expect(result.send.distribute.to[0].balanceKey).toBe('default');
+  });
+
+  it('refuses a remaining leg on an outflow', () => {
+    const build = () =>
+      toApiOutflow({
+        send: {
+          asset: 'BRL',
+          value: '100',
+          source: {
+            from: [{ account: 'smoke-a', amount: { asset: 'BRL', value: '100' }, remaining: 'r' }],
+          },
+        },
+      } as any);
+
+    expect(build).toThrow('send.source.from[0].remaining');
   });
 });
 

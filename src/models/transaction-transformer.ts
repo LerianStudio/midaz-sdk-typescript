@@ -11,7 +11,7 @@ import {
   FromToInput,
   Transaction,
 } from './transaction';
-import { validateDecimalValue } from './validators/transaction-validator';
+import { validateDecimalValue, validateLeg } from './validators/transaction-validator';
 
 /**
  * Coerces a monetary value to the decimal string the ledger requires.
@@ -35,19 +35,60 @@ function coerceDecimalValue(value: unknown, path: string): string {
 /**
  * Transforms one leg into the API shape, which names the account `accountAlias`.
  *
+ * `sendAsset` is mirrored into an amount that omits its own asset so the wire payload
+ * stays explicit about what is being moved.
+ *
  * @returns The leg in API format
+ * @throws ValidationError naming the offending path when the leg is unusable
  */
-function toApiLeg(leg: FromToInput, path: string): any {
+function toApiLeg(leg: FromToInput, path: string, sendAsset: string | undefined): any {
+  const result = validateLeg(leg, path, sendAsset);
+
+  if (!result.valid) {
+    throw new ValidationError(result.message || `${path} is not a valid leg`, result.fieldErrors);
+  }
+
   const operation: any = {
     accountAlias: leg.account,
-    amount: {
-      ...leg.amount,
-      value: coerceDecimalValue(leg?.amount?.value, `${path}.amount.value`),
-    },
   };
+
+  if (leg.amount) {
+    operation.amount = {
+      ...leg.amount,
+      asset: leg.amount.asset ?? sendAsset,
+      value: coerceDecimalValue(leg.amount.value, `${path}.amount.value`),
+    };
+  }
+
+  if (leg.share) {
+    operation.share = { percentage: leg.share.percentage };
+
+    if (leg.share.percentageOfPercentage !== undefined) {
+      operation.share.percentageOfPercentage = leg.share.percentageOfPercentage;
+    }
+  }
+
+  if (leg.rate) {
+    operation.rate = {
+      ...leg.rate,
+      value: coerceDecimalValue(leg.rate.value, `${path}.rate.value`),
+    };
+  }
+
+  if (leg.balanceKey) {
+    operation.balanceKey = leg.balanceKey;
+  }
+
+  if (leg.chartOfAccounts) {
+    operation.chartOfAccounts = leg.chartOfAccounts;
+  }
 
   if (leg.route) {
     operation.route = leg.route;
+  }
+
+  if (leg.routeId) {
+    operation.routeId = leg.routeId;
   }
 
   if (leg.description) {
@@ -109,7 +150,7 @@ export function toApiInflow(input: CreateInflowInput): any {
     value: coerceDecimalValue(input.send.value, 'send.value'),
     distribute: {
       to: (input.send.distribute?.to ?? []).map((to, index) =>
-        toApiLeg(to, `send.distribute.to[${index}]`)
+        toApiLeg(to, `send.distribute.to[${index}]`, input.send.asset)
       ),
     },
   };
@@ -137,7 +178,7 @@ export function toApiOutflow(input: CreateOutflowInput): any {
     value: coerceDecimalValue(input.send.value, 'send.value'),
     source: {
       from: (input.send.source?.from ?? []).map((from, index) =>
-        toApiLeg(from, `send.source.from[${index}]`)
+        toApiLeg(from, `send.source.from[${index}]`, input.send.asset)
       ),
     },
   };
@@ -164,68 +205,18 @@ export function toApiTransaction(input: CreateTransactionInput): any {
     // Transform source operations - API expects 'accountAlias' not 'account'
     if (input.send.source) {
       result.send.source = {
-        from: input.send.source.from.map((fromInput: any, index: number) => {
-          const operation: any = {
-            accountAlias: fromInput.account, // Transform 'account' to 'accountAlias'
-            amount: {
-              ...fromInput.amount,
-              value: coerceDecimalValue(
-                fromInput.amount?.value,
-                `send.source.from[${index}].amount.value`
-              ),
-            },
-          };
-
-          // Add route if provided (operation route reference)
-          if (fromInput.route) {
-            operation.route = fromInput.route;
-          }
-
-          // Add other optional fields
-          if (fromInput.description) {
-            operation.description = fromInput.description;
-          }
-
-          if (fromInput.metadata) {
-            operation.metadata = fromInput.metadata;
-          }
-
-          return operation;
-        }),
+        from: input.send.source.from.map((fromInput, index) =>
+          toApiLeg(fromInput, `send.source.from[${index}]`, input.send?.asset)
+        ),
       };
     }
 
     // Transform distribute operations - API expects 'accountAlias' not 'account'
     if (input.send.distribute) {
       result.send.distribute = {
-        to: input.send.distribute.to.map((toInput: any, index: number) => {
-          const operation: any = {
-            accountAlias: toInput.account, // Transform 'account' to 'accountAlias'
-            amount: {
-              ...toInput.amount,
-              value: coerceDecimalValue(
-                toInput.amount?.value,
-                `send.distribute.to[${index}].amount.value`
-              ),
-            },
-          };
-
-          // Add route if provided (operation route reference)
-          if (toInput.route) {
-            operation.route = toInput.route;
-          }
-
-          // Add other optional fields
-          if (toInput.description) {
-            operation.description = toInput.description;
-          }
-
-          if (toInput.metadata) {
-            operation.metadata = toInput.metadata;
-          }
-
-          return operation;
-        }),
+        to: input.send.distribute.to.map((toInput, index) =>
+          toApiLeg(toInput, `send.distribute.to[${index}]`, input.send?.asset)
+        ),
       };
     }
   }

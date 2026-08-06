@@ -1,4 +1,8 @@
-import { validateCreateTransactionInput } from '../../../src/models/validators/transaction-validator';
+import {
+  validateCreateInflowInput,
+  validateCreateOutflowInput,
+  validateCreateTransactionInput,
+} from '../../../src/models/validators/transaction-validator';
 import { AmountInput, CreateTransactionInput } from '../../../src/models/transaction';
 
 describe('Transaction Validator', () => {
@@ -885,6 +889,171 @@ describe('Transaction Validator', () => {
       const result = validateCreateTransactionInput(build({ code: 'x'.repeat(100) }));
 
       expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('leg field parity and money-safety guards', () => {
+    const buildLegs = (from: any[], to: any[]): CreateTransactionInput =>
+      ({
+        chartOfAccountsGroupName: 'group',
+        description: 'transfer',
+        send: {
+          asset: 'BRL',
+          value: '100',
+          source: { from },
+          distribute: { to },
+        },
+      }) as CreateTransactionInput;
+
+    const defaultLeg = (account: string, extra: Record<string, any> = {}) => ({
+      account,
+      amount: { asset: 'BRL', value: '100' },
+      ...extra,
+    });
+
+    const build = (extra: Record<string, any> = {}, target: 'from' | 'to' = 'from') =>
+      target === 'from'
+        ? buildLegs([defaultLeg('smoke-a', extra)], [defaultLeg('smoke-b')])
+        : buildLegs([defaultLeg('smoke-a')], [defaultLeg('smoke-b', extra)]);
+
+    it('shouldRefuseARemainingSourceLegNamingTheAlternatives', () => {
+      const result = validateCreateTransactionInput(build({ remaining: 'remaining' }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from[0].remaining']).toBeDefined();
+      expect(result.message).toContain('amount');
+      expect(result.message).toContain('share');
+    });
+
+    it('shouldRefuseARemainingDistributeLeg', () => {
+      const result = validateCreateTransactionInput(build({ remaining: 'remaining' }, 'to'));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].remaining']).toBeDefined();
+    });
+
+    it('shouldRefuseAnAmountAssetThatDiffersFromSendAsset', () => {
+      const result = validateCreateTransactionInput(
+        build({ amount: { asset: 'USD', value: '100' } })
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from[0].amount.asset']).toBeDefined();
+      expect(result.message).toContain('USD');
+      expect(result.message).toContain('BRL');
+    });
+
+    it('shouldAcceptALegAmountThatOmitsTheAsset', () => {
+      const result = validateCreateTransactionInput(build({ amount: { value: '100' } }));
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldAcceptAnIntegerShareLegWithoutAnAmount', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs(
+          [defaultLeg('smoke-a')],
+          [
+            { account: 'smoke-b', share: { percentage: 60 } },
+            { account: 'smoke-c', share: { percentage: 40, percentageOfPercentage: 100 } },
+          ]
+        )
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldRejectAFractionalSharePercentage', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs([defaultLeg('smoke-a')], [{ account: 'smoke-b', share: { percentage: 33.5 } }])
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].share.percentage']).toBeDefined();
+    });
+
+    it('shouldRejectAFractionalPercentageOfPercentage', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs(
+          [defaultLeg('smoke-a')],
+          [{ account: 'smoke-b', share: { percentage: 60, percentageOfPercentage: 50.5 } }]
+        )
+      );
+
+      expect(result.valid).toBe(false);
+      expect(
+        result.fieldErrors?.['send.distribute.to[0].share.percentageOfPercentage']
+      ).toBeDefined();
+    });
+
+    it('shouldRejectANonPositiveSharePercentage', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs([defaultLeg('smoke-a')], [{ account: 'smoke-b', share: { percentage: 0 } }])
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].share.percentage']).toBeDefined();
+    });
+
+    it('shouldRejectALegCarryingNeitherAmountNorShare', () => {
+      const result = validateCreateTransactionInput(
+        buildLegs([defaultLeg('smoke-a')], [{ account: 'smoke-b' }])
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0]']).toBeDefined();
+    });
+
+    it('shouldRejectALegCarryingBothAmountAndShare', () => {
+      const result = validateCreateTransactionInput(build({ share: { percentage: 60 } }, 'to'));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0]']).toBeDefined();
+    });
+
+    it('shouldAcceptTheNewLegFields', () => {
+      const result = validateCreateTransactionInput(
+        build({
+          balanceKey: 'asset-freeze',
+          chartOfAccounts: '1000',
+          routeId: '8dbf1c9e-3a2b-4a55-9f1e-2c0f6b7d4e11',
+        })
+      );
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldRejectANonUuidLegRouteId', () => {
+      const result = validateCreateTransactionInput(build({ routeId: 'not-a-uuid' }));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from[0].routeId']).toBeDefined();
+    });
+
+    it('shouldRefuseARemainingLegOnAnInflow', () => {
+      const result = validateCreateInflowInput({
+        send: {
+          asset: 'BRL',
+          value: '100',
+          distribute: { to: [defaultLeg('smoke-b', { remaining: 'remaining' })] },
+        },
+      } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].remaining']).toBeDefined();
+    });
+
+    it('shouldRefuseAMismatchedAmountAssetOnAnOutflow', () => {
+      const result = validateCreateOutflowInput({
+        send: {
+          asset: 'BRL',
+          value: '100',
+          source: { from: [{ account: 'smoke-a', amount: { asset: 'USD', value: '100' } }] },
+        },
+      } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from[0].amount.asset']).toBeDefined();
     });
   });
 });

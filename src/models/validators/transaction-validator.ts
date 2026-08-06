@@ -21,6 +21,7 @@ import {
   NonPendingTransactionInput,
   OperationInput,
   SendInput,
+  ShareInput,
   UnblockFundsInput,
 } from '../transaction';
 
@@ -286,14 +287,132 @@ function rejectField(field: string, reason: string): ValidationResult {
  *
  * @returns One ValidationResult per leg plus one for the collection itself
  */
-function validateFlowLegs(legs: FromToInput[] | undefined, path: string): ValidationResult[] {
+function validateFlowLegs(
+  legs: FromToInput[] | undefined,
+  path: string,
+  sendAsset: string | undefined
+): ValidationResult[] {
   if (!Array.isArray(legs) || legs.length === 0) {
     return [rejectField(path, 'must contain at least one account')];
   }
 
-  return legs.map((leg, index) =>
-    validateDecimalValue(leg?.amount?.value, `${path}[${index}].amount.value`)
+  return legs.map((leg, index) => validateLeg(leg, `${path}[${index}]`, sendAsset));
+}
+
+/**
+ * Validates one source or destination leg against the ledger's `FromTo` contract and
+ * against the two behaviours that cost money silently.
+ *
+ * @returns ValidationResult naming the offending path when the leg is unusable
+ */
+export function validateLeg(
+  leg: FromToInput | undefined,
+  path: string,
+  sendAsset: string | undefined
+): ValidationResult {
+  if (!leg) {
+    return rejectField(path, 'is required');
+  }
+
+  const results: ValidationResult[] = [];
+
+  if (leg.remaining !== undefined) {
+    results.push(
+      rejectField(
+        `${path}.remaining`,
+        'is refused by this SDK: the ledger counts a remaining leg in its balance check ' +
+          'but never creates its operation, so the funds vanish while the request answers ' +
+          '201; name the value with amount or share instead'
+      )
+    );
+  }
+
+  const hasAmount = leg.amount !== undefined;
+  const hasShare = leg.share !== undefined;
+
+  if (hasAmount && hasShare) {
+    results.push(
+      rejectField(path, 'must carry either amount or share, not both; the ledger adds up both')
+    );
+  } else if (!hasAmount && !hasShare) {
+    results.push(rejectField(path, 'must carry either amount or share'));
+  }
+
+  if (hasAmount) {
+    results.push(validateDecimalValue(leg.amount?.value, `${path}.amount.value`));
+    results.push(validateLegAsset(leg.amount?.asset, `${path}.amount.asset`, sendAsset));
+  }
+
+  if (hasShare) {
+    results.push(...validateShare(leg.share, `${path}.share`));
+  }
+
+  if (leg.rate !== undefined) {
+    results.push(validateDecimalValue(leg.rate?.value, `${path}.rate.value`));
+  }
+
+  if (leg.routeId !== undefined && !UUID_PATTERN.test(String(leg.routeId))) {
+    results.push(
+      rejectField(`${path}.routeId`, 'must be a UUID; the ledger rejects any other form')
+    );
+  }
+
+  return combineValidationResults(results);
+}
+
+/**
+ * Rejects a leg asset that differs from the transaction asset.
+ *
+ * The ledger books every operation in `send.asset` and never reads this field, so a
+ * mismatch is a caller error that would otherwise pass unnoticed.
+ *
+ * @returns ValidationResult naming both assets when they disagree
+ */
+function validateLegAsset(
+  asset: string | undefined,
+  field: string,
+  sendAsset: string | undefined
+): ValidationResult {
+  if (asset === undefined || sendAsset === undefined || asset === sendAsset) {
+    return { valid: true };
+  }
+
+  return rejectField(
+    field,
+    `is ${asset} but send.asset is ${sendAsset}; the ledger ignores the leg asset and ` +
+      `would book the operation in ${sendAsset}`
   );
+}
+
+/**
+ * Validates a share against the integer percentages the ledger reads as `int64`.
+ *
+ * @returns One ValidationResult per checked percentage
+ */
+function validateShare(share: ShareInput | undefined, path: string): ValidationResult[] {
+  const results: ValidationResult[] = [];
+
+  if (!Number.isInteger(share?.percentage) || Number(share?.percentage) <= 0) {
+    results.push(
+      rejectField(`${path}.percentage`, 'must be a positive integer percentage of send.value')
+    );
+  }
+
+  const percentageOfPercentage = share?.percentageOfPercentage;
+
+  if (
+    percentageOfPercentage !== undefined &&
+    (!Number.isInteger(percentageOfPercentage) || percentageOfPercentage < 0)
+  ) {
+    results.push(
+      rejectField(
+        `${path}.percentageOfPercentage`,
+        'must be a non-negative integer; the ledger reads 0 as 100'
+      )
+    );
+  }
+
+  return results;
 }
 
 /**
@@ -350,7 +469,9 @@ export function validateCreateInflowInput(input: CreateInflowInput): ValidationR
   }
 
   if (input.send) {
-    results.push(...validateFlowLegs(input.send.distribute?.to, 'send.distribute.to'));
+    results.push(
+      ...validateFlowLegs(input.send.distribute?.to, 'send.distribute.to', input.send.asset)
+    );
   }
 
   return combineValidationResults(results);
@@ -382,7 +503,9 @@ export function validateCreateOutflowInput(input: CreateOutflowInput): Validatio
   }
 
   if (input.send) {
-    results.push(...validateFlowLegs(input.send.source?.from, 'send.source.from'));
+    results.push(
+      ...validateFlowLegs(input.send.source?.from, 'send.source.from', input.send.asset)
+    );
   }
 
   return combineValidationResults(results);
@@ -516,7 +639,7 @@ export function validateDecimalValue(value: unknown, fieldName: string): Validat
 }
 
 /**
- * Validates every monetary value carried by a send block.
+ * Validates the send block: its own value plus every leg it carries.
  *
  * @returns One ValidationResult per value, each naming its own path
  */
@@ -524,15 +647,11 @@ function validateSendDecimalValues(send: SendInput): ValidationResult[] {
   const results: ValidationResult[] = [validateDecimalValue(send.value, 'send.value')];
 
   send.source?.from.forEach((from, index) => {
-    results.push(
-      validateDecimalValue(from?.amount?.value, `send.source.from[${index}].amount.value`)
-    );
+    results.push(validateLeg(from, `send.source.from[${index}]`, send.asset));
   });
 
   send.distribute?.to.forEach((to, index) => {
-    results.push(
-      validateDecimalValue(to?.amount?.value, `send.distribute.to[${index}].amount.value`)
-    );
+    results.push(validateLeg(to, `send.distribute.to[${index}]`, send.asset));
   });
 
   return results;

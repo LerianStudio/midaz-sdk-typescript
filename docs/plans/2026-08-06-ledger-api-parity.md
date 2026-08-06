@@ -343,7 +343,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 2.4.2: FromTo field parity, the `remaining` guard and asset mirroring
 
-- [ ] Done
+- [x] Done
 
 **Context:** The SDK's leg type carries only `account`, `amount`, `route`, `description`, `metadata`. The ledger's `FromTo` also accepts `balanceKey` (defaults to `"default"`, and must reference an **existing** balance — an unknown key is `422/0019`, it is not auto-created), `share` (`{percentage, percentageOfPercentage}` as **integers**, verified: 60/40 of 100 credits 60 and 40; `percentageOfPercentage:0` behaves as 100), `rate`, `chartOfAccounts` and `routeId`. Two verified hazards: **`amount.asset` is ignored entirely** — a leg declaring `USD` under `send.asset: "BRL"` produced a BRL operation — and **`remaining` silently destroys money** as described in the phase preamble.
 
