@@ -266,14 +266,36 @@ export class UrlBuilder {
   }
 
   /**
-   * Builds the URL for asset rate endpoints
+   * Builds the URL for the asset rate collection, which serves the upsert
    *
    * @returns The constructed URL
    */
-  public buildAssetRateUrl(orgId: string, ledgerId: string, assetId: string): string {
-    const baseUrl = this.getBaseUrl('transaction');
+  public buildAssetRateUrl(orgId: string, ledgerId: string): string {
+    const baseUrl = this.getBaseUrl('asset-rates');
     const versionedUrl = this.getVersionedUrl(baseUrl);
-    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/assets/${assetId}/rates`;
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/asset-rates`;
+  }
+
+  /**
+   * Builds the URL listing every asset rate originating from a source asset code
+   *
+   * @returns The constructed URL
+   */
+  public buildAssetRateFromUrl(orgId: string, ledgerId: string, assetCode: string): string {
+    return `${this.buildAssetRateUrl(orgId, ledgerId)}/from/${assetCode}`;
+  }
+
+  /**
+   * Builds the URL for a single asset rate addressed by its external identifier
+   *
+   * @returns The constructed URL
+   */
+  public buildAssetRateByExternalIdUrl(
+    orgId: string,
+    ledgerId: string,
+    externalId: string
+  ): string {
+    return `${this.buildAssetRateUrl(orgId, ledgerId)}/${externalId}`;
   }
 
   /**

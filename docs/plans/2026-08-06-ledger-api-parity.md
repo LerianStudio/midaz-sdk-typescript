@@ -145,7 +145,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 1.3.1: Rewrite asset-rate paths and client plumbing
 
-- [ ] Done
+- [x] Done
 
 **Context:** `HttpAssetRateApiClient` (`src/api/http/http-asset-rate-api-client.ts:25`) hand-rolls `${getBaseUrl('transaction')}/organizations/{o}/ledgers/{l}/assets/{code}/rates` (private builder at line 290) — no `/v1`, and the path itself was removed from midaz. Live check on midaz main: that path → 404. Current API: `PUT .../v1/.../asset-rates` (upsert), `GET .../asset-rates/from/{asset_code}` (list by source), `GET .../asset-rates/{external_id}`. The client also does NOT extend `HttpBaseApiClient` — it duplicates observability/validation helpers (lines 305–320). The unused `UrlBuilder.buildAssetRateUrl` (url-builder.ts:176) encodes the same dead path.
 

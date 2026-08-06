@@ -20,16 +20,16 @@ import { AssetRate, UpdateAssetRateInput } from '../models/asset-rate';
  *   "EUR"
  * );
  *
- * // Create or update an exchange rate
+ * // Create or update an exchange rate: 1 USD = 0.92 EUR
  * const newRate = await midazClient.entities.assetRates.createOrUpdateAssetRate(
  *   "org_12345",
  *   "ldg_67890",
  *   {
- *     fromAsset: "USD",
- *     toAsset: "EUR",
- *     rate: 0.92,
- *     effectiveAt: "2025-01-01T00:00:00Z",
- *     expirationAt: "2025-12-31T23:59:59Z"
+ *     from: "USD",
+ *     to: "EUR",
+ *     rate: 92,
+ *     scale: 2,
+ *     ttl: 3600
  *   }
  * );
  * ```
@@ -45,6 +45,17 @@ export interface AssetRatesService {
     ledgerId: string,
     sourceAssetCode: string,
     destinationAssetCode: string
+  ): Promise<AssetRate>;
+
+  /**
+   * Retrieves a single asset rate by its external identifier
+   *
+   * @returns Promise resolving to the asset rate
+   */
+  getAssetRateByExternalId(
+    organizationId: string,
+    ledgerId: string,
+    externalId: string
   ): Promise<AssetRate>;
 
   /**

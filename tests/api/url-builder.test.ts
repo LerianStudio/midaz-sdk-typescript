@@ -180,3 +180,26 @@ describe('UrlBuilder base URL resolution', () => {
     });
   });
 });
+
+describe('UrlBuilder asset-rate paths', () => {
+  const orgId = 'ORG';
+  const ledgerId = 'LEDGER';
+  const builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
+  const prefix = `https://ledger.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}`;
+
+  it('builds the versioned asset-rates collection path', () => {
+    expect(builder.buildAssetRateUrl(orgId, ledgerId)).toBe(`${prefix}/asset-rates`);
+  });
+
+  it('builds the versioned from-asset-code path', () => {
+    expect(builder.buildAssetRateFromUrl(orgId, ledgerId, 'BRL')).toBe(
+      `${prefix}/asset-rates/from/BRL`
+    );
+  });
+
+  it('builds the versioned external-id path', () => {
+    expect(builder.buildAssetRateByExternalIdUrl(orgId, ledgerId, 'EXTERNAL')).toBe(
+      `${prefix}/asset-rates/EXTERNAL`
+    );
+  });
+});

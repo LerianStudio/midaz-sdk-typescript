@@ -126,6 +126,45 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   }
 
   /**
+   * Makes a PUT request with standardized error handling and tracing
+   *
+   * @returns Promise resolving to the response data
+   */
+  protected async putRequest<R extends ApiResponse>(
+    operationName: string,
+    url: string,
+    data: any,
+    options?: RequestOptions,
+    attributes?: Record<string, any>
+  ): Promise<R> {
+    const span = this.startSpan(operationName, attributes);
+
+    try {
+      span.setAttribute('url', url);
+      span.setAttribute('apiVersion', this.apiVersion);
+
+      const requestOptions = {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'X-API-Version': this.apiVersion,
+        },
+      };
+
+      const result = await this.httpClient.put<R>(url, data, requestOptions);
+
+      this.recordResponseMetrics(operationName, result, attributes);
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      this.handleError(span, error as Error);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
    * Makes a PATCH request with standardized error handling and tracing
    *
    * @returns Promise resolving to the response data
