@@ -11,7 +11,10 @@ import {
   validateTransactionCode,
   ValidationResult,
 } from '../../util/validation';
-import { CreateTransactionInput, OperationInput } from '../transaction';
+import { CreateTransactionInput, OperationInput, SendInput } from '../transaction';
+
+/** Decimal form accepted by the ledger: optional sign, digits, optional fractional part */
+const DECIMAL_STRING_PATTERN = /^-?\d+(\.\d+)?$/;
 
 /**
  * Validates a CreateTransactionInput object to ensure it meets all business rules and constraints.
@@ -121,8 +124,87 @@ export function validateCreateTransactionInput(input: CreateTransactionInput): V
   }
 
   // If send is provided, we skip operation validation as the server will generate them from DSL
+  if (input.send) {
+    results.push(...validateSendDecimalValues(input.send));
+  }
 
   return combineValidationResults(results);
+}
+
+/**
+ * Validates a monetary value against the decimal form the ledger accepts.
+ *
+ * The ledger deserializes monetary values as decimals from a JSON string; a JSON
+ * number is rejected server-side. Numbers are therefore accepted here only when
+ * they can be serialized losslessly as a decimal string.
+ *
+ * @returns ValidationResult naming `fieldName` when the value is not usable
+ */
+export function validateDecimalValue(value: unknown, fieldName: string): ValidationResult {
+  const reject = (reason: string): ValidationResult => {
+    const message = `${fieldName} ${reason}`;
+
+    return {
+      valid: false,
+      message,
+      fieldErrors: { [fieldName]: [message] },
+    };
+  };
+
+  if (value === undefined || value === null) {
+    return reject('is required');
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return reject('must be a finite number');
+    }
+
+    if (Math.abs(value) > Number.MAX_SAFE_INTEGER) {
+      return reject('exceeds the safe integer range, use a decimal string instead');
+    }
+
+    const serialized = String(value);
+
+    if (!DECIMAL_STRING_PATTERN.test(serialized) || Number(serialized) !== value) {
+      return reject('cannot be serialized as a decimal number, use a decimal string instead');
+    }
+
+    return { valid: true };
+  }
+
+  if (typeof value !== 'string') {
+    return reject('must be a decimal string or a number');
+  }
+
+  if (!DECIMAL_STRING_PATTERN.test(value)) {
+    return reject('must be a valid decimal number string');
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validates every monetary value carried by a send block.
+ *
+ * @returns One ValidationResult per value, each naming its own path
+ */
+function validateSendDecimalValues(send: SendInput): ValidationResult[] {
+  const results: ValidationResult[] = [validateDecimalValue(send.value, 'send.value')];
+
+  send.source?.from.forEach((from, index) => {
+    results.push(
+      validateDecimalValue(from?.amount?.value, `send.source.from[${index}].amount.value`)
+    );
+  });
+
+  send.distribute?.to.forEach((to, index) => {
+    results.push(
+      validateDecimalValue(to?.amount?.value, `send.distribute.to[${index}].amount.value`)
+    );
+  });
+
+  return results;
 }
 
 /**

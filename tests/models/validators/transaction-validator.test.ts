@@ -703,4 +703,67 @@ describe('Transaction Validator', () => {
       expect(result.valid).toBe(true);
     });
   });
+
+  describe('send decimal values', () => {
+    const buildSendInput = (
+      sendValue: any,
+      fromValue: any = sendValue,
+      toValue: any = sendValue
+    ): CreateTransactionInput =>
+      ({
+        chartOfAccountsGroupName: 'group',
+        description: 'transfer',
+        send: {
+          asset: 'BRL',
+          value: sendValue,
+          source: {
+            from: [{ account: 'smoke-a', amount: { asset: 'BRL', value: fromValue } }],
+          },
+          distribute: {
+            to: [{ account: 'smoke-b', amount: { asset: 'BRL', value: toValue } }],
+          },
+        },
+      }) as CreateTransactionInput;
+
+    it('shouldAcceptDecimalStringSendValues', () => {
+      const result = validateCreateTransactionInput(buildSendInput('100.50'));
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldAcceptNumericSendValues', () => {
+      const result = validateCreateTransactionInput(buildSendInput(100));
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldRejectNonFiniteSendValue', () => {
+      const result = validateCreateTransactionInput(buildSendInput(Number.NaN));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.value']).toBeDefined();
+    });
+
+    it('shouldRejectUnsafeIntegerSendValue', () => {
+      const result = validateCreateTransactionInput(buildSendInput(Number.MAX_SAFE_INTEGER + 2));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.value']).toBeDefined();
+    });
+
+    it('shouldNameTheOffendingSourcePath', () => {
+      const result = validateCreateTransactionInput(buildSendInput('10', 'abc'));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.source.from[0].amount.value']).toBeDefined();
+      expect(result.message).toContain('send.source.from[0].amount.value');
+    });
+
+    it('shouldNameTheOffendingDistributePath', () => {
+      const result = validateCreateTransactionInput(buildSendInput('10', '10', Number.NaN));
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['send.distribute.to[0].amount.value']).toBeDefined();
+    });
+  });
 });

@@ -194,7 +194,7 @@ Env precedence: MIDAZ_LEDGER_URL > MIDAZ_ONBOARDING_URL/MIDAZ_TRANSACTION_URL (d
 
 #### Task 1.4.2: Decimal-string value handling
 
-- [ ] Done
+- [x] Done
 
 **Context:** Midaz main requires monetary `value` as a JSON **string** (`pkg/mtransaction/transaction.go:85-111`, `shopspring/decimal`); a JSON number is rejected with the misleading `0053 Unexpected Fields` (verified live). The SDK passes `value` through untouched (`src/models/transaction-transformer.ts:11-105`), so `value: 100` compiles, ships, and dies server-side.
 

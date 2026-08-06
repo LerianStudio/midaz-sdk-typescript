@@ -2,8 +2,29 @@
  */
 
 import { createModelTransformer, ModelTransformer } from '../util/data/model-transformer';
+import { ValidationError } from '../util/validation';
 
 import { CreateTransactionInput, Transaction } from './transaction';
+import { validateDecimalValue } from './validators/transaction-validator';
+
+/**
+ * Coerces a monetary value to the decimal string the ledger requires.
+ *
+ * @returns The value serialized as a decimal string
+ * @throws ValidationError naming `path` when the value cannot be represented
+ */
+function coerceDecimalValue(value: unknown, path: string): string {
+  const result = validateDecimalValue(value, path);
+
+  if (!result.valid) {
+    throw new ValidationError(
+      result.message || `${path} is not a valid decimal value`,
+      result.fieldErrors
+    );
+  }
+
+  return String(value);
+}
 
 /**
  * Transforms a client-side transaction to the API format
@@ -18,16 +39,22 @@ export function toApiTransaction(input: CreateTransactionInput): any {
   if (input.send) {
     result.send = {
       asset: input.send.asset,
-      value: input.send.value,
+      value: coerceDecimalValue(input.send.value, 'send.value'),
     };
 
     // Transform source operations - API expects 'accountAlias' not 'account'
     if (input.send.source) {
       result.send.source = {
-        from: input.send.source.from.map((fromInput: any) => {
+        from: input.send.source.from.map((fromInput: any, index: number) => {
           const operation: any = {
             accountAlias: fromInput.account, // Transform 'account' to 'accountAlias'
-            amount: fromInput.amount,
+            amount: {
+              ...fromInput.amount,
+              value: coerceDecimalValue(
+                fromInput.amount?.value,
+                `send.source.from[${index}].amount.value`
+              ),
+            },
           };
 
           // Add route if provided (operation route reference)
@@ -52,10 +79,16 @@ export function toApiTransaction(input: CreateTransactionInput): any {
     // Transform distribute operations - API expects 'accountAlias' not 'account'
     if (input.send.distribute) {
       result.send.distribute = {
-        to: input.send.distribute.to.map((toInput: any) => {
+        to: input.send.distribute.to.map((toInput: any, index: number) => {
           const operation: any = {
             accountAlias: toInput.account, // Transform 'account' to 'accountAlias'
-            amount: toInput.amount,
+            amount: {
+              ...toInput.amount,
+              value: coerceDecimalValue(
+                toInput.amount?.value,
+                `send.distribute.to[${index}].amount.value`
+              ),
+            },
           };
 
           // Add route if provided (operation route reference)

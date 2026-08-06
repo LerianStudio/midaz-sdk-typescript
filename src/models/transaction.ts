@@ -160,8 +160,13 @@ export interface SendInput {
   /** Asset identifies the currency or asset type for this transaction */
   asset: string;
 
-  /** Value is the numeric value of the transaction as a decimal string */
-  value: string;
+  /**
+   * Value is the numeric value of the transaction. A decimal string is the
+   * recommended form; a number is accepted and serialized, but only when it can
+   * be represented exactly (finite, within the safe integer range, no exponent
+   * notation).
+   */
+  value: string | number;
 
   /** Source contains the source accounts for the transaction */
   source?: SourceInput;
@@ -247,8 +252,13 @@ export interface OperationInput {
 export interface AmountInput {
   /** Asset identifies the currency or asset type for this amount */
   asset: string;
-  /** Value is the numeric value of the amount as a decimal string */
-  value: string;
+  /**
+   * Value is the numeric value of the amount. A decimal string is the
+   * recommended form; a number is accepted and serialized, but only when it can
+   * be represented exactly (finite, within the safe integer range, no exponent
+   * notation).
+   */
+  value: string | number;
 }
 
 // ========================================
