@@ -63,6 +63,17 @@ describe('HttpBalanceApiClient', () => {
     },
   };
 
+  // The alias and external routes answer `{items, limit}` and never a `meta` block.
+  const mockAccountBalancePage = {
+    items: [mockBalance],
+    limit: 10,
+  };
+
+  // The ledger serialises every monetary field as a decimal string, while the model
+  // still declares `available` a number, so a wire fixture has to be cast.
+  const balanceWorth = (id: string, available: string): Balance =>
+    ({ ...mockBalance, id, available }) as unknown as Balance;
+
   // Mocks
   let mockHttpClient: jest.Mocked<HttpClient>;
   let mockUrlBuilder: jest.Mocked<UrlBuilder>;
@@ -176,6 +187,24 @@ describe('HttpBalanceApiClient', () => {
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
+    it('should add up the decimal amounts the ledger sends rather than concatenate them', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce({
+        items: [balanceWorth('bal-1', '100.50'), balanceWorth('bal-2', '200.25')],
+        meta: { total: 2, count: 2 },
+      });
+
+      // Act
+      await client.listBalances(orgId, ledgerId);
+
+      // Assert
+      expect(mockObservability.recordMetric).toHaveBeenCalledWith(
+        'balances.total.available',
+        300.75,
+        expect.objectContaining({ orgId, ledgerId })
+      );
+    });
+
     it('should apply list options when provided', async () => {
       // Arrange
       mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
@@ -275,6 +304,21 @@ describe('HttpBalanceApiClient', () => {
         expect.objectContaining({ orgId, ledgerId, accountId })
       );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
+    });
+
+    it('records the available total as a number, adding the decimal amounts up', async () => {
+      mockHttpClient.get.mockResolvedValueOnce({
+        items: [balanceWorth('bal-1', '100.50'), balanceWorth('bal-2', '200.25')],
+        limit: 10,
+      });
+
+      await client.listAccountBalances(orgId, ledgerId, accountId);
+
+      expect(mockObservability.recordMetric).toHaveBeenCalledWith(
+        'balances.account.available',
+        300.75,
+        expect.objectContaining({ orgId, ledgerId, accountId })
+      );
     });
 
     it('sends only the query parameters the ledger honours, under their wire names', async () => {
@@ -861,13 +905,14 @@ describe('HttpBalanceApiClient', () => {
 
     it('should list the balances of the account addressed by its alias', async () => {
       // Arrange
-      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+      mockHttpClient.get.mockResolvedValueOnce(mockAccountBalancePage);
 
       // Act
       const result = await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
 
       // Assert
-      expect(result).toEqual(mockBalanceListResponse);
+      expect(result).toEqual({ items: [mockBalance], limit: 10 });
+      expect(result).not.toHaveProperty('meta');
       expect(mockUrlBuilder.buildAccountAliasBalancesUrl).toHaveBeenCalledWith(
         orgId,
         ledgerId,
@@ -878,7 +923,7 @@ describe('HttpBalanceApiClient', () => {
 
     it('should send the alias verbatim rather than percent-encoded', async () => {
       // Arrange
-      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+      mockHttpClient.get.mockResolvedValueOnce(mockAccountBalancePage);
 
       // Act
       await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
@@ -891,7 +936,7 @@ describe('HttpBalanceApiClient', () => {
 
     it('should send no query parameters, because the route ignores them', async () => {
       // Arrange
-      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+      mockHttpClient.get.mockResolvedValueOnce(mockAccountBalancePage);
 
       // Act
       await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
@@ -903,7 +948,7 @@ describe('HttpBalanceApiClient', () => {
 
     it('should return the empty page an unknown alias yields instead of throwing', async () => {
       // Arrange
-      const emptyPage: ListResponse<Balance> = { items: [], meta: { total: 0, count: 0 } };
+      const emptyPage = { items: [], limit: 10 };
       mockHttpClient.get.mockResolvedValueOnce(emptyPage);
 
       // Act
@@ -925,13 +970,14 @@ describe('HttpBalanceApiClient', () => {
   describe('listExternalAccountBalances', () => {
     it('should list the balances of the external account for an asset code', async () => {
       // Arrange
-      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+      mockHttpClient.get.mockResolvedValueOnce(mockAccountBalancePage);
 
       // Act
       const result = await client.listExternalAccountBalances(orgId, ledgerId, 'BRL');
 
       // Assert
-      expect(result).toEqual(mockBalanceListResponse);
+      expect(result).toEqual({ items: [mockBalance], limit: 10 });
+      expect(result).not.toHaveProperty('meta');
       expect(mockUrlBuilder.buildExternalAccountBalancesUrl).toHaveBeenCalledWith(
         orgId,
         ledgerId,
@@ -941,7 +987,7 @@ describe('HttpBalanceApiClient', () => {
 
     it('should send no query parameters, because the route ignores them', async () => {
       // Arrange
-      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+      mockHttpClient.get.mockResolvedValueOnce(mockAccountBalancePage);
 
       // Act
       await client.listExternalAccountBalances(orgId, ledgerId, 'BRL');

@@ -78,6 +78,14 @@ describe('HttpBaseApiClient headRequest', () => {
     expect(client.readHeader({ 'x-total-count': '46' }, 'X-Total-Count')).toBe('46');
   });
 
+  it('reads a canonically cased record key under a lowercase lookup name', async () => {
+    expect(client.readHeader({ 'X-Total-Count': '46' }, 'x-total-count')).toBe('46');
+  });
+
+  it('reads a record key whose casing matches neither side', async () => {
+    expect(client.readHeader({ 'X-TOTAL-COUNT': '46' }, 'X-Total-Count')).toBe('46');
+  });
+
   it('returns undefined for a header the response does not carry', async () => {
     expect(client.readHeader(new Headers(), 'X-Total-Count')).toBeUndefined();
     expect(client.readHeader({}, 'X-Total-Count')).toBeUndefined();

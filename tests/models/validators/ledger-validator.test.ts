@@ -320,6 +320,44 @@ describe('Ledger Validator', () => {
       }
     });
 
+    // The allowlist mirrors midaz pkg/mmodel/settings.go: a field the SDK forgets is a
+    // legitimate patch no caller can send, and a value the SDK invents is a 400 the SDK
+    // could have refused itself.
+    it.each([
+      ['accounting.validateAccountType', { accounting: { validateAccountType: true } }],
+      ['accounting.validateRoutes', { accounting: { validateRoutes: false } }],
+      ['accounting.requireHolder', { accounting: { requireHolder: true } }],
+      ['tracer.mode', { tracer: { mode: 'enforce' } }],
+      ['tracer.failPosture', { tracer: { failPosture: 'closed' } }],
+      ['tracer.timeoutMs', { tracer: { timeoutMs: 5000 } }],
+      ['overrides.allowFeeSkip', { overrides: { allowFeeSkip: true } }],
+      ['overrides.allowTracerSkip', { overrides: { allowTracerSkip: true } }],
+      ['overrides.allowHolderSkip', { overrides: { allowHolderSkip: true } }],
+    ])('shouldAcceptThePatchThatCarriesOnly %s', (_path, patch) => {
+      const result = validateUpdateLedgerSettingsInput(patch as any);
+
+      expect(result.valid).toBe(true);
+      expect(result.message).toBeUndefined();
+    });
+
+    it('shouldAcceptEveryFailPostureTheLedgerAllows', () => {
+      for (const failPosture of ['open', 'closed'] as const) {
+        expect(validateUpdateLedgerSettingsInput({ tracer: { failPosture } }).valid).toBe(true);
+      }
+    });
+
+    it.each([
+      ['tracer.mode', { tracer: { mode: 'bogus' } }],
+      ['tracer.mode', { tracer: { mode: 'ENFORCE' } }],
+      ['tracer.failPosture', { tracer: { failPosture: 'sideways' } }],
+      ['tracer.failPosture', { tracer: { failPosture: 'CLOSED' } }],
+    ])('shouldRejectTheValueTheLedgerDoesNotAllowOn %s', (path, patch) => {
+      const result = validateUpdateLedgerSettingsInput(patch as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain(path);
+    });
+
     it('shouldRejectAnUnknownSettingsGroup', () => {
       const result = validateUpdateLedgerSettingsInput({ bogus: { a: 1 } } as any);
 

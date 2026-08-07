@@ -6,7 +6,7 @@
  * content type falls through to `blob()`, so the client needs a bodyless
  * short-circuit and it needs to hand the response headers back to the caller.
  */
-import { UniversalHttpClient } from '../../../src/util/http/universal-http-client';
+import { HttpError, UniversalHttpClient } from '../../../src/util/http/universal-http-client';
 
 let mockFetch: jest.Mock;
 let jsonSpy: jest.Mock;
@@ -93,5 +93,96 @@ describe('UniversalHttpClient HEAD support', () => {
 
     expect(response.data).toBeUndefined();
     expect(jsonSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('UniversalHttpClient HEAD error replies', () => {
+  let attempts: number;
+
+  // HTTP strips the body of every HEAD reply, but the ledger still answers a failing
+  // count with the error's Content-Type and Content-Length, so a client that parses
+  // by content type destroys the status it was handed.
+  function bodilessErrorFetch(status: number, contentType: string): jest.Mock {
+    attempts = 0;
+
+    return jest.fn(async () => {
+      attempts += 1;
+
+      return new Response(null, {
+        status,
+        statusText: 'Bad Request',
+        headers: new Headers({ 'Content-Type': contentType }),
+      });
+    });
+  }
+
+  const client = () => new UniversalHttpClient({ baseURL: 'http://localhost:3002', retryDelay: 1 });
+
+  beforeEach(() => {
+    attempts = 0;
+  });
+
+  it('turns a bodiless HEAD 400 into a typed HttpError carrying the status', async () => {
+    global.fetch = bodilessErrorFetch(
+      400,
+      'application/json; charset=utf-8'
+    ) as unknown as typeof fetch;
+
+    const thrown = await client()
+      .request('/v1/organizations/nope/ledgers/metrics/count', { method: 'HEAD' })
+      .catch((error) => error);
+
+    expect(thrown).toBeInstanceOf(HttpError);
+    expect((thrown as HttpError).status).toBe(400);
+  });
+
+  it('never reads the body of a HEAD error', async () => {
+    const json = jest.fn(async () => ({ code: '0085' }));
+    const text = jest.fn(async () => '');
+    attempts = 0;
+    global.fetch = jest.fn(async () => {
+      attempts += 1;
+      const response = new Response(null, {
+        status: 404,
+        statusText: 'Not Found',
+        headers: new Headers({ 'Content-Type': 'application/json; charset=utf-8' }),
+      });
+      (response as any).json = json;
+      (response as any).text = text;
+
+      return response;
+    }) as unknown as typeof fetch;
+
+    await expect(
+      client().request('/v1/organizations/metrics/count', { method: 'HEAD' })
+    ).rejects.toBeInstanceOf(HttpError);
+    expect(json).not.toHaveBeenCalled();
+    expect(text).not.toHaveBeenCalled();
+  });
+
+  it('does not retry a bodiless HEAD 4xx', async () => {
+    global.fetch = bodilessErrorFetch(
+      400,
+      'application/json; charset=utf-8'
+    ) as unknown as typeof fetch;
+
+    await expect(
+      client().request('/v1/organizations/metrics/count', { method: 'HEAD' })
+    ).rejects.toBeInstanceOf(HttpError);
+    expect(attempts).toBe(1);
+  });
+
+  it('keeps the status when a GET declares JSON but sends no body', async () => {
+    global.fetch = bodilessErrorFetch(
+      502,
+      'application/json; charset=utf-8'
+    ) as unknown as typeof fetch;
+
+    const thrown = await client()
+      .request('/v1/organizations', { method: 'GET', retries: 0 })
+      .catch((error) => error);
+
+    expect(thrown).toBeInstanceOf(HttpError);
+    expect((thrown as HttpError).status).toBe(502);
   });
 });

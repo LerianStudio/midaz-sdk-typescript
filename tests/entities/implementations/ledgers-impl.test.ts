@@ -73,6 +73,7 @@ describe('LedgersServiceImpl', () => {
       deleteLedger: jest.fn(),
       getLedgerSettings: jest.fn(),
       updateLedgerSettings: jest.fn(),
+      countLedgers: jest.fn(),
     } as unknown as jest.Mocked<LedgerApiClient>;
 
     // Create a mock Observability instance
@@ -376,6 +377,24 @@ describe('LedgersServiceImpl', () => {
       await expect(ledgersService.updateLedgerSettings(orgId, ledgerId, {})).rejects.toThrow(
         'API Error'
       );
+    });
+  });
+  // The count answers HEAD only, with the total in a response header and no body, so a
+  // service that dropped the header read would still resolve — with undefined.
+  describe('countLedgers', () => {
+    it('hands back the total the ledger reported', async () => {
+      mockLedgerApiClient.countLedgers.mockResolvedValueOnce(46);
+
+      const result = await ledgersService.countLedgers(orgId);
+
+      expect(mockLedgerApiClient.countLedgers).toHaveBeenCalledWith(orgId);
+      expect(result).toBe(46);
+    });
+
+    it('lets a failure through untouched', async () => {
+      mockLedgerApiClient.countLedgers.mockRejectedValueOnce(new Error('API Error'));
+
+      await expect(ledgersService.countLedgers(orgId)).rejects.toThrow('API Error');
     });
   });
 });

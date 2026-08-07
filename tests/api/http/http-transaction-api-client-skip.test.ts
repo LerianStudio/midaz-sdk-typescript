@@ -11,6 +11,7 @@ import { HttpTransactionApiClient } from '../../../src/api/http/http-transaction
 import { UrlBuilder } from '../../../src/api/url-builder';
 import { StatusCode } from '../../../src/models/common';
 import {
+  BlockFundsInput,
   CreateInflowInput,
   CreateOutflowInput,
   CreateTransactionInput,
@@ -33,6 +34,13 @@ describe('HttpTransactionApiClient skip rejections', () => {
       source: { from: [{ account: 'acc-a', amount: { asset: 'BRL', value: '100' } }] },
       distribute: { to: [{ account: 'acc-b', amount: { asset: 'BRL', value: '100' } }] },
     },
+  };
+
+  // Block, unblock and annotation take the /transactions/json body minus `pending`.
+  const blockInput: BlockFundsInput = {
+    chartOfAccountsGroupName: input.chartOfAccountsGroupName,
+    description: input.description,
+    send: input.send,
   };
 
   const inflowInput: CreateInflowInput = {
@@ -181,7 +189,7 @@ describe('HttpTransactionApiClient skip rejections', () => {
     mockHttpClient.post.mockRejectedValue(skipRejection('fees'));
 
     const error = await client
-      .blockFunds(orgId, ledgerId, { ...input, skip: { fees: true } })
+      .blockFunds(orgId, ledgerId, { ...blockInput, skip: { fees: true } })
       .catch((caught) => caught);
 
     expect(error.midazCode).toBe('0490');
