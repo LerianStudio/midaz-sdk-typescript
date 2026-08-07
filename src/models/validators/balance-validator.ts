@@ -68,9 +68,42 @@ export function validateUpdateBalanceInput(input: UpdateBalanceInput): Validatio
  * an offset, with fractional seconds, and with no zone at all were all measured as `200`.
  * What it refuses is a date without a time, which it answers `400/0131`.
  */
-const BALANCE_HISTORY_DATE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/;
+const BALANCE_HISTORY_DATE =
+  /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|([+-])(\d{2}):(\d{2}))?$/;
 
 const BALANCE_KEY_MAX_LENGTH = 100;
+
+const DECIMAL_STRING = /^-?\d+(\.\d+)?$/;
+
+/**
+ * Decides whether a well-shaped timestamp also names a moment that exists.
+ *
+ * The shape alone admits `2026-99-99T25:99:99Z`, which the ledger parses with Go's
+ * RFC 3339 layout and refuses. The day is checked by round-tripping through a UTC date
+ * rather than by a month-length table, so February and leap years need no special case.
+ *
+ * @returns Whether every component falls inside its range and the day exists
+ */
+function namesARealMoment(match: RegExpExecArray): boolean {
+  const [, year, month, day, hour, minute, second, , offsetHour, offsetMinute] = match;
+
+  if (Number(hour) > 23 || Number(minute) > 59 || Number(second) > 59) {
+    return false;
+  }
+
+  if (offsetHour !== undefined && (Number(offsetHour) > 23 || Number(offsetMinute) > 59)) {
+    return false;
+  }
+
+  const utc = new Date(0);
+  utc.setUTCFullYear(Number(year), Number(month) - 1, Number(day));
+
+  return (
+    utc.getUTCFullYear() === Number(year) &&
+    utc.getUTCMonth() === Number(month) - 1 &&
+    utc.getUTCDate() === Number(day)
+  );
+}
 
 /**
  * Validates the `date` a balance history route is read at.
@@ -85,12 +118,18 @@ export function validateBalanceHistoryDate(date: string): ValidationResult {
     return failure('date', 'date is required');
   }
 
-  if (!BALANCE_HISTORY_DATE.test(date)) {
+  const match = BALANCE_HISTORY_DATE.exec(date);
+
+  if (!match) {
     return failure(
       'date',
       `date must carry a time component: 'yyyy-mm-dd hh:mm:ss' or RFC 3339 ` +
         `('2026-08-07T02:45:14Z', '2026-08-07T02:45:14-03:00'), got '${date}'`
     );
+  }
+
+  if (!namesARealMoment(match)) {
+    return failure('date', `date must name a moment that exists, got '${date}'`);
   }
 
   return { valid: true };
@@ -163,7 +202,12 @@ function validateBalanceSettings(settings?: BalanceSettingsInput): ValidationRes
     );
   }
 
-  const limit = Number(settings.overdraftLimit);
+  // Number() reads '0x10', '0b11', '0o17' and '1e3' as numbers; the ledger's field is a
+  // decimal string, so the lexical form has to be checked before the value.
+  const limit = DECIMAL_STRING.test(settings.overdraftLimit)
+    ? Number(settings.overdraftLimit)
+    : Number.NaN;
+
   if (!Number.isFinite(limit) || limit <= 0) {
     return failure(
       'settings.overdraftLimit',

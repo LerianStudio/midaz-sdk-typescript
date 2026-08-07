@@ -52,6 +52,19 @@ const SETTINGS_FIELD_GROUP: Record<string, string> = Object.fromEntries(
 );
 
 /**
+ * Reads a schema entry by a key that came from the caller.
+ *
+ * A plain index lookup answers for every name Object.prototype carries, so a patch
+ * keyed `constructor`, `toString` or a JSON-parsed `__proto__` would be walked as
+ * though it named a real settings group.
+ *
+ * @returns The entry the schema declares under the key, or undefined
+ */
+function own<T>(schema: Record<string, T>, key: string): T | undefined {
+  return Object.prototype.hasOwnProperty.call(schema, key) ? schema[key] : undefined;
+}
+
+/**
  * @returns A failed validation carrying one message on one field path
  */
 function settingsError(path: string, message: string): ValidationResult {
@@ -213,10 +226,10 @@ export function validateUpdateLedgerSettingsInput(
   }
 
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
-    const group = SETTINGS_SCHEMA[key];
+    const group = own(SETTINGS_SCHEMA, key);
 
     if (!group) {
-      const owner = SETTINGS_FIELD_GROUP[key];
+      const owner = own(SETTINGS_FIELD_GROUP, key);
 
       return owner
         ? settingsError(
@@ -236,7 +249,7 @@ export function validateUpdateLedgerSettingsInput(
 
     for (const [field, fieldValue] of Object.entries(value as Record<string, unknown>)) {
       const path = `${key}.${field}`;
-      const expected = group[field];
+      const expected = own(group, field);
 
       if (!expected) {
         return settingsError(path, `${path} is not a ledger settings field`);

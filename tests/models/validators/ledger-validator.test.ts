@@ -422,5 +422,46 @@ describe('Ledger Validator', () => {
       expect(result.valid).toBe(false);
       expect(result.message).toContain('overrides');
     });
+
+    // Object.prototype answers for these names, so a plain index lookup mistakes an
+    // inherited member for a settings group and lets the patch through.
+    it.each(['constructor', 'toString', 'hasOwnProperty', 'valueOf'])(
+      'shouldRejectTheInheritedGroupName %p',
+      (name) => {
+        const result = validateUpdateLedgerSettingsInput({ [name]: {} } as any);
+
+        expect(result.valid).toBe(false);
+        expect(result.message).toContain(name);
+        expect(result.message).toContain('is not a ledger settings group');
+      }
+    );
+
+    it('shouldRejectAProtoKeyParsedFromJson', () => {
+      const patch = JSON.parse('{"__proto__": {"allowFeeSkip": true}}');
+
+      const result = validateUpdateLedgerSettingsInput(patch);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('__proto__');
+      expect(result.message).toContain('is not a ledger settings group');
+    });
+
+    it.each(['constructor', 'toString', 'hasOwnProperty'])(
+      'shouldRejectTheInheritedFieldName %p',
+      (name) => {
+        const result = validateUpdateLedgerSettingsInput({ overrides: { [name]: true } } as any);
+
+        expect(result.valid).toBe(false);
+        expect(result.message).toContain(`overrides.${name}`);
+        expect(result.message).toContain('is not a ledger settings field');
+      }
+    );
+
+    it('shouldNotBlameAGroupForAnInheritedRootFieldName', () => {
+      const result = validateUpdateLedgerSettingsInput({ toString: true } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('is not a ledger settings group');
+    });
   });
 });

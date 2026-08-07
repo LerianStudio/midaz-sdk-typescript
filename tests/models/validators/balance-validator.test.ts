@@ -276,6 +276,28 @@ describe('Balance Validator', () => {
       expect(validateCreateBalanceInput({ key: 'k'.repeat(100) }).valid).toBe(true);
     });
 
+    it.each(['0x10', '1e3', '0b11', '0o17', 'Infinity', '  10  ', '1_000'])(
+      'rejects the non-decimal overdraft limit %p',
+      (limit) => {
+        const result = validateCreateBalanceInput({
+          key: 'settings-balance',
+          settings: { overdraftLimitEnabled: true, overdraftLimit: limit },
+        });
+
+        expect(result.valid).toBe(false);
+        expect(result.fieldErrors?.['settings.overdraftLimit']?.join(' ')).toContain('decimal');
+      }
+    );
+
+    it.each(['10', '1000.00', '0.01'])('still accepts the decimal overdraft limit %p', (limit) => {
+      const result = validateCreateBalanceInput({
+        key: 'settings-balance',
+        settings: { overdraftLimitEnabled: true, overdraftLimit: limit },
+      });
+
+      expect(result.valid).toBe(true);
+    });
+
     it('rejects overdraftLimitEnabled without a limit', () => {
       const result = validateCreateBalanceInput({
         key: 'od',
@@ -361,6 +383,38 @@ describe('Balance Validator', () => {
 
     it('rejects a free-form date', () => {
       expect(validateBalanceHistoryDate('yesterday').valid).toBe(false);
+    });
+
+    it.each([
+      ['month 13', '2026-13-07T02:45:14Z'],
+      ['month 00', '2026-00-07T02:45:14Z'],
+      ['day 32', '2026-08-32T02:45:14Z'],
+      ['day 00', '2026-08-00T02:45:14Z'],
+      ['31 February', '2026-02-31T02:45:14Z'],
+      ['29 February in a common year', '2026-02-29T02:45:14Z'],
+      ['31 April', '2026-04-31T02:45:14Z'],
+      ['hour 24', '2026-08-07T24:00:00Z'],
+      ['minute 60', '2026-08-07T02:60:14Z'],
+      ['second 60', '2026-08-07T02:45:60Z'],
+      ['every component out of range', '2026-99-99T25:99:99Z'],
+      ['an offset hour past 23', '2026-08-07T02:45:14+25:00'],
+      ['an offset minute past 59', '2026-08-07T02:45:14-03:99'],
+    ])('rejects %s, which is shaped like a timestamp but is not one', (_reason, date) => {
+      const result = validateBalanceHistoryDate(date);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain(date);
+    });
+
+    it.each([
+      ['29 February in a leap year', '2029-02-28T23:59:59Z'],
+      ['29 February 2028', '2028-02-29T00:00:00Z'],
+      ['the last second of a 31-day month', '2026-08-31T23:59:59Z'],
+      ['midnight', '2026-08-07T00:00:00Z'],
+      ['the largest legal offset', '2026-08-07T02:45:14+23:59'],
+      ['a fractional second', '2026-08-07T02:45:14.123456Z'],
+    ])('still accepts %s', (_reason, date) => {
+      expect(validateBalanceHistoryDate(date).valid).toBe(true);
     });
   });
 });
