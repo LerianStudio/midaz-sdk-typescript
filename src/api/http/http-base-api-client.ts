@@ -4,6 +4,7 @@
 import { ApiResponse, ListOptions, ListResponse } from '../../models/common';
 import { HttpClient, RequestOptions, ResponseWithHeaders } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';
+import { redactAliasInUrl } from '../../util/observability/redaction';
 import {
   validateRequiredParams as baseValidateRequiredParams,
   ValidationParams,
@@ -57,7 +58,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     const span = this.startSpan(operationName, attributes);
 
     try {
-      span.setAttribute('url', url);
+      span.setAttribute('url', redactAliasInUrl(url));
       span.setAttribute('apiVersion', this.apiVersion);
 
       if (options?.params) {
@@ -102,7 +103,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     const span = this.startSpan(operationName, attributes);
 
     try {
-      span.setAttribute('url', url);
+      span.setAttribute('url', redactAliasInUrl(url));
       span.setAttribute('apiVersion', this.apiVersion);
 
       // Add version header to requests
@@ -142,7 +143,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     const span = this.startSpan(operationName, attributes);
 
     try {
-      span.setAttribute('url', url);
+      span.setAttribute('url', redactAliasInUrl(url));
       span.setAttribute('apiVersion', this.apiVersion);
 
       const requestOptions = {
@@ -181,7 +182,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     const span = this.startSpan(operationName, attributes);
 
     try {
-      span.setAttribute('url', url);
+      span.setAttribute('url', redactAliasInUrl(url));
       span.setAttribute('apiVersion', this.apiVersion);
 
       // Add version header to requests
@@ -220,7 +221,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     const span = this.startSpan(operationName, attributes);
 
     try {
-      span.setAttribute('url', url);
+      span.setAttribute('url', redactAliasInUrl(url));
       span.setAttribute('apiVersion', this.apiVersion);
 
       // Add version header to requests
@@ -258,7 +259,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     const span = this.startSpan(operationName, attributes);
 
     try {
-      span.setAttribute('url', url);
+      span.setAttribute('url', redactAliasInUrl(url));
       span.setAttribute('apiVersion', this.apiVersion);
 
       if (options?.params) {

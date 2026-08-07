@@ -370,7 +370,6 @@ export class BalancesServiceImpl implements BalancesService {
     const span = this.observability.startSpan('listAccountBalancesByAlias');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('alias', alias);
 
     try {
       // Delegate to the API client

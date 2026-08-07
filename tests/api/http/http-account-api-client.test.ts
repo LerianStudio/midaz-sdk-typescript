@@ -458,6 +458,21 @@ describe('HttpAccountApiClient', () => {
       await expect(client.getAccountByAlias(orgId, ledgerId, '')).rejects.toThrow();
     });
 
+    // An alias can carry an identifier that reads like an email, so neither the span
+    // attributes nor the recorded URL may repeat it.
+    it('keeps the raw alias out of the span, including the recorded URL', async () => {
+      mockHttpClient.get.mockResolvedValueOnce(mockAccount);
+
+      await client.getAccountByAlias(orgId, ledgerId, 'team@lerian:ops');
+
+      const recorded = mockSpan.setAttribute.mock.calls.flat();
+
+      expect(recorded).not.toContain('alias');
+      for (const value of recorded) {
+        expect(String(value)).not.toContain('team@lerian:ops');
+      }
+    });
+
     it.each(['acct/../../organizations', '..', 'acct?limit=1', 'acct#f', 'acct\\admin'])(
       'refuses the alias %p before anything reaches the wire',
       async (hostile) => {

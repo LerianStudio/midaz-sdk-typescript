@@ -88,7 +88,6 @@ export class AccountsServiceImpl implements AccountsService {
     const span = this.observability.startSpan('getAccountByAlias');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('alias', alias);
 
     try {
       // Delegate to the API client

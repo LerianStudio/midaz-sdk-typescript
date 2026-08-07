@@ -312,7 +312,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
     const span = this.observability.startSpan('listAccountBalancesByAlias');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('alias', alias);
 
     try {
       this.validateRequiredParams(span, { orgId, ledgerId, alias });
@@ -329,7 +328,6 @@ export class HttpBalanceApiClient implements BalanceApiClient {
       this.recordMetrics('balances.alias.count', page.items.length, {
         orgId,
         ledgerId,
-        alias,
       });
 
       span.setStatus('ok');

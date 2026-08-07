@@ -595,6 +595,20 @@ describe('BalancesServiceImpl', () => {
       expect(result).toEqual(mockBalancePage);
     });
 
+    // An alias can carry an identifier that reads like an email, so it is not a value
+    // the SDK may hand to a trace backend.
+    it('keeps the raw alias out of the span attributes', async () => {
+      mockBalanceApiClient.listAccountBalancesByAlias.mockResolvedValueOnce(mockBalancePage);
+
+      await balancesService.listAccountBalancesByAlias(orgId, ledgerId, 'team@lerian:ops');
+
+      const span = observability.startSpan.mock.results[0].value;
+      const recorded = span.setAttribute.mock.calls.flat();
+
+      expect(recorded).not.toContain('team@lerian:ops');
+      expect(recorded).not.toContain('alias');
+    });
+
     it('lists the balances of the external account of an asset', async () => {
       mockBalanceApiClient.listExternalAccountBalances.mockResolvedValueOnce(mockBalancePage);
 

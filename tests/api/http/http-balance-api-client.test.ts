@@ -966,6 +966,25 @@ describe('HttpBalanceApiClient', () => {
       await expect(client.listAccountBalancesByAlias(orgId, '', alias)).rejects.toThrow();
     });
 
+    // An alias can carry an identifier that reads like an email, so neither the span
+    // attributes nor the metric tags may repeat it.
+    it('keeps the raw alias out of the span attributes and the metric tags', async () => {
+      mockHttpClient.get.mockResolvedValueOnce(mockAccountBalancePage);
+
+      await client.listAccountBalancesByAlias(orgId, ledgerId, 'team@lerian:ops');
+
+      const attributes = mockSpan.setAttribute.mock.calls.flat();
+      expect(attributes).not.toContain('alias');
+      for (const value of attributes) {
+        expect(String(value)).not.toContain('team@lerian:ops');
+      }
+
+      const tags = mockObservability.recordMetric.mock.calls.map((call) => call[2]);
+      for (const tag of tags) {
+        expect(JSON.stringify(tag)).not.toContain('team@lerian:ops');
+      }
+    });
+
     it.each(['acct/../../organizations', '..', 'acct?limit=1', 'acct#f', 'acct\\admin'])(
       'refuses the alias %p before anything reaches the wire',
       async (hostile) => {

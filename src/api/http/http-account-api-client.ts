@@ -82,7 +82,7 @@ export class HttpAccountApiClient
    * @inheritdoc
    */
   public async getAccountByAlias(orgId: string, ledgerId: string, alias: string): Promise<Account> {
-    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId, alias }), {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId }), {
       orgId,
       ledgerId,
       alias,
@@ -94,7 +94,6 @@ export class HttpAccountApiClient
     return this.getRequest<Account>('getAccountByAlias', url, undefined, {
       orgId,
       ledgerId,
-      alias,
     });
   }
 
