@@ -344,6 +344,9 @@ interface FlowInputBase {
    */
   routeId?: string;
 
+  /** Skip carries the per-call control opt-outs, each gated by a per-ledger override */
+  skip?: TransactionSkipInput;
+
   /** Metadata contains additional custom data for the transaction */
   metadata?: Record<string, any>;
 

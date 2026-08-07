@@ -584,7 +584,11 @@ export class HttpTransactionApiClient
         idempotencyTtlSeconds: input.idempotencyTtlSeconds,
       },
       attributes
-    ).then((transaction) => assertLabelled(variant, operation, transaction));
+    )
+      .catch((error) => {
+        throw asSkipNotPermittedError(error, operation);
+      })
+      .then((transaction) => assertLabelled(variant, operation, transaction));
   }
 
   /**

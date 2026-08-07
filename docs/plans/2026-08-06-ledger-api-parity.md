@@ -400,7 +400,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 #### Task 3.0.1: Translate the skip refusal on the flow routes
 
-- [ ] Done
+- [x] Done
 
 **Context:** Recorded as a deliberate gap at the end of Phase 2 and confirmed still open on `develop`. `asSkipNotPermittedError` is defined at `http-transaction-api-client.ts:333`; `createTransaction` applies it at `:466-468` and `postNonPendingTransaction` (block/unblock/annotation) at `:692-694`. **`postFlow` (`:555-588`) has no `.catch` at all**, so inflow and outflow surface the raw transport error while their siblings surface a translated one. The ledger genuinely emits `422/0490` there — both were reproduced live — because `CreateTransactionInflowInput`/`CreateTransactionOutflowInput` (`pkg/mtransaction/input.go:95,177`) both carry `Skip *TransactionSkip`.
 
