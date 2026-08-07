@@ -57,10 +57,6 @@ export interface AccountsService {
   getExternalAccount(orgId: string, ledgerId: string, assetCode: string): Promise<Account>;
 
   /**
-   * Creates a new account
-   *
-   */
-  /**
    * Counts the accounts of a ledger
    *
    * The ledger answers this over HEAD with the total in `X-Total-Count` and ignores
@@ -69,6 +65,10 @@ export interface AccountsService {
    */
   countAccounts(orgId: string, ledgerId: string): Promise<number>;
 
+  /**
+   * Creates a new account
+   *
+   */
   createAccount(orgId: string, ledgerId: string, input: CreateAccountInput): Promise<Account>;
 
   /**

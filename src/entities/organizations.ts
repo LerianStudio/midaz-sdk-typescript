@@ -37,6 +37,8 @@ export interface OrganizationsService {
    *
    * @returns Promise resolving to the organization
    */
+  getOrganization(id: string): Promise<Organization>;
+
   /**
    * Counts the organizations reachable with the configured credentials
    *
@@ -45,8 +47,6 @@ export interface OrganizationsService {
    *
    */
   countOrganizations(): Promise<number>;
-
-  getOrganization(id: string): Promise<Organization>;
 
   /**
    * Creates a new organization

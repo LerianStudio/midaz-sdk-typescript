@@ -36,6 +36,8 @@ export interface SegmentsService {
    *
    * @returns Promise resolving to the segment
    */
+  getSegment(orgId: string, ledgerId: string, id: string): Promise<Segment>;
+
   /**
    * Counts the segments of a ledger
    *
@@ -44,8 +46,6 @@ export interface SegmentsService {
    *
    */
   countSegments(orgId: string, ledgerId: string): Promise<number>;
-
-  getSegment(orgId: string, ledgerId: string, id: string): Promise<Segment>;
 
   /**
    * Creates a new segment

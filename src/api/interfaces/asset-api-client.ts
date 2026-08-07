@@ -25,6 +25,8 @@ export interface AssetApiClient extends ApiClient<Asset, CreateAssetInput, Updat
    *
    * @returns Promise resolving to the asset
    */
+  getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset>;
+
   /**
    * Counts the assets of a ledger
    *
@@ -34,8 +36,6 @@ export interface AssetApiClient extends ApiClient<Asset, CreateAssetInput, Updat
    * @returns Promise resolving to the number of assets
    */
   countAssets(orgId: string, ledgerId: string): Promise<number>;
-
-  getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset>;
 
   /**
    * Creates a new asset

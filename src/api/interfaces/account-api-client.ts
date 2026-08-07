@@ -53,11 +53,6 @@ export interface AccountApiClient
   getExternalAccount(orgId: string, ledgerId: string, assetCode: string): Promise<Account>;
 
   /**
-   * Creates a new account
-   *
-   * @returns Promise resolving to the created account
-   */
-  /**
    * Counts the accounts of a ledger
    *
    * The ledger serves this over HEAD alone, with the total in `X-Total-Count`,
@@ -67,6 +62,11 @@ export interface AccountApiClient
    */
   countAccounts(orgId: string, ledgerId: string): Promise<number>;
 
+  /**
+   * Creates a new account
+   *
+   * @returns Promise resolving to the created account
+   */
   createAccount(orgId: string, ledgerId: string, input: CreateAccountInput): Promise<Account>;
 
   /**

@@ -64,6 +64,8 @@ export interface SegmentApiClient
    *
    * @returns Promise resolving to the segment
    */
+  getSegment(orgId: string, ledgerId: string, id: string): Promise<Segment>;
+
   /**
    * Counts the segments of a ledger
    *
@@ -73,8 +75,6 @@ export interface SegmentApiClient
    * @returns Promise resolving to the number of segments
    */
   countSegments(orgId: string, ledgerId: string): Promise<number>;
-
-  getSegment(orgId: string, ledgerId: string, id: string): Promise<Segment>;
 
   /**
    * Creates a new segment

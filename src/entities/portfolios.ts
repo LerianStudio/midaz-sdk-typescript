@@ -41,6 +41,8 @@ export interface PortfoliosService {
    *
    * @returns Promise resolving to the portfolio
    */
+  getPortfolio(orgId: string, ledgerId: string, id: string): Promise<Portfolio>;
+
   /**
    * Counts the portfolios of a ledger
    *
@@ -49,8 +51,6 @@ export interface PortfoliosService {
    *
    */
   countPortfolios(orgId: string, ledgerId: string): Promise<number>;
-
-  getPortfolio(orgId: string, ledgerId: string, id: string): Promise<Portfolio>;
 
   /**
    * Creates a new portfolio

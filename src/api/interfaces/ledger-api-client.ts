@@ -31,6 +31,8 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
    *
    * @returns Promise resolving to the ledger
    */
+  getLedger(orgId: string, id: string): Promise<Ledger>;
+
   /**
    * Counts the ledgers of an organization
    *
@@ -40,8 +42,6 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
    * @returns Promise resolving to the number of ledgers
    */
   countLedgers(orgId: string): Promise<number>;
-
-  getLedger(orgId: string, id: string): Promise<Ledger>;
 
   /**
    * Creates a new ledger

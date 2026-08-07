@@ -67,6 +67,8 @@ export interface OrganizationApiClient
    *
    * @returns Promise resolving to the organization
    */
+  getOrganization(id: string): Promise<Organization>;
+
   /**
    * Counts the organizations reachable with the configured credentials
    *
@@ -76,8 +78,6 @@ export interface OrganizationApiClient
    * @returns Promise resolving to the number of organizations
    */
   countOrganizations(): Promise<number>;
-
-  getOrganization(id: string): Promise<Organization>;
 
   /**
    * Creates a new organization
