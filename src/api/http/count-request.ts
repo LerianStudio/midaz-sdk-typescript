@@ -7,6 +7,7 @@
  */
 
 import { ErrorCategory, ErrorCode, MidazError } from '../../util/error';
+import { HttpClient } from '../../util/network/http-client';
 import { detectEnvironment } from '../../util/runtime/environment';
 
 /**
@@ -91,4 +92,22 @@ export function parseTotalCount(
   }
 
   return count;
+}
+
+/**
+ * Issues a count request and reads the total off the reply
+ *
+ * This is the whole of a count for the clients that do not extend HttpBaseApiClient,
+ * which reaches the same behaviour through its own countRequest.
+ *
+ * @returns The number of resources the ledger counted
+ */
+export async function requestTotalCount(
+  httpClient: HttpClient,
+  operationName: string,
+  url: string
+): Promise<number> {
+  const response = await httpClient.head(url, {});
+
+  return parseTotalCount(operationName, response.headers);
 }

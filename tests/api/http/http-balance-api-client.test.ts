@@ -946,6 +946,25 @@ describe('HttpBalanceApiClient', () => {
       expect((requestOptions as Record<string, unknown> | undefined)?.params).toBeUndefined();
     });
 
+    it('gives limit a number when the ledger omits it', async () => {
+      mockHttpClient.get.mockResolvedValueOnce({ items: [mockBalance] });
+
+      const result = await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      expect(typeof result.limit).toBe('number');
+      expect(Number.isNaN(result.limit)).toBe(false);
+      expect(result.items.length < result.limit).toBe(false);
+    });
+
+    it('gives limit a number when the body is empty', async () => {
+      mockHttpClient.get.mockResolvedValueOnce({});
+
+      const result = await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      expect(result.items).toEqual([]);
+      expect(typeof result.limit).toBe('number');
+    });
+
     it('should return the empty page an unknown alias yields instead of throwing', async () => {
       // Arrange
       const emptyPage = { items: [], limit: 10 };

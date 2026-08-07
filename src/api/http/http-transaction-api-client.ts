@@ -53,15 +53,22 @@ import { HttpBaseApiClient } from './http-base-api-client';
 const TRANSACTION_LOCKED_STATUS = 409;
 
 /**
- * Statuses the ledger's count filter accepts, uppercase
+ * Statuses the ledger's count filter accepts, uppercase.
+ *
+ * Written as an exhaustive key map rather than an array: a `readonly
+ * TransactionCountStatus[]` annotation rejects an invalid member but does not demand
+ * every member, so a status added to the union would compile here and be refused at
+ * runtime. Keying the record by the union makes that omission a build error.
  */
-const COUNT_STATUSES: readonly TransactionCountStatus[] = [
-  'CREATED',
-  'APPROVED',
-  'PENDING',
-  'CANCELED',
-  'NOTED',
-];
+const COUNT_STATUS_SET: Record<TransactionCountStatus, true> = {
+  CREATED: true,
+  APPROVED: true,
+  PENDING: true,
+  CANCELED: true,
+  NOTED: true,
+};
+
+const COUNT_STATUSES = Object.keys(COUNT_STATUS_SET) as readonly TransactionCountStatus[];
 
 /**
  * The only date shape the count accepts: the ledger parses the bounds with Go's

@@ -18,7 +18,7 @@ import {
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
-import { parseTotalCount } from './count-request';
+import { requestTotalCount } from './count-request';
 
 /**
  * HTTP implementation of the SegmentApiClient interface
@@ -116,8 +116,7 @@ export class HttpSegmentApiClient implements SegmentApiClient {
       this.validateRequiredParams(span, { orgId, ledgerId });
 
       const url = this.urlBuilder.buildSegmentCountUrl(orgId, ledgerId);
-      const response = await this.httpClient.head(url, {});
-      const count = parseTotalCount('countSegments', response.headers);
+      const count = await requestTotalCount(this.httpClient, 'countSegments', url);
 
       this.recordMetrics('segments.count', count, { orgId, ledgerId });
 

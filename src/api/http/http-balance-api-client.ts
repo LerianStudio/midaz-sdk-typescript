@@ -598,9 +598,13 @@ export class HttpBalanceApiClient implements BalanceApiClient {
    * @private
    */
   private toAccountBalancePage(response: Record<string, any>): AccountBalancePage {
+    const items: Balance[] = response?.items ?? [];
+
+    // `limit` is not optional on the page, and the ledger can answer without it; the
+    // page it actually sent is the honest stand-in.
     const page: AccountBalancePage = {
-      items: response?.items ?? [],
-      limit: response?.limit,
+      items,
+      limit: typeof response?.limit === 'number' ? response.limit : items.length,
     };
 
     if (response?.next_cursor) {

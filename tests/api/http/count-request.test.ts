@@ -5,7 +5,12 @@
  * `Access-Control-Expose-Headers`, so a browser hides it from the SDK even
  * though it arrived. Only the runtime tells the two causes apart.
  */
-import { parseTotalCount, TOTAL_COUNT_HEADER } from '../../../src/api/http/count-request';
+import {
+  parseTotalCount,
+  requestTotalCount,
+  TOTAL_COUNT_HEADER,
+} from '../../../src/api/http/count-request';
+import { HttpClient } from '../../../src/util/network/http-client';
 import { detectEnvironment } from '../../../src/util/runtime/environment';
 
 jest.mock('../../../src/util/runtime/environment', () => ({
@@ -48,5 +53,30 @@ describe('parseTotalCount without the count header', () => {
     expect(() => parseTotalCount('countAccounts', { 'X-Total-Count': 'abc' })).toThrow(
       "was answered with X-Total-Count: 'abc', which is not a count"
     );
+  });
+});
+
+describe('requestTotalCount', () => {
+  const httpClient = { head: jest.fn() } as unknown as jest.Mocked<HttpClient>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('asks over HEAD, because the count routes answer nothing else', async () => {
+    httpClient.head.mockResolvedValueOnce({ headers: { 'X-Total-Count': '7' }, data: undefined });
+
+    const count = await requestTotalCount(httpClient, 'countSegments', '/segments/metrics/count');
+
+    expect(count).toBe(7);
+    expect(httpClient.head).toHaveBeenCalledWith('/segments/metrics/count', {});
+  });
+
+  it('reports the operation that was answered without a readable count', async () => {
+    httpClient.head.mockResolvedValueOnce({ headers: {}, data: undefined });
+
+    await expect(
+      requestTotalCount(httpClient, 'countPortfolios', '/portfolios/metrics/count')
+    ).rejects.toThrow('countPortfolios');
   });
 });

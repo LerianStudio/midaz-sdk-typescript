@@ -19,7 +19,7 @@ import {
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
-import { parseTotalCount } from './count-request';
+import { requestTotalCount } from './count-request';
 
 /**
  * HTTP implementation of the OrganizationApiClient interface
@@ -101,8 +101,7 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
 
     try {
       const url = this.urlBuilder.buildOrganizationCountUrl();
-      const response = await this.httpClient.head(url, {});
-      const count = parseTotalCount('countOrganizations', response.headers);
+      const count = await requestTotalCount(this.httpClient, 'countOrganizations', url);
 
       this.recordMetrics('organizations.count', count);
 

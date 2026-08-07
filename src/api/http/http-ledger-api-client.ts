@@ -21,7 +21,7 @@ import { LedgerApiClient } from '../interfaces/ledger-api-client';
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
-import { parseTotalCount } from './count-request';
+import { requestTotalCount } from './count-request';
 
 /**
  * HTTP implementation of the LedgerApiClient interface
@@ -112,8 +112,7 @@ export class HttpLedgerApiClient implements LedgerApiClient {
       this.validateRequiredParams(span, { orgId });
 
       const url = this.urlBuilder.buildLedgerCountUrl(orgId);
-      const response = await this.httpClient.head(url, {});
-      const count = parseTotalCount('countLedgers', response.headers);
+      const count = await requestTotalCount(this.httpClient, 'countLedgers', url);
 
       this.recordMetrics('ledgers.count', count, { orgId });
 

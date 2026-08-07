@@ -14,7 +14,7 @@ import { PortfolioApiClient } from '../interfaces/portfolio-api-client';
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
-import { parseTotalCount } from './count-request';
+import { requestTotalCount } from './count-request';
 
 /**
  * HTTP implementation of the PortfolioApiClient interface
@@ -112,8 +112,7 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
       this.validateRequiredParams(span, { orgId, ledgerId });
 
       const url = this.urlBuilder.buildPortfolioCountUrl(orgId, ledgerId);
-      const response = await this.httpClient.head(url, {});
-      const count = parseTotalCount('countPortfolios', response.headers);
+      const count = await requestTotalCount(this.httpClient, 'countPortfolios', url);
 
       this.recordMetrics('portfolios.count', count, { orgId, ledgerId });
 

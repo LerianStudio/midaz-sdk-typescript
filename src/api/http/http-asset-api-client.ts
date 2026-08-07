@@ -14,7 +14,7 @@ import { AssetApiClient } from '../interfaces/asset-api-client';
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
-import { parseTotalCount } from './count-request';
+import { requestTotalCount } from './count-request';
 /**
  * @inheritdoc
  */
@@ -107,8 +107,7 @@ export class HttpAssetApiClient implements AssetApiClient {
       this.validateRequiredParams(span, { orgId, ledgerId });
 
       const url = this.urlBuilder.buildAssetCountUrl(orgId, ledgerId);
-      const response = await this.httpClient.head(url, {});
-      const count = parseTotalCount('countAssets', response.headers);
+      const count = await requestTotalCount(this.httpClient, 'countAssets', url);
 
       this.recordMetrics('assets.count', count, { orgId, ledgerId });
 
