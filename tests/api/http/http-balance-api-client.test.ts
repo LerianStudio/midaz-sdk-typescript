@@ -42,9 +42,8 @@ describe('HttpBalanceApiClient', () => {
     accountId: accountId,
     alias: 'main-balance',
     assetCode: 'USD',
-    available: 10000,
-    onHold: 500,
-    scale: 100,
+    available: '10000',
+    onHold: '500',
     version: 1,
     accountType: 'ASSET',
     allowSending: true,
@@ -69,10 +68,11 @@ describe('HttpBalanceApiClient', () => {
     limit: 10,
   };
 
-  // The ledger serialises every monetary field as a decimal string, while the model
-  // still declares `available` a number, so a wire fixture has to be cast.
-  const balanceWorth = (id: string, available: string): Balance =>
-    ({ ...mockBalance, id, available }) as unknown as Balance;
+  const balanceWorth = (id: string, available: string): Balance => ({
+    ...mockBalance,
+    id,
+    available,
+  });
 
   // Mocks
   let mockHttpClient: jest.Mocked<HttpClient>;
@@ -648,8 +648,8 @@ describe('HttpBalanceApiClient', () => {
       // Arrange
       const incompleteBalance = {
         ...mockBalance,
-        available: undefined as unknown as number,
-        onHold: undefined as unknown as number,
+        available: undefined as unknown as string,
+        onHold: undefined as unknown as string,
       };
       mockHttpClient.get.mockResolvedValueOnce(incompleteBalance);
 

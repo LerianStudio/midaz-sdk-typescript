@@ -19,19 +19,24 @@ import type { components } from '../generated/ledger-v1';
  *   - AllowSending: Controls whether funds can be sent from the account
  *   - AllowReceiving: Controls whether funds can be received into the account
  *
+ * The ledger serialises the monetary fields as already-scaled decimal strings and sends
+ * no scaling factor with them, so they are read as written and never divided by anything.
+ * Adding two of them with `+` concatenates them; coerce before any arithmetic, and prefer
+ * a decimal library over `Number` when the value can exceed 2^53 or carry more precision
+ * than a double holds.
+ *
  * @example
  * ```typescript
- * // Example of a complete Balance object
+ * // Example of a complete Balance object, as the ledger sends it
  * const accountBalance: Balance = {
- *   id: "bal_01H9ZQCK3VP6WS2EZ5JQKD5E1S",
- *   organizationId: "org_01H9ZQCK3VP6WS2EZ5JQKD5E1S",
- *   ledgerId: "ldg_01H9ZQCK3VP6WS2EZ5JQKD5E1S",
- *   accountId: "acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S",
+ *   id: "019fda19-97cf-7754-8d87-56881f97208a",
+ *   organizationId: "019fda19-96d1-773f-ab6b-6b8bf963c7c6",
+ *   ledgerId: "019fda19-9796-739b-9b2a-8b6b762b60b3",
+ *   accountId: "019fda19-97cd-7b29-b90a-c962df8bbdc7",
  *   alias: "operating-cash",
  *   assetCode: "USD",
- *   available: 10000,
- *   onHold: 500,
- *   scale: 100,
+ *   available: "100.50",
+ *   onHold: "5.00",
  *   version: 42,
  *   accountType: "ASSET",
  *   allowSending: true,
@@ -43,10 +48,9 @@ import type { components } from '../generated/ledger-v1';
  *   }
  * };
  *
- * // The actual monetary value is calculated by dividing by the scale
- * const availableAmount = accountBalance.available / accountBalance.scale; // 100.00
- * const onHoldAmount = accountBalance.onHold / accountBalance.scale;       // 5.00
- * const totalAmount = (accountBalance.available + accountBalance.onHold) / accountBalance.scale; // 105.00
+ * const availableAmount = Number(accountBalance.available); // 100.5
+ * const onHoldAmount = Number(accountBalance.onHold);       // 5
+ * const totalAmount = availableAmount + onHoldAmount;       // 105.5
  * ```
  */
 export interface Balance {
@@ -93,23 +97,16 @@ export interface Balance {
   /**
    * Available is the amount available for use in the account
    * This represents funds that can be freely used in transactions.
-   * The actual value is Available/Scale (e.g., 1000/100 = 10.00)
+   * It is an already-scaled decimal string, such as "100.50".
    */
-  available: number;
+  available: string;
 
   /**
    * OnHold is the amount that is reserved but not yet settled
    * This represents funds that are temporarily reserved for pending operations.
-   * The actual value is OnHold/Scale (e.g., 500/100 = 5.00)
+   * It is an already-scaled decimal string, such as "5.00".
    */
-  onHold: number;
-
-  /**
-   * Scale is the divisor to convert the integer amounts to decimal values
-   * For example, a scale of 100 means the values are stored as cents,
-   * and a scale of 1000 means the values are stored with three decimal places.
-   */
-  scale: number;
+  onHold: string;
 
   /**
    * Version is the optimistic concurrency control version number

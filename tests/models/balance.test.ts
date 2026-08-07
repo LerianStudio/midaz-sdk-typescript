@@ -101,9 +101,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       alias: 'operating-cash',
       assetCode: 'USD',
-      available: 10000,
-      onHold: 500,
-      scale: 100,
+      available: '100.50',
+      onHold: '5.00',
       version: 42,
       accountType: 'ASSET',
       allowSending: true,
@@ -121,9 +120,8 @@ describe('Balance Model and Helper Functions', () => {
     expect(completeBalance.accountId).toBe('acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S');
     expect(completeBalance.alias).toBe('operating-cash');
     expect(completeBalance.assetCode).toBe('USD');
-    expect(completeBalance.available).toBe(10000);
-    expect(completeBalance.onHold).toBe(500);
-    expect(completeBalance.scale).toBe(100);
+    expect(completeBalance.available).toBe('100.50');
+    expect(completeBalance.onHold).toBe('5.00');
     expect(completeBalance.version).toBe(42);
     expect(completeBalance.accountType).toBe('ASSET');
     expect(completeBalance.allowSending).toBe(true);
@@ -143,9 +141,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       alias: 'minimal-balance',
       assetCode: 'USD',
-      available: 0,
-      onHold: 0,
-      scale: 100,
+      available: '0',
+      onHold: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -157,18 +154,17 @@ describe('Balance Model and Helper Functions', () => {
     expect(minimalBalance.metadata).toBeUndefined();
   });
 
-  // Test 10: Calculating monetary values from scaled integers
-  it('shouldCalculateMonetaryValuesFromScaledIntegers', () => {
+  // Test 10: Reading the monetary values the ledger sends as decimal strings
+  it('shouldReadMonetaryValuesFromDecimalStrings', () => {
     const balance: Balance = {
       id: 'bal_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       organizationId: 'org_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       ledgerId: 'ldg_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       accountId: 'acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
-      alias: 'scaled-balance',
+      alias: 'decimal-balance',
       assetCode: 'USD',
-      available: 10000,
-      onHold: 500,
-      scale: 100,
+      available: '100.50',
+      onHold: '5.00',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -177,29 +173,30 @@ describe('Balance Model and Helper Functions', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Calculate monetary values
-    const availableAmount = balance.available / balance.scale;
-    const onHoldAmount = balance.onHold / balance.scale;
-    const totalAmount = (balance.available + balance.onHold) / balance.scale;
+    const availableAmount = Number(balance.available);
+    const onHoldAmount = Number(balance.onHold);
+    const totalAmount = availableAmount + onHoldAmount;
 
-    expect(availableAmount).toBe(100);
+    expect(availableAmount).toBe(100.5);
     expect(onHoldAmount).toBe(5);
-    expect(totalAmount).toBe(105);
+    expect(totalAmount).toBe(105.5);
+
+    // Adding the raw fields concatenates them, which is why coercion is required.
+    expect(balance.available + balance.onHold).toBe('100.505.00');
   });
 
-  // Test 11: Handling different scale values
-  it('shouldHandleDifferentScaleValues', () => {
-    // Scale 1 (whole numbers)
+  // Test 11: Handling different decimal precisions
+  it('shouldHandleDifferentDecimalPrecisions', () => {
+    // Whole numbers
     const wholeNumberBalance: Balance = {
-      id: 'bal_scale1',
+      id: 'bal_whole',
       organizationId: 'org_id',
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'whole-numbers',
       assetCode: 'WHOLE',
-      available: 100,
-      onHold: 50,
-      scale: 1,
+      available: '100',
+      onHold: '50',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -208,17 +205,16 @@ describe('Balance Model and Helper Functions', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Scale 100 (2 decimal places)
+    // Two decimal places
     const twoDecimalBalance: Balance = {
-      id: 'bal_scale100',
+      id: 'bal_two_decimals',
       organizationId: 'org_id',
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'two-decimals',
       assetCode: 'USD',
-      available: 12345,
-      onHold: 6789,
-      scale: 100,
+      available: '123.45',
+      onHold: '67.89',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -227,17 +223,16 @@ describe('Balance Model and Helper Functions', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Scale 1000000 (6 decimal places)
+    // Six decimal places
     const sixDecimalBalance: Balance = {
-      id: 'bal_scale1000000',
+      id: 'bal_six_decimals',
       organizationId: 'org_id',
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'six-decimals',
       assetCode: 'BTC',
-      available: 123456789,
-      onHold: 987654321,
-      scale: 1000000,
+      available: '123.456789',
+      onHold: '987.654321',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -246,10 +241,9 @@ describe('Balance Model and Helper Functions', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Calculate monetary values
-    expect(wholeNumberBalance.available / wholeNumberBalance.scale).toBe(100);
-    expect(twoDecimalBalance.available / twoDecimalBalance.scale).toBe(123.45);
-    expect(sixDecimalBalance.available / sixDecimalBalance.scale).toBe(123.456789);
+    expect(Number(wholeNumberBalance.available)).toBe(100);
+    expect(Number(twoDecimalBalance.available)).toBe(123.45);
+    expect(Number(sixDecimalBalance.available)).toBe(123.456789);
   });
 
   // Test 12: Handling zero values
@@ -261,9 +255,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'zero-balance',
       assetCode: 'USD',
-      available: 0,
-      onHold: 0,
-      scale: 100,
+      available: '0',
+      onHold: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -272,11 +265,11 @@ describe('Balance Model and Helper Functions', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    expect(zeroBalance.available).toBe(0);
-    expect(zeroBalance.onHold).toBe(0);
-    expect(zeroBalance.available / zeroBalance.scale).toBe(0);
-    expect(zeroBalance.onHold / zeroBalance.scale).toBe(0);
-    expect((zeroBalance.available + zeroBalance.onHold) / zeroBalance.scale).toBe(0);
+    expect(zeroBalance.available).toBe('0');
+    expect(zeroBalance.onHold).toBe('0');
+    expect(Number(zeroBalance.available)).toBe(0);
+    expect(Number(zeroBalance.onHold)).toBe(0);
+    expect(Number(zeroBalance.available) + Number(zeroBalance.onHold)).toBe(0);
   });
 
   // Test 13: Handling negative values
@@ -288,9 +281,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'negative-balance',
       assetCode: 'USD',
-      available: -5000,
-      onHold: 1000,
-      scale: 100,
+      available: '-50.00',
+      onHold: '10.00',
       version: 1,
       accountType: 'LIABILITY',
       allowSending: true,
@@ -299,13 +291,13 @@ describe('Balance Model and Helper Functions', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    expect(negativeBalance.available / negativeBalance.scale).toBe(-50);
-    expect(negativeBalance.onHold / negativeBalance.scale).toBe(10);
-    expect((negativeBalance.available + negativeBalance.onHold) / negativeBalance.scale).toBe(-40);
+    expect(Number(negativeBalance.available)).toBe(-50);
+    expect(Number(negativeBalance.onHold)).toBe(10);
+    expect(Number(negativeBalance.available) + Number(negativeBalance.onHold)).toBe(-40);
   });
 
-  // Test 14: Handling large integer values
-  it('shouldHandleLargeIntegerValues', () => {
+  // Test 14: Carrying values a double cannot hold
+  it('shouldCarryValuesBeyondSafeIntegerRange', () => {
     const largeBalance: Balance = {
       id: 'bal_large',
       organizationId: 'org_id',
@@ -313,9 +305,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'large-balance',
       assetCode: 'USD',
-      available: 9007199254740991, // MAX_SAFE_INTEGER
-      onHold: 1000000000000,
-      scale: 100,
+      available: '9007199254740993', // one past MAX_SAFE_INTEGER
+      onHold: '10000000000.00',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -324,15 +315,13 @@ describe('Balance Model and Helper Functions', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    expect(largeBalance.available).toBe(9007199254740991);
-    expect(largeBalance.onHold).toBe(1000000000000);
+    expect(largeBalance.available).toBe('9007199254740993');
+    expect(largeBalance.onHold).toBe('10000000000.00');
 
-    // Calculate monetary values (these will be very large numbers)
-    const availableAmount = largeBalance.available / largeBalance.scale;
-    const onHoldAmount = largeBalance.onHold / largeBalance.scale;
-
-    expect(availableAmount).toBe(90071992547409.91);
-    expect(onHoldAmount).toBe(10000000000);
+    // The string survives intact; Number silently rounds it to the nearest double.
+    expect(Number(largeBalance.available)).toBe(9007199254740992);
+    expect(String(Number(largeBalance.available))).not.toBe(largeBalance.available);
+    expect(Number(largeBalance.onHold)).toBe(10000000000);
   });
 
   // Test 15: Creating an update input with direct property assignment
@@ -378,9 +367,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'asset-balance',
       assetCode: 'USD',
-      available: 1000,
-      onHold: 0,
-      scale: 100,
+      available: '1000',
+      onHold: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -396,9 +384,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'liability-balance',
       assetCode: 'USD',
-      available: -2000,
-      onHold: 0,
-      scale: 100,
+      available: '-2000',
+      onHold: '0',
       version: 1,
       accountType: 'LIABILITY',
       allowSending: true,
@@ -414,9 +401,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'equity-balance',
       assetCode: 'USD',
-      available: 5000,
-      onHold: 0,
-      scale: 100,
+      available: '5000',
+      onHold: '0',
       version: 1,
       accountType: 'EQUITY',
       allowSending: true,
@@ -439,9 +425,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'metadata-balance',
       assetCode: 'USD',
-      available: 1000,
-      onHold: 0,
-      scale: 100,
+      available: '1000',
+      onHold: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -480,9 +465,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'version-balance',
       assetCode: 'USD',
-      available: 1000,
-      onHold: 0,
-      scale: 100,
+      available: '10.00',
+      onHold: '0.00',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
@@ -494,7 +478,7 @@ describe('Balance Model and Helper Functions', () => {
     // Simulate a balance update (e.g., after a transaction)
     const updatedBalance: Balance = {
       ...initialBalance,
-      available: 1500,
+      available: '15.00',
       version: initialBalance.version + 1,
       updatedAt: new Date().toISOString(),
     };
@@ -502,8 +486,8 @@ describe('Balance Model and Helper Functions', () => {
     // Simulate another balance update
     const finalBalance: Balance = {
       ...updatedBalance,
-      available: 1200,
-      onHold: 300,
+      available: '12.00',
+      onHold: '3.00',
       version: updatedBalance.version + 1,
       updatedAt: new Date().toISOString(),
     };
@@ -513,18 +497,18 @@ describe('Balance Model and Helper Functions', () => {
     expect(finalBalance.version).toBe(3);
 
     // Verify that the available and onHold amounts were updated correctly
-    expect(initialBalance.available).toBe(1000);
-    expect(initialBalance.onHold).toBe(0);
+    expect(initialBalance.available).toBe('10.00');
+    expect(initialBalance.onHold).toBe('0.00');
 
-    expect(updatedBalance.available).toBe(1500);
-    expect(updatedBalance.onHold).toBe(0);
+    expect(updatedBalance.available).toBe('15.00');
+    expect(updatedBalance.onHold).toBe('0.00');
 
-    expect(finalBalance.available).toBe(1200);
-    expect(finalBalance.onHold).toBe(300);
+    expect(finalBalance.available).toBe('12.00');
+    expect(finalBalance.onHold).toBe('3.00');
 
     // The total should remain the same between the second and third updates
-    const totalUpdated = updatedBalance.available / updatedBalance.scale;
-    const totalFinal = (finalBalance.available + finalBalance.onHold) / finalBalance.scale;
+    const totalUpdated = Number(updatedBalance.available);
+    const totalFinal = Number(finalBalance.available) + Number(finalBalance.onHold);
 
     expect(totalUpdated).toBe(15);
     expect(totalFinal).toBe(15);
@@ -539,9 +523,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'locked-balance',
       assetCode: 'USD',
-      available: 1000,
-      onHold: 0,
-      scale: 100,
+      available: '1000',
+      onHold: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: false,
@@ -563,9 +546,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'deposit-only-balance',
       assetCode: 'USD',
-      available: 1000,
-      onHold: 0,
-      scale: 100,
+      available: '1000',
+      onHold: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: false,
@@ -581,9 +563,8 @@ describe('Balance Model and Helper Functions', () => {
       accountId: 'acc_id',
       alias: 'withdraw-only-balance',
       assetCode: 'USD',
-      available: 1000,
-      onHold: 0,
-      scale: 100,
+      available: '1000',
+      onHold: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,

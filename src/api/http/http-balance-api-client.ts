@@ -405,8 +405,11 @@ export class HttpBalanceApiClient implements BalanceApiClient {
       const result = await this.httpClient.get<Balance>(url);
 
       // Record metrics for the balance amounts
-      if (result.available !== undefined) {
-        this.recordMetrics('balance.available', result.available, {
+      const available = Number(result.available);
+      const onHold = Number(result.onHold);
+
+      if (Number.isFinite(available)) {
+        this.recordMetrics('balance.available', available, {
           orgId,
           ledgerId,
           balanceId: id,
@@ -414,8 +417,8 @@ export class HttpBalanceApiClient implements BalanceApiClient {
         });
       }
 
-      if (result.onHold !== undefined) {
-        this.recordMetrics('balance.onHold', result.onHold, {
+      if (Number.isFinite(onHold)) {
+        this.recordMetrics('balance.onHold', onHold, {
           orgId,
           ledgerId,
           balanceId: id,
