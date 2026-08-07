@@ -96,11 +96,33 @@ ledger-v1.openapi.yaml=$SOURCE_V1
 ledger-v2.openapi.yaml=$SOURCE_V2
 EOF
 
+backup_dir=$(mktemp -d)
+trap 'rm -rf "$STAGE_DIR" "$backup_dir"' EXIT
+
+for f in ledger-v1.openapi.yaml ledger-v2.openapi.yaml VERSION; do
+  [ -f "$SPEC_DIR/$f" ] && cp "$SPEC_DIR/$f" "$backup_dir/$f"
+done
+[ -d "$SDK_ROOT/src/generated" ] && cp -R "$SDK_ROOT/src/generated" "$backup_dir/generated"
+
+restore() {
+  for f in ledger-v1.openapi.yaml ledger-v2.openapi.yaml VERSION; do
+    [ -f "$backup_dir/$f" ] && cp "$backup_dir/$f" "$SPEC_DIR/$f"
+  done
+  if [ -d "$backup_dir/generated" ]; then
+    rm -rf "$SDK_ROOT/src/generated"
+    cp -R "$backup_dir/generated" "$SDK_ROOT/src/generated"
+  fi
+  echo "generate:types failed; specs, VERSION and src/generated restored" >&2
+}
+
 mv "$STAGE_DIR/ledger-v1.openapi.yaml" "$SPEC_DIR/ledger-v1.openapi.yaml"
 mv "$STAGE_DIR/ledger-v2.openapi.yaml" "$SPEC_DIR/ledger-v2.openapi.yaml"
 mv "$STAGE_DIR/VERSION" "$SPEC_DIR/VERSION"
 
 cd "$SDK_ROOT"
-npm run generate:types
+if ! npm run generate:types; then
+  restore
+  exit 1
+fi
 
 echo "spec updated from $MIDAZ_REPO @ $MIDAZ_SHORT_SHA ($MIDAZ_REF_NAME)"

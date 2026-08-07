@@ -116,7 +116,7 @@ describe('HttpOperationApiClient contract', () => {
 
     const result = await client.listOperations(orgId, ledgerId, accountId);
 
-    expect(result).toEqual({ limit: 10 });
+    expect(result).toEqual({ limit: 10, items: [] });
     expect(mockObservability.recordMetric).toHaveBeenCalledWith(
       'operations.list.count',
       0,
@@ -130,5 +130,40 @@ describe('HttpOperationApiClient contract', () => {
     ).rejects.toThrow(/transactionId is required/);
 
     expect(mockSpan.end).toHaveBeenCalledTimes(1);
+  });
+
+  describe('listOperations items normalization', () => {
+    beforeEach(() => {
+      mockUrlBuilder.buildAccountOperationsUrl = jest
+        .fn()
+        .mockReturnValue(
+          `https://api.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`
+        ) as unknown as jest.Mocked<UrlBuilder>['buildAccountOperationsUrl'];
+    });
+
+    it.each([
+      ['a missing items key', {}],
+      ['a null items value', { items: null }],
+      ['a non-array items value', { items: 'not-an-array' }],
+    ])('hands the caller an array when the ledger sends %s', async (_label, payload) => {
+      mockHttpClient.get.mockResolvedValueOnce(payload as never);
+
+      const result = await client.listOperations(orgId, ledgerId, accountId);
+
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items).toEqual([]);
+    });
+
+    it('preserves the envelope and the operations when items is usable', async () => {
+      mockHttpClient.get.mockResolvedValueOnce({
+        items: [mockOperation],
+        meta: { total: 1 },
+      } as never);
+
+      const result = await client.listOperations(orgId, ledgerId, accountId);
+
+      expect(result.items).toEqual([mockOperation]);
+      expect((result as unknown as { meta: unknown }).meta).toEqual({ total: 1 });
+    });
   });
 });

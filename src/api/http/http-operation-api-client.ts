@@ -60,7 +60,7 @@ export class HttpOperationApiClient
     this.recordMetrics('operations.list.count', items.length, attributes);
     this.recordDirectionMetrics(items, attributes);
 
-    return result;
+    return { ...result, items };
   }
 
   /**
