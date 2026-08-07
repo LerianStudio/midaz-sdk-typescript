@@ -2,7 +2,7 @@
  */
 
 import { ApiResponse, ListOptions, ListResponse } from '../../models/common';
-import { HttpClient, RequestOptions } from '../../util/network/http-client';
+import { HttpClient, RequestOptions, ResponseWithHeaders } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';
 import {
   validateRequiredParams as baseValidateRequiredParams,
@@ -240,6 +240,77 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     } finally {
       span.end();
     }
+  }
+
+  /**
+   * Makes a HEAD request with standardized error handling and tracing
+   *
+   * @returns Promise resolving to the (usually empty) body and the response headers
+   */
+  protected async headRequest<R = undefined>(
+    operationName: string,
+    url: string,
+    options?: RequestOptions,
+    attributes?: Record<string, any>
+  ): Promise<ResponseWithHeaders<R>> {
+    const span = this.startSpan(operationName, attributes);
+
+    try {
+      span.setAttribute('url', url);
+      span.setAttribute('apiVersion', this.apiVersion);
+
+      if (options?.params) {
+        span.setAttribute('hasParams', true);
+        this.setListOptionsAttributes(span, options.params as ListOptions);
+      }
+
+      // Add version header to requests
+      const requestOptions = {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'X-API-Version': this.apiVersion,
+        },
+      };
+
+      const result = await this.httpClient.head<R>(url, requestOptions);
+
+      this.recordMetrics(`${operationName}.count`, 1, attributes);
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      this.handleError(span, error as Error);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Reads a response header by name, ignoring case
+   *
+   * The lookup is case-insensitive even though the ledger sends `X-Total-Count`
+   * verbatim, because fetch normalizes header casing and a plain record does
+   * not.
+   *
+   * @returns The header value, or undefined when the response does not carry it
+   */
+  protected readResponseHeader(
+    headers: Headers | Record<string, string>,
+    name: string
+  ): string | undefined {
+    if (typeof (headers as Headers).get === 'function') {
+      return (headers as Headers).get(name) ?? undefined;
+    }
+
+    const wanted = name.toLowerCase();
+    for (const [key, value] of Object.entries(headers as Record<string, string>)) {
+      if (key.toLowerCase() === wanted) {
+        return value;
+      }
+    }
+
+    return undefined;
   }
 
   /**

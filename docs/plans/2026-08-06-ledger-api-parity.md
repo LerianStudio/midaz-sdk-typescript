@@ -450,7 +450,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 #### Task 3.2.1: HEAD verb and response-header plumbing
 
-- [ ] Done
+- [x] Done
 
 **Context:** Nothing in the SDK can perform this request today. Four specific holes, all read from the code: `RequestOptions.method` is a union of `'GET'|'POST'|'PUT'|'DELETE'|'PATCH'` (`universal-http-client.ts:45`); `http-client-wrapper.ts:141-171` has no `head()`; `request()` at `:239` returns `response.data` and **throws the headers away**, even though the universal layer already carries them (`universal-http-client.ts:245` returns `headers: response.headers`); and `HttpBaseApiClient` has no `headRequest`. There is also a decoding hazard: `parseResponse` (`universal-http-client.ts:378-388`) branches on `Content-Type` and falls through to `response.blob()`, so a `204` with no `Content-Type` needs a no-body short-circuit.
 
