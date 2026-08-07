@@ -532,6 +532,23 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 ## Phase 4: New domains
 
+### 🔴 Version gate — read before scoping this phase
+
+**Everything in Phase 4 is `develop`-only. The minimum ledger version is `v4.0.0-beta.24`, which *is* commit `33cb93f` — the exact commit the vendored specs came from.** Measured against the released tag: `v3.8.0`'s ledger spec has 56 paths and **zero** matches for holder, instrument, billing, package, encryption, protection, estimate, or `/v2`. Nothing in this phase works against the released ledger.
+
+Two of the four families are worse than merely absent, and this is what makes the scoping decision real:
+
+- **Holders and encryption existed in `v3.8.0` — as a *different service with a different contract*.** `components/crm` ran on **port 4003** with org-less paths, and the resource was called **`aliases`**, not `instruments`: `/v1/holders/{holder_id}/aliases/{alias_id}`. On `develop`, CRM folded into the ledger binary, holders became org-scoped, and `alias` became `instrument`. So an SDK built for `develop` does not serve a `v3.8.0` deployment and vice versa — the two contracts are incompatible, not merely different in coverage. Building against `develop` is a bet on which one ships.
+- **Encryption and protection are not even mounted** on a default deployment. All three routes answer `404` with code **`0484` "Route Not Found"** — the routing fallback, not a business 404 — because they are envelope-mode-only, gated on `KMS_VENDOR`. A contrasting probe confirms the discriminator: a mounted-but-empty route answers `0007` "Entity Not Found". The SDK must model `0484` as a first-class *"encryption not configured on this deployment"* state.
+
+**Recommended split, pending a product decision:** ship **4.2 (billing)** and **4.4 (v2)** first — both are purely additive, unambiguous, and have no competing released contract. **Defer 4.1 (holders) and 4.3 (encryption)** until the v4 contract is released, because choosing the wrong one of two incompatible shapes costs the whole epic in rework.
+
+**Three findings that apply regardless of scope, all measured:**
+
+1. **The `X-API-Version` header the SDK stamps on every request is decorative.** `GET /v1/organizations` with `X-API-Version: v2` returns v1 data with `200`. The ledger versions purely by path. The header should still reflect the version actually used per call, or it lies in traces.
+2. **v2 deduplicates by request-body hash even when no idempotency key is supplied**, within a 300s TTL. Proven: the same body posted twice to `/v2/transactions/direct` with **no key** returned the same transaction id, the second carrying `X-Idempotency-Replayed: true`. The action discriminator v2 adds (`v2IdempotencyHashSource`, `transaction_v2_handler.go:125-132`, separator `"\x00"`) only prevents *cross-action* collision — the same body to `/hold` did **not** replay the direct. **The Phase 2 replay guards are therefore still required on v2**, since v2 delegates to the same `createTransactionShell`.
+3. **`apiVersion` is instance-wide and must become per-route.** `url-builder.ts` fixes it in the constructor and every `build*Url` runs through `getVersionedUrl`; `ApiFactory` shares one `UrlBuilder` across all 15 clients. Flipping it to `'v2'` globally would break everything else, because v2 has 23 paths to v1's 72 and contains no organizations, ledgers, accounts, assets, portfolios, segments or account-types. The fix is an optional version override on `getVersionedUrl` with v2 builders passing `'v2'` explicitly — not a second base URL, since v2 is the same host and port under a `/v2` prefix.
+
 ### Epic 4.1: Holders and instruments (embedded CRM)
 
 **Goal:** Full holders domain: holders CRUD, holder accounts, instruments CRUD, related-party removal — 8 v1 paths under `organizations/{id}/holders|instruments`.
@@ -558,11 +575,30 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 ### Epic 4.4: v2 API surface
 
-**Goal:** v2 endpoints: `POST /transactions/direct`, `/hold`, `/block`, `/unblock` (org-less, header-scoped), plus v2 transaction lifecycle variants; SDK version-negotiation strategy (`X-API-Version` header already exists at `http-base-api-client.ts:68-74`; `apiVersion` config at `url-builder.ts:28`).
-**Scope:** url-builder (v2 path style), transaction client or new v2 client, `spec/ledger-v2.openapi.yaml` drift coverage, tests
-**Dependencies:** Phases 1–2 (v2 semantics build on lifecycle)
-**Done when:** direct + hold round-trip live under v2; drift suite covers v2 paths.
+**Goal:** The four v2 create routes and the v2 lifecycle, served from the same host under a `/v2` prefix, consuming the generated request types rather than hand-written ones.
+**Scope:** `src/api/url-builder.ts` (per-route version), a v2 transaction client, models built on `src/generated/ledger-v2.d.ts`, `spec/ledger-v2.openapi.yaml` drift coverage, tests
+**Dependencies:** Phases 1–2 (v2 reuses the replay guards; see finding 2 above)
+**Done when:** `direct` and `hold` round-trip live under v2 with balance assertions, the lifecycle transitions work, and the drift suite covers v2 paths with their verbs.
 **Status:** Pending
+
+**Verified contract (2026-08-07, live).** Unlike v1, this is a genuinely different transaction model, not a re-skin — and the generated types are real, so **do not hand-write the input**: `components['schemas']['CreateTransactionV2Input']` (`ledger-v2.d.ts:488`), `['V2LegInput']` (:1192), `['V2ShareInput']` (:1212), `['TransactionV2']` (:1106), plus the seven `operations[...]` entries for direct/hold/block/unblock/commit/cancel/revert.
+
+| | v1 | v2 |
+|---|---|---|
+| nesting | `send.source.from[]` / `send.distribute.to[]` | flat `debits[]` / `credits[]` |
+| leg account key | `account` | `alias` |
+| leg amount | object `{asset, value}` | bare decimal string |
+| asset & value | on `send` | top level |
+| scope | from the **path** | from **every leg** (`organizationId`+`ledgerId`, all must agree) |
+| `chartOfAccountsGroupName` | required | absent |
+| leg cap | undeclared | **1–500 per side** |
+| create variants | json, inflow, outflow, block, unblock, annotation | **direct, hold**, block, unblock |
+
+A leg carries `amount` **or** `share` — never both, never neither; `share.percentage` is an integer 1–100. The response is asymmetric to the request: `TransactionV2` uses **singular** `debit`/`credit`, and they are arrays of alias **strings**, with the double-entry detail in `operations[]`.
+
+Measured semantics: `direct` → `CREATED`, settles immediately. `hold` → **`PENDING`** with op type `ON_HOLD`, moving available→onHold (observed `available 32→29, onHold 0→3`); a `hold` whose debit leg is `@external/` is `422`. `block` → `CREATED` with op type `BLOCK`. Lifecycle: commit on a pending hold → `APPROVED`; a second commit → `409`; cancel on a committed transaction → `409/0486` with `entityType: "ValidateTransactionNotPending"`.
+
+---
 
 ---
 
