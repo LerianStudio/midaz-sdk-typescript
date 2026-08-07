@@ -578,6 +578,15 @@ export class UrlBuilder {
   }
 
   /**
+   * Builds the URL for the settings document of a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildLedgerSettingsUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildLedgerUrl(orgId, ledgerId)}/settings`;
+  }
+
+  /**
    * Builds the URL carrying the total number of ledgers in an organization
    *
    * @returns The constructed URL

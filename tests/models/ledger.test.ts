@@ -1,4 +1,5 @@
 import {
+  LEDGER_OVERRIDE_PATHS,
   Ledger,
   newCreateLedgerInput,
   newUpdateLedgerInput,
@@ -603,5 +604,14 @@ describe('Ledger Model and Helper Functions', () => {
 
     expect(result.valid).toBe(false);
     expect(result.message).toContain('size exceeds maximum of');
+  });
+
+  // Test 43: The override paths a refused skip points the caller at
+  it('shouldMapEverySkipFlagToItsLedgerSettingsPath', () => {
+    expect(LEDGER_OVERRIDE_PATHS).toEqual({
+      fees: 'overrides.allowFeeSkip',
+      tracer: 'overrides.allowTracerSkip',
+      holder: 'overrides.allowHolderSkip',
+    });
   });
 });

@@ -252,6 +252,11 @@ const builderCases: BuilderCase[] = [
     build: (b) => b.buildTransactionRouteUrl(ORG, LEDGER, TRANSACTION_ROUTE),
   },
   {
+    method: 'buildLedgerSettingsUrl',
+    verbs: ['get', 'patch'],
+    build: (b) => b.buildLedgerSettingsUrl(ORG, LEDGER),
+  },
+  {
     method: 'buildOrganizationCountUrl',
     verbs: COUNT_VERBS,
     build: (b) => b.buildOrganizationCountUrl(),
@@ -329,6 +334,7 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/segments',
   '/organizations/{organization_id}/ledgers/{ledger_id}/segments/metrics/count',
   '/organizations/{organization_id}/ledgers/{ledger_id}/segments/{id}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/settings',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes/{transaction_route_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions',

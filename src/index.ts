@@ -54,9 +54,17 @@ export { OrganizationsService } from './entities/organizations';
 // ------------------------------
 export {
   CreateLedgerInput,
+  LEDGER_OVERRIDE_PATHS,
   Ledger,
+  LedgerAccountingSettings,
   LedgerBuilder,
+  LedgerOverrideSettings,
+  LedgerSettings,
+  LedgerTracerSettings,
+  TracerFailPosture,
+  TracerMode,
   UpdateLedgerBuilder,
+  UpdateLedgerSettingsInput,
   createLedgerBuilder,
   createUpdateLedgerBuilder,
   UpdateLedgerInput,

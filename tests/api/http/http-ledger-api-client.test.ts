@@ -2,7 +2,13 @@
  * Tests for HttpLedgerApiClient
  */
 
-import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../../../src/models/ledger';
+import {
+  CreateLedgerInput,
+  LEDGER_OVERRIDE_PATHS,
+  Ledger,
+  LedgerSettings,
+  UpdateLedgerInput,
+} from '../../../src/models/ledger';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
@@ -15,6 +21,7 @@ jest.mock('../../../src/models/validators/ledger-validator');
 import {
   validateCreateLedgerInput,
   validateUpdateLedgerInput,
+  validateUpdateLedgerSettingsInput,
 } from '../../../src/models/validators/ledger-validator';
 // Validation mock
 const validateMock = jest.fn();
@@ -89,6 +96,9 @@ describe('HttpLedgerApiClient', () => {
         }
         return url;
       }),
+      buildLedgerSettingsUrl: jest
+        .fn()
+        .mockImplementation((org, id) => `/organizations/${org}/ledgers/${id}/settings`),
       getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
 
@@ -356,6 +366,142 @@ describe('HttpLedgerApiClient', () => {
       await expect(client.updateLedger(orgId, ledgerId, updateInput)).rejects.toThrow('API Error');
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
+    });
+  });
+
+  describe('ledger settings', () => {
+    const defaultSettings: LedgerSettings = {
+      accounting: { validateAccountType: false, validateRoutes: false, requireHolder: false },
+      tracer: { mode: 'off', failPosture: 'open', timeoutMs: 250 },
+      overrides: { allowFeeSkip: false, allowTracerSkip: false, allowHolderSkip: false },
+    };
+
+    describe('getLedgerSettings', () => {
+      it('should read the settings document from the settings path', async () => {
+        mockHttpClient.get.mockResolvedValueOnce(defaultSettings);
+
+        const result = await client.getLedgerSettings(orgId, ledgerId);
+
+        expect(result).toEqual(defaultSettings);
+        expect(mockUrlBuilder.buildLedgerSettingsUrl).toHaveBeenCalledWith(orgId, ledgerId);
+        expect(mockHttpClient.get).toHaveBeenCalledWith(
+          `/organizations/${orgId}/ledgers/${ledgerId}/settings`
+        );
+        expect(mockObservability.recordMetric).toHaveBeenCalledWith(
+          'ledgers.settings.get',
+          1,
+          expect.objectContaining({ orgId, ledgerId })
+        );
+        expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
+      });
+
+      it('should throw error when missing orgId', async () => {
+        await expect(client.getLedgerSettings('', ledgerId)).rejects.toThrow('orgId is required');
+        expect(mockSpan.recordException).toHaveBeenCalled();
+      });
+
+      it('should throw error when missing ledgerId', async () => {
+        await expect(client.getLedgerSettings(orgId, '')).rejects.toThrow('id is required');
+        expect(mockSpan.recordException).toHaveBeenCalled();
+      });
+
+      it('should handle API errors', async () => {
+        const error = new Error('API Error');
+        mockHttpClient.get.mockRejectedValueOnce(error);
+
+        await expect(client.getLedgerSettings(orgId, ledgerId)).rejects.toThrow('API Error');
+        expect(mockSpan.recordException).toHaveBeenCalledWith(error);
+        expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
+      });
+    });
+
+    describe('updateLedgerSettings', () => {
+      it('should PATCH the patch verbatim without filling in sibling fields', async () => {
+        const merged: LedgerSettings = {
+          ...defaultSettings,
+          overrides: { ...defaultSettings.overrides, allowFeeSkip: true },
+        };
+        mockHttpClient.patch.mockResolvedValueOnce(merged);
+
+        const result = await client.updateLedgerSettings(orgId, ledgerId, {
+          overrides: { allowFeeSkip: true },
+        });
+
+        expect(result).toEqual(merged);
+        expect(mockUrlBuilder.buildLedgerSettingsUrl).toHaveBeenCalledWith(orgId, ledgerId);
+        expect(mockHttpClient.patch).toHaveBeenCalledWith(
+          `/organizations/${orgId}/ledgers/${ledgerId}/settings`,
+          { overrides: { allowFeeSkip: true } }
+        );
+        expect(mockObservability.recordMetric).toHaveBeenCalledWith(
+          'ledgers.settings.update',
+          1,
+          expect.objectContaining({ orgId, ledgerId })
+        );
+        expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
+      });
+
+      it('should send an empty patch untouched, since the ledger accepts it', async () => {
+        mockHttpClient.patch.mockResolvedValueOnce(defaultSettings);
+
+        await client.updateLedgerSettings(orgId, ledgerId, {});
+
+        expect(mockHttpClient.patch).toHaveBeenCalledWith(expect.any(String), {});
+      });
+
+      it('should carry the override path a refused skip names straight onto the wire', async () => {
+        mockHttpClient.patch.mockResolvedValueOnce(defaultSettings);
+        const [group, field] = LEDGER_OVERRIDE_PATHS.fees.split('.');
+
+        await client.updateLedgerSettings(orgId, ledgerId, { [group]: { [field]: true } } as any);
+
+        expect(mockHttpClient.patch).toHaveBeenCalledWith(expect.any(String), {
+          overrides: { allowFeeSkip: true },
+        });
+      });
+
+      it('should run the settings validator before anything reaches the wire', async () => {
+        mockHttpClient.patch.mockResolvedValueOnce(defaultSettings);
+
+        await client.updateLedgerSettings(orgId, ledgerId, { tracer: { mode: 'enforce' } });
+
+        expect(validateMock).toHaveBeenCalledWith(
+          { tracer: { mode: 'enforce' } },
+          validateUpdateLedgerSettingsInput
+        );
+      });
+
+      it('should throw error when validation fails', async () => {
+        validateMock.mockImplementation(() => {
+          throw new Error('Validation error');
+        });
+
+        await expect(
+          client.updateLedgerSettings(orgId, ledgerId, { tracer: { mode: 'off' } })
+        ).rejects.toThrow('Validation error');
+        expect(mockHttpClient.patch).not.toHaveBeenCalled();
+      });
+
+      it('should throw error when missing orgId', async () => {
+        await expect(client.updateLedgerSettings('', ledgerId, {})).rejects.toThrow(
+          'orgId is required'
+        );
+        expect(mockSpan.recordException).toHaveBeenCalled();
+      });
+
+      it('should throw error when missing ledgerId', async () => {
+        await expect(client.updateLedgerSettings(orgId, '', {})).rejects.toThrow('id is required');
+        expect(mockSpan.recordException).toHaveBeenCalled();
+      });
+
+      it('should handle API errors', async () => {
+        const error = new Error('API Error');
+        mockHttpClient.patch.mockRejectedValueOnce(error);
+
+        await expect(client.updateLedgerSettings(orgId, ledgerId, {})).rejects.toThrow('API Error');
+        expect(mockSpan.recordException).toHaveBeenCalledWith(error);
+        expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
+      });
     });
   });
 

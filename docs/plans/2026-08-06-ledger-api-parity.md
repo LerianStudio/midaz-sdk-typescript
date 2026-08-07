@@ -506,7 +506,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 #### Task 3.3.1: getLedgerSettings and updateLedgerSettings
 
-- [ ] Done
+- [x] Done
 
 **Context:** `GET .../ledgers/{ledger_id}/settings` returns the full document, with defaults supplied in Go rather than stored, so a never-patched ledger still answers `200`:
 

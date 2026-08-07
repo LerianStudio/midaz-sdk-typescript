@@ -5,7 +5,12 @@
 
 import { LedgersServiceImpl } from '../../../src/entities/implementations/ledgers-impl';
 import { Observability } from '../../../src/util/observability';
-import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../../../src/models/ledger';
+import {
+  CreateLedgerInput,
+  Ledger,
+  LedgerSettings,
+  UpdateLedgerInput,
+} from '../../../src/models/ledger';
 import { ListResponse, StatusCode } from '../../../src/models/common';
 import { LedgerApiClient } from '../../../src/api/interfaces/ledger-api-client';
 
@@ -66,6 +71,8 @@ describe('LedgersServiceImpl', () => {
       createLedger: jest.fn(),
       updateLedger: jest.fn(),
       deleteLedger: jest.fn(),
+      getLedgerSettings: jest.fn(),
+      updateLedgerSettings: jest.fn(),
     } as unknown as jest.Mocked<LedgerApiClient>;
 
     // Create a mock Observability instance
@@ -333,6 +340,42 @@ describe('LedgersServiceImpl', () => {
 
       // Execute & Verify
       await expect(ledgersService.deleteLedger(orgId, ledgerId)).rejects.toThrow('API Error');
+    });
+  });
+
+  describe('ledger settings', () => {
+    const settings: LedgerSettings = {
+      accounting: { validateAccountType: false, validateRoutes: false, requireHolder: false },
+      tracer: { mode: 'off', failPosture: 'open', timeoutMs: 250 },
+      overrides: { allowFeeSkip: false, allowTracerSkip: false, allowHolderSkip: false },
+    };
+
+    it('should delegate getLedgerSettings to the API client', async () => {
+      mockLedgerApiClient.getLedgerSettings.mockResolvedValueOnce(settings);
+
+      const result = await ledgersService.getLedgerSettings(orgId, ledgerId);
+
+      expect(result).toEqual(settings);
+      expect(mockLedgerApiClient.getLedgerSettings).toHaveBeenCalledWith(orgId, ledgerId);
+    });
+
+    it('should delegate updateLedgerSettings to the API client with the patch untouched', async () => {
+      const patch = { overrides: { allowFeeSkip: true } };
+      mockLedgerApiClient.updateLedgerSettings.mockResolvedValueOnce(settings);
+
+      await ledgersService.updateLedgerSettings(orgId, ledgerId, patch);
+
+      expect(mockLedgerApiClient.updateLedgerSettings).toHaveBeenCalledWith(orgId, ledgerId, patch);
+    });
+
+    it('should handle API errors on both settings routes', async () => {
+      mockLedgerApiClient.getLedgerSettings.mockRejectedValueOnce(new Error('API Error'));
+      mockLedgerApiClient.updateLedgerSettings.mockRejectedValueOnce(new Error('API Error'));
+
+      await expect(ledgersService.getLedgerSettings(orgId, ledgerId)).rejects.toThrow('API Error');
+      await expect(ledgersService.updateLedgerSettings(orgId, ledgerId, {})).rejects.toThrow(
+        'API Error'
+      );
     });
   });
 });

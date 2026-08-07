@@ -2,6 +2,7 @@
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
+import { LEDGER_OVERRIDE_PATHS } from '../../models/ledger';
 import {
   BlockFundsInput,
   CountTransactionsOptions,
@@ -181,11 +182,12 @@ const SKIP_NOT_PERMITTED_STATUS = 422;
 
 /**
  * Ledger override each skip flag needs, keyed by the word the server's own detail uses.
- * The server says "enable the matching ledger override" without naming it.
+ * The server says "enable the matching ledger override" without naming it. Only the two
+ * skips a transaction body can carry are here; `holder` is gated on account creation.
  */
 const SKIP_OVERRIDES: Record<string, string> = {
-  fees: 'overrides.allowFeeSkip',
-  tracer: 'overrides.allowTracerSkip',
+  fees: LEDGER_OVERRIDE_PATHS.fees,
+  tracer: LEDGER_OVERRIDE_PATHS.tracer,
 };
 
 const TERMINAL_LOCK_NOTE =

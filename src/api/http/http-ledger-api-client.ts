@@ -2,10 +2,17 @@
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
-import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../../models/ledger';
+import {
+  CreateLedgerInput,
+  Ledger,
+  LedgerSettings,
+  UpdateLedgerInput,
+  UpdateLedgerSettingsInput,
+} from '../../models/ledger';
 import {
   validateCreateLedgerInput,
   validateUpdateLedgerInput,
+  validateUpdateLedgerSettingsInput,
 } from '../../models/validators/ledger-validator';
 import { HttpClient } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';
@@ -241,6 +248,80 @@ export class HttpLedgerApiClient implements LedgerApiClient {
 
       // Record metrics
       this.recordMetrics('ledgers.update', 1, {
+        orgId,
+        ledgerId: id,
+      });
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Reads the settings document of a ledger
+   *
+   * @returns Promise resolving to the ledger settings
+   */
+  public async getLedgerSettings(orgId: string, id: string): Promise<LedgerSettings> {
+    const span = this.observability.startSpan('getLedgerSettings');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', id);
+
+    try {
+      this.validateRequiredParams(span, { orgId, id });
+
+      const url = this.urlBuilder.buildLedgerSettingsUrl(orgId, id);
+      const result = await this.httpClient.get<LedgerSettings>(url);
+
+      this.recordMetrics('ledgers.settings.get', 1, {
+        orgId,
+        ledgerId: id,
+      });
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Patches the settings document of a ledger
+   *
+   * @returns Promise resolving to the merged ledger settings
+   */
+  public async updateLedgerSettings(
+    orgId: string,
+    id: string,
+    input: UpdateLedgerSettingsInput
+  ): Promise<LedgerSettings> {
+    const span = this.observability.startSpan('updateLedgerSettings');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', id);
+    span.setAttribute('patchedGroups', Object.keys(input ?? {}).join(','));
+
+    try {
+      this.validateRequiredParams(span, { orgId, id });
+
+      validate(input, validateUpdateLedgerSettingsInput);
+
+      // The patch goes on the wire exactly as written: the ledger merges it leaf by
+      // leaf, so reading the document first and sending it back would overwrite
+      // whatever another writer changed in between.
+      const url = this.urlBuilder.buildLedgerSettingsUrl(orgId, id);
+      const result = await this.httpClient.patch<LedgerSettings>(url, input);
+
+      this.recordMetrics('ledgers.settings.update', 1, {
         orgId,
         ledgerId: id,
       });

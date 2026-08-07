@@ -421,6 +421,10 @@ describe('UrlBuilder resource count paths', () => {
     expect(builder.buildOrganizationCountUrl()).toBe(`${root}/organizations/metrics/count`);
   });
 
+  it('builds the ledger settings path', () => {
+    expect(builder.buildLedgerSettingsUrl(orgId, ledgerId)).toBe(`${ledgerPrefix}/settings`);
+  });
+
   it('builds the ledger count path', () => {
     expect(builder.buildLedgerCountUrl(orgId)).toBe(
       `${root}/organizations/${orgId}/ledgers/metrics/count`
