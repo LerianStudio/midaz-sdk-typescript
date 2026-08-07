@@ -8,6 +8,9 @@ import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
 import { HttpOperationApiClient } from '../../../src/api/http/http-operation-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
+import { ValidationError } from '../../../src/util/validation';
+
+const URL_ENV_KEYS = ['MIDAZ_LEDGER_URL', 'MIDAZ_ONBOARDING_URL', 'MIDAZ_TRANSACTION_URL'];
 
 describe('HttpOperationApiClient', () => {
   // Sample data
@@ -16,6 +19,10 @@ describe('HttpOperationApiClient', () => {
   const accountId = 'acc-789';
   const operationId = 'op-123';
   const transactionId = 'tx-456';
+
+  const accountOperationsUrl = `https://api.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`;
+  const accountOperationUrl = `${accountOperationsUrl}/${operationId}`;
+  const transactionOperationUrl = `https://api.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}/transactions/${transactionId}/operations/${operationId}`;
 
   // Mock amount data
   const mockAmount = {
@@ -78,12 +85,20 @@ describe('HttpOperationApiClient', () => {
     mockHttpClient = {
       get: jest.fn(),
       post: jest.fn(),
+      put: jest.fn(),
       patch: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<HttpClient>;
 
     mockUrlBuilder = {
+      getApiVersion: jest.fn().mockReturnValue('v1'),
       getBaseUrl: jest.fn().mockReturnValue('https://api.example.com'),
+      buildAccountOperationUrl: jest
+        .fn()
+        .mockImplementation((_org: string, _ledger: string, _account: string, opId?: string) =>
+          opId ? accountOperationUrl : accountOperationsUrl
+        ),
+      buildTransactionOperationUrl: jest.fn().mockReturnValue(transactionOperationUrl),
     } as unknown as jest.Mocked<UrlBuilder>;
 
     // Reset all mocks
@@ -106,13 +121,12 @@ describe('HttpOperationApiClient', () => {
 
       // Assert
       expect(result).toEqual(mockOperationListResponse);
-      expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
-      expect(mockHttpClient.get).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`
-        ),
-        { params: undefined }
+      expect(mockUrlBuilder.buildAccountOperationUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        accountId
       );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(accountOperationsUrl, expect.any(Object));
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'operations.list.count',
         2,
@@ -162,7 +176,10 @@ describe('HttpOperationApiClient', () => {
       await client.listOperations(orgId, ledgerId, accountId, options);
 
       // Assert
-      expect(mockHttpClient.get).toHaveBeenCalledWith(expect.any(String), { params: options });
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        accountOperationsUrl,
+        expect.objectContaining({ params: options })
+      );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('limit', 10);
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('offset', 20);
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('hasFilters', true);
@@ -214,12 +231,13 @@ describe('HttpOperationApiClient', () => {
 
       // Assert
       expect(result).toEqual(mockOperation);
-      expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
-      expect(mockHttpClient.get).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations/${operationId}`
-        )
+      expect(mockUrlBuilder.buildAccountOperationUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        accountId,
+        operationId
       );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(accountOperationUrl, expect.any(Object));
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'operation.get',
         1,
@@ -234,18 +252,21 @@ describe('HttpOperationApiClient', () => {
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
-    it('should include transactionId in the URL when provided', async () => {
+    it('should read the account-scoped path only, the ledger serves no transaction-scoped GET', async () => {
       // Arrange
       mockHttpClient.get.mockResolvedValueOnce(mockOperation);
 
       // Act
-      await client.getOperation(orgId, ledgerId, accountId, operationId, transactionId);
+      await client.getOperation(orgId, ledgerId, accountId, operationId);
 
       // Assert
-      expect(mockHttpClient.get).toHaveBeenCalledWith(
-        expect.stringContaining(`?transactionId=${transactionId}&operationId=${operationId}`)
-      );
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('transactionId', transactionId);
+      expect(mockHttpClient.get).toHaveBeenCalledWith(accountOperationUrl, expect.any(Object));
+      expect(mockUrlBuilder.buildTransactionOperationUrl).not.toHaveBeenCalled();
+      expect(mockSpan.setAttribute).not.toHaveBeenCalledWith('transactionId', expect.anything());
+    });
+
+    it('should take no transactionId argument', () => {
+      expect(client.getOperation).toHaveLength(4);
     });
 
     it('should throw error when missing orgId', async () => {
@@ -299,7 +320,7 @@ describe('HttpOperationApiClient', () => {
       metadata: { category: 'updated' },
     };
 
-    it('should successfully update an operation', async () => {
+    it('should patch the transaction-scoped operation path', async () => {
       // Arrange
       const updatedOperation = {
         ...mockOperation,
@@ -311,19 +332,24 @@ describe('HttpOperationApiClient', () => {
       const result = await client.updateOperation(
         orgId,
         ledgerId,
-        accountId,
+        transactionId,
         operationId,
         updateInput
       );
 
       // Assert
       expect(result).toEqual(updatedOperation);
-      expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
+      expect(mockUrlBuilder.buildTransactionOperationUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        operationId
+      );
+      expect(mockUrlBuilder.buildAccountOperationUrl).not.toHaveBeenCalled();
       expect(mockHttpClient.patch).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations/${operationId}`
-        ),
-        updateInput
+        transactionOperationUrl,
+        updateInput,
+        expect.any(Object)
       );
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'operation.update',
@@ -331,8 +357,8 @@ describe('HttpOperationApiClient', () => {
         expect.objectContaining({
           orgId,
           ledgerId,
-          accountId,
           operationId,
+          transactionId,
           operationType: 'DEBIT',
         })
       );
@@ -340,10 +366,34 @@ describe('HttpOperationApiClient', () => {
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
+    it('should throw a validation error when transactionId is missing', async () => {
+      // Act & Assert
+      await expect(
+        client.updateOperation(
+          orgId,
+          ledgerId,
+          undefined as unknown as string,
+          operationId,
+          updateInput
+        )
+      ).rejects.toThrow(ValidationError);
+      await expect(
+        client.updateOperation(
+          orgId,
+          ledgerId,
+          undefined as unknown as string,
+          operationId,
+          updateInput
+        )
+      ).rejects.toThrow(/transactionId is required/);
+      expect(mockHttpClient.patch).not.toHaveBeenCalled();
+      expect(mockSpan.recordException).toHaveBeenCalled();
+    });
+
     it('should throw error when missing orgId', async () => {
       // Act & Assert
       await expect(
-        client.updateOperation('', ledgerId, accountId, operationId, updateInput)
+        client.updateOperation('', ledgerId, transactionId, operationId, updateInput)
       ).rejects.toThrow('orgId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -351,23 +401,44 @@ describe('HttpOperationApiClient', () => {
     it('should throw error when missing ledgerId', async () => {
       // Act & Assert
       await expect(
-        client.updateOperation(orgId, '', accountId, operationId, updateInput)
+        client.updateOperation(orgId, '', transactionId, operationId, updateInput)
       ).rejects.toThrow('ledgerId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
 
-    it('should throw error when missing accountId', async () => {
-      // Act & Assert
-      await expect(
-        client.updateOperation(orgId, ledgerId, '', operationId, updateInput)
-      ).rejects.toThrow('accountId is required');
-      expect(mockSpan.recordException).toHaveBeenCalled();
+    it('should patch the transaction-scoped path without an accountId', async () => {
+      // Arrange
+      mockHttpClient.patch.mockResolvedValueOnce(mockOperation);
+
+      // Act
+      const result = await client.updateOperation(
+        orgId,
+        ledgerId,
+        transactionId,
+        operationId,
+        updateInput
+      );
+
+      // Assert
+      expect(result).toEqual(mockOperation);
+      expect(mockUrlBuilder.buildTransactionOperationUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        operationId
+      );
+      expect(mockHttpClient.patch).toHaveBeenCalledWith(
+        transactionOperationUrl,
+        updateInput,
+        expect.any(Object)
+      );
+      expect(mockSpan.recordException).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing operationId', async () => {
       // Act & Assert
       await expect(
-        client.updateOperation(orgId, ledgerId, accountId, '', updateInput)
+        client.updateOperation(orgId, ledgerId, transactionId, '', updateInput)
       ).rejects.toThrow('operationId is required');
       expect(mockSpan.recordException).toHaveBeenCalled();
     });
@@ -379,104 +450,78 @@ describe('HttpOperationApiClient', () => {
 
       // Act & Assert
       await expect(
-        client.updateOperation(orgId, ledgerId, accountId, operationId, updateInput)
+        client.updateOperation(orgId, ledgerId, transactionId, operationId, updateInput)
       ).rejects.toThrow('API Error');
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
     });
   });
 
-  describe('private methods', () => {
-    describe('buildOperationsUrl', () => {
-      it('should build the correct operations URL', async () => {
-        // Use listOperations to indirectly test the private method
-        mockHttpClient.get.mockResolvedValueOnce(mockOperationListResponse);
+  describe('versioned paths against midaz main', () => {
+    const ledgerBaseUrl = 'https://ledger.example.com';
+    const savedEnv: Record<string, string | undefined> = {};
+    let realUrlBuilder: UrlBuilder;
+    let realClient: HttpOperationApiClient;
 
-        await client.listOperations(orgId, ledgerId, accountId);
-
-        // Check that the URL was built correctly
-        expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
-        expect(mockHttpClient.get).toHaveBeenCalledWith(
-          expect.stringContaining(
-            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`
-          ),
-          expect.any(Object)
-        );
-      });
+    beforeEach(() => {
+      for (const key of URL_ENV_KEYS) {
+        savedEnv[key] = process.env[key];
+        delete process.env[key];
+      }
+      realUrlBuilder = new UrlBuilder({ baseUrls: { ledger: ledgerBaseUrl } });
+      realClient = new HttpOperationApiClient(mockHttpClient, realUrlBuilder, mockObservability);
     });
 
-    describe('buildOperationUrl', () => {
-      it('should build the correct operation URL', async () => {
-        // Use getOperation to indirectly test the private method
-        mockHttpClient.get.mockResolvedValueOnce(mockOperation);
-
-        await client.getOperation(orgId, ledgerId, accountId, operationId);
-
-        // Check that the URL was built correctly
-        expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
-        expect(mockHttpClient.get).toHaveBeenCalledWith(
-          expect.stringContaining(
-            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations/${operationId}`
-          )
-        );
-      });
-
-      it('should build the correct operation URL with transactionId', async () => {
-        // Use getOperation to indirectly test the private method
-        mockHttpClient.get.mockResolvedValueOnce(mockOperation);
-
-        await client.getOperation(orgId, ledgerId, accountId, operationId, transactionId);
-
-        // Check that the URL was built correctly
-        expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
-        expect(mockHttpClient.get).toHaveBeenCalledWith(
-          expect.stringContaining(`?transactionId=${transactionId}&operationId=${operationId}`)
-        );
-      });
+    afterEach(() => {
+      for (const key of URL_ENV_KEYS) {
+        if (savedEnv[key] === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = savedEnv[key];
+        }
+      }
     });
 
-    describe('validateRequiredParams', () => {
-      it('should validate required parameters and throw error if missing', async () => {
-        // Test with missing parameters indirectly through getOperation
-        await expect(client.getOperation('', ledgerId, accountId, operationId)).rejects.toThrow(
-          'orgId is required'
-        );
-        await expect(client.getOperation(orgId, '', accountId, operationId)).rejects.toThrow(
-          'ledgerId is required'
-        );
-        await expect(client.getOperation(orgId, ledgerId, '', operationId)).rejects.toThrow(
-          'accountId is required'
-        );
-        await expect(client.getOperation(orgId, ledgerId, accountId, '')).rejects.toThrow(
-          'operationId is required'
-        );
+    it('lists operations under the versioned account-scoped path', async () => {
+      mockHttpClient.get.mockResolvedValueOnce(mockOperationListResponse);
 
-        // Verify the error is recorded on the span
-        expect(mockSpan.recordException).toHaveBeenCalled();
-      });
+      await realClient.listOperations(orgId, ledgerId, accountId);
+
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `${ledgerBaseUrl}/v1/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`,
+        expect.any(Object)
+      );
     });
 
-    describe('recordMetrics', () => {
-      it('should record metrics with the observability provider', async () => {
-        // Use a public method to indirectly test the private recordMetrics method
-        mockHttpClient.get.mockResolvedValueOnce(mockOperation);
+    it('gets a single operation under the versioned account-scoped path', async () => {
+      mockHttpClient.get.mockResolvedValueOnce(mockOperation);
 
-        // Act
-        await client.getOperation(orgId, ledgerId, accountId, operationId);
+      await realClient.getOperation(orgId, ledgerId, accountId, operationId);
 
-        // Assert
-        expect(mockObservability.recordMetric).toHaveBeenCalledWith(
-          'operation.get',
-          1,
-          expect.objectContaining({
-            orgId,
-            ledgerId,
-            accountId,
-            operationId,
-            operationType: 'DEBIT',
-          })
-        );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `${ledgerBaseUrl}/v1/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations/${operationId}`,
+        expect.any(Object)
+      );
+    });
+
+    it('updates an operation under the versioned transaction-scoped path', async () => {
+      mockHttpClient.patch.mockResolvedValueOnce(mockOperation);
+
+      await realClient.updateOperation(orgId, ledgerId, transactionId, operationId, {
+        metadata: {},
       });
+
+      expect(mockHttpClient.patch).toHaveBeenCalledWith(
+        `${ledgerBaseUrl}/v1/organizations/${orgId}/ledgers/${ledgerId}/transactions/${transactionId}/operations/${operationId}`,
+        { metadata: {} },
+        expect.any(Object)
+      );
+    });
+
+    it('no longer exposes the ledger-level operation template', () => {
+      expect(
+        (realUrlBuilder as unknown as Record<string, unknown>).buildOperationUrl
+      ).toBeUndefined();
     });
   });
 });

@@ -83,6 +83,39 @@ export class AssetRatesServiceImpl implements AssetRatesService {
   }
 
   /**
+   * Retrieves a single asset rate by its external identifier
+   *
+   * @returns Promise resolving to the asset rate
+   */
+  public async getAssetRateByExternalId(
+    organizationId: string,
+    ledgerId: string,
+    externalId: string
+  ): Promise<AssetRate> {
+    const span = this.observability.startSpan('getAssetRateByExternalId');
+    span.setAttribute('organizationId', organizationId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('externalId', externalId);
+
+    try {
+      const result = await this.assetRateApiClient.getAssetRateByExternalId(
+        organizationId,
+        ledgerId,
+        externalId
+      );
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
    * Creates a new asset rate or updates an existing one
    *
    * @returns Promise resolving to the created or updated asset rate
@@ -96,15 +129,15 @@ export class AssetRatesServiceImpl implements AssetRatesService {
     const span = this.observability.startSpan('createOrUpdateAssetRate');
     span.setAttribute('organizationId', organizationId);
     span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('fromAsset', input.fromAsset);
-    span.setAttribute('toAsset', input.toAsset);
+    span.setAttribute('from', input.from);
+    span.setAttribute('to', input.to);
     span.setAttribute('rate', input.rate);
 
-    if (input.effectiveAt) {
-      span.setAttribute('effectiveAt', input.effectiveAt);
+    if (input.scale !== undefined) {
+      span.setAttribute('scale', input.scale);
     }
-    if (input.expirationAt) {
-      span.setAttribute('expirationAt', input.expirationAt);
+    if (input.ttl !== undefined) {
+      span.setAttribute('ttl', input.ttl);
     }
 
     try {

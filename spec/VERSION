@@ -1,0 +1,27 @@
+# Vendored midaz ledger OpenAPI specs.
+#
+# Regenerate with: npm run spec:update -- <midaz-repo-path> [git-ref]
+# Never hand-edit spec/*.yaml or src/generated/*.d.ts; CI fails on drift.
+#
+# LIMITATION - ledger-v1 request bodies are unusable. The ledger serves its v1
+# Huma routes with RawBody handlers, so every request body in ledger-v1 is
+# typed {type: string, format: binary} instead of a real schema, and the
+# generated v1 types expose request bodies as `string`. For v1 only RESPONSE
+# types and component schemas are usable; v1 SDK input models stay
+# hand-written and are guarded by the path-drift suite instead.
+#
+# ledger-v2 is only partly affected. The four transaction create routes
+# (/transactions/direct, /transactions/hold, /transactions/block,
+# /transactions/unblock) reference a real CreateTransactionV2Input schema, so
+# their generated request types are usable and must not be hand-written. Every
+# other v2 request body is {type: string, format: binary} as in v1.
+#
+# format: binary request bodies: ledger-v1=43, ledger-v2=11
+
+source_repo=https://github.com/LerianStudio/midaz
+source_ref=develop
+source_commit=33cb93f7485b0b4b55303be224fbf1a627756469
+source_commit_short=33cb93f
+source_commit_date=2026-08-05T11:32:03-03:00
+ledger-v1.openapi.yaml=components/ledger/api/openapi.huma.yaml
+ledger-v2.openapi.yaml=components/ledger/api/openapi.v2.huma.yaml

@@ -39,15 +39,22 @@ describe('AssetRatesServiceImpl', () => {
   const destinationAssetCode = 'EUR';
   const rateId = 'rate_789';
 
+  const externalId = '019fd4f3-d4f5-70a6-93c2-2eb39c9fe00f';
+
   const mockAssetRate: AssetRate = {
     id: rateId,
-    fromAsset: sourceAssetCode,
-    toAsset: destinationAssetCode,
-    rate: 0.92,
-    effectiveAt: '2023-01-01T00:00:00Z',
-    expirationAt: '2023-12-31T23:59:59Z',
+    organizationId: orgId,
+    ledgerId,
+    externalId,
+    from: sourceAssetCode,
+    to: destinationAssetCode,
+    rate: 92,
+    scale: 2,
+    source: 'Central Bank',
+    ttl: 3600,
     createdAt: '2023-01-01T00:00:00Z',
     updatedAt: '2023-01-01T00:00:00Z',
+    metadata: {},
   };
 
   beforeEach(() => {
@@ -57,6 +64,7 @@ describe('AssetRatesServiceImpl', () => {
     // Create a mock AssetRateApiClient
     assetRateApiClient = {
       getAssetRate: jest.fn(),
+      getAssetRateByExternalId: jest.fn(),
       createOrUpdateAssetRate: jest.fn(),
     } as unknown as jest.Mocked<AssetRateApiClient>;
 
@@ -155,11 +163,10 @@ describe('AssetRatesServiceImpl', () => {
     it('should create or update an asset rate successfully', async () => {
       // Setup
       const input: UpdateAssetRateInput = {
-        fromAsset: sourceAssetCode,
-        toAsset: destinationAssetCode,
-        rate: 0.92,
-        effectiveAt: '2023-01-01T00:00:00Z',
-        expirationAt: '2023-12-31T23:59:59Z',
+        from: sourceAssetCode,
+        to: destinationAssetCode,
+        rate: 92,
+        scale: 2,
       };
 
       assetRateApiClient.createOrUpdateAssetRate.mockResolvedValueOnce(mockAssetRate);
@@ -179,11 +186,10 @@ describe('AssetRatesServiceImpl', () => {
     it('should delegate validation to the API client', async () => {
       // Setup
       const input: UpdateAssetRateInput = {
-        fromAsset: sourceAssetCode,
-        toAsset: destinationAssetCode,
-        rate: 0.92,
-        effectiveAt: '2023-01-01T00:00:00Z',
-        expirationAt: '2023-12-31T23:59:59Z',
+        from: sourceAssetCode,
+        to: destinationAssetCode,
+        rate: 92,
+        scale: 2,
       };
 
       const validationError = new ValidationError('Organization ID is required');
@@ -200,11 +206,10 @@ describe('AssetRatesServiceImpl', () => {
     it('should handle API errors', async () => {
       // Setup
       const input: UpdateAssetRateInput = {
-        fromAsset: sourceAssetCode,
-        toAsset: destinationAssetCode,
-        rate: 0.92,
-        effectiveAt: '2023-01-01T00:00:00Z',
-        expirationAt: '2023-12-31T23:59:59Z',
+        from: sourceAssetCode,
+        to: destinationAssetCode,
+        rate: 92,
+        scale: 2,
       };
 
       const apiError = new Error('API Error');
@@ -213,6 +218,30 @@ describe('AssetRatesServiceImpl', () => {
       // Execute & Verify
       await expect(
         assetRatesService.createOrUpdateAssetRate(orgId, ledgerId, input)
+      ).rejects.toThrow(apiError);
+    });
+  });
+
+  describe('getAssetRateByExternalId', () => {
+    it('should delegate to the API client', async () => {
+      assetRateApiClient.getAssetRateByExternalId.mockResolvedValueOnce(mockAssetRate);
+
+      const result = await assetRatesService.getAssetRateByExternalId(orgId, ledgerId, externalId);
+
+      expect(assetRateApiClient.getAssetRateByExternalId).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        externalId
+      );
+      expect(result).toEqual(mockAssetRate);
+    });
+
+    it('should propagate API errors', async () => {
+      const apiError = new Error('API Error');
+      assetRateApiClient.getAssetRateByExternalId.mockRejectedValueOnce(apiError);
+
+      await expect(
+        assetRatesService.getAssetRateByExternalId(orgId, ledgerId, externalId)
       ).rejects.toThrow(apiError);
     });
   });

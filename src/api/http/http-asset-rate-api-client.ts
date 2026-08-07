@@ -1,51 +1,45 @@
 /**
  */
 
+import { ListResponse } from '../../models/common';
 import { AssetRate, UpdateAssetRateInput } from '../../models/asset-rate';
 import { validateUpdateAssetRateInput } from '../../models/validators/asset-rate-validator';
-import {
-  ErrorCategory,
-  ErrorCode,
-  MidazError,
-  newNetworkError,
-  newNotFoundError,
-} from '../../util/error';
+import { newInternalError, newNotFoundError } from '../../util/error';
 import { HttpClient } from '../../util/network/http-client';
-import { Observability, Span } from '../../util/observability/observability';
-import { ValidationError } from '../../util/validation';
+import { Observability } from '../../util/observability/observability';
+import { validate } from '../../util/validation';
 import { AssetRateApiClient } from '../interfaces/asset-rate-api-client';
 import { UrlBuilder } from '../url-builder';
-import { getEnv } from '../../util/runtime/environment';
+
+import { HttpBaseApiClient } from './http-base-api-client';
+
+const ASSET_RATE_PAGE_LIMIT = 100;
+
+/**
+ * Most pages the rate lookup will walk before it gives up.
+ *
+ * The ledger's cursor is opaque, so a server that alternates two cursors keeps the walk
+ * going forever; the cap bounds that, and at 100 rates a page it still covers far more
+ * destinations than an asset can plausibly have.
+ */
+const ASSET_RATE_MAX_PAGES = 50;
+
 /**
  * HTTP implementation of the AssetRateApiClient interface
  *
  * This class handles HTTP communication with asset rate endpoints, including
  * URL construction, request formation, response handling, and error management.
  */
-export class HttpAssetRateApiClient implements AssetRateApiClient {
-  private readonly observability: Observability;
-
+export class HttpAssetRateApiClient
+  extends HttpBaseApiClient<AssetRate, UpdateAssetRateInput, UpdateAssetRateInput>
+  implements AssetRateApiClient
+{
   /**
    * Creates a new HttpAssetRateApiClient
    *
    */
-  constructor(
-    private readonly httpClient: HttpClient,
-    private readonly urlBuilder: UrlBuilder,
-    observability?: Observability
-  ) {
-    // Use provided observability or create a new one
-    this.observability =
-      observability ||
-      new Observability({
-        serviceName: 'midaz-asset-rate-api-client',
-        enableTracing: getEnv('MIDAZ_ENABLE_TRACING')
-          ? getEnv('MIDAZ_ENABLE_TRACING')?.toLowerCase() === 'true'
-          : false,
-        enableMetrics: getEnv('MIDAZ_ENABLE_METRICS')
-          ? getEnv('MIDAZ_ENABLE_METRICS')?.toLowerCase() === 'true'
-          : false,
-      });
+  constructor(httpClient: HttpClient, urlBuilder: UrlBuilder, observability?: Observability) {
+    super(httpClient, urlBuilder, 'midaz-asset-rate-api-client', observability);
   }
 
   /**
@@ -59,121 +53,89 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
     sourceAssetCode: string,
     destinationAssetCode: string
   ): Promise<AssetRate> {
-    // Create a span for tracing this operation
-    const span = this.observability.startSpan('getAssetRate');
-    span.setAttribute('organizationId', organizationId);
-    span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('sourceAssetCode', sourceAssetCode);
-    span.setAttribute('destinationAssetCode', destinationAssetCode);
+    const attributes = {
+      organizationId,
+      ledgerId,
+      sourceAssetCode,
+      destinationAssetCode,
+    };
 
-    try {
-      // Validate required parameters
-      this.validateRequiredParams(span, {
-        organizationId,
-        ledgerId,
-        sourceAssetCode,
-        destinationAssetCode,
-      });
+    this.validateParamsInSpan(attributes, attributes);
 
-      // If source and destination are the same, return a rate of 1.0
-      if (sourceAssetCode === destinationAssetCode) {
-        const sameAssetRate: AssetRate = {
-          id: `rate_${sourceAssetCode}_${destinationAssetCode}`,
-          fromAsset: sourceAssetCode,
-          toAsset: destinationAssetCode,
-          rate: 1.0,
-          effectiveAt: new Date().toISOString(),
-          expirationAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Record metrics for same-asset rate
-        this.recordMetrics('assetRate.get.sameAsset', 1, {
-          organizationId,
-          ledgerId,
-          sourceAssetCode,
-          destinationAssetCode,
-        });
-
-        span.setStatus('ok');
-        return sameAssetRate;
-      }
-
-      try {
-        // Build the URL and make the request
-        const url = this.buildAssetRateUrl(organizationId, ledgerId, sourceAssetCode);
-        const response = await this.httpClient.get<AssetRate[]>(url);
-
-        // Find the rate for the destination asset
-        const rate = response.find((r) => r.toAsset === destinationAssetCode);
-
-        if (!rate) {
-          const error = newNotFoundError(
-            'assetRate',
-            `${sourceAssetCode}-${destinationAssetCode}`,
-            { operation: 'getAssetRate' }
-          );
-          span.recordException(error);
-          span.setStatus('error', error.message);
-          throw error;
-        }
-
-        // Record metrics for successful rate retrieval
-        this.recordMetrics('assetRate.get.success', 1, {
-          organizationId,
-          ledgerId,
-          sourceAssetCode,
-          destinationAssetCode,
-        });
-
-        // Record the actual rate value for monitoring
-        this.recordMetrics('assetRate.value', rate.rate, {
-          organizationId,
-          ledgerId,
-          sourceAssetCode,
-          destinationAssetCode,
-        });
-
-        span.setStatus('ok');
-        return rate;
-      } catch (error) {
-        if (error instanceof MidazError) {
-          span.recordException(error);
-          span.setStatus('error', error.message);
-          throw error;
-        }
-
-        const networkError = newNetworkError(
-          `Failed to get asset rate for ${sourceAssetCode}-${destinationAssetCode}`,
-          {
-            operation: 'getAssetRate',
-            cause: error instanceof Error ? error : new Error(String(error)),
-          }
-        );
-        span.recordException(networkError);
-        span.setStatus('error', networkError.message);
-        throw networkError;
-      }
-    } catch (error) {
-      if (!(error instanceof MidazError)) {
-        const wrappedError = new MidazError({
-          category: ErrorCategory.INTERNAL,
-          code: ErrorCode.INTERNAL_ERROR,
-          message: `Unexpected error: ${(error as Error).message}`,
-          operation: 'getAssetRate',
-        });
-        span.recordException(wrappedError);
-        span.setStatus('error', wrappedError.message);
-        throw wrappedError;
-      }
-
-      span.recordException(error);
-      span.setStatus('error', error.message);
-      throw error;
-    } finally {
-      span.end();
+    if (sourceAssetCode === destinationAssetCode) {
+      this.recordMetrics('assetRate.get.sameAsset', 1, attributes);
+      return this.buildSameAssetRate(organizationId, ledgerId, sourceAssetCode);
     }
+
+    const url = this.urlBuilder.buildAssetRateFromUrl(organizationId, ledgerId, sourceAssetCode);
+
+    let cursor: string | undefined;
+    let rate: AssetRate | undefined;
+    const seenCursors = new Set<string>();
+    let pages = 0;
+
+    do {
+      const params: Record<string, unknown> = { limit: ASSET_RATE_PAGE_LIMIT };
+      if (cursor) {
+        params.cursor = cursor;
+      }
+
+      const response = await this.getRequest<ListResponse<AssetRate>>(
+        'getAssetRate',
+        url,
+        { params },
+        attributes
+      );
+
+      pages += 1;
+      rate = response.items?.find((item) => item.to === destinationAssetCode);
+
+      const nextCursor = this.readNextCursor(response);
+      cursor = nextCursor && !seenCursors.has(nextCursor) ? nextCursor : undefined;
+
+      if (cursor) {
+        seenCursors.add(cursor);
+      }
+    } while (!rate && cursor && pages < ASSET_RATE_MAX_PAGES);
+
+    if (!rate && cursor) {
+      this.recordMetrics('assetRate.get.pageCapReached', pages, attributes);
+
+      throw newInternalError(
+        `getAssetRate stopped after ${ASSET_RATE_MAX_PAGES} pages of ${sourceAssetCode} rates ` +
+          `without reaching the end of the list; whether ${destinationAssetCode} exists is unknown`,
+        { operation: 'getAssetRate' }
+      );
+    }
+
+    if (!rate) {
+      throw newNotFoundError('assetRate', `${sourceAssetCode}-${destinationAssetCode}`, {
+        operation: 'getAssetRate',
+      });
+    }
+
+    this.recordMetrics('assetRate.value', rate.rate, attributes);
+
+    return rate;
+  }
+
+  /**
+   * Retrieves a single asset rate by its external identifier
+   *
+   * @returns Promise resolving to the asset rate
+   */
+  public async getAssetRateByExternalId(
+    organizationId: string,
+    ledgerId: string,
+    externalId: string
+  ): Promise<AssetRate> {
+    const attributes = { organizationId, ledgerId, externalId };
+
+    this.validateParamsInSpan(attributes, attributes);
+
+    const url = this.urlBuilder.buildAssetRateByExternalIdUrl(organizationId, ledgerId, externalId);
+
+    return this.getRequest<AssetRate>('getAssetRateByExternalId', url, undefined, attributes);
   }
 
   /**
@@ -186,138 +148,97 @@ export class HttpAssetRateApiClient implements AssetRateApiClient {
     ledgerId: string,
     input: UpdateAssetRateInput
   ): Promise<AssetRate> {
-    // Create a span for tracing this operation
-    const span = this.observability.startSpan('createOrUpdateAssetRate');
-    span.setAttribute('organizationId', organizationId);
-    span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('fromAsset', input.fromAsset);
-    span.setAttribute('toAsset', input.toAsset);
-    span.setAttribute('rate', input.rate);
+    const attributes = {
+      organizationId,
+      ledgerId,
+      from: input?.from,
+      to: input?.to,
+    };
 
-    if (input.effectiveAt) {
-      span.setAttribute('effectiveAt', input.effectiveAt);
-    }
-    if (input.expirationAt) {
-      span.setAttribute('expirationAt', input.expirationAt);
-    }
+    this.validateParamsInSpan({ organizationId, ledgerId }, attributes);
 
-    try {
-      // Validate required parameters
-      this.validateRequiredParams(span, { organizationId, ledgerId });
+    validate(input, validateUpdateAssetRateInput);
 
-      // Validate input
-      try {
-        validateUpdateAssetRateInput(input);
-      } catch (error) {
-        if (error instanceof ValidationError) {
-          span.recordException(error);
-          span.setStatus('error', error.message);
-          throw error;
-        }
-        throw error;
-      }
+    const url = this.urlBuilder.buildAssetRateUrl(organizationId, ledgerId);
 
-      try {
-        // Build the URL and make the request
-        const url = this.buildAssetRateUrl(organizationId, ledgerId, input.fromAsset);
-        const response = await this.httpClient.put<AssetRate>(url, {
-          toAsset: input.toAsset,
-          rate: input.rate,
-          effectiveAt: input.effectiveAt,
-          expirationAt: input.expirationAt,
-        });
+    const result = await this.putRequest<AssetRate>(
+      'createOrUpdateAssetRate',
+      url,
+      this.toRequestBody(input),
+      undefined,
+      attributes
+    );
 
-        // Record metrics for successful rate creation/update
-        this.recordMetrics('assetRate.createOrUpdate.success', 1, {
-          organizationId,
-          ledgerId,
-          fromAsset: input.fromAsset,
-          toAsset: input.toAsset,
-        });
+    this.recordMetrics('assetRate.value', input.rate, attributes);
 
-        // Record the actual rate value for monitoring
-        this.recordMetrics('assetRate.value', input.rate, {
-          organizationId,
-          ledgerId,
-          fromAsset: input.fromAsset,
-          toAsset: input.toAsset,
-        });
-
-        span.setStatus('ok');
-        return response;
-      } catch (error) {
-        if (error instanceof MidazError) {
-          span.recordException(error);
-          span.setStatus('error', error.message);
-          throw error;
-        }
-
-        const networkError = newNetworkError(`Failed to create or update asset rate`, {
-          operation: 'createOrUpdateAssetRate',
-          cause: error instanceof Error ? error : new Error(String(error)),
-        });
-        span.recordException(networkError);
-        span.setStatus('error', networkError.message);
-        throw networkError;
-      }
-    } catch (error) {
-      if (!(error instanceof MidazError) && !(error instanceof ValidationError)) {
-        const wrappedError = new MidazError({
-          category: ErrorCategory.INTERNAL,
-          code: ErrorCode.INTERNAL_ERROR,
-          message: `Unexpected error: ${(error as Error).message}`,
-          operation: 'createOrUpdateAssetRate',
-        });
-        span.recordException(wrappedError);
-        span.setStatus('error', wrappedError.message);
-        throw wrappedError;
-      }
-
-      span.recordException(error as Error);
-      span.setStatus('error', (error as Error).message);
-      throw error;
-    } finally {
-      span.end();
-    }
+    return result;
   }
 
   /**
-   * Builds the URL for asset rate API calls
+   * Reads the cursor of the next page from the ledger's list envelope
    *
-   * @returns Full URL for the asset rate API endpoint
-   * @private
    */
-  private buildAssetRateUrl(
+  private readNextCursor(response: ListResponse<AssetRate>): string | undefined {
+    const nextCursor = response.next_cursor ?? response.meta?.nextCursor;
+
+    return typeof nextCursor === 'string' && nextCursor.length > 0 ? nextCursor : undefined;
+  }
+
+  /**
+   * Strips undefined optional fields so the ledger never receives explicit nulls
+   *
+   */
+  private toRequestBody(input: UpdateAssetRateInput): Record<string, unknown> {
+    const body: Record<string, unknown> = {
+      from: input.from,
+      to: input.to,
+      rate: input.rate,
+      // midaz main dereferences ttl unconditionally, so omitting it answers HTTP 500
+      ttl: input.ttl ?? 0,
+    };
+
+    if (input.scale !== undefined) {
+      body.scale = input.scale;
+    }
+    if (input.source !== undefined) {
+      body.source = input.source;
+    }
+    if (input.externalId !== undefined) {
+      body.externalId = input.externalId;
+    }
+    if (input.metadata !== undefined) {
+      body.metadata = input.metadata;
+    }
+
+    return body;
+  }
+
+  /**
+   * Builds the synthetic identity rate returned when source and destination match
+   *
+   */
+  private buildSameAssetRate(
     organizationId: string,
     ledgerId: string,
-    sourceAssetCode: string
-  ): string {
-    // Use the transaction URL for asset rates
-    const baseUrl = this.urlBuilder.getBaseUrl('transaction');
-    return `${baseUrl}/organizations/${organizationId}/ledgers/${ledgerId}/assets/${sourceAssetCode}/rates`;
-  }
+    assetCode: string
+  ): AssetRate {
+    const now = new Date().toISOString();
+    const identifier = `rate_${assetCode}_${assetCode}`;
 
-  /**
-   * Validates required parameters and throws an error if any are missing
-   *
-   * @private
-   */
-  private validateRequiredParams(span: Span, params: Record<string, any>): void {
-    for (const [key, value] of Object.entries(params)) {
-      if (!value) {
-        const error = new ValidationError(`${key} is required`);
-        span.recordException(error);
-        throw error;
-      }
-    }
-  }
-
-  /**
-   * Records metrics for an operation
-   *
-   * @private
-   */
-  private recordMetrics(name: string, value: number, tags: Record<string, any>): void {
-    this.observability.recordMetric(name, value, tags);
+    return {
+      id: identifier,
+      organizationId,
+      ledgerId,
+      externalId: identifier,
+      from: assetCode,
+      to: assetCode,
+      rate: 1,
+      scale: 0,
+      source: null,
+      ttl: 0,
+      createdAt: now,
+      updatedAt: now,
+      metadata: {},
+    };
   }
 }

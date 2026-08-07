@@ -61,6 +61,13 @@ export class ConfigValidator {
         message: 'Base URLs configuration is required',
       });
     } else {
+      // Validate ledger URL
+      if (config.baseUrls.ledger) {
+        const urlErrors = this.validateUrl(config.baseUrls.ledger, 'baseUrls.ledger');
+        errors.push(...urlErrors.errors);
+        warnings.push(...urlErrors.warnings);
+      }
+
       // Validate onboarding URL
       if (config.baseUrls.onboarding) {
         const urlErrors = this.validateUrl(config.baseUrls.onboarding, 'baseUrls.onboarding');
@@ -76,10 +83,10 @@ export class ConfigValidator {
       }
 
       // At least one URL must be provided
-      if (!config.baseUrls.onboarding && !config.baseUrls.transaction) {
+      if (!config.baseUrls.ledger && !config.baseUrls.onboarding && !config.baseUrls.transaction) {
         errors.push({
           field: 'baseUrls',
-          message: 'At least one base URL must be provided (onboarding or transaction)',
+          message: 'At least one base URL must be provided (ledger, onboarding or transaction)',
         });
       }
     }

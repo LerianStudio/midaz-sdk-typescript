@@ -2,8 +2,216 @@
  */
 
 import { createModelTransformer, ModelTransformer } from '../util/data/model-transformer';
+import { ValidationError } from '../util/validation';
 
-import { CreateTransactionInput, Transaction } from './transaction';
+import {
+  CreateInflowInput,
+  CreateOutflowInput,
+  CreateTransactionInput,
+  FromToInput,
+  Transaction,
+} from './transaction';
+import {
+  validateDecimalValue,
+  validateLeg,
+  validateLegCollection,
+} from './validators/transaction-validator';
+
+/**
+ * Coerces a monetary value to the decimal string the ledger requires.
+ *
+ * @returns The value serialized as a decimal string
+ * @throws ValidationError naming `path` when the value cannot be represented
+ */
+function coerceDecimalValue(value: unknown, path: string): string {
+  const result = validateDecimalValue(value, path);
+
+  if (!result.valid) {
+    throw new ValidationError(
+      result.message || `${path} is not a valid decimal value`,
+      result.fieldErrors
+    );
+  }
+
+  return String(value);
+}
+
+/**
+ * Transforms one leg into the API shape, which names the account `accountAlias`.
+ *
+ * `sendAsset` is mirrored into an amount that omits its own asset so the wire payload
+ * stays explicit about what is being moved.
+ *
+ * @returns The leg in API format
+ * @throws ValidationError naming the offending path when the leg is unusable
+ */
+function toApiLeg(leg: FromToInput, path: string, sendAsset: string | undefined): any {
+  const result = validateLeg(leg, path, sendAsset);
+
+  if (!result.valid) {
+    throw new ValidationError(result.message || `${path} is not a valid leg`, result.fieldErrors);
+  }
+
+  const operation: any = {
+    accountAlias: leg.account,
+  };
+
+  if (leg.amount) {
+    operation.amount = {
+      ...leg.amount,
+      asset: leg.amount.asset ?? sendAsset,
+      value: coerceDecimalValue(leg.amount.value, `${path}.amount.value`),
+    };
+  }
+
+  if (leg.share) {
+    operation.share = { percentage: leg.share.percentage };
+
+    if (leg.share.percentageOfPercentage !== undefined) {
+      operation.share.percentageOfPercentage = leg.share.percentageOfPercentage;
+    }
+  }
+
+  if (leg.rate) {
+    operation.rate = {
+      ...leg.rate,
+      value: coerceDecimalValue(leg.rate.value, `${path}.rate.value`),
+    };
+  }
+
+  if (leg.balanceKey) {
+    operation.balanceKey = leg.balanceKey;
+  }
+
+  if (leg.chartOfAccounts) {
+    operation.chartOfAccounts = leg.chartOfAccounts;
+  }
+
+  if (leg.route) {
+    operation.route = leg.route;
+  }
+
+  if (leg.routeId) {
+    operation.routeId = leg.routeId;
+  }
+
+  if (leg.description) {
+    operation.description = leg.description;
+  }
+
+  if (leg.metadata) {
+    operation.metadata = leg.metadata;
+  }
+
+  return operation;
+}
+
+/**
+ * Transforms one side of a flow into the API shape.
+ *
+ * @returns The legs in API format
+ * @throws ValidationError naming `path` when the collection cannot be iterated
+ */
+function toApiLegs(
+  legs: FromToInput[] | undefined,
+  path: string,
+  sendAsset: string | undefined
+): any[] {
+  const collection = validateLegCollection(legs, path);
+
+  if (!collection.valid) {
+    throw new ValidationError(
+      collection.message || `${path} must contain at least one account`,
+      collection.fieldErrors
+    );
+  }
+
+  return (legs as FromToInput[]).map((leg, index) => toApiLeg(leg, `${path}[${index}]`, sendAsset));
+}
+
+/**
+ * Copies the envelope fields both flow endpoints share, skipping the ones the ledger
+ * takes as headers.
+ *
+ * @returns The envelope in API format
+ */
+function toApiFlowEnvelope(input: CreateInflowInput | CreateOutflowInput): any {
+  const result: any = {};
+
+  if (input.chartOfAccountsGroupName) {
+    result.chartOfAccountsGroupName = input.chartOfAccountsGroupName;
+  }
+
+  if (input.description) {
+    result.description = input.description;
+  }
+
+  if (input.code) {
+    result.code = input.code;
+  }
+
+  if (input.route) {
+    result.route = input.route;
+  }
+
+  if (input.routeId) {
+    result.routeId = input.routeId;
+  }
+
+  if (input.metadata) {
+    result.metadata = input.metadata;
+  }
+
+  return result;
+}
+
+/**
+ * Transforms an inflow input to the API format.
+ *
+ * The emitted body carries `distribute` only. `source` and `pending` are absent from
+ * the ledger's inflow input struct, so emitting either would be `400/0053`.
+ *
+ * @returns The inflow request body
+ */
+export function toApiInflow(input: CreateInflowInput): any {
+  const result = toApiFlowEnvelope(input);
+
+  result.send = {
+    asset: input.send.asset,
+    value: coerceDecimalValue(input.send.value, 'send.value'),
+    distribute: {
+      to: toApiLegs(input.send.distribute?.to, 'send.distribute.to', input.send.asset),
+    },
+  };
+
+  return result;
+}
+
+/**
+ * Transforms an outflow input to the API format.
+ *
+ * The emitted body carries `source` only; `distribute` is absent from the ledger's
+ * outflow input struct. Unlike inflow, `pending` is supported.
+ *
+ * @returns The outflow request body
+ */
+export function toApiOutflow(input: CreateOutflowInput): any {
+  const result = toApiFlowEnvelope(input);
+
+  if (input.pending) {
+    result.pending = input.pending;
+  }
+
+  result.send = {
+    asset: input.send.asset,
+    value: coerceDecimalValue(input.send.value, 'send.value'),
+    source: {
+      from: toApiLegs(input.send.source?.from, 'send.source.from', input.send.asset),
+    },
+  };
+
+  return result;
+}
 
 /**
  * Transforms a client-side transaction to the API format
@@ -18,62 +226,20 @@ export function toApiTransaction(input: CreateTransactionInput): any {
   if (input.send) {
     result.send = {
       asset: input.send.asset,
-      value: input.send.value,
+      value: coerceDecimalValue(input.send.value, 'send.value'),
     };
 
     // Transform source operations - API expects 'accountAlias' not 'account'
     if (input.send.source) {
       result.send.source = {
-        from: input.send.source.from.map((fromInput: any) => {
-          const operation: any = {
-            accountAlias: fromInput.account, // Transform 'account' to 'accountAlias'
-            amount: fromInput.amount,
-          };
-
-          // Add route if provided (operation route reference)
-          if (fromInput.route) {
-            operation.route = fromInput.route;
-          }
-
-          // Add other optional fields
-          if (fromInput.description) {
-            operation.description = fromInput.description;
-          }
-
-          if (fromInput.metadata) {
-            operation.metadata = fromInput.metadata;
-          }
-
-          return operation;
-        }),
+        from: toApiLegs(input.send.source.from, 'send.source.from', input.send.asset),
       };
     }
 
     // Transform distribute operations - API expects 'accountAlias' not 'account'
     if (input.send.distribute) {
       result.send.distribute = {
-        to: input.send.distribute.to.map((toInput: any) => {
-          const operation: any = {
-            accountAlias: toInput.account, // Transform 'account' to 'accountAlias'
-            amount: toInput.amount,
-          };
-
-          // Add route if provided (operation route reference)
-          if (toInput.route) {
-            operation.route = toInput.route;
-          }
-
-          // Add other optional fields
-          if (toInput.description) {
-            operation.description = toInput.description;
-          }
-
-          if (toInput.metadata) {
-            operation.metadata = toInput.metadata;
-          }
-
-          return operation;
-        }),
+        to: toApiLegs(input.send.distribute.to, 'send.distribute.to', input.send.asset),
       };
     }
   }
@@ -88,6 +254,20 @@ export function toApiTransaction(input: CreateTransactionInput): any {
 
   if (input.route) {
     result.route = input.route;
+  }
+
+  if (input.routeId) {
+    result.routeId = input.routeId;
+  }
+
+  if (input.transactionDate) {
+    result.transactionDate = input.transactionDate;
+  }
+
+  // Emitted on presence, not truthiness: `{fees: false}` is a meaningful instruction and
+  // the ledger distinguishes it from an absent skip.
+  if (input.skip) {
+    result.skip = input.skip;
   }
 
   if (input.metadata) {

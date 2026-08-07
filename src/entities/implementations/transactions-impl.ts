@@ -3,7 +3,18 @@
 
 import { TransactionApiClient } from '../../api/interfaces/transaction-api-client';
 import { ListOptions, ListResponse } from '../../models/common';
-import { CreateTransactionInput, Transaction } from '../../models/transaction';
+import {
+  BlockFundsInput,
+  CreateAnnotationInput,
+  CreateInflowInput,
+  CreateOutflowInput,
+  CreateTransactionInput,
+  RevertTransactionOptions,
+  Transaction,
+  TransactionStateTransitionOptions,
+  UnblockFundsInput,
+  UpdateTransactionInput,
+} from '../../models/transaction';
 import { BasePaginator, PaginatorConfig } from '../../util/data/pagination-abstraction';
 import { Observability } from '../../util/observability/observability';
 import { TransactionPaginator, TransactionsService } from '../transactions';
@@ -268,6 +279,211 @@ export class TransactionsServiceImpl implements TransactionsService {
       }
 
       span.setAttribute('transactionId', result.id);
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async updateTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    input: UpdateTransactionInput
+  ): Promise<Transaction> {
+    return this.traceStateTransition('update', orgId, ledgerId, transactionId, () =>
+      this.apiClient.updateTransaction(orgId, ledgerId, transactionId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async createInflow(
+    orgId: string,
+    ledgerId: string,
+    input: CreateInflowInput
+  ): Promise<Transaction> {
+    return this.traceFlow('createInflow', 'inflow', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.createInflow(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async createOutflow(
+    orgId: string,
+    ledgerId: string,
+    input: CreateOutflowInput
+  ): Promise<Transaction> {
+    return this.traceFlow('createOutflow', 'outflow', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.createOutflow(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async blockFunds(
+    orgId: string,
+    ledgerId: string,
+    input: BlockFundsInput
+  ): Promise<Transaction> {
+    return this.traceFlow('blockFunds', 'block', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.blockFunds(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async unblockFunds(
+    orgId: string,
+    ledgerId: string,
+    input: UnblockFundsInput
+  ): Promise<Transaction> {
+    return this.traceFlow('unblockFunds', 'unblock', orgId, ledgerId, input.send?.asset, () =>
+      this.apiClient.unblockFunds(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async createAnnotation(
+    orgId: string,
+    ledgerId: string,
+    input: CreateAnnotationInput
+  ): Promise<Transaction> {
+    return this.traceFlow(
+      'createAnnotation',
+      'annotation',
+      orgId,
+      ledgerId,
+      input.send?.asset,
+      () => this.apiClient.createAnnotation(orgId, ledgerId, input)
+    );
+  }
+
+  /**
+   * Traces a single-sided flow and records its metric.
+   *
+   * `operation` names the span and matches both the public method and the operation the
+   * transport layer emits, so a trace can be followed across the two; `variant` is the
+   * metric suffix only.
+   *
+   * @returns Promise resolving to the transaction the API client answered with
+   */
+  private async traceFlow(
+    operation: string,
+    variant: string,
+    orgId: string,
+    ledgerId: string,
+    asset: string | undefined,
+    call: () => Promise<Transaction>
+  ): Promise<Transaction> {
+    const span = this.observability.startSpan(operation);
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    if (asset) {
+      span.setAttribute('asset', asset);
+    }
+
+    try {
+      const result = await call();
+
+      this.observability.recordMetric(`transactions.${variant}`, 1, { orgId, ledgerId });
+
+      span.setAttribute('transactionId', result.id);
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async commitTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction> {
+    return this.traceStateTransition('commit', orgId, ledgerId, transactionId, () =>
+      this.apiClient.commitTransaction(orgId, ledgerId, transactionId, options)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async cancelTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: TransactionStateTransitionOptions
+  ): Promise<Transaction> {
+    return this.traceStateTransition('cancel', orgId, ledgerId, transactionId, () =>
+      this.apiClient.cancelTransaction(orgId, ledgerId, transactionId, options)
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async revertTransaction(
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    options?: RevertTransactionOptions
+  ): Promise<Transaction> {
+    return this.traceStateTransition('revert', orgId, ledgerId, transactionId, () =>
+      this.apiClient.revertTransaction(orgId, ledgerId, transactionId, options)
+    );
+  }
+
+  /**
+   * Traces a state transition and records its metric
+   *
+   * @returns Promise resolving to the transaction the API client answered with
+   */
+  private async traceStateTransition(
+    transition: string,
+    orgId: string,
+    ledgerId: string,
+    transactionId: string,
+    call: () => Promise<Transaction>
+  ): Promise<Transaction> {
+    const span = this.observability.startSpan(`${transition}Transaction`);
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('transactionId', transactionId);
+
+    try {
+      const result = await call();
+
+      this.observability.recordMetric(`transactions.${transition}`, 1, {
+        orgId,
+        ledgerId,
+        transactionId,
+      });
+
       span.setStatus('ok');
       return result;
     } catch (error) {

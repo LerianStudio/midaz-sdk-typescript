@@ -9,6 +9,7 @@ import {
 } from '../../../src/entities/implementations/transactions-impl';
 import { CreateTransactionInput, Operation, Transaction } from '../../../src/models/transaction';
 import { ListResponse } from '../../../src/models/common';
+import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error/error-types';
 import { Observability } from '../../../src/util/observability';
 import { TransactionApiClient } from '../../../src/api/interfaces/transaction-api-client';
 
@@ -95,6 +96,15 @@ describe('TransactionsServiceImpl', () => {
       listTransactions: jest.fn(),
       getTransaction: jest.fn(),
       createTransaction: jest.fn(),
+      updateTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      cancelTransaction: jest.fn(),
+      revertTransaction: jest.fn(),
+      createInflow: jest.fn(),
+      createOutflow: jest.fn(),
+      blockFunds: jest.fn(),
+      unblockFunds: jest.fn(),
+      createAnnotation: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance
@@ -335,6 +345,272 @@ describe('TransactionsServiceImpl', () => {
       ).rejects.toThrow('API Error');
     });
   });
+
+  describe('updateTransaction', () => {
+    const patch = { description: 'audited', metadata: { auditRef: 'X-1' } };
+
+    it('delegates the caller body to the API client under the right ledger', async () => {
+      const patched: Transaction = { ...mockTransaction, description: 'audited' };
+      mockTransactionApiClient.updateTransaction.mockResolvedValueOnce(patched);
+
+      const result = await transactionsService.updateTransaction(
+        orgId,
+        ledgerId,
+        transactionId,
+        patch
+      );
+
+      expect(mockTransactionApiClient.updateTransaction).toHaveBeenCalledTimes(1);
+      expect(mockTransactionApiClient.updateTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        patch
+      );
+      expect(result).toBe(patched);
+    });
+
+    it('forwards an empty patch untouched, which the ledger answers with the stored transaction', async () => {
+      mockTransactionApiClient.updateTransaction.mockResolvedValueOnce(mockTransaction);
+
+      await transactionsService.updateTransaction(orgId, ledgerId, transactionId, {});
+
+      expect(mockTransactionApiClient.updateTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        {}
+      );
+    });
+
+    it('propagates the client-side rejection of a key the endpoint refuses', async () => {
+      const rejected = new Error('externalId is not accepted by this endpoint');
+      mockTransactionApiClient.updateTransaction.mockRejectedValueOnce(rejected);
+
+      await expect(
+        transactionsService.updateTransaction(orgId, ledgerId, transactionId, patch)
+      ).rejects.toBe(rejected);
+    });
+  });
+
+  describe('state transitions', () => {
+    it('delegates commitTransaction to the API client', async () => {
+      mockTransactionApiClient.commitTransaction.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.commitTransaction(orgId, ledgerId, transactionId);
+
+      expect(mockTransactionApiClient.commitTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        undefined
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates cancelTransaction to the API client', async () => {
+      mockTransactionApiClient.cancelTransaction.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.cancelTransaction(orgId, ledgerId, transactionId);
+
+      expect(mockTransactionApiClient.cancelTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        undefined
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates revertTransaction with the options the endpoint honours', async () => {
+      const reverted: Transaction = {
+        ...mockTransaction,
+        id: 'txn_reverted',
+        parentTransactionId: transactionId,
+      };
+      mockTransactionApiClient.revertTransaction.mockResolvedValueOnce(reverted);
+      const signal = new AbortController().signal;
+
+      const result = await transactionsService.revertTransaction(orgId, ledgerId, transactionId, {
+        timeout: 5000,
+        signal,
+      });
+
+      expect(mockTransactionApiClient.revertTransaction).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        transactionId,
+        { timeout: 5000, signal }
+      );
+      expect(result.parentTransactionId).toBe(transactionId);
+    });
+
+    it('issues exactly one commit request when the ledger reports the permanent lock', async () => {
+      const locked = new MidazError({
+        category: ErrorCategory.CONFLICT,
+        code: ErrorCode.TRANSACTION_LOCKED,
+        midazCode: '0486',
+        message: 'Transaction Locked',
+        statusCode: 409,
+      });
+      mockTransactionApiClient.commitTransaction.mockRejectedValue(locked);
+
+      await expect(
+        transactionsService.commitTransaction(orgId, ledgerId, transactionId)
+      ).rejects.toBe(locked);
+      expect(mockTransactionApiClient.commitTransaction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('single-sided flows', () => {
+    const inflow = {
+      description: 'Deposit',
+      send: {
+        asset: 'USD',
+        value: '100',
+        distribute: { to: [{ account: 'acc_123', amount: { asset: 'USD', value: '100' } }] },
+      },
+    };
+
+    const outflow = {
+      description: 'Withdrawal',
+      send: {
+        asset: 'USD',
+        value: '40',
+        source: { from: [{ account: 'acc_123', amount: { asset: 'USD', value: '40' } }] },
+      },
+    };
+
+    it('delegates createInflow to the API client', async () => {
+      mockTransactionApiClient.createInflow.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.createInflow(orgId, ledgerId, inflow);
+
+      expect(mockTransactionApiClient.createInflow).toHaveBeenCalledWith(orgId, ledgerId, inflow);
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates createOutflow to the API client', async () => {
+      mockTransactionApiClient.createOutflow.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.createOutflow(orgId, ledgerId, outflow);
+
+      expect(mockTransactionApiClient.createOutflow).toHaveBeenCalledWith(orgId, ledgerId, outflow);
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('propagates a client-side rejection without swallowing it', async () => {
+      const rejected = new Error('send.source is not accepted by the inflow endpoint');
+      mockTransactionApiClient.createInflow.mockRejectedValueOnce(rejected);
+
+      await expect(transactionsService.createInflow(orgId, ledgerId, inflow)).rejects.toBe(
+        rejected
+      );
+    });
+
+    it('names each flow span after its public method, as the transport layer does', async () => {
+      mockTransactionApiClient.createInflow.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.createOutflow.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.blockFunds.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.unblockFunds.mockResolvedValueOnce(mockTransaction);
+      mockTransactionApiClient.createAnnotation.mockResolvedValueOnce(mockTransaction);
+
+      const labelInput = {
+        ...inflow,
+        send: {
+          ...inflow.send,
+          source: { from: [{ account: 'acc_1', amount: inflow.send.value }] },
+        },
+      };
+
+      await transactionsService.createInflow(orgId, ledgerId, inflow);
+      await transactionsService.createOutflow(orgId, ledgerId, outflow);
+      await transactionsService.blockFunds(orgId, ledgerId, labelInput as never);
+      await transactionsService.unblockFunds(orgId, ledgerId, labelInput as never);
+      await transactionsService.createAnnotation(orgId, ledgerId, labelInput as never);
+
+      const spanNames = observability.startSpan.mock.calls.map(([name]) => name);
+
+      expect(spanNames).toEqual([
+        'createInflow',
+        'createOutflow',
+        'blockFunds',
+        'unblockFunds',
+        'createAnnotation',
+      ]);
+    });
+
+    it('keeps the lowercase variant on the metric name', async () => {
+      mockTransactionApiClient.blockFunds.mockResolvedValueOnce(mockTransaction);
+
+      await transactionsService.blockFunds(orgId, ledgerId, {
+        ...inflow,
+        send: { ...inflow.send, source: { from: [] } },
+      } as never);
+
+      expect(observability.recordMetric).toHaveBeenCalledWith('transactions.block', 1, {
+        orgId,
+        ledgerId,
+      });
+    });
+  });
+
+  describe('label-only variants', () => {
+    const fullInput = {
+      chartOfAccountsGroupName: 'BLOCKS',
+      description: 'Block 100',
+      send: {
+        asset: 'USD',
+        value: '100',
+        source: { from: [{ account: 'acc_123', amount: { asset: 'USD', value: '100' } }] },
+        distribute: { to: [{ account: 'acc_456', amount: { asset: 'USD', value: '100' } }] },
+      },
+    };
+
+    it('delegates blockFunds to the API client', async () => {
+      mockTransactionApiClient.blockFunds.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.blockFunds(orgId, ledgerId, fullInput);
+
+      expect(mockTransactionApiClient.blockFunds).toHaveBeenCalledWith(orgId, ledgerId, fullInput);
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates unblockFunds to the API client', async () => {
+      mockTransactionApiClient.unblockFunds.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.unblockFunds(orgId, ledgerId, fullInput);
+
+      expect(mockTransactionApiClient.unblockFunds).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        fullInput
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('delegates createAnnotation to the API client', async () => {
+      mockTransactionApiClient.createAnnotation.mockResolvedValueOnce(mockTransaction);
+
+      const result = await transactionsService.createAnnotation(orgId, ledgerId, fullInput);
+
+      expect(mockTransactionApiClient.createAnnotation).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        fullInput
+      );
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it('propagates the annotation validator rejection without swallowing it', async () => {
+      const rejected = new Error('pending is not accepted by the annotation endpoint');
+      mockTransactionApiClient.createAnnotation.mockRejectedValueOnce(rejected);
+
+      await expect(transactionsService.createAnnotation(orgId, ledgerId, fullInput)).rejects.toBe(
+        rejected
+      );
+    });
+  });
 });
 
 describe('TransactionPaginatorImpl', () => {
@@ -393,6 +669,11 @@ describe('TransactionPaginatorImpl', () => {
       listTransactions: jest.fn(),
       getTransaction: jest.fn(),
       createTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      cancelTransaction: jest.fn(),
+      revertTransaction: jest.fn(),
+      createInflow: jest.fn(),
+      createOutflow: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance

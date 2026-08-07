@@ -34,19 +34,21 @@ export interface OperationApiClient extends ApiClient<Operation, never, Record<s
     orgId: string,
     ledgerId: string,
     accountId: string,
-    operationId: string,
-    transactionId?: string
+    operationId: string
   ): Promise<Operation>;
 
   /**
    * Updates an existing operation
+   *
+   * The ledger only exposes the transaction-scoped PATCH route, so the operation is
+   * addressed by its transaction and no account takes part in the request.
    *
    * @returns Promise resolving to the updated operation
    */
   updateOperation(
     orgId: string,
     ledgerId: string,
-    accountId: string,
+    transactionId: string,
     operationId: string,
     input: Record<string, any>
   ): Promise<Operation>;

@@ -32,6 +32,8 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
     "typecheck": "tsc --noEmit",
+    "generate:types": "openapi-typescript spec/ledger-v1.openapi.yaml -o src/generated/ledger-v1.d.ts && openapi-typescript spec/ledger-v2.openapi.yaml -o src/generated/ledger-v2.d.ts && prettier --log-level warn --write \"src/generated/*.d.ts\"",
+    "spec:update": "bash scripts/update-spec.sh",
     "docs": "typedoc",
     "docs:serve": "typedoc --watch",
     "size": "bundlewatch",
@@ -100,13 +102,15 @@
     "husky": "^9.1.7",
     "jest": "^30.4.2",
     "lint-staged": "^16.0.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "3.6.2",
     "semantic-release": "^24.2.5",
     "ts-jest": "^29.3.4",
     "ts-node": "^10.9.2",
     "typedoc": "^0.28.4",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.31.1"
+    "typescript-eslint": "^8.31.1",
+    "yaml": "^2.9.0"
   },
   "bundlewatch": {
     "files": [
@@ -135,6 +139,7 @@
   },
   "overrides": {
     "axios": "1.19.0",
-    "npm": "11.19.0"
+    "npm": "11.19.0",
+    "js-yaml": "^4.3.1"
   }
 }

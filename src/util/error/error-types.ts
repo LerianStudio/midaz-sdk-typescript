@@ -79,6 +79,9 @@ export enum ErrorCode {
   /** Rate limit exceeded error */
   RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
 
+  /** Transaction locked error, raised by the ledger's terminal `0486` */
+  TRANSACTION_LOCKED = 'transaction_locked',
+
   /** Timeout error for operations that take too long */
   TIMEOUT = 'timeout',
 
@@ -87,6 +90,69 @@ export enum ErrorCode {
 
   /** Internal error for unexpected server problems */
   INTERNAL_ERROR = 'internal_error',
+}
+
+/**
+ * Midaz code of the ledger's `Transaction Locked` conflict, which is terminal
+ */
+export const MIDAZ_CODE_TRANSACTION_LOCKED = '0486';
+
+/**
+ * Midaz code of the ledger's `Skip Not Permitted` rejection, raised when a requested
+ * `skip` flag is not enabled by the ledger's overrides
+ */
+export const MIDAZ_CODE_SKIP_NOT_PERMITTED = '0490';
+
+/**
+ * Fields the SDK reads from a midaz RFC 9457 problem document
+ */
+export interface MidazProblem {
+  /** HTTP status the failure carried */
+  status?: number;
+
+  /** Midaz numeric error code, e.g. `0486` */
+  code?: string;
+
+  /** Server-authored explanation of the failure */
+  detail?: string;
+}
+
+/**
+ * Reads the problem document off a thrown transport error
+ *
+ * The ledger answers `application/problem+json`, which the HTTP client does not
+ * recognise as JSON, so the body reaches the error as a raw string as often as an
+ * object. Both forms are accepted, and anything else yields an empty problem.
+ *
+ * @returns The status, midaz code and detail the error carried, where present
+ */
+export function readMidazProblem(error: unknown): MidazProblem {
+  if (!error || typeof error !== 'object') {
+    return {};
+  }
+
+  const candidate = error as { status?: unknown; statusCode?: unknown; response?: unknown };
+  const status = candidate.statusCode ?? candidate.status;
+  let body = candidate.response;
+
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = undefined;
+    }
+  }
+
+  const problem = (body && typeof body === 'object' ? body : {}) as {
+    code?: unknown;
+    detail?: unknown;
+  };
+
+  return {
+    status: typeof status === 'number' ? status : undefined,
+    code: typeof problem.code === 'string' ? problem.code : undefined,
+    detail: typeof problem.detail === 'string' ? problem.detail : undefined,
+  };
 }
 
 /**
@@ -153,6 +219,12 @@ export class MidazError extends Error {
   public readonly code: ErrorCode;
 
   /**
+   * Midaz numeric error code carried by the API's RFC 9457 problem document
+   * (e.g. `0486`), when the response supplied one
+   */
+  public readonly midazCode?: string;
+
+  /**
    * Error message
    * Human-readable description of the error
    */
@@ -201,6 +273,7 @@ export class MidazError extends Error {
   constructor(params: {
     category: ErrorCategory;
     code: ErrorCode;
+    midazCode?: string;
     message: string;
     operation?: string;
     resource?: string;
@@ -218,6 +291,7 @@ export class MidazError extends Error {
     super(sanitizedMessage);
     this.category = params.category;
     this.code = params.code;
+    this.midazCode = params.midazCode;
     this.message = sanitizedMessage;
     this.operation = params.operation;
     this.resource = params.resource;
@@ -238,6 +312,31 @@ export class MidazError extends Error {
     // Maintains proper stack trace in V8 engines (Node.js only)
     if (typeof (Error as any).captureStackTrace === 'function') {
       (Error as any).captureStackTrace(this, MidazError);
+    }
+  }
+}
+
+/**
+ * Error raised when the SDK configuration cannot satisfy a request
+ *
+ * @example
+ * ```typescript
+ * new MidazConfigError("No base URL configured for service 'ledger'");
+ * ```
+ */
+export class MidazConfigError extends MidazError {
+  constructor(message: string, params: { operation?: string; cause?: Error | unknown } = {}) {
+    super({
+      category: ErrorCategory.VALIDATION,
+      code: ErrorCode.VALIDATION_ERROR,
+      message,
+      ...params,
+    });
+
+    this.name = 'MidazConfigError';
+
+    if (typeof (Error as any).captureStackTrace === 'function') {
+      (Error as any).captureStackTrace(this, MidazConfigError);
     }
   }
 }

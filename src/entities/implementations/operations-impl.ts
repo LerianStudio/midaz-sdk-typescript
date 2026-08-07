@@ -109,8 +109,7 @@ export class OperationsServiceImpl implements OperationsService {
    * Gets an operation by ID
    *
    * Retrieves a single operation by its unique identifier within the specified
-   * organization, ledger, and account. Optionally, a transaction ID can be provided
-   * to narrow down the search.
+   * organization, ledger, and account.
    *
    * @returns Promise resolving to the operation
    */
@@ -118,8 +117,7 @@ export class OperationsServiceImpl implements OperationsService {
     orgId: string,
     ledgerId: string,
     accountId: string,
-    operationId: string,
-    transactionId?: string
+    operationId: string
   ): Promise<Operation> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('getOperation');
@@ -127,9 +125,6 @@ export class OperationsServiceImpl implements OperationsService {
     span.setAttribute('ledgerId', ledgerId);
     span.setAttribute('accountId', accountId);
     span.setAttribute('operationId', operationId);
-    if (transactionId) {
-      span.setAttribute('transactionId', transactionId);
-    }
 
     try {
       // Delegate to the API client
@@ -137,8 +132,7 @@ export class OperationsServiceImpl implements OperationsService {
         orgId,
         ledgerId,
         accountId,
-        operationId,
-        transactionId
+        operationId
       );
 
       // Record metrics
@@ -174,7 +168,7 @@ export class OperationsServiceImpl implements OperationsService {
   public async updateOperation(
     orgId: string,
     ledgerId: string,
-    accountId: string,
+    transactionId: string,
     operationId: string,
     input: Record<string, any>
   ): Promise<Operation> {
@@ -182,8 +176,8 @@ export class OperationsServiceImpl implements OperationsService {
     const span = this.observability.startSpan('updateOperation');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
-    span.setAttribute('accountId', accountId);
     span.setAttribute('operationId', operationId);
+    span.setAttribute('transactionId', transactionId);
 
     if (input.metadata) {
       span.setAttribute('updatedMetadata', true);
@@ -194,7 +188,7 @@ export class OperationsServiceImpl implements OperationsService {
       const result = await this.operationApiClient.updateOperation(
         orgId,
         ledgerId,
-        accountId,
+        transactionId,
         operationId,
         input
       );
@@ -203,8 +197,8 @@ export class OperationsServiceImpl implements OperationsService {
       this.observability.recordMetric('operation.update', 1, {
         orgId,
         ledgerId,
-        accountId,
         operationId,
+        transactionId,
         operationType: result.type || 'unknown',
       });
 

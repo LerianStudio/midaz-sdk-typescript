@@ -147,10 +147,20 @@ export * from './util/account/index';
 export {
   Amount,
   AmountInput,
+  BlockFundsInput,
+  CreateAnnotationInput,
+  CreateInflowInput,
+  CreateOutflowInput,
   CreateTransactionInput,
+  InflowSendInput,
+  NonPendingTransactionInput,
   Operation,
   OperationInput,
+  OutflowSendInput,
+  RevertTransactionOptions,
   Transaction,
+  TransactionStateTransitionOptions,
+  UnblockFundsInput,
   UpdateTransactionInput,
 } from './models/transaction';
 

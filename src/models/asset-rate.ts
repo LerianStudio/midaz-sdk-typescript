@@ -1,211 +1,192 @@
 /**
  */
 
+import type { components } from '../generated/ledger-v1';
+
 /**
  * Represents an asset exchange rate in the Midaz Ledger.
  *
- * Asset rates define the conversion ratio between two different assets
- * and are used for currency conversion and other asset exchange operations.
- *
- * Exchange rates in Midaz are directional, meaning they specify the conversion
- * from one specific asset (FromAsset) to another (ToAsset). The Rate value
- * indicates how many units of ToAsset equal one unit of FromAsset.
+ * Rates are directional: they convert `from` one asset `to` another. The value
+ * is carried as the integer `rate` paired with `scale`, the number of decimal
+ * places, so `{ rate: 520, scale: 2 }` means 1 BRL = 5.20 USD.
  *
  * @example
  * ```typescript
- * // Example of a complete AssetRate object (USD to EUR)
- * const usdToEurRate: AssetRate = {
- *   id: "rate_01H9ZQCK3VP6WS2EZ5JQKD5E1S",
- *   fromAsset: "USD",
- *   toAsset: "EUR",
- *   rate: 0.92,  // 1 USD = 0.92 EUR
- *   createdAt: "2023-09-15T14:30:00Z",
- *   updatedAt: "2023-09-15T14:30:00Z",
- *   effectiveAt: "2023-09-15T00:00:00Z",
- *   expirationAt: "2023-09-16T00:00:00Z"
- * };
- *
- * // Example of a complete AssetRate object (BTC to USD)
- * const btcToUsdRate: AssetRate = {
- *   id: "rate_02H9ZQCK3VP6WS2EZ5JQKD5E1T",
- *   fromAsset: "BTC",
- *   toAsset: "USD",
- *   rate: 43000,  // 1 BTC = 43,000 USD
- *   createdAt: "2023-09-15T14:30:00Z",
- *   updatedAt: "2023-09-15T14:30:00Z",
- *   effectiveAt: "2023-09-15T00:00:00Z",
- *   expirationAt: "2023-09-16T00:00:00Z"
+ * const brlToUsd: AssetRate = {
+ *   id: "019fd4f3-d4f5-715c-9f62-dae7d93b6e7c",
+ *   organizationId: "019fd4cf-c605-74ff-b89a-c60ef18fce7c",
+ *   ledgerId: "019fd4cf-c624-7402-bd8b-e9a9c8c60427",
+ *   externalId: "019fd4f3-d4f5-70a6-93c2-2eb39c9fe00f",
+ *   from: "BRL",
+ *   to: "USD",
+ *   rate: 520,
+ *   scale: 2,
+ *   source: "Central Bank",
+ *   ttl: 3600,
+ *   createdAt: "2026-08-06T02:42:57Z",
+ *   updatedAt: "2026-08-06T03:17:14Z",
+ *   metadata: {}
  * };
  * ```
  */
 export interface AssetRate {
-  /**
-   * Unique identifier for the asset rate
-   * System-generated UUID that uniquely identifies this exchange rate
-   * across the entire Midaz platform.
-   */
+  /** Unique identifier of the rate */
   id: string;
 
-  /**
-   * The source asset code for the conversion
-   * This is the "from" asset in the exchange rate (e.g., "USD" in a USD→EUR rate)
-   * Must reference a valid asset code defined in the system
-   */
-  fromAsset: string;
+  /** Organization that owns the rate */
+  organizationId: string;
 
-  /**
-   * The target asset code for the conversion
-   * This is the "to" asset in the exchange rate (e.g., "EUR" in a USD→EUR rate)
-   * Must reference a valid asset code defined in the system
-   */
-  toAsset: string;
+  /** Ledger the rate belongs to */
+  ledgerId: string;
 
-  /**
-   * The exchange rate value
-   * Represents how many units of toAsset equal one unit of fromAsset
-   * For example, if USD→EUR rate is 0.92, then 1 USD = 0.92 EUR
-   * Must be a positive number greater than zero
-   */
+  /** Identifier used to correlate the rate with an external system */
+  externalId: string;
+
+  /** Source asset code */
+  from: string;
+
+  /** Target asset code */
+  to: string;
+
+  /** Unscaled exchange rate */
   rate: number;
 
-  /**
-   * Timestamp when the asset rate was created
-   * This is automatically set by the system and cannot be modified
-   * ISO 8601 formatted date-time string
-   */
+  /** Number of decimal places applied to `rate` */
+  scale: number | null;
+
+  /** Free-form origin of the rate information */
+  source: string | null;
+
+  /** Time-to-live in seconds */
+  ttl: number;
+
+  /** Creation timestamp */
   createdAt: string;
 
-  /**
-   * Timestamp when the asset rate was last updated
-   * This is automatically updated by the system whenever the rate is modified
-   * ISO 8601 formatted date-time string
-   */
+  /** Last update timestamp */
   updatedAt: string;
 
-  /**
-   * Timestamp when the rate becomes effective
-   * Defines the start of the time period during which this rate is valid
-   * ISO 8601 formatted date-time string
-   */
-  effectiveAt: string;
-
-  /**
-   * Timestamp when the rate expires
-   * Defines the end of the time period during which this rate is valid
-   * ISO 8601 formatted date-time string
-   */
-  expirationAt: string;
+  /** Additional custom attributes */
+  metadata: { [key: string]: unknown };
 }
+
+// Structural check against the generated spec type: it is declared here rather than aliased so
+// the published declarations do not reference `src/generated`, which ships no runtime module.
+type GeneratedAssetRate = components['schemas']['AssetRate'];
+
+const assetRateMatchesSpec: (value: AssetRate) => GeneratedAssetRate = (value) => value;
+
+const specMatchesAssetRate: (value: GeneratedAssetRate) => AssetRate = (value) => value;
+
+void assetRateMatchesSpec;
+void specMatchesAssetRate;
 
 /**
  * Input for creating or updating an asset rate
  *
- * This structure contains all the fields required when creating or updating
- * an exchange rate between two assets. All fields are mandatory.
- *
  * @example
  * ```typescript
- * // Create input for a new USD to EUR exchange rate
  * const rateInput: UpdateAssetRateInput = {
- *   fromAsset: "USD",
- *   toAsset: "EUR",
- *   rate: 0.92,
- *   effectiveAt: "2023-09-15T00:00:00Z",
- *   expirationAt: "2023-09-16T00:00:00Z"
+ *   from: "BRL",
+ *   to: "USD",
+ *   rate: 520,
+ *   scale: 2,
+ *   ttl: 3600,
+ *   source: "Central Bank"
  * };
- *
- * // The rate can also be created using the helper function
- * const helperRateInput = createUpdateAssetRateInput(
- *   "USD",
- *   "EUR",
- *   0.92,
- *   new Date("2023-09-15T00:00:00Z"),
- *   new Date("2023-09-16T00:00:00Z")
- * );
  * ```
  */
 export interface UpdateAssetRateInput {
   /**
-   * The source asset code
-   * This is the "from" asset in the exchange rate (e.g., "USD" in a USD→EUR rate)
-   * Must reference a valid asset code defined in the system
+   * The source asset code, 2 to 10 characters (e.g. "BRL" in a BRL→USD rate)
    */
-  fromAsset: string;
+  from: string;
 
   /**
-   * The target asset code
-   * This is the "to" asset in the exchange rate (e.g., "EUR" in a USD→EUR rate)
-   * Must reference a valid asset code defined in the system
+   * The target asset code, 2 to 10 characters (e.g. "USD" in a BRL→USD rate)
    */
-  toAsset: string;
+  to: string;
 
   /**
-   * The exchange rate value
-   * Represents how many units of toAsset equal one unit of fromAsset
-   * Must be greater than 0
+   * The unscaled exchange rate, always an integer
+   * Paired with `scale` to express decimals: 520 with scale 2 is 5.20
    */
   rate: number;
 
   /**
-   * Timestamp when the rate becomes effective
-   * Defines the start of the time period during which this rate is valid
-   * Must be an ISO 8601 formatted date-time string
+   * Number of decimal places applied to `rate`, a non-negative integer
+   * Defaults to 0 server-side, meaning `rate` is taken as a whole number
    */
-  effectiveAt: string;
+  scale?: number;
 
   /**
-   * Timestamp when the rate expires
-   * Defines the end of the time period during which this rate is valid
-   * Must be an ISO 8601 formatted date-time string and must be after effectiveAt
+   * Free-form origin of the rate information, at most 200 characters
    */
-  expirationAt: string;
+  source?: string;
+
+  /**
+   * Time-to-live in seconds, a non-negative integer
+   */
+  ttl?: number;
+
+  /**
+   * Caller-supplied UUID used to correlate the rate with an external system
+   * The ledger generates one when it is omitted
+   */
+  externalId?: string;
+
+  /**
+   * Additional custom attributes
+   */
+  metadata?: Record<string, unknown>;
 }
 
 /**
+ * Optional fields accepted alongside the required asset rate triple
+ */
+export type AssetRateOptions = Omit<UpdateAssetRateInput, 'from' | 'to' | 'rate'>;
+
+/**
  * Creates a new UpdateAssetRateInput object
- *
- * This helper function simplifies the creation of asset rate inputs by
- * handling the conversion of Date objects to ISO strings automatically.
  *
  * @returns A complete UpdateAssetRateInput object ready to be used in API calls
  *
  * @example
  * ```typescript
- * // Create a rate valid for the next 24 hours
- * const now = new Date();
- * const tomorrow = new Date(now);
- * tomorrow.setDate(tomorrow.getDate() + 1);
+ * // 1 BRL = 5.20 USD, valid for an hour
+ * const rateInput = createUpdateAssetRateInput("BRL", "USD", 520, {
+ *   scale: 2,
+ *   ttl: 3600,
+ *   source: "Central Bank",
+ * });
  *
- * const rateInput = createUpdateAssetRateInput(
- *   "USD",
- *   "EUR",
- *   0.92,
- *   now,
- *   tomorrow
- * );
- *
- * // Create a rate with specific timestamps as strings
- * const historicalRate = createUpdateAssetRateInput(
- *   "BTC",
- *   "USD",
- *   43000,
- *   "2023-01-01T00:00:00Z",
- *   "2023-01-02T00:00:00Z"
- * );
+ * // A whole-number rate needs no options
+ * const wholeRate = createUpdateAssetRateInput("BTC", "USD", 43000);
  * ```
  */
 export function createUpdateAssetRateInput(
-  fromAsset: string,
-  toAsset: string,
+  from: string,
+  to: string,
   rate: number,
-  effectiveAt: Date | string,
-  expirationAt: Date | string
+  options: AssetRateOptions = {}
 ): UpdateAssetRateInput {
-  return {
-    fromAsset,
-    toAsset,
-    rate,
-    effectiveAt: typeof effectiveAt === 'string' ? effectiveAt : effectiveAt.toISOString(),
-    expirationAt: typeof expirationAt === 'string' ? expirationAt : expirationAt.toISOString(),
-  };
+  const input: UpdateAssetRateInput = { from, to, rate };
+
+  if (options.scale !== undefined) {
+    input.scale = options.scale;
+  }
+  if (options.source !== undefined) {
+    input.source = options.source;
+  }
+  if (options.ttl !== undefined) {
+    input.ttl = options.ttl;
+  }
+  if (options.externalId !== undefined) {
+    input.externalId = options.externalId;
+  }
+  if (options.metadata !== undefined) {
+    input.metadata = options.metadata;
+  }
+
+  return input;
 }

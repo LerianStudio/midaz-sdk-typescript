@@ -26,6 +26,17 @@ export interface AssetRateApiClient
   ): Promise<AssetRate>;
 
   /**
+   * Retrieves a single asset rate by its external identifier
+   *
+   * @returns Promise resolving to the asset rate
+   */
+  getAssetRateByExternalId(
+    organizationId: string,
+    ledgerId: string,
+    externalId: string
+  ): Promise<AssetRate>;
+
+  /**
    * Creates a new asset rate or updates an existing one
    *
    * @returns Promise resolving to the created or updated asset rate

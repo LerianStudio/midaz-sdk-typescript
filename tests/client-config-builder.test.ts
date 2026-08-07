@@ -14,13 +14,38 @@ import {
   createLocalConfig,
   createLocalConfigWithAccessManager,
 } from '../src/client-config-builder';
+import { UrlBuilder } from '../src/api/url-builder';
+import { loadBuilderModule } from './support/load-builder-module';
 
 // Mock AccessManager
 jest.mock('../src/util/auth/access-manager');
 
+const URL_ENV_KEYS = [
+  'MIDAZ_LEDGER_URL',
+  'MIDAZ_ONBOARDING_URL',
+  'MIDAZ_TRANSACTION_URL',
+  'MIDAZ_LOCAL_PORT',
+];
+
 describe('ClientConfigBuilder', () => {
+  const savedUrlEnv: Record<string, string | undefined> = {};
+
   beforeEach(() => {
     jest.clearAllMocks();
+    for (const key of URL_ENV_KEYS) {
+      savedUrlEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of URL_ENV_KEYS) {
+      if (savedUrlEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedUrlEnv[key];
+      }
+    }
   });
 
   describe('createClientConfigBuilder', () => {
@@ -160,14 +185,15 @@ describe('ClientConfigBuilder', () => {
 
     describe('Local', () => {
       it('should create local config', () => {
-        const builder = createLocalConfig(3000);
+        const builder = createLocalConfig(3002);
         const config = builder.build();
 
         expect(config.debug).toBe(true);
         expect(config.apiVersion).toBeDefined(); // Should have some API version
         expect(config.baseUrls).toBeDefined();
-        expect(config.baseUrls?.onboarding).toContain('localhost:3000');
-        expect(config.baseUrls?.transaction).toContain('localhost:3001');
+        expect(config.baseUrls?.ledger).toBe('http://localhost:3002');
+        expect(config.baseUrls?.onboarding).toBeUndefined();
+        expect(config.baseUrls?.transaction).toBeUndefined();
         // No authentication configured by default
         expect(config.accessManager).toBeUndefined();
       });
@@ -382,6 +408,296 @@ describe('ClientConfigBuilder', () => {
           builder.withAccessManager(validConfig);
         }).not.toThrow();
       });
+    });
+  });
+
+  describe('Unified ledger base URL', () => {
+    const ENV_KEYS = [
+      'MIDAZ_LEDGER_URL',
+      'MIDAZ_ONBOARDING_URL',
+      'MIDAZ_TRANSACTION_URL',
+      'MIDAZ_LOCAL_PORT',
+    ];
+    let savedEnv: Record<string, string | undefined>;
+
+    beforeEach(() => {
+      savedEnv = {};
+      for (const key of ENV_KEYS) {
+        savedEnv[key] = process.env[key];
+        delete process.env[key];
+      }
+    });
+
+    afterEach(() => {
+      for (const key of ENV_KEYS) {
+        if (savedEnv[key] === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = savedEnv[key];
+        }
+      }
+      jest.resetModules();
+    });
+
+    it('should emit the ledger key alone for the development environment', () => {
+      const { createDevelopmentConfig } = loadBuilderModule();
+
+      const config = createDevelopmentConfig('v1').build();
+
+      expect(config.baseUrls).toEqual({ ledger: 'http://localhost:3002' });
+    });
+
+    it('should route both service families at the ledger host with nothing configured', () => {
+      const { createDevelopmentConfig } = loadBuilderModule();
+
+      const urlBuilder = new UrlBuilder(createDevelopmentConfig('v1').build());
+
+      expect(urlBuilder.buildAccountUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/accounts'
+      );
+      expect(urlBuilder.buildAssetRateUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/asset-rates'
+      );
+    });
+
+    it('should emit the ledger key alone for sandbox and production environments', () => {
+      const { createSandboxConfig, createProductionConfig } = loadBuilderModule();
+
+      expect(createSandboxConfig('v1').build().baseUrls).toEqual({
+        ledger: 'https://yourdomain.sandbox.midaz.io',
+      });
+      expect(createProductionConfig('v1').build().baseUrls).toEqual({
+        ledger: 'https://yourdomain.api.midaz.io',
+      });
+    });
+
+    it('should keep a legacy onboarding variable winning for its own family', () => {
+      process.env.MIDAZ_ONBOARDING_URL = 'http://legacy-onboarding:9000';
+      const { createDevelopmentConfig } = loadBuilderModule();
+      const config = createDevelopmentConfig('v1').build();
+      delete process.env.MIDAZ_ONBOARDING_URL;
+
+      const urlBuilder = new UrlBuilder(config);
+
+      expect(config.baseUrls).toEqual({
+        onboarding: 'http://legacy-onboarding:9000',
+        ledger: 'http://localhost:3002',
+      });
+      expect(urlBuilder.buildAccountUrl('org_1', 'ledger_1')).toBe(
+        'http://legacy-onboarding:9000/v1/organizations/org_1/ledgers/ledger_1/accounts'
+      );
+      expect(urlBuilder.buildAssetRateUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/asset-rates'
+      );
+    });
+
+    it('should keep a legacy transaction variable winning for asset rates', () => {
+      process.env.MIDAZ_TRANSACTION_URL = 'http://legacy-transaction:9001';
+      const { createDevelopmentConfig } = loadBuilderModule();
+      const config = createDevelopmentConfig('v1').build();
+      delete process.env.MIDAZ_TRANSACTION_URL;
+
+      const urlBuilder = new UrlBuilder(config);
+
+      expect(config.baseUrls).toEqual({
+        transaction: 'http://legacy-transaction:9001',
+        ledger: 'http://localhost:3002',
+      });
+      expect(urlBuilder.buildAssetRateUrl('org_1', 'ledger_1')).toBe(
+        'http://legacy-transaction:9001/v1/organizations/org_1/ledgers/ledger_1/asset-rates'
+      );
+      expect(urlBuilder.buildAccountUrl('org_1', 'ledger_1')).toBe(
+        'http://localhost:3002/v1/organizations/org_1/ledgers/ledger_1/accounts'
+      );
+    });
+
+    it('should emit only the ledger key when MIDAZ_LEDGER_URL is the sole URL variable', () => {
+      process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
+      const { createDevelopmentConfig } = loadBuilderModule();
+
+      const config = createDevelopmentConfig('v1').build();
+
+      expect(config.baseUrls).toEqual({ ledger: 'http://ledger.test:3002' });
+    });
+
+    it('should read MIDAZ_LEDGER_URL exported after the module was imported', () => {
+      const { createDevelopmentConfig } = loadBuilderModule();
+      process.env.MIDAZ_LEDGER_URL = 'http://exported-late.test:3002';
+
+      expect(createDevelopmentConfig('v1').build().baseUrls).toEqual({
+        ledger: 'http://exported-late.test:3002',
+      });
+    });
+
+    it('should read MIDAZ_LEDGER_URL exported after the module was imported, per environment', () => {
+      const { createClientConfigBuilder } = loadBuilderModule();
+      process.env.MIDAZ_LEDGER_URL = 'http://exported-late.test:3002';
+
+      expect(createClientConfigBuilder().withEnvironment('production').build().baseUrls).toEqual({
+        ledger: 'http://exported-late.test:3002',
+      });
+      expect(createClientConfigBuilder().withEnvironment('sandbox').build().baseUrls).toEqual({
+        ledger: 'http://exported-late.test:3002',
+      });
+    });
+
+    it('should drive every UrlBuilder path from a MIDAZ_LEDGER_URL-only configuration', () => {
+      process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
+      const { createDevelopmentConfig } = loadBuilderModule();
+      const config = createDevelopmentConfig('v1').build();
+      delete process.env.MIDAZ_LEDGER_URL;
+
+      const urlBuilder = new UrlBuilder(config);
+
+      expect(urlBuilder.buildOrganizationUrl()).toBe('http://ledger.test:3002/v1/organizations');
+      expect(urlBuilder.buildTransactionUrl('org_1', 'ledger_1')).toBe(
+        'http://ledger.test:3002/v1/organizations/org_1/ledgers/ledger_1/transactions'
+      );
+    });
+
+    it('should keep legacy environment variables working unchanged', () => {
+      process.env.MIDAZ_ONBOARDING_URL = 'http://legacy-onboarding:9000';
+      process.env.MIDAZ_TRANSACTION_URL = 'http://legacy-transaction:9001';
+      const { createDevelopmentConfig } = loadBuilderModule();
+
+      const config = createDevelopmentConfig('v1').build();
+
+      expect(config.baseUrls?.onboarding).toBe('http://legacy-onboarding:9000');
+      expect(config.baseUrls?.transaction).toBe('http://legacy-transaction:9001');
+    });
+
+    it('should keep a legacy URL winning for its own family while the ledger serves the rest', () => {
+      process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
+      process.env.MIDAZ_ONBOARDING_URL = 'http://legacy-onboarding:9000';
+      const { createDevelopmentConfig } = loadBuilderModule();
+      const config = createDevelopmentConfig('v1').build();
+      delete process.env.MIDAZ_LEDGER_URL;
+      delete process.env.MIDAZ_ONBOARDING_URL;
+
+      const urlBuilder = new UrlBuilder(config);
+
+      expect(config.baseUrls).toEqual({
+        ledger: 'http://ledger.test:3002',
+        onboarding: 'http://legacy-onboarding:9000',
+      });
+      expect(urlBuilder.buildOrganizationUrl()).toBe(
+        'http://legacy-onboarding:9000/v1/organizations'
+      );
+      expect(urlBuilder.buildTransactionUrl('org_1', 'ledger_1')).toBe(
+        'http://ledger.test:3002/v1/organizations/org_1/ledgers/ledger_1/transactions'
+      );
+    });
+
+    it('should emit the ledger key alone for local configurations', () => {
+      const { createLocalConfig, createLocalConfigWithAccessManager } = loadBuilderModule();
+
+      // The port names the ledger itself: midaz is one service, so there is no offset.
+      expect(createLocalConfig().build().baseUrls).toEqual({ ledger: 'http://localhost:3002' });
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4000' });
+      expect(
+        createLocalConfigWithAccessManager(
+          {
+            address: 'https://auth.example.com',
+            clientId: 'test-client-id',
+            clientSecret: 'test-client-secret',
+          },
+          4000
+        ).build().baseUrls
+      ).toEqual({ ledger: 'http://localhost:4000' });
+    });
+
+    it('should let MIDAZ_LOCAL_PORT set the local ledger port the caller left unset', () => {
+      process.env.MIDAZ_LOCAL_PORT = '4500';
+      const { createLocalConfig } = loadBuilderModule();
+
+      expect(createLocalConfig().build().baseUrls).toEqual({ ledger: 'http://localhost:4500' });
+    });
+
+    it('should let an explicit port beat MIDAZ_LOCAL_PORT', () => {
+      process.env.MIDAZ_LOCAL_PORT = '4500';
+      const { createLocalConfig, createLocalConfigWithAccessManager } = loadBuilderModule();
+
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4000' });
+      expect(
+        createLocalConfigWithAccessManager(
+          {
+            address: 'https://auth.example.com',
+            clientId: 'test-client-id',
+            clientSecret: 'test-client-secret',
+          },
+          4000
+        ).build().baseUrls
+      ).toEqual({ ledger: 'http://localhost:4000' });
+    });
+
+    it('should let an explicit port beat MIDAZ_LEDGER_URL', () => {
+      process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
+      const { createLocalConfig } = loadBuilderModule();
+
+      expect(createLocalConfig(4000).build().baseUrls).toEqual({ ledger: 'http://localhost:4000' });
+    });
+
+    it('should honour MIDAZ_LEDGER_URL in local configurations', () => {
+      process.env.MIDAZ_LEDGER_URL = 'http://ledger.test:3002';
+      const { createLocalConfig, createLocalConfigWithAccessManager } = loadBuilderModule();
+
+      expect(createLocalConfig().build().baseUrls).toEqual({ ledger: 'http://ledger.test:3002' });
+      expect(
+        createLocalConfigWithAccessManager({
+          address: 'https://auth.example.com',
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret',
+        }).build().baseUrls
+      ).toEqual({ ledger: 'http://ledger.test:3002' });
+    });
+  });
+
+  describe('MidazClient HTTP client base URL', () => {
+    const captureHttpClientOptions = (baseUrls: Record<string, string>): Record<string, any> => {
+      let captured: Record<string, any> = {};
+
+      jest.isolateModules(() => {
+        jest.doMock('../src/util/network/http-client', () => ({
+          HttpClient: jest.fn().mockImplementation((options: Record<string, any>) => {
+            captured = options;
+            return {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              patch: jest.fn(),
+              delete: jest.fn(),
+              shutdown: jest.fn(),
+            };
+          }),
+        }));
+
+        const { MidazClient } = require('../src/client');
+        new MidazClient({ apiVersion: 'v1', baseUrls });
+      });
+
+      jest.dontMock('../src/util/network/http-client');
+      return captured;
+    };
+
+    it('should prefer the ledger base URL', () => {
+      const options = captureHttpClientOptions({ ledger: 'http://ledger.test:3002' });
+
+      expect(options.baseURL).toBe('http://ledger.test:3002');
+    });
+
+    it('should prefer the ledger base URL over a legacy onboarding URL', () => {
+      const options = captureHttpClientOptions({
+        ledger: 'http://ledger.test:3002',
+        onboarding: 'http://legacy-onboarding:9000',
+      });
+
+      expect(options.baseURL).toBe('http://ledger.test:3002');
+    });
+
+    it('should fall back to the legacy onboarding base URL', () => {
+      const options = captureHttpClientOptions({ onboarding: 'http://legacy-onboarding:9000' });
+
+      expect(options.baseURL).toBe('http://legacy-onboarding:9000');
     });
   });
 });
