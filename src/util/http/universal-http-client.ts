@@ -222,7 +222,7 @@ export class UniversalHttpClient {
         this.metrics.recordHttpRequest(method, path, response.status, duration);
 
         if (!response.ok) {
-          const errorBody = await this.parseErrorResponse(response);
+          const errorBody = await this.parseErrorResponse(response, method);
           throw new HttpError(
             `HTTP ${response.status}: ${response.statusText}`,
             response.status,
@@ -405,13 +405,20 @@ export class UniversalHttpClient {
   /**
    * Parse error response
    */
-  private async parseErrorResponse(response: Response): Promise<any> {
+  private async parseErrorResponse(response: Response, method: string): Promise<any> {
+    // The ledger answers a failing HEAD with the error's Content-Type and
+    // Content-Length but no body, so parsing one would reject and destroy the
+    // status the caller needs.
+    if (method === 'HEAD' || response.status === 204 || response.status === 205) {
+      return null;
+    }
+
     try {
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.includes('application/json')) {
-        return response.json();
+        return await response.json();
       } else {
-        return response.text();
+        return await response.text();
       }
     } catch {
       return null;

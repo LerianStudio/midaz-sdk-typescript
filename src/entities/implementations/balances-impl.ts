@@ -365,7 +365,7 @@ export class BalancesServiceImpl implements BalancesService {
     orgId: string,
     ledgerId: string,
     alias: string
-  ): Promise<ListResponse<Balance>> {
+  ): Promise<AccountBalancePage> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('listAccountBalancesByAlias');
     span.setAttribute('orgId', orgId);
@@ -399,7 +399,7 @@ export class BalancesServiceImpl implements BalancesService {
     orgId: string,
     ledgerId: string,
     assetCode: string
-  ): Promise<ListResponse<Balance>> {
+  ): Promise<AccountBalancePage> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('listExternalAccountBalances');
     span.setAttribute('orgId', orgId);

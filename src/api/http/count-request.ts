@@ -7,6 +7,7 @@
  */
 
 import { ErrorCategory, ErrorCode, MidazError } from '../../util/error';
+import { detectEnvironment } from '../../util/runtime/environment';
 
 /**
  * Header the ledger carries every count in
@@ -40,6 +41,25 @@ export function readHeader(
 }
 
 /**
+ * Explains why the count never arrived.
+ *
+ * A browser hides every response header a cross-origin reply does not name in
+ * `Access-Control-Expose-Headers`, and the ledger names none, so the count is
+ * unreadable there even though the server sent it.
+ *
+ * @returns The message to report the missing header with
+ */
+function missingHeaderMessage(operationName: string): string {
+  const base = `${operationName} was answered without a readable ${TOTAL_COUNT_HEADER} header, so no count was reported.`;
+
+  if (detectEnvironment() === 'browser') {
+    return `${base} In a browser the header is stripped from a cross-origin response unless the ledger returns it in Access-Control-Expose-Headers: ${TOTAL_COUNT_HEADER}.`;
+  }
+
+  return base;
+}
+
+/**
  * Extracts the total a count response reports
  *
  * @returns The number of resources the ledger counted
@@ -54,7 +74,7 @@ export function parseTotalCount(
     throw new MidazError({
       category: ErrorCategory.INTERNAL,
       code: ErrorCode.INTERNAL_ERROR,
-      message: `${operationName} was answered without a ${TOTAL_COUNT_HEADER} header, so no count was reported.`,
+      message: missingHeaderMessage(operationName),
       operation: operationName,
     });
   }

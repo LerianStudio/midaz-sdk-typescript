@@ -95,10 +95,7 @@ export class HttpBalanceApiClient implements BalanceApiClient {
 
       // Record total available amount metrics if available
       if (result.items.length > 0) {
-        const totalAvailable = result.items.reduce(
-          (sum: number, balance: Balance) => sum + (balance.available || 0),
-          0
-        );
+        const totalAvailable = this.sumAvailable(result.items);
 
         this.recordMetrics('balances.total.available', totalAvailable, {
           orgId,
@@ -159,10 +156,7 @@ export class HttpBalanceApiClient implements BalanceApiClient {
 
       // Record total available amount metrics if available
       if (page.items.length > 0) {
-        const totalAvailable = page.items.reduce(
-          (sum: number, balance: Balance) => sum + (balance.available || 0),
-          0
-        );
+        const totalAvailable = this.sumAvailable(page.items);
 
         this.recordMetrics('balances.account.available', totalAvailable, {
           orgId,
@@ -313,7 +307,7 @@ export class HttpBalanceApiClient implements BalanceApiClient {
     orgId: string,
     ledgerId: string,
     alias: string
-  ): Promise<ListResponse<Balance>> {
+  ): Promise<AccountBalancePage> {
     const span = this.observability.startSpan('listAccountBalancesByAlias');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
@@ -325,16 +319,19 @@ export class HttpBalanceApiClient implements BalanceApiClient {
       const url = this.urlBuilder.buildAccountAliasBalancesUrl(orgId, ledgerId, alias);
 
       // The route accepts no query parameters: the core hardcodes a page of 10.
-      const result = await this.httpClient.get<ListResponse<Balance>>(url);
+      const result = await this.httpClient.get<Record<string, any>>(url);
 
-      this.recordMetrics('balances.alias.count', result.items.length, {
+      // The reply carries no pagination metadata and no cursors, only items and limit.
+      const page = this.toAccountBalancePage(result);
+
+      this.recordMetrics('balances.alias.count', page.items.length, {
         orgId,
         ledgerId,
         alias,
       });
 
       span.setStatus('ok');
-      return result;
+      return page;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);
@@ -353,7 +350,7 @@ export class HttpBalanceApiClient implements BalanceApiClient {
     orgId: string,
     ledgerId: string,
     assetCode: string
-  ): Promise<ListResponse<Balance>> {
+  ): Promise<AccountBalancePage> {
     const span = this.observability.startSpan('listExternalAccountBalances');
     span.setAttribute('orgId', orgId);
     span.setAttribute('ledgerId', ledgerId);
@@ -365,16 +362,19 @@ export class HttpBalanceApiClient implements BalanceApiClient {
       const url = this.urlBuilder.buildExternalAccountBalancesUrl(orgId, ledgerId, assetCode);
 
       // The route accepts no query parameters: the core hardcodes a page of 10.
-      const result = await this.httpClient.get<ListResponse<Balance>>(url);
+      const result = await this.httpClient.get<Record<string, any>>(url);
 
-      this.recordMetrics('balances.external.count', result.items.length, {
+      // The reply carries no pagination metadata and no cursors, only items and limit.
+      const page = this.toAccountBalancePage(result);
+
+      this.recordMetrics('balances.external.count', page.items.length, {
         orgId,
         ledgerId,
         assetCode,
       });
 
       span.setStatus('ok');
-      return result;
+      return page;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);
@@ -608,6 +608,22 @@ export class HttpBalanceApiClient implements BalanceApiClient {
     }
 
     return page;
+  }
+
+  /**
+   * Totals the available amounts of a page of balances
+   *
+   * The ledger serialises monetary fields as decimal strings, so adding them
+   * without coercion concatenates them instead of summing them.
+   *
+   * @private
+   */
+  private sumAvailable(items: Balance[]): number {
+    return items.reduce((sum: number, balance: Balance) => {
+      const amount = Number(balance?.available ?? 0);
+
+      return Number.isFinite(amount) ? sum + amount : sum;
+    }, 0);
   }
 
   /**

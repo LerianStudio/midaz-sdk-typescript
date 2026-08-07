@@ -105,7 +105,7 @@ export interface BalancesService {
     orgId: string,
     ledgerId: string,
     alias: string
-  ): Promise<ListResponse<Balance>>;
+  ): Promise<AccountBalancePage>;
 
   /**
    * Lists the balances of an asset's external account, addressed by the bare asset code
@@ -119,7 +119,7 @@ export interface BalancesService {
     orgId: string,
     ledgerId: string,
     assetCode: string
-  ): Promise<ListResponse<Balance>>;
+  ): Promise<AccountBalancePage>;
 
   /**
    * Gets a balance by ID

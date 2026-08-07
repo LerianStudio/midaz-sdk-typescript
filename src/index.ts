@@ -202,7 +202,14 @@ export * from './models/transaction-patterns';
 // Balances
 // ------------------------------
 export {
+  AccountBalanceListOptions,
+  AccountBalancePage,
   Balance,
+  BalanceDirection,
+  BalanceHistory,
+  BalanceScope,
+  BalanceSettingsInput,
+  CreateBalanceInput,
   newUpdateBalanceInput,
   UpdateBalanceInput,
   withAllowReceiving,
