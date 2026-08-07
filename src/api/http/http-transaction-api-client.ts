@@ -2,8 +2,10 @@
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
+import { LEDGER_OVERRIDE_PATHS } from '../../models/ledger';
 import {
   BlockFundsInput,
+  CountTransactionsOptions,
   CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
@@ -11,6 +13,7 @@ import {
   NonPendingTransactionInput,
   RevertTransactionOptions,
   Transaction,
+  TransactionCountStatus,
   TransactionStateTransitionOptions,
   UnblockFundsInput,
   UpdateTransactionInput,
@@ -49,15 +52,142 @@ import { HttpBaseApiClient } from './http-base-api-client';
 
 const TRANSACTION_LOCKED_STATUS = 409;
 
+/**
+ * Statuses the ledger's count filter accepts, uppercase
+ */
+const COUNT_STATUSES: readonly TransactionCountStatus[] = [
+  'CREATED',
+  'APPROVED',
+  'PENDING',
+  'CANCELED',
+  'NOTED',
+];
+
+/**
+ * The only date shape the count accepts: the ledger parses the bounds with Go's
+ * RFC 3339 layout, so a date alone is `400` and the separator must be `T`.
+ */
+const RFC_3339 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * @returns The refusal to raise before anything reaches the wire
+ */
+function countError(message: string): MidazError {
+  return new MidazError({
+    category: ErrorCategory.VALIDATION,
+    code: ErrorCode.VALIDATION_ERROR,
+    message,
+    operation: 'countTransactions',
+    resource: 'transaction',
+  });
+}
+
+/**
+ * Refuses a bound the ledger would answer `400` for
+ */
+function assertRfc3339(field: string, value: string): void {
+  if (!RFC_3339.test(value)) {
+    throw countError(
+      `countTransactions ${field} must be RFC 3339 with a time and a zone, ` +
+        `such as 2026-01-01T00:00:00Z; '${value}' is not.`
+    );
+  }
+}
+
+/**
+ * Turns the count options into the query the ledger reads, refusing every shape
+ * whose meaning the server would silently change.
+ *
+ * The window is the point: the ledger fills each missing bound with today's, so a
+ * count with no dates answers "how many today" and a count with one bound is
+ * clipped at today's other edge. Neither is what the caller asked for, so both are
+ * refused here rather than papered over with a default window the caller never chose.
+ *
+ * @returns The query parameters to send
+ */
+function resolveCountParams(options: CountTransactionsOptions): Record<string, string> {
+  const { window, startDate, endDate, status, route } = (options ?? {}) as {
+    window?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    route?: string;
+  };
+
+  if (window !== undefined) {
+    if (window !== 'today') {
+      throw countError(
+        `countTransactions window must be 'today', which takes the ledger's default of ` +
+          `today 00:00:00Z to 23:59:59Z; '${window}' is not a window.`
+      );
+    }
+
+    if (startDate !== undefined || endDate !== undefined) {
+      throw countError(
+        "countTransactions takes either window: 'today' or a startDate and endDate pair, not both."
+      );
+    }
+  } else if (startDate === undefined && endDate === undefined) {
+    throw countError(
+      'countTransactions counts a date window, and the ledger narrows an unnamed one to ' +
+        'today alone. Pass startDate and endDate in RFC 3339, or ' +
+        "window: 'today' to take that default deliberately."
+    );
+  } else if (startDate === undefined) {
+    throw countError(
+      'countTransactions was given an endDate with no startDate, and the ledger would ' +
+        'fill the missing bound with today 00:00:00Z. Pass both bounds.'
+    );
+  } else if (endDate === undefined) {
+    throw countError(
+      'countTransactions was given a startDate with no endDate, and the ledger would ' +
+        'fill the missing bound with today 23:59:59Z. Pass both bounds.'
+    );
+  }
+
+  const params: Record<string, string> = {};
+
+  if (startDate !== undefined && endDate !== undefined) {
+    assertRfc3339('startDate', startDate);
+    assertRfc3339('endDate', endDate);
+
+    if (Date.parse(startDate) > Date.parse(endDate)) {
+      throw countError(
+        `countTransactions was given startDate ${startDate}, which follows endDate ${endDate}.`
+      );
+    }
+
+    params.start_date = startDate;
+    params.end_date = endDate;
+  }
+
+  if (status !== undefined) {
+    if (!COUNT_STATUSES.includes(status as TransactionCountStatus)) {
+      throw countError(
+        `countTransactions status must be one of ${COUNT_STATUSES.join(', ')}; '${status}' is not.`
+      );
+    }
+
+    params.status = status;
+  }
+
+  if (route !== undefined) {
+    params.route = route;
+  }
+
+  return params;
+}
+
 const SKIP_NOT_PERMITTED_STATUS = 422;
 
 /**
  * Ledger override each skip flag needs, keyed by the word the server's own detail uses.
- * The server says "enable the matching ledger override" without naming it.
+ * The server says "enable the matching ledger override" without naming it. Only the two
+ * skips a transaction body can carry are here; `holder` is gated on account creation.
  */
 const SKIP_OVERRIDES: Record<string, string> = {
-  fees: 'overrides.allowFeeSkip',
-  tracer: 'overrides.allowTracerSkip',
+  fees: LEDGER_OVERRIDE_PATHS.fees,
+  tracer: LEDGER_OVERRIDE_PATHS.tracer,
 };
 
 const TERMINAL_LOCK_NOTE =
@@ -403,6 +533,27 @@ export class HttpTransactionApiClient
   }
 
   /**
+   * Counts the transactions of a ledger inside a date window
+   *
+   * @returns Promise resolving to the number of transactions in the window
+   */
+  public async countTransactions(
+    orgId: string,
+    ledgerId: string,
+    options: CountTransactionsOptions
+  ): Promise<number> {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId }), {
+      orgId,
+      ledgerId,
+    });
+
+    const params = resolveCountParams(options);
+    const url = this.urlBuilder.buildTransactionCountUrl(orgId, ledgerId);
+
+    return this.countRequest('countTransactions', url, { params }, { orgId, ledgerId });
+  }
+
+  /**
    * Gets a transaction by ID
    *
    * @returns Promise resolving to the transaction
@@ -584,7 +735,11 @@ export class HttpTransactionApiClient
         idempotencyTtlSeconds: input.idempotencyTtlSeconds,
       },
       attributes
-    ).then((transaction) => assertLabelled(variant, operation, transaction));
+    )
+      .catch((error) => {
+        throw asSkipNotPermittedError(error, operation);
+      })
+      .then((transaction) => assertLabelled(variant, operation, transaction));
   }
 
   /**

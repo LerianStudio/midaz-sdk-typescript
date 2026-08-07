@@ -13,6 +13,8 @@ import { validate } from '../../util/validation';
 import { AssetApiClient } from '../interfaces/asset-api-client';
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
+
+import { parseTotalCount } from './count-request';
 /**
  * @inheritdoc
  */
@@ -85,6 +87,36 @@ export class HttpAssetApiClient implements AssetApiClient {
       const errorMessage = error instanceof Error ? error.message : String(error);
       span.recordException(error);
       span.setStatus('error', errorMessage);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Counts the assets of a ledger
+   *
+   * @returns Promise resolving to the number of assets
+   */
+  public async countAssets(orgId: string, ledgerId: string): Promise<number> {
+    const span = this.observability.startSpan('countAssets');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    try {
+      this.validateRequiredParams(span, { orgId, ledgerId });
+
+      const url = this.urlBuilder.buildAssetCountUrl(orgId, ledgerId);
+      const response = await this.httpClient.head(url, {});
+      const count = parseTotalCount('countAssets', response.headers);
+
+      this.recordMetrics('assets.count', count, { orgId, ledgerId });
+
+      span.setStatus('ok');
+      return count;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
       throw error;
     } finally {
       span.end();

@@ -24,7 +24,7 @@ describe('HttpOperationApiClient contract', () => {
     accountId,
     accountAlias: 'Main Account',
     type: 'DEBIT',
-    amount: { value: 100, assetCode: 'USD', scale: 2 },
+    amount: { asset: 'USD', value: '100' },
     description: 'Test operation',
     metadata: {},
   };
@@ -133,14 +133,6 @@ describe('HttpOperationApiClient contract', () => {
   });
 
   describe('listOperations items normalization', () => {
-    beforeEach(() => {
-      mockUrlBuilder.buildAccountOperationsUrl = jest
-        .fn()
-        .mockReturnValue(
-          `https://api.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`
-        ) as unknown as jest.Mocked<UrlBuilder>['buildAccountOperationsUrl'];
-    });
-
     it.each([
       ['a missing items key', {}],
       ['a null items value', { items: null }],

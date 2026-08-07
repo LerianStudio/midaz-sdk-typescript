@@ -5,7 +5,14 @@
 
 import { BalancesServiceImpl } from '../../../src/entities/implementations/balances-impl';
 import { Observability } from '../../../src/util/observability';
-import { Balance, UpdateBalanceInput } from '../../../src/models/balance';
+import {
+  AccountBalanceListOptions,
+  AccountBalancePage,
+  Balance,
+  BalanceHistory,
+  CreateBalanceInput,
+  UpdateBalanceInput,
+} from '../../../src/models/balance';
 import { ListResponse } from '../../../src/models/common';
 import { ValidationError } from '../../../src/util/validation';
 import { BalanceApiClient } from '../../../src/api/interfaces/balance-api-client';
@@ -96,6 +103,31 @@ describe('BalancesServiceImpl', () => {
     },
   };
 
+  // The per-account, alias and external routes answer a cursor page, never a `meta` block.
+  const mockBalancePage: AccountBalancePage = {
+    items: [mockBalance],
+    limit: 10,
+    nextCursor: 'cursor-2',
+  };
+
+  // The history routes serialise the money as decimal strings.
+  const mockBalanceSnapshot: BalanceHistory = {
+    id: balanceId,
+    organizationId: orgId,
+    ledgerId: ledgerId,
+    accountId: accountId,
+    alias: 'operating-cash',
+    key: 'default',
+    assetCode: 'USD',
+    available: '1000',
+    onHold: '0',
+    version: 1,
+    accountType: 'deposit',
+    overdraftUsed: '0',
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-01T00:00:00Z',
+  };
+
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
@@ -104,6 +136,11 @@ describe('BalancesServiceImpl', () => {
     mockBalanceApiClient = {
       listBalances: jest.fn(),
       listAccountBalances: jest.fn(),
+      createAccountBalance: jest.fn(),
+      listAccountBalanceHistory: jest.fn(),
+      getBalanceHistory: jest.fn(),
+      listAccountBalancesByAlias: jest.fn(),
+      listExternalAccountBalances: jest.fn(),
       getBalance: jest.fn(),
       updateBalance: jest.fn(),
       deleteBalance: jest.fn(),
@@ -189,7 +226,7 @@ describe('BalancesServiceImpl', () => {
   describe('listAccountBalances', () => {
     it('should list account balances successfully', async () => {
       // Setup
-      mockBalanceApiClient.listAccountBalances.mockResolvedValueOnce(mockBalancesList);
+      mockBalanceApiClient.listAccountBalances.mockResolvedValueOnce(mockBalancePage);
 
       // Execute
       const result = await balancesService.listAccountBalances(orgId, ledgerId, accountId);
@@ -201,16 +238,17 @@ describe('BalancesServiceImpl', () => {
         accountId,
         undefined
       );
-      expect(result).toEqual(mockBalancesList);
+      expect(result).toEqual(mockBalancePage);
     });
 
     it('should apply list options when provided', async () => {
       // Setup
-      const listOptions = {
+      const listOptions: AccountBalanceListOptions = {
         limit: 5,
-        offset: 10,
+        cursor: 'cursor-1',
+        sortOrder: 'desc',
       };
-      mockBalanceApiClient.listAccountBalances.mockResolvedValueOnce(mockBalancesList);
+      mockBalanceApiClient.listAccountBalances.mockResolvedValueOnce(mockBalancePage);
 
       // Execute
       const result = await balancesService.listAccountBalances(
@@ -227,7 +265,7 @@ describe('BalancesServiceImpl', () => {
         accountId,
         listOptions
       );
-      expect(result).toEqual(mockBalancesList);
+      expect(result).toEqual(mockBalancePage);
     });
 
     it('should handle empty orgId', async () => {
@@ -487,6 +525,96 @@ describe('BalancesServiceImpl', () => {
       await expect(balancesService.deleteBalance(orgId, ledgerId, balanceId)).rejects.toThrow(
         'API Error'
       );
+    });
+  });
+  // Every parameter of these routes is a string, so a swapped pair still compiles and
+  // still reaches the ledger — as a lookup of the wrong account or the wrong instant.
+  describe('the per-account balance routes', () => {
+    const alias = 'probe@lerian:acct_a';
+    const assetCode = 'BRL';
+    const date = '2026-08-07T02:45:14Z';
+
+    it('creates a balance on the account the caller named', async () => {
+      const input: CreateBalanceInput = { key: 'asset-freeze', direction: 'debit' };
+      mockBalanceApiClient.createAccountBalance.mockResolvedValueOnce(mockBalance);
+
+      const result = await balancesService.createAccountBalance(orgId, ledgerId, accountId, input);
+
+      expect(mockBalanceApiClient.createAccountBalance).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        accountId,
+        input
+      );
+      expect(result).toEqual(mockBalance);
+    });
+
+    it('reads an account history at the instant the caller named', async () => {
+      mockBalanceApiClient.listAccountBalanceHistory.mockResolvedValueOnce([mockBalanceSnapshot]);
+
+      const result = await balancesService.listAccountBalanceHistory(
+        orgId,
+        ledgerId,
+        accountId,
+        date
+      );
+
+      expect(mockBalanceApiClient.listAccountBalanceHistory).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        accountId,
+        date
+      );
+      expect(result).toEqual([mockBalanceSnapshot]);
+    });
+
+    it('reads one balance history at the instant the caller named', async () => {
+      mockBalanceApiClient.getBalanceHistory.mockResolvedValueOnce(mockBalanceSnapshot);
+
+      const result = await balancesService.getBalanceHistory(orgId, ledgerId, balanceId, date);
+
+      expect(mockBalanceApiClient.getBalanceHistory).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        balanceId,
+        date
+      );
+      expect(result).toEqual(mockBalanceSnapshot);
+    });
+
+    it('lists the balances of the account addressed by its alias', async () => {
+      mockBalanceApiClient.listAccountBalancesByAlias.mockResolvedValueOnce(mockBalancePage);
+
+      const result = await balancesService.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      expect(mockBalanceApiClient.listAccountBalancesByAlias).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        alias
+      );
+      expect(result).toEqual(mockBalancePage);
+    });
+
+    it('lists the balances of the external account of an asset', async () => {
+      mockBalanceApiClient.listExternalAccountBalances.mockResolvedValueOnce(mockBalancePage);
+
+      const result = await balancesService.listExternalAccountBalances(orgId, ledgerId, assetCode);
+
+      expect(mockBalanceApiClient.listExternalAccountBalances).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        assetCode
+      );
+      expect(result).toEqual(mockBalancePage);
+    });
+
+    it('lets the ledger refusal through untouched', async () => {
+      const refusal = new Error('date must carry a time component');
+      mockBalanceApiClient.getBalanceHistory.mockRejectedValueOnce(refusal);
+
+      await expect(
+        balancesService.getBalanceHistory(orgId, ledgerId, balanceId, '2026-08-07')
+      ).rejects.toThrow('date must carry a time component');
     });
   });
 });

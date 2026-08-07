@@ -93,6 +93,18 @@ describe('HttpAccountApiClient', () => {
         }
         return url;
       }),
+      buildAccountByAliasUrl: jest
+        .fn()
+        .mockImplementation(
+          (orgId, ledgerId, alias) =>
+            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/alias/${alias}`
+        ),
+      buildExternalAccountUrl: jest
+        .fn()
+        .mockImplementation(
+          (orgId, ledgerId, code) =>
+            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/${code}`
+        ),
       getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
 
@@ -397,6 +409,108 @@ describe('HttpAccountApiClient', () => {
       await expect(client.deleteAccount(orgId, ledgerId, accountId)).rejects.toThrow('API Error');
       expect(mockSpan.recordException).toHaveBeenCalledWith(error);
       expect(mockSpan.setStatus).toHaveBeenCalledWith('error', error.message);
+    });
+  });
+  describe('getAccountByAlias', () => {
+    const alias = 'probe@lerian:acct_a';
+
+    it('should fetch the account addressed by its alias', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockAccount);
+
+      // Act
+      const result = await client.getAccountByAlias(orgId, ledgerId, alias);
+
+      // Assert
+      expect(result).toEqual(mockAccount);
+      expect(mockUrlBuilder.buildAccountByAliasUrl).toHaveBeenCalledWith(orgId, ledgerId, alias);
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `/organizations/${orgId}/ledgers/${ledgerId}/accounts/alias/${alias}`,
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
+        })
+      );
+      expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
+    });
+
+    it('should hand the alias to the URL builder untouched', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockAccount);
+
+      // Act
+      await client.getAccountByAlias(orgId, ledgerId, alias);
+
+      // Assert
+      const [requestedUrl] = mockHttpClient.get.mock.calls[0];
+      expect(requestedUrl).toContain(alias);
+      expect(requestedUrl).not.toContain(encodeURIComponent(alias));
+    });
+
+    it('should throw error when missing orgId', async () => {
+      await expect(client.getAccountByAlias('', ledgerId, alias)).rejects.toThrow();
+    });
+
+    it('should throw error when missing ledgerId', async () => {
+      await expect(client.getAccountByAlias(orgId, '', alias)).rejects.toThrow();
+    });
+
+    it('should throw error when missing alias', async () => {
+      await expect(client.getAccountByAlias(orgId, ledgerId, '')).rejects.toThrow();
+    });
+
+    it('should handle API errors', async () => {
+      // Arrange
+      const error = new MidazError({
+        category: ErrorCategory.NOT_FOUND,
+        code: ErrorCode.NOT_FOUND,
+        message: 'Account Alias Not Found',
+      });
+      mockHttpClient.get.mockRejectedValueOnce(error);
+
+      // Act & Assert
+      await expect(client.getAccountByAlias(orgId, ledgerId, alias)).rejects.toThrow(
+        'Account Alias Not Found'
+      );
+      expect(mockSpan.recordException).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('getExternalAccount', () => {
+    it('should fetch the external account for a bare asset code', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockAccount);
+
+      // Act
+      const result = await client.getExternalAccount(orgId, ledgerId, 'BRL');
+
+      // Assert
+      expect(result).toEqual(mockAccount);
+      expect(mockUrlBuilder.buildExternalAccountUrl).toHaveBeenCalledWith(orgId, ledgerId, 'BRL');
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/BRL`,
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'X-API-Version': apiVersion }),
+        })
+      );
+    });
+
+    it('should not normalize the asset code case', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockAccount);
+
+      // Act
+      await client.getExternalAccount(orgId, ledgerId, 'brl');
+
+      // Assert
+      expect(mockUrlBuilder.buildExternalAccountUrl).toHaveBeenCalledWith(orgId, ledgerId, 'brl');
+    });
+
+    it('should throw error when missing assetCode', async () => {
+      await expect(client.getExternalAccount(orgId, ledgerId, '')).rejects.toThrow();
+    });
+
+    it('should throw error when missing ledgerId', async () => {
+      await expect(client.getExternalAccount(orgId, '', 'BRL')).rejects.toThrow();
     });
   });
 });

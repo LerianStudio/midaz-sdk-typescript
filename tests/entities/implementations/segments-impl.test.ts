@@ -109,6 +109,7 @@ describe('SegmentsServiceImpl', () => {
         if (!id) throw new ValidationError('Segment ID is required');
         return Promise.resolve();
       }),
+      countSegments: jest.fn(),
     } as unknown as jest.Mocked<SegmentApiClient>;
 
     // Create mock Observability
@@ -456,6 +457,24 @@ describe('SegmentsServiceImpl', () => {
       await expect(segmentsService.deleteSegment(orgId, ledgerId, segmentId)).rejects.toThrow(
         errorMessage
       );
+    });
+  });
+  // The count answers HEAD only, with the total in a response header and no body, so a
+  // service that dropped the header read would still resolve — with undefined.
+  describe('countSegments', () => {
+    it('hands back the total the ledger reported', async () => {
+      segmentApiClient.countSegments.mockResolvedValueOnce(46);
+
+      const result = await segmentsService.countSegments(orgId, ledgerId);
+
+      expect(segmentApiClient.countSegments).toHaveBeenCalledWith(orgId, ledgerId);
+      expect(result).toBe(46);
+    });
+
+    it('lets a failure through untouched', async () => {
+      segmentApiClient.countSegments.mockRejectedValueOnce(new Error('API Error'));
+
+      await expect(segmentsService.countSegments(orgId, ledgerId)).rejects.toThrow('API Error');
     });
   });
 });

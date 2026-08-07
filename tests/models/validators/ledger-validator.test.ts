@@ -1,8 +1,13 @@
 import {
   validateCreateLedgerInput,
   validateUpdateLedgerInput,
+  validateUpdateLedgerSettingsInput,
 } from '../../../src/models/validators/ledger-validator';
-import { CreateLedgerInput, UpdateLedgerInput } from '../../../src/models/ledger';
+import {
+  CreateLedgerInput,
+  UpdateLedgerInput,
+  UpdateLedgerSettingsInput,
+} from '../../../src/models/ledger';
 import { StatusCode } from '../../../src/models/common';
 
 describe('Ledger Validator', () => {
@@ -291,6 +296,131 @@ describe('Ledger Validator', () => {
       const result = validateUpdateLedgerInput(validInput);
 
       expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('validateUpdateLedgerSettingsInput', () => {
+    it('shouldAcceptAnEmptyPatchBecauseTheLedgerAcceptsIt', () => {
+      const result = validateUpdateLedgerSettingsInput({});
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldAcceptASingleNestedOverride', () => {
+      const input: UpdateLedgerSettingsInput = { overrides: { allowFeeSkip: true } };
+
+      const result = validateUpdateLedgerSettingsInput(input);
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('shouldAcceptEveryTracerModeTheLedgerAllows', () => {
+      for (const mode of ['off', 'advisory', 'enforce'] as const) {
+        expect(validateUpdateLedgerSettingsInput({ tracer: { mode } }).valid).toBe(true);
+      }
+    });
+
+    // The allowlist mirrors midaz pkg/mmodel/settings.go: a field the SDK forgets is a
+    // legitimate patch no caller can send, and a value the SDK invents is a 400 the SDK
+    // could have refused itself.
+    it.each([
+      ['accounting.validateAccountType', { accounting: { validateAccountType: true } }],
+      ['accounting.validateRoutes', { accounting: { validateRoutes: false } }],
+      ['accounting.requireHolder', { accounting: { requireHolder: true } }],
+      ['tracer.mode', { tracer: { mode: 'enforce' } }],
+      ['tracer.failPosture', { tracer: { failPosture: 'closed' } }],
+      ['tracer.timeoutMs', { tracer: { timeoutMs: 5000 } }],
+      ['overrides.allowFeeSkip', { overrides: { allowFeeSkip: true } }],
+      ['overrides.allowTracerSkip', { overrides: { allowTracerSkip: true } }],
+      ['overrides.allowHolderSkip', { overrides: { allowHolderSkip: true } }],
+    ])('shouldAcceptThePatchThatCarriesOnly %s', (_path, patch) => {
+      const result = validateUpdateLedgerSettingsInput(patch as any);
+
+      expect(result.valid).toBe(true);
+      expect(result.message).toBeUndefined();
+    });
+
+    it('shouldAcceptEveryFailPostureTheLedgerAllows', () => {
+      for (const failPosture of ['open', 'closed'] as const) {
+        expect(validateUpdateLedgerSettingsInput({ tracer: { failPosture } }).valid).toBe(true);
+      }
+    });
+
+    it.each([
+      ['tracer.mode', { tracer: { mode: 'bogus' } }],
+      ['tracer.mode', { tracer: { mode: 'ENFORCE' } }],
+      ['tracer.failPosture', { tracer: { failPosture: 'sideways' } }],
+      ['tracer.failPosture', { tracer: { failPosture: 'CLOSED' } }],
+    ])('shouldRejectTheValueTheLedgerDoesNotAllowOn %s', (path, patch) => {
+      const result = validateUpdateLedgerSettingsInput(patch as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain(path);
+    });
+
+    it('shouldRejectAnUnknownSettingsGroup', () => {
+      const result = validateUpdateLedgerSettingsInput({ bogus: { a: 1 } } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('bogus');
+    });
+
+    it('shouldRejectAnUnknownNestedFieldNamingItsFullPath', () => {
+      const result = validateUpdateLedgerSettingsInput({ tracer: { bogus: true } } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('tracer.bogus');
+    });
+
+    it('shouldRejectANestedFieldPlacedAtTheRootAndNameItsGroup', () => {
+      const result = validateUpdateLedgerSettingsInput({ allowFeeSkip: true } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('overrides.allowFeeSkip');
+    });
+
+    it('shouldRejectAnInvalidTracerModeAndListTheAllowedValues', () => {
+      const result = validateUpdateLedgerSettingsInput({ tracer: { mode: 'enfroce' } } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('tracer.mode');
+      expect(result.message).toContain('off, advisory, enforce');
+    });
+
+    it('shouldRejectAnInvalidFailPostureAndListTheAllowedValues', () => {
+      const result = validateUpdateLedgerSettingsInput({
+        tracer: { failPosture: 'ajar' },
+      } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('tracer.failPosture');
+      expect(result.message).toContain('open, closed');
+    });
+
+    it('shouldRejectAWrongPrimitiveTypeNamingTheExpectedOne', () => {
+      const result = validateUpdateLedgerSettingsInput({
+        accounting: { validateRoutes: 'yes' },
+      } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('accounting.validateRoutes');
+      expect(result.message).toContain('boolean');
+    });
+
+    it('shouldRejectANonFiniteTimeout', () => {
+      const result = validateUpdateLedgerSettingsInput({
+        tracer: { timeoutMs: Number.NaN },
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('tracer.timeoutMs');
+    });
+
+    it('shouldRejectAGroupThatIsNotAnObject', () => {
+      const result = validateUpdateLedgerSettingsInput({ overrides: true } as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('overrides');
     });
   });
 });

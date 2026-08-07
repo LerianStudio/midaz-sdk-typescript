@@ -1,5 +1,9 @@
-import { validateUpdateBalanceInput } from '../../../src/models/validators/balance-validator';
-import { UpdateBalanceInput } from '../../../src/models/balance';
+import {
+  validateBalanceHistoryDate,
+  validateCreateBalanceInput,
+  validateUpdateBalanceInput,
+} from '../../../src/models/validators/balance-validator';
+import { CreateBalanceInput, UpdateBalanceInput } from '../../../src/models/balance';
 
 describe('Balance Validator', () => {
   // Tests for validateUpdateBalanceInput
@@ -237,6 +241,126 @@ describe('Balance Validator', () => {
 
       // The validator only checks for undefined, not for type
       expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('validateCreateBalanceInput', () => {
+    const valid: CreateBalanceInput = { key: 'asset-freeze' };
+
+    it('accepts a bare key', () => {
+      expect(validateCreateBalanceInput(valid).valid).toBe(true);
+    });
+
+    it('rejects a missing key', () => {
+      const result = validateCreateBalanceInput({} as CreateBalanceInput);
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.key?.join(' ')).toContain('required');
+    });
+
+    it('rejects a key carrying whitespace', () => {
+      const result = validateCreateBalanceInput({ key: 'asset freeze' });
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.key?.join(' ')).toContain('whitespace');
+    });
+
+    it('rejects a key longer than 100 characters', () => {
+      const result = validateCreateBalanceInput({ key: 'k'.repeat(101) });
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.key?.join(' ')).toContain('100');
+    });
+
+    it('accepts a key of exactly 100 characters', () => {
+      expect(validateCreateBalanceInput({ key: 'k'.repeat(100) }).valid).toBe(true);
+    });
+
+    it('rejects overdraftLimitEnabled without a limit', () => {
+      const result = validateCreateBalanceInput({
+        key: 'od',
+        settings: { allowOverdraft: true, overdraftLimitEnabled: true },
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['settings.overdraftLimit']?.join(' ')).toContain('required');
+    });
+
+    it('rejects a non-positive overdraft limit', () => {
+      const result = validateCreateBalanceInput({
+        key: 'od',
+        settings: { overdraftLimitEnabled: true, overdraftLimit: '0' },
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['settings.overdraftLimit']?.join(' ')).toContain('greater than');
+    });
+
+    it('accepts a positive overdraft limit', () => {
+      expect(
+        validateCreateBalanceInput({
+          key: 'od',
+          settings: {
+            allowOverdraft: true,
+            overdraftLimitEnabled: true,
+            overdraftLimit: '1000.00',
+          },
+        }).valid
+      ).toBe(true);
+    });
+
+    it('rejects an overdraft limit while the flag is off', () => {
+      const result = validateCreateBalanceInput({
+        key: 'od',
+        settings: { overdraftLimitEnabled: false, overdraftLimit: '10' },
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['settings.overdraftLimit']?.join(' ')).toContain('absent');
+    });
+
+    it('rejects the internal balance scope, which the ledger reserves for itself', () => {
+      const result = validateCreateBalanceInput({
+        key: 'k',
+        settings: { balanceScope: 'internal' },
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.fieldErrors?.['settings.balanceScope']?.join(' ')).toContain('internal');
+    });
+
+    it('accepts the transactional balance scope', () => {
+      expect(
+        validateCreateBalanceInput({ key: 'k', settings: { balanceScope: 'transactional' } }).valid
+      ).toBe(true);
+    });
+  });
+
+  describe('validateBalanceHistoryDate', () => {
+    it.each([
+      '2026-08-07 02:45:14',
+      '2026-08-07T02:45:14Z',
+      '2026-08-07T02:45:14',
+      '2026-08-06T23:45:14-03:00',
+      '2026-08-07T02:45:14.123Z',
+    ])('accepts %s', (date) => {
+      expect(validateBalanceHistoryDate(date).valid).toBe(true);
+    });
+
+    it('rejects a date without a time component', () => {
+      const result = validateBalanceHistoryDate('2026-08-07');
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('yyyy-mm-dd hh:mm:ss');
+      expect(result.message).toContain('2026-08-07T02:45:14Z');
+    });
+
+    it('rejects an empty date', () => {
+      expect(validateBalanceHistoryDate('').valid).toBe(false);
+    });
+
+    it('rejects a free-form date', () => {
+      expect(validateBalanceHistoryDate('yesterday').valid).toBe(false);
     });
   });
 });

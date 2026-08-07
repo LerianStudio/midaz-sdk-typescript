@@ -2,7 +2,14 @@
  */
 
 import { BalanceApiClient } from '../../api/interfaces/balance-api-client';
-import { Balance, UpdateBalanceInput } from '../../models/balance';
+import {
+  AccountBalanceListOptions,
+  AccountBalancePage,
+  Balance,
+  BalanceHistory,
+  CreateBalanceInput,
+  UpdateBalanceInput,
+} from '../../models/balance';
 import { ListOptions, ListResponse } from '../../models/common';
 import { Observability } from '../../util/observability/observability';
 import { BalancesService } from '../balances';
@@ -120,49 +127,37 @@ export class BalancesServiceImpl implements BalancesService {
   }
 
   /**
-   * Lists balances for a specific account
+   * Lists the balances of one account, one cursor-paginated page at a time
    *
-   * Retrieves a paginated list of balances for a specific account within the
-   * specified organization and ledger. Most accounts will have only one balance,
-   * but some may have multiple balances for different purposes or time periods.
+   * This is the only balance listing that truly paginates. `page` and `metadata.*` are
+   * absent from the options on purpose: the ledger parses them and discards them.
    *
-   * @returns Promise resolving to a paginated list of balances
+   * @returns Promise resolving to a page of balances and the cursors around it
    *
    * @throws Error if organization ID, ledger ID, or account ID is missing
    * @throws Error if the API request fails
    *
    * @example
    * ```typescript
-   * // List all balances for an account
-   * const accountBalances = await balancesService.listAccountBalances(
-   *   "org_123",
-   *   "ldg_456",
-   *   "acc_789"
-   * );
+   * // Walk the account's balances page by page
+   * let page = await balancesService.listAccountBalances("org_123", "ldg_456", "acc_789", {
+   *   limit: 50,
+   * });
    *
-   * // List balances with pagination
-   * const paginatedBalances = await balancesService.listAccountBalances(
-   *   "org_123",
-   *   "ldg_456",
-   *   "acc_789",
-   *   { limit: 10, offset: 20 }
-   * );
-   *
-   * // List balances with filtering
-   * const filteredBalances = await balancesService.listAccountBalances(
-   *   "org_123",
-   *   "ldg_456",
-   *   "acc_789",
-   *   { filter: { available: { gt: 0 } } }
-   * );
+   * while (page.nextCursor) {
+   *   page = await balancesService.listAccountBalances("org_123", "ldg_456", "acc_789", {
+   *     limit: 50,
+   *     cursor: page.nextCursor,
+   *   });
+   * }
    * ```
    */
   public async listAccountBalances(
     orgId: string,
     ledgerId: string,
     accountId: string,
-    opts?: ListOptions
-  ): Promise<ListResponse<Balance>> {
+    opts?: AccountBalanceListOptions
+  ): Promise<AccountBalancePage> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('listAccountBalances');
     span.setAttribute('orgId', orgId);
@@ -171,10 +166,7 @@ export class BalancesServiceImpl implements BalancesService {
 
     if (opts) {
       span.setAttribute('limit', opts.limit || 0);
-      span.setAttribute('offset', opts.offset || 0);
-      if (opts.filter) {
-        span.setAttribute('hasFilters', true);
-      }
+      span.setAttribute('hasCursor', Boolean(opts.cursor));
     }
 
     try {
@@ -184,6 +176,242 @@ export class BalancesServiceImpl implements BalancesService {
         ledgerId,
         accountId,
         opts
+      );
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Creates an additional balance on an account, under a key of its own
+   *
+   * An account starts with a single `default` balance; this adds another. The key
+   * `overdraft` is reserved by the ledger and refused.
+   *
+   * @returns Promise resolving to the created balance
+   *
+   * @throws Error if any required ID is missing
+   * @throws Error if the input validation fails
+   * @throws Error if the API request fails
+   *
+   * @example
+   * ```typescript
+   * const frozen = await balancesService.createAccountBalance(
+   *   "org_123",
+   *   "ldg_456",
+   *   "acc_789",
+   *   { key: "asset-freeze", direction: "debit" }
+   * );
+   * ```
+   */
+  public async createAccountBalance(
+    orgId: string,
+    ledgerId: string,
+    accountId: string,
+    input: CreateBalanceInput
+  ): Promise<Balance> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('createAccountBalance');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('accountId', accountId);
+
+    try {
+      // Delegate to the API client
+      const result = await this.balanceApiClient.createAccountBalance(
+        orgId,
+        ledgerId,
+        accountId,
+        input
+      );
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Reads every balance of an account as it stood at a point in time
+   *
+   * The route answers a bare array. `date` is required and must carry a time component;
+   * a timestamp preceding a balance's creation is answered `404`.
+   *
+   * @returns Promise resolving to the snapshots of the account's balances
+   *
+   * @throws Error if any required ID is missing
+   * @throws Error if the date carries no time component
+   * @throws Error if the API request fails
+   *
+   * @example
+   * ```typescript
+   * const snapshots = await balancesService.listAccountBalanceHistory(
+   *   "org_123",
+   *   "ldg_456",
+   *   "acc_789",
+   *   "2026-08-07T02:45:14Z"
+   * );
+   * ```
+   */
+  public async listAccountBalanceHistory(
+    orgId: string,
+    ledgerId: string,
+    accountId: string,
+    date: string
+  ): Promise<BalanceHistory[]> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('listAccountBalanceHistory');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('accountId', accountId);
+    span.setAttribute('date', date);
+
+    try {
+      // Delegate to the API client
+      const result = await this.balanceApiClient.listAccountBalanceHistory(
+        orgId,
+        ledgerId,
+        accountId,
+        date
+      );
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Reads one balance as it stood at a point in time
+   *
+   * The route answers a single snapshot object, not a collection.
+   *
+   * @returns Promise resolving to the snapshot of the balance
+   *
+   * @throws Error if any required ID is missing
+   * @throws Error if the date carries no time component
+   * @throws Error if the API request fails
+   *
+   * @example
+   * ```typescript
+   * const before = await balancesService.getBalanceHistory(
+   *   "org_123",
+   *   "ldg_456",
+   *   "bal_789",
+   *   "2026-08-07 02:44:32"
+   * );
+   * ```
+   */
+  public async getBalanceHistory(
+    orgId: string,
+    ledgerId: string,
+    balanceId: string,
+    date: string
+  ): Promise<BalanceHistory> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('getBalanceHistory');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('balanceId', balanceId);
+    span.setAttribute('date', date);
+
+    try {
+      // Delegate to the API client
+      const result = await this.balanceApiClient.getBalanceHistory(
+        orgId,
+        ledgerId,
+        balanceId,
+        date
+      );
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Lists the balances of the account addressed by its alias
+   *
+   * The alias travels to the ledger raw: path parameters are never percent-decoded
+   * there. The route takes no query parameters — the page is capped at 10 server-side —
+   * and an unknown alias yields an empty page rather than a 404.
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  public async listAccountBalancesByAlias(
+    orgId: string,
+    ledgerId: string,
+    alias: string
+  ): Promise<AccountBalancePage> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('listAccountBalancesByAlias');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('alias', alias);
+
+    try {
+      // Delegate to the API client
+      const result = await this.balanceApiClient.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Lists the balances of an asset's external account, addressed by the bare asset code
+   *
+   * The ledger matches the code case-sensitively. The route takes no query parameters —
+   * the page is capped at 10 server-side — and an unknown code yields an empty page.
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  public async listExternalAccountBalances(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): Promise<AccountBalancePage> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('listExternalAccountBalances');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('assetCode', assetCode);
+
+    try {
+      // Delegate to the API client
+      const result = await this.balanceApiClient.listExternalAccountBalances(
+        orgId,
+        ledgerId,
+        assetCode
       );
 
       span.setStatus('ok');

@@ -70,6 +70,9 @@ describe('AccountsServiceImpl', () => {
       createAccount: jest.fn(),
       updateAccount: jest.fn(),
       deleteAccount: jest.fn(),
+      getAccountByAlias: jest.fn(),
+      getExternalAccount: jest.fn(),
+      countAccounts: jest.fn(),
     } as unknown as jest.Mocked<AccountApiClient>;
 
     // Create a mock Observability instance
@@ -403,6 +406,53 @@ describe('AccountsServiceImpl', () => {
       // Execute & Verify
       await expect(accountsService.deleteAccount(orgId, ledgerId, accountId)).rejects.toThrow(
         'API Error'
+      );
+    });
+  });
+  // The alias, the asset code and the ids are all strings, so a swapped pair compiles
+  // and reaches the ledger as a lookup of something else entirely.
+  describe('the alias, external and count routes', () => {
+    const alias = 'probe@lerian:acct_a';
+    const assetCode = 'BRL';
+
+    it('looks the account up under the alias the caller gave, in that order', async () => {
+      mockAccountApiClient.getAccountByAlias.mockResolvedValueOnce(mockAccount);
+
+      const result = await accountsService.getAccountByAlias(orgId, ledgerId, alias);
+
+      expect(mockAccountApiClient.getAccountByAlias).toHaveBeenCalledWith(orgId, ledgerId, alias);
+      expect(result).toEqual(mockAccount);
+    });
+
+    it('looks the external account up under the bare asset code', async () => {
+      mockAccountApiClient.getExternalAccount.mockResolvedValueOnce(mockAccount);
+
+      const result = await accountsService.getExternalAccount(orgId, ledgerId, assetCode);
+
+      expect(mockAccountApiClient.getExternalAccount).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        assetCode
+      );
+      expect(result).toEqual(mockAccount);
+    });
+
+    it('hands back the count the ledger reported', async () => {
+      mockAccountApiClient.countAccounts.mockResolvedValueOnce(46);
+
+      const result = await accountsService.countAccounts(orgId, ledgerId);
+
+      expect(mockAccountApiClient.countAccounts).toHaveBeenCalledWith(orgId, ledgerId);
+      expect(result).toBe(46);
+    });
+
+    it('lets the alias 404 through untouched', async () => {
+      mockAccountApiClient.getAccountByAlias.mockRejectedValueOnce(
+        new Error('Account Alias Not Found')
+      );
+
+      await expect(accountsService.getAccountByAlias(orgId, ledgerId, 'nope')).rejects.toThrow(
+        'Account Alias Not Found'
       );
     });
   });

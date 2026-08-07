@@ -108,6 +108,7 @@ describe('OrganizationsServiceImpl', () => {
         if (!id) throw new ValidationError('Organization ID is required');
         return Promise.resolve();
       }),
+      countOrganizations: jest.fn(),
     } as unknown as jest.Mocked<OrganizationApiClient>;
 
     // Create mock Observability
@@ -340,6 +341,24 @@ describe('OrganizationsServiceImpl', () => {
       await expect(organizationsService.deleteOrganization(organizationId)).rejects.toThrow(
         errorMessage
       );
+    });
+  });
+  // The count answers HEAD only, with the total in a response header and no body, so a
+  // service that dropped the header read would still resolve — with undefined.
+  describe('countOrganizations', () => {
+    it('hands back the total the ledger reported', async () => {
+      organizationApiClient.countOrganizations.mockResolvedValueOnce(46);
+
+      const result = await organizationsService.countOrganizations();
+
+      expect(organizationApiClient.countOrganizations).toHaveBeenCalledWith();
+      expect(result).toBe(46);
+    });
+
+    it('lets a failure through untouched', async () => {
+      organizationApiClient.countOrganizations.mockRejectedValueOnce(new Error('API Error'));
+
+      await expect(organizationsService.countOrganizations()).rejects.toThrow('API Error');
     });
   });
 });

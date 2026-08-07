@@ -40,6 +40,11 @@ const LEGACY_SERVICE_FAMILY: Record<string, string> = {
 };
 
 /**
+ * Sub-path every counted resource serves its total on, under HEAD alone
+ */
+const COUNT_PATH = 'metrics/count';
+
+/**
  * Sub-paths of a transaction that carry its lifecycle state transitions
  */
 export type TransactionStateTransition = 'commit' | 'cancel' | 'revert';
@@ -254,6 +259,58 @@ export class UrlBuilder {
   }
 
   /**
+   * Builds the URL addressing an account by its alias
+   *
+   * The ledger never percent-decodes path parameters, so the alias travels raw:
+   * `%5F` would reach the handler as a literal `%5F` and 404. `@` and `:` are legal
+   * raw; an alias containing `/` is unreachable through this route by construction.
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountByAliasUrl(orgId: string, ledgerId: string, alias: string): string {
+    return `${this.buildAccountUrl(orgId, ledgerId)}/alias/${alias}`;
+  }
+
+  /**
+   * Builds the URL listing the balances of the account addressed by its alias
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountAliasBalancesUrl(orgId: string, ledgerId: string, alias: string): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/alias/${alias}/balances`;
+  }
+
+  /**
+   * Builds the URL addressing the external account of an asset
+   *
+   * The segment is the bare asset code and the ledger matches it case-sensitively;
+   * it prefixes `@external/` internally, which is why this route exists apart from
+   * the alias one — `/` cannot be expressed in a path parameter at all.
+   *
+   * @returns The constructed URL
+   */
+  public buildExternalAccountUrl(orgId: string, ledgerId: string, assetCode: string): string {
+    return `${this.buildAccountUrl(orgId, ledgerId)}/external/${assetCode}`;
+  }
+
+  /**
+   * Builds the URL listing the balances of an asset's external account
+   *
+   * @returns The constructed URL
+   */
+  public buildExternalAccountBalancesUrl(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/${assetCode}/balances`;
+  }
+
+  /**
    * Builds the URL for transaction endpoints
    *
    * @returns The constructed URL
@@ -347,6 +404,36 @@ export class UrlBuilder {
     }
 
     return url;
+  }
+
+  /**
+   * Builds the URL for the balances of one account, which the collection serves and the
+   * additional-balance create posts to
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountBalanceUrl(orgId: string, ledgerId: string, accountId: string): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances`;
+  }
+
+  /**
+   * Builds the URL carrying every balance of an account as it stood at a point in time
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountBalanceHistoryUrl(orgId: string, ledgerId: string, accountId: string): string {
+    return `${this.buildAccountBalanceUrl(orgId, ledgerId, accountId)}/history`;
+  }
+
+  /**
+   * Builds the URL carrying one balance as it stood at a point in time
+   *
+   * @returns The constructed URL
+   */
+  public buildBalanceHistoryUrl(orgId: string, ledgerId: string, balanceId: string): string {
+    return `${this.buildBalanceUrl(orgId, ledgerId, balanceId)}/history`;
   }
 
   /**
@@ -479,6 +566,78 @@ export class UrlBuilder {
     }
 
     return url;
+  }
+
+  /**
+   * Builds the URL carrying the total number of organizations
+   *
+   * @returns The constructed URL
+   */
+  public buildOrganizationCountUrl(): string {
+    return `${this.buildOrganizationUrl()}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL for the settings document of a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildLedgerSettingsUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildLedgerUrl(orgId, ledgerId)}/settings`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of ledgers in an organization
+   *
+   * @returns The constructed URL
+   */
+  public buildLedgerCountUrl(orgId: string): string {
+    return `${this.buildLedgerUrl(orgId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of accounts in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildAccountUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of assets in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildAssetCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildAssetUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of portfolios in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildPortfolioCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildPortfolioUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of segments in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildSegmentCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildSegmentUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the number of transactions in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildTransactionCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildTransactionUrl(orgId, ledgerId)}/${COUNT_PATH}`;
   }
 }
 

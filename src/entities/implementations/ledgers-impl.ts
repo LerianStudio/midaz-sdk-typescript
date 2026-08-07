@@ -3,7 +3,13 @@
 
 import { LedgerApiClient } from '../../api/interfaces/ledger-api-client';
 import { ListOptions, ListResponse } from '../../models/common';
-import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../../models/ledger';
+import {
+  CreateLedgerInput,
+  Ledger,
+  LedgerSettings,
+  UpdateLedgerInput,
+  UpdateLedgerSettingsInput,
+} from '../../models/ledger';
 import { Observability } from '../../util/observability/observability';
 import { LedgersService } from '../ledgers';
 
@@ -46,6 +52,25 @@ export class LedgersServiceImpl implements LedgersService {
       this.observability.recordMetric('ledgers.list.count', result.items.length, {
         orgId,
       });
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /** @inheritdoc */
+  public async countLedgers(orgId: string): Promise<number> {
+    const span = this.observability.startSpan('countLedgers');
+    span.setAttribute('orgId', orgId);
+
+    try {
+      const result = await this.apiClient.countLedgers(orgId);
 
       span.setStatus('ok');
       return result;
@@ -148,6 +173,59 @@ export class LedgersServiceImpl implements LedgersService {
 
       // Record metrics
       this.observability.recordMetric('ledgers.update', 1, {
+        orgId,
+        ledgerId: id,
+      });
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async getLedgerSettings(orgId: string, id: string): Promise<LedgerSettings> {
+    const span = this.observability.startSpan('getLedgerSettings');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', id);
+
+    try {
+      const result = await this.apiClient.getLedgerSettings(orgId, id);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async updateLedgerSettings(
+    orgId: string,
+    id: string,
+    input: UpdateLedgerSettingsInput
+  ): Promise<LedgerSettings> {
+    const span = this.observability.startSpan('updateLedgerSettings');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', id);
+
+    try {
+      const result = await this.apiClient.updateLedgerSettings(orgId, id, input);
+
+      this.observability.recordMetric('ledgers.settings.update', 1, {
         orgId,
         ledgerId: id,
       });

@@ -18,6 +18,7 @@ const TRANSACTION = 'SENTINEL_TRANSACTION';
 const OPERATION = 'SENTINEL_OPERATION';
 const ASSET = 'SENTINEL_ASSET';
 const ASSET_CODE = 'SENTINEL_ASSET_CODE';
+const ALIAS = 'SENTINEL_ALIAS';
 const EXTERNAL_ID = 'SENTINEL_EXTERNAL_ID';
 const BALANCE = 'SENTINEL_BALANCE';
 const PORTFOLIO = 'SENTINEL_PORTFOLIO';
@@ -50,6 +51,9 @@ interface BuilderCase {
 const COLLECTION_VERBS = ['get', 'post'];
 const ITEM_VERBS = ['get', 'patch', 'delete'];
 
+/** The count routes are served under HEAD alone; GET on them is 405. */
+const COUNT_VERBS = ['head'];
+
 const builderCases: BuilderCase[] = [
   {
     method: 'buildOrganizationUrl',
@@ -68,6 +72,26 @@ const builderCases: BuilderCase[] = [
     method: 'buildAccountUrl',
     verbs: ITEM_VERBS,
     build: (b) => b.buildAccountUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildAccountByAliasUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountByAliasUrl(ORG, LEDGER, ALIAS),
+  },
+  {
+    method: 'buildAccountAliasBalancesUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountAliasBalancesUrl(ORG, LEDGER, ALIAS),
+  },
+  {
+    method: 'buildExternalAccountUrl',
+    verbs: ['get'],
+    build: (b) => b.buildExternalAccountUrl(ORG, LEDGER, ASSET_CODE),
+  },
+  {
+    method: 'buildExternalAccountBalancesUrl',
+    verbs: ['get'],
+    build: (b) => b.buildExternalAccountBalancesUrl(ORG, LEDGER, ASSET_CODE),
   },
   { method: 'buildAssetUrl', verbs: COLLECTION_VERBS, build: (b) => b.buildAssetUrl(ORG, LEDGER) },
   {
@@ -143,6 +167,21 @@ const builderCases: BuilderCase[] = [
   },
   { method: 'buildBalanceUrl', verbs: ['get'], build: (b) => b.buildBalanceUrl(ORG, LEDGER) },
   {
+    method: 'buildAccountBalanceUrl',
+    verbs: COLLECTION_VERBS,
+    build: (b) => b.buildAccountBalanceUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildAccountBalanceHistoryUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountBalanceHistoryUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildBalanceHistoryUrl',
+    verbs: ['get'],
+    build: (b) => b.buildBalanceHistoryUrl(ORG, LEDGER, BALANCE),
+  },
+  {
     method: 'buildBalanceUrl',
     verbs: ITEM_VERBS,
     build: (b) => b.buildBalanceUrl(ORG, LEDGER, BALANCE),
@@ -212,6 +251,46 @@ const builderCases: BuilderCase[] = [
     verbs: ITEM_VERBS,
     build: (b) => b.buildTransactionRouteUrl(ORG, LEDGER, TRANSACTION_ROUTE),
   },
+  {
+    method: 'buildLedgerSettingsUrl',
+    verbs: ['get', 'patch'],
+    build: (b) => b.buildLedgerSettingsUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildOrganizationCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildOrganizationCountUrl(),
+  },
+  {
+    method: 'buildLedgerCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildLedgerCountUrl(ORG),
+  },
+  {
+    method: 'buildAccountCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildAccountCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildAssetCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildAssetCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildPortfolioCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildPortfolioCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildSegmentCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildSegmentCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildTransactionCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildTransactionCountUrl(ORG, LEDGER),
+  },
 ];
 
 /**
@@ -220,12 +299,21 @@ const builderCases: BuilderCase[] = [
  */
 const COVERED_SPEC_PATHS = [
   '/organizations',
+  '/organizations/metrics/count',
   '/organizations/{id}',
   '/organizations/{organization_id}/ledgers',
+  '/organizations/{organization_id}/ledgers/metrics/count',
   '/organizations/{organization_id}/ledgers/{ledger_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/account-types',
   '/organizations/{organization_id}/ledgers/{ledger_id}/account-types/{id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/alias/{alias}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/alias/{alias}/balances',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}/balances',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/metrics/count',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/balances',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/balances/history',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations/{operation_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{id}',
@@ -233,15 +321,20 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates/from/{asset_code}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates/{external_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/assets',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/assets/metrics/count',
   '/organizations/{organization_id}/ledgers/{ledger_id}/assets/{id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/balances',
   '/organizations/{organization_id}/ledgers/{ledger_id}/balances/{balance_id}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/balances/{balance_id}/history',
   '/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes',
   '/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes/{operation_route_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/portfolios',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/portfolios/metrics/count',
   '/organizations/{organization_id}/ledgers/{ledger_id}/portfolios/{id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/segments',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/segments/metrics/count',
   '/organizations/{organization_id}/ledgers/{ledger_id}/segments/{id}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/settings',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes/{transaction_route_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions',
@@ -249,6 +342,7 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/block',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/inflow',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/json',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/metrics/count',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/outflow',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/unblock',
   '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}',

@@ -188,6 +188,99 @@ export interface UpdateLedgerInput extends BuildableModel {
 }
 
 /**
+ * Tracer participation modes a ledger accepts
+ */
+export type TracerMode = 'off' | 'advisory' | 'enforce';
+
+/**
+ * Behaviours a ledger accepts when the tracer is unreachable
+ */
+export type TracerFailPosture = 'open' | 'closed';
+
+/**
+ * Accounting validations a ledger applies while processing transactions
+ */
+export interface LedgerAccountingSettings {
+  /** Requires account types to match the operation route rules */
+  validateAccountType: boolean;
+
+  /** Requires transactions to name route IDs that exist in the ledger */
+  validateRoutes: boolean;
+
+  /** Requires an account's resolved holder to exist at create time */
+  requireHolder: boolean;
+}
+
+/**
+ * Tracer integration settings of a ledger
+ */
+export interface LedgerTracerSettings {
+  /** Whether the tracer is called, and whether it can block a transaction */
+  mode: TracerMode;
+
+  /** What happens when the tracer times out or its breaker is open */
+  failPosture: TracerFailPosture;
+
+  /** Per-call tracer reserve timeout, in milliseconds */
+  timeoutMs: number;
+}
+
+/**
+ * Operator opt-ins that let a caller skip a control on a single request.
+ *
+ * A skip is honoured only when the opt-in here and the caller's request flag are
+ * both set; without the opt-in the whole request is refused with `0490`.
+ */
+export interface LedgerOverrideSettings {
+  /** Permits `skip.fees` on a transaction */
+  allowFeeSkip: boolean;
+
+  /** Permits `skip.tracer` on a transaction */
+  allowTracerSkip: boolean;
+
+  /** Permits skipping the holder existence check on account creation */
+  allowHolderSkip: boolean;
+}
+
+/**
+ * Full settings document of a ledger.
+ *
+ * Every field is always present: the ledger supplies the defaults in code rather
+ * than storing them, so a ledger that was never patched still answers the whole
+ * document.
+ */
+export interface LedgerSettings {
+  accounting: LedgerAccountingSettings;
+  tracer: LedgerTracerSettings;
+  overrides: LedgerOverrideSettings;
+}
+
+/**
+ * Settings path each skip flag is gated by.
+ *
+ * This is the single source of both halves of the pairing: the override a `0490`
+ * refusal names, and the field a caller patches to lift it.
+ */
+export const LEDGER_OVERRIDE_PATHS = {
+  fees: 'overrides.allowFeeSkip',
+  tracer: 'overrides.allowTracerSkip',
+  holder: 'overrides.allowHolderSkip',
+} as const satisfies Record<string, `overrides.${keyof LedgerOverrideSettings}`>;
+
+/**
+ * Input for patching a ledger's settings.
+ *
+ * The ledger merges this into the stored document one leaf at a time, so a group
+ * carrying a single field leaves its siblings — and the other two groups — alone.
+ * An empty object is a valid patch and returns the document unchanged.
+ */
+export interface UpdateLedgerSettingsInput {
+  accounting?: Partial<LedgerAccountingSettings>;
+  tracer?: Partial<LedgerTracerSettings>;
+  overrides?: Partial<LedgerOverrideSettings>;
+}
+
+/**
  * Ledger Builder interface
  * Defines the specific methods available for building ledger objects
  */

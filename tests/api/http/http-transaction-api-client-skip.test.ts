@@ -10,7 +10,13 @@
 import { HttpTransactionApiClient } from '../../../src/api/http/http-transaction-api-client';
 import { UrlBuilder } from '../../../src/api/url-builder';
 import { StatusCode } from '../../../src/models/common';
-import { CreateTransactionInput, Transaction } from '../../../src/models/transaction';
+import {
+  BlockFundsInput,
+  CreateInflowInput,
+  CreateOutflowInput,
+  CreateTransactionInput,
+  Transaction,
+} from '../../../src/models/transaction';
 import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error/error-types';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
@@ -27,6 +33,31 @@ describe('HttpTransactionApiClient skip rejections', () => {
       value: '100',
       source: { from: [{ account: 'acc-a', amount: { asset: 'BRL', value: '100' } }] },
       distribute: { to: [{ account: 'acc-b', amount: { asset: 'BRL', value: '100' } }] },
+    },
+  };
+
+  // Block, unblock and annotation take the /transactions/json body minus `pending`.
+  const blockInput: BlockFundsInput = {
+    chartOfAccountsGroupName: input.chartOfAccountsGroupName,
+    description: input.description,
+    send: input.send,
+  };
+
+  const inflowInput: CreateInflowInput = {
+    description: 'inflow',
+    send: {
+      asset: 'BRL',
+      value: '100',
+      distribute: { to: [{ account: 'acct_a', amount: { asset: 'BRL', value: '100' } }] },
+    },
+  };
+
+  const outflowInput: CreateOutflowInput = {
+    description: 'outflow',
+    send: {
+      asset: 'BRL',
+      value: '100',
+      source: { from: [{ account: 'acct_a', amount: { asset: 'BRL', value: '100' } }] },
     },
   };
 
@@ -158,11 +189,69 @@ describe('HttpTransactionApiClient skip rejections', () => {
     mockHttpClient.post.mockRejectedValue(skipRejection('fees'));
 
     const error = await client
-      .blockFunds(orgId, ledgerId, { ...input, skip: { fees: true } })
+      .blockFunds(orgId, ledgerId, { ...blockInput, skip: { fees: true } })
       .catch((caught) => caught);
 
     expect(error.midazCode).toBe('0490');
     expect(error.message).toContain('overrides.allowFeeSkip');
+  });
+
+  it('forwards a skip on the inflow route, which the ledger input struct accepts', async () => {
+    await client.createInflow(orgId, ledgerId, { ...inflowInput, skip: { fees: true } });
+
+    expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+    expect(mockHttpClient.post.mock.calls[0][1]).toMatchObject({ skip: { fees: true } });
+  });
+
+  it('forwards a skip on the outflow route, which the ledger input struct accepts', async () => {
+    await client.createOutflow(orgId, ledgerId, { ...outflowInput, skip: { tracer: true } });
+
+    expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+    expect(mockHttpClient.post.mock.calls[0][1]).toMatchObject({ skip: { tracer: true } });
+  });
+
+  it('names the fee override when the inflow route refuses the skip', async () => {
+    mockHttpClient.post.mockRejectedValue(skipRejection('fees'));
+
+    const error = await client
+      .createInflow(orgId, ledgerId, { ...inflowInput, skip: { fees: true } })
+      .catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(MidazError);
+    expect(error.midazCode).toBe('0490');
+    expect(error.statusCode).toBe(422);
+    expect(error.operation).toBe('createInflow');
+    expect(error.message).toContain('overrides.allowFeeSkip');
+  });
+
+  it('names the tracer override when the outflow route refuses the skip', async () => {
+    mockHttpClient.post.mockRejectedValue(skipRejection('tracer'));
+
+    const error = await client
+      .createOutflow(orgId, ledgerId, { ...outflowInput, skip: { tracer: true } })
+      .catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(MidazError);
+    expect(error.midazCode).toBe('0490');
+    expect(error.statusCode).toBe(422);
+    expect(error.operation).toBe('createOutflow');
+    expect(error.message).toContain('overrides.allowTracerSkip');
+  });
+
+  it('leaves an unrelated 422 untouched on the flow routes', async () => {
+    const other = new HttpErrorLike(422, {
+      title: 'Insufficient Funds',
+      status: 422,
+      detail: 'The account does not have enough funds.',
+      code: '0018',
+    });
+    mockHttpClient.post.mockRejectedValue(other);
+
+    const error = await client
+      .createOutflow(orgId, ledgerId, outflowInput)
+      .catch((caught) => caught);
+
+    expect(error).toBe(other);
   });
 
   it('leaves an unrelated 422 untouched', async () => {

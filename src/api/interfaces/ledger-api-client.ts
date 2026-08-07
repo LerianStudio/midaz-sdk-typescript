@@ -2,7 +2,13 @@
  */
 
 import { ListOptions, ListResponse } from '../../models/common';
-import { CreateLedgerInput, Ledger, UpdateLedgerInput } from '../../models/ledger';
+import {
+  CreateLedgerInput,
+  Ledger,
+  LedgerSettings,
+  UpdateLedgerInput,
+  UpdateLedgerSettingsInput,
+} from '../../models/ledger';
 
 import { ApiClient } from './api-client';
 
@@ -25,6 +31,16 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
    *
    * @returns Promise resolving to the ledger
    */
+  /**
+   * Counts the ledgers of an organization
+   *
+   * The ledger serves this over HEAD alone, with the total in `X-Total-Count`,
+   * and ignores every query parameter, so the count is never filtered.
+   *
+   * @returns Promise resolving to the number of ledgers
+   */
+  countLedgers(orgId: string): Promise<number>;
+
   getLedger(orgId: string, id: string): Promise<Ledger>;
 
   /**
@@ -40,6 +56,32 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
    * @returns Promise resolving to the updated ledger
    */
   updateLedger(orgId: string, id: string, input: UpdateLedgerInput): Promise<Ledger>;
+
+  /**
+   * Reads the settings document of a ledger
+   *
+   * The ledger supplies the defaults in code rather than storing them, so every
+   * field is present even on a ledger whose settings were never patched.
+   *
+   * @returns Promise resolving to the ledger settings
+   */
+  getLedgerSettings(orgId: string, id: string): Promise<LedgerSettings>;
+
+  /**
+   * Patches the settings document of a ledger
+   *
+   * This is a deep merge-patch, unlike every other update in this SDK: the ledger
+   * merges the patch leaf by leaf, so `{ overrides: { allowFeeSkip: true } }`
+   * leaves the other two overrides and both sibling groups untouched. An empty
+   * patch is valid and returns the document unchanged.
+   *
+   * @returns Promise resolving to the merged ledger settings
+   */
+  updateLedgerSettings(
+    orgId: string,
+    id: string,
+    input: UpdateLedgerSettingsInput
+  ): Promise<LedgerSettings>;
 
   /**
    * Deletes a ledger

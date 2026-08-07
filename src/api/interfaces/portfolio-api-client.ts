@@ -30,6 +30,16 @@ export interface PortfolioApiClient
    *
    * @returns Promise resolving to the portfolio
    */
+  /**
+   * Counts the portfolios of a ledger
+   *
+   * The ledger serves this over HEAD alone, with the total in `X-Total-Count`,
+   * and ignores every query parameter, so the count is never filtered.
+   *
+   * @returns Promise resolving to the number of portfolios
+   */
+  countPortfolios(orgId: string, ledgerId: string): Promise<number>;
+
   getPortfolio(orgId: string, ledgerId: string, id: string): Promise<Portfolio>;
 
   /**

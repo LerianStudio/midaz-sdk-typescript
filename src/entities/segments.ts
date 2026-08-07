@@ -36,6 +36,15 @@ export interface SegmentsService {
    *
    * @returns Promise resolving to the segment
    */
+  /**
+   * Counts the segments of a ledger
+   *
+   * The ledger answers this over HEAD with the total in `X-Total-Count` and ignores
+   * every query parameter, so the count cannot be filtered.
+   *
+   */
+  countSegments(orgId: string, ledgerId: string): Promise<number>;
+
   getSegment(orgId: string, ledgerId: string, id: string): Promise<Segment>;
 
   /**

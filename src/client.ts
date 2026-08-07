@@ -393,13 +393,21 @@ export class MidazClient {
    * @private
    */
   private setupAuthInterceptors(): void {
-    type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
-    const methods: HttpMethod[] = ['get', 'post', 'put', 'patch', 'delete'];
+    type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'head';
+    const methods: HttpMethod[] = ['get', 'post', 'put', 'patch', 'delete', 'head'];
+    const bodilessMethods: HttpMethod[] = ['get', 'delete', 'head'];
 
     methods.forEach((method) => {
-      const originalMethod = (this.httpClient[method] as any).bind(this.httpClient);
+      const bodiless = bodilessMethods.includes(method);
+      const target = this.httpClient[method] as any;
+
+      if (typeof target !== 'function') {
+        return;
+      }
+
+      const originalMethod = target.bind(this.httpClient);
       (this.httpClient[method] as any) = async (...args: any[]) => {
-        const options = args[method === 'get' || method === 'delete' ? 1 : 2] || {};
+        const options = args[bodiless ? 1 : 2] || {};
         options.headers = options.headers || {};
         const token = await this.getAuthToken();
 
@@ -408,7 +416,7 @@ export class MidazClient {
           options.headers['Authorization'] = token;
         }
 
-        if (method === 'get' || method === 'delete') {
+        if (bodiless) {
           return originalMethod(args[0], options);
         } else {
           return originalMethod(args[0], args[1], options);
