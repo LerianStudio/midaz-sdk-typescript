@@ -67,6 +67,26 @@ export class AssetsServiceImpl implements AssetsService {
   }
 
   /** @inheritdoc */
+  public async countAssets(orgId: string, ledgerId: string): Promise<number> {
+    const span = this.observability.startSpan('countAssets');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    try {
+      const result = await this.apiClient.countAssets(orgId, ledgerId);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /** @inheritdoc */
   public async getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset> {
     // Create a span for tracing this operation
     const span = this.observability.startSpan('getAsset');

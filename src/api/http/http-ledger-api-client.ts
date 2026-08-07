@@ -13,6 +13,9 @@ import { validate } from '../../util/validation';
 import { LedgerApiClient } from '../interfaces/ledger-api-client';
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
+
+import { parseTotalCount } from './count-request';
+
 /**
  * HTTP implementation of the LedgerApiClient interface
  *
@@ -80,6 +83,35 @@ export class HttpLedgerApiClient implements LedgerApiClient {
 
       span.setStatus('ok');
       return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Counts the ledgers of an organization
+   *
+   * @returns Promise resolving to the number of ledgers
+   */
+  public async countLedgers(orgId: string): Promise<number> {
+    const span = this.observability.startSpan('countLedgers');
+    span.setAttribute('orgId', orgId);
+
+    try {
+      this.validateRequiredParams(span, { orgId });
+
+      const url = this.urlBuilder.buildLedgerCountUrl(orgId);
+      const response = await this.httpClient.head(url, {});
+      const count = parseTotalCount('countLedgers', response.headers);
+
+      this.recordMetrics('ledgers.count', count, { orgId });
+
+      span.setStatus('ok');
+      return count;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);

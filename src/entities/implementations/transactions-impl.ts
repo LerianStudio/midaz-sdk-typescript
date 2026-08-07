@@ -5,6 +5,7 @@ import { TransactionApiClient } from '../../api/interfaces/transaction-api-clien
 import { ListOptions, ListResponse } from '../../models/common';
 import {
   BlockFundsInput,
+  CountTransactionsOptions,
   CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
@@ -195,6 +196,30 @@ export class TransactionsServiceImpl implements TransactionsService {
       span.setAttribute('transactionCount', transactions.length);
       span.setStatus('ok');
       return transactions;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /** @inheritdoc */
+  public async countTransactions(
+    orgId: string,
+    ledgerId: string,
+    options: CountTransactionsOptions
+  ): Promise<number> {
+    const span = this.observability.startSpan('countTransactions');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    try {
+      const result = await this.apiClient.countTransactions(orgId, ledgerId, options);
+
+      span.setStatus('ok');
+      return result;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);

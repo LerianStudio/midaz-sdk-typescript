@@ -778,6 +778,53 @@ export interface UpdateTransactionInput {
 }
 
 /**
+ * Statuses the transaction count accepts, uppercase as the ledger spells them
+ *
+ * Anything else is refused with `400`.
+ */
+export type TransactionCountStatus = 'CREATED' | 'APPROVED' | 'PENDING' | 'CANCELED' | 'NOTED';
+
+/**
+ * Filters the transaction count applies on top of its date window
+ */
+export interface TransactionCountFilters {
+  /** Counts only transactions in this status */
+  status?: TransactionCountStatus;
+
+  /** Counts only transactions issued through this transaction route */
+  route?: string;
+}
+
+/**
+ * The date window a transaction count runs over.
+ *
+ * Unlike the other six counts, which count everything, this one is windowed and the
+ * ledger fills each missing bound with today's — `start_date` becomes today
+ * `00:00:00Z` and `end_date` today `23:59:59Z`, independently. A count issued with no
+ * dates therefore answers "how many today", which is not what `countTransactions`
+ * reads like. The SDK refuses to guess: name the window with an RFC 3339
+ * `startDate` and `endDate`, or ask for `window: 'today'` to take the ledger's
+ * default deliberately.
+ */
+export type CountTransactionsOptions =
+  | (TransactionCountFilters & {
+      /** Inclusive lower bound, RFC 3339 with a time component */
+      startDate: string;
+
+      /** Inclusive upper bound, RFC 3339 with a time component */
+      endDate: string;
+
+      window?: never;
+    })
+  | (TransactionCountFilters & {
+      /** Opts into the ledger's default window of today 00:00:00Z to 23:59:59Z */
+      window: 'today';
+
+      startDate?: never;
+      endDate?: never;
+    });
+
+/**
  * Creates a new transaction input with default values
  */
 export function createTransactionInput(

@@ -37,6 +37,15 @@ export interface OrganizationsService {
    *
    * @returns Promise resolving to the organization
    */
+  /**
+   * Counts the organizations reachable with the configured credentials
+   *
+   * The ledger answers this over HEAD with the total in `X-Total-Count` and ignores
+   * every query parameter, so the count cannot be filtered.
+   *
+   */
+  countOrganizations(): Promise<number>;
+
   getOrganization(id: string): Promise<Organization>;
 
   /**

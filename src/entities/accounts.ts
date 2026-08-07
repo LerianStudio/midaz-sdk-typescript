@@ -60,6 +60,15 @@ export interface AccountsService {
    * Creates a new account
    *
    */
+  /**
+   * Counts the accounts of a ledger
+   *
+   * The ledger answers this over HEAD with the total in `X-Total-Count` and ignores
+   * every query parameter, so the count cannot be filtered.
+   *
+   */
+  countAccounts(orgId: string, ledgerId: string): Promise<number>;
+
   createAccount(orgId: string, ledgerId: string, input: CreateAccountInput): Promise<Account>;
 
   /**

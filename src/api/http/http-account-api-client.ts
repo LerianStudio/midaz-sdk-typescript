@@ -122,6 +122,20 @@ export class HttpAccountApiClient
   /**
    * @inheritdoc
    */
+  public async countAccounts(orgId: string, ledgerId: string): Promise<number> {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId }), {
+      orgId,
+      ledgerId,
+    });
+
+    const url = this.urlBuilder.buildAccountCountUrl(orgId, ledgerId);
+
+    return this.countRequest('countAccounts', url, undefined, { orgId, ledgerId });
+  }
+
+  /**
+   * @inheritdoc
+   */
   public async createAccount(
     orgId: string,
     ledgerId: string,

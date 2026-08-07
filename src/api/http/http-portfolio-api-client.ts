@@ -14,6 +14,8 @@ import { PortfolioApiClient } from '../interfaces/portfolio-api-client';
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
+import { parseTotalCount } from './count-request';
+
 /**
  * HTTP implementation of the PortfolioApiClient interface
  *
@@ -87,6 +89,36 @@ export class HttpPortfolioApiClient implements PortfolioApiClient {
 
       span.setStatus('ok');
       return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Counts the portfolios of a ledger
+   *
+   * @returns Promise resolving to the number of portfolios
+   */
+  public async countPortfolios(orgId: string, ledgerId: string): Promise<number> {
+    const span = this.observability.startSpan('countPortfolios');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    try {
+      this.validateRequiredParams(span, { orgId, ledgerId });
+
+      const url = this.urlBuilder.buildPortfolioCountUrl(orgId, ledgerId);
+      const response = await this.httpClient.head(url, {});
+      const count = parseTotalCount('countPortfolios', response.headers);
+
+      this.recordMetrics('portfolios.count', count, { orgId, ledgerId });
+
+      span.setStatus('ok');
+      return count;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);

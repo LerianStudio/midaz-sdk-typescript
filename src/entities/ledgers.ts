@@ -35,6 +35,15 @@ export interface LedgersService {
    *
    * @returns Promise resolving to the ledger
    */
+  /**
+   * Counts the ledgers of an organization
+   *
+   * The ledger answers this over HEAD with the total in `X-Total-Count` and ignores
+   * every query parameter, so the count cannot be filtered.
+   *
+   */
+  countLedgers(orgId: string): Promise<number>;
+
   getLedger(orgId: string, id: string): Promise<Ledger>;
 
   /**

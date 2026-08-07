@@ -10,6 +10,8 @@ import {
 } from '../interfaces/api-client';
 import { UrlBuilder } from '../url-builder';
 
+import { parseTotalCount, readHeader } from './count-request';
+
 /**
  * Base HTTP API client that provides common functionality for all HTTP API clients
  *
@@ -287,6 +289,25 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
   }
 
   /**
+   * Issues a count request and returns the total the ledger reports
+   *
+   * The count routes answer HEAD only — GET is 405 — with `204`, an empty body
+   * and the total in `X-Total-Count`, so the number never reaches the body.
+   *
+   * @returns Promise resolving to the number of resources the ledger counted
+   */
+  protected async countRequest(
+    operationName: string,
+    url: string,
+    options?: RequestOptions,
+    attributes?: Record<string, any>
+  ): Promise<number> {
+    const response = await this.headRequest(operationName, url, options, attributes);
+
+    return parseTotalCount(operationName, response.headers);
+  }
+
+  /**
    * Reads a response header by name, ignoring case
    *
    * The lookup is case-insensitive even though the ledger sends `X-Total-Count`
@@ -299,18 +320,7 @@ export abstract class HttpBaseApiClient<T, C = unknown, U = unknown> {
     headers: Headers | Record<string, string>,
     name: string
   ): string | undefined {
-    if (typeof (headers as Headers).get === 'function') {
-      return (headers as Headers).get(name) ?? undefined;
-    }
-
-    const wanted = name.toLowerCase();
-    for (const [key, value] of Object.entries(headers as Record<string, string>)) {
-      if (key.toLowerCase() === wanted) {
-        return value;
-      }
-    }
-
-    return undefined;
+    return readHeader(headers, name);
   }
 
   /**

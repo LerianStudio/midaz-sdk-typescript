@@ -133,6 +133,26 @@ export class AccountsServiceImpl implements AccountsService {
   }
 
   /** @inheritdoc */
+  public async countAccounts(orgId: string, ledgerId: string): Promise<number> {
+    const span = this.observability.startSpan('countAccounts');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    try {
+      const result = await this.accountApiClient.countAccounts(orgId, ledgerId);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /** @inheritdoc */
   public async createAccount(
     orgId: string,
     ledgerId: string,

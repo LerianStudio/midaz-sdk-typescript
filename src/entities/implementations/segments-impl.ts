@@ -107,6 +107,26 @@ export class SegmentsServiceImpl implements SegmentsService {
     }
   }
 
+  /** @inheritdoc */
+  public async countSegments(orgId: string, ledgerId: string): Promise<number> {
+    const span = this.observability.startSpan('countSegments');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    try {
+      const result = await this.segmentApiClient.countSegments(orgId, ledgerId);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
   /**
    * Gets a specific segment by ID
    *

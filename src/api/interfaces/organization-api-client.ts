@@ -67,6 +67,16 @@ export interface OrganizationApiClient
    *
    * @returns Promise resolving to the organization
    */
+  /**
+   * Counts the organizations reachable with the configured credentials
+   *
+   * The ledger serves this over HEAD alone, with the total in `X-Total-Count`,
+   * and ignores every query parameter, so the count is never filtered.
+   *
+   * @returns Promise resolving to the number of organizations
+   */
+  countOrganizations(): Promise<number>;
+
   getOrganization(id: string): Promise<Organization>;
 
   /**

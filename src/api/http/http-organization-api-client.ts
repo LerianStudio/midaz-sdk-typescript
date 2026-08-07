@@ -19,6 +19,8 @@ import {
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
+import { parseTotalCount } from './count-request';
+
 /**
  * HTTP implementation of the OrganizationApiClient interface
  *
@@ -80,6 +82,32 @@ export class HttpOrganizationApiClient implements OrganizationApiClient {
 
       span.setStatus('ok');
       return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Counts the organizations reachable with the configured credentials
+   *
+   * @returns Promise resolving to the number of organizations
+   */
+  public async countOrganizations(): Promise<number> {
+    const span = this.observability.startSpan('countOrganizations');
+
+    try {
+      const url = this.urlBuilder.buildOrganizationCountUrl();
+      const response = await this.httpClient.head(url, {});
+      const count = parseTotalCount('countOrganizations', response.headers);
+
+      this.recordMetrics('organizations.count', count);
+
+      span.setStatus('ok');
+      return count;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);

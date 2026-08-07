@@ -390,3 +390,58 @@ describe('UrlBuilder alias and external account lookups', () => {
     );
   });
 });
+
+describe('UrlBuilder resource count paths', () => {
+  const orgId = 'ORG';
+  const ledgerId = 'LEDGER';
+  const root = 'https://ledger.example.com/v1';
+  const ledgerPrefix = `${root}/organizations/${orgId}/ledgers/${ledgerId}`;
+  const savedEnv: Record<string, string | undefined> = {};
+  let builder: UrlBuilder;
+
+  beforeEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+    builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
+  });
+
+  afterEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
+  });
+
+  it('builds the organization count path', () => {
+    expect(builder.buildOrganizationCountUrl()).toBe(`${root}/organizations/metrics/count`);
+  });
+
+  it('builds the ledger count path', () => {
+    expect(builder.buildLedgerCountUrl(orgId)).toBe(
+      `${root}/organizations/${orgId}/ledgers/metrics/count`
+    );
+  });
+
+  it('builds the ledger-scoped count paths', () => {
+    expect(builder.buildAccountCountUrl(orgId, ledgerId)).toBe(
+      `${ledgerPrefix}/accounts/metrics/count`
+    );
+    expect(builder.buildAssetCountUrl(orgId, ledgerId)).toBe(
+      `${ledgerPrefix}/assets/metrics/count`
+    );
+    expect(builder.buildPortfolioCountUrl(orgId, ledgerId)).toBe(
+      `${ledgerPrefix}/portfolios/metrics/count`
+    );
+    expect(builder.buildSegmentCountUrl(orgId, ledgerId)).toBe(
+      `${ledgerPrefix}/segments/metrics/count`
+    );
+    expect(builder.buildTransactionCountUrl(orgId, ledgerId)).toBe(
+      `${ledgerPrefix}/transactions/metrics/count`
+    );
+  });
+});

@@ -40,6 +40,11 @@ const LEGACY_SERVICE_FAMILY: Record<string, string> = {
 };
 
 /**
+ * Sub-path every counted resource serves its total on, under HEAD alone
+ */
+const COUNT_PATH = 'metrics/count';
+
+/**
  * Sub-paths of a transaction that carry its lifecycle state transitions
  */
 export type TransactionStateTransition = 'commit' | 'cancel' | 'revert';
@@ -531,6 +536,69 @@ export class UrlBuilder {
     }
 
     return url;
+  }
+
+  /**
+   * Builds the URL carrying the total number of organizations
+   *
+   * @returns The constructed URL
+   */
+  public buildOrganizationCountUrl(): string {
+    return `${this.buildOrganizationUrl()}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of ledgers in an organization
+   *
+   * @returns The constructed URL
+   */
+  public buildLedgerCountUrl(orgId: string): string {
+    return `${this.buildLedgerUrl(orgId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of accounts in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildAccountUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of assets in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildAssetCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildAssetUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of portfolios in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildPortfolioCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildPortfolioUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of segments in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildSegmentCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildSegmentUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the number of transactions in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildTransactionCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildTransactionUrl(orgId, ledgerId)}/${COUNT_PATH}`;
   }
 }
 

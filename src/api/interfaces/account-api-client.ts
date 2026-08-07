@@ -57,6 +57,16 @@ export interface AccountApiClient
    *
    * @returns Promise resolving to the created account
    */
+  /**
+   * Counts the accounts of a ledger
+   *
+   * The ledger serves this over HEAD alone, with the total in `X-Total-Count`,
+   * and ignores every query parameter, so the count is never filtered.
+   *
+   * @returns Promise resolving to the number of accounts
+   */
+  countAccounts(orgId: string, ledgerId: string): Promise<number>;
+
   createAccount(orgId: string, ledgerId: string, input: CreateAccountInput): Promise<Account>;
 
   /**

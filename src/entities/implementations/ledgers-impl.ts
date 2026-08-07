@@ -58,6 +58,25 @@ export class LedgersServiceImpl implements LedgersService {
     }
   }
 
+  /** @inheritdoc */
+  public async countLedgers(orgId: string): Promise<number> {
+    const span = this.observability.startSpan('countLedgers');
+    span.setAttribute('orgId', orgId);
+
+    try {
+      const result = await this.apiClient.countLedgers(orgId);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
   /**
    * @inheritdoc
    */

@@ -25,6 +25,16 @@ export interface LedgerApiClient extends ApiClient<Ledger, CreateLedgerInput, Up
    *
    * @returns Promise resolving to the ledger
    */
+  /**
+   * Counts the ledgers of an organization
+   *
+   * The ledger serves this over HEAD alone, with the total in `X-Total-Count`,
+   * and ignores every query parameter, so the count is never filtered.
+   *
+   * @returns Promise resolving to the number of ledgers
+   */
+  countLedgers(orgId: string): Promise<number>;
+
   getLedger(orgId: string, id: string): Promise<Ledger>;
 
   /**

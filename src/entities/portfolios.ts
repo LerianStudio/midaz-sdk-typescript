@@ -41,6 +41,15 @@ export interface PortfoliosService {
    *
    * @returns Promise resolving to the portfolio
    */
+  /**
+   * Counts the portfolios of a ledger
+   *
+   * The ledger answers this over HEAD with the total in `X-Total-Count` and ignores
+   * every query parameter, so the count cannot be filtered.
+   *
+   */
+  countPortfolios(orgId: string, ledgerId: string): Promise<number>;
+
   getPortfolio(orgId: string, ledgerId: string, id: string): Promise<Portfolio>;
 
   /**

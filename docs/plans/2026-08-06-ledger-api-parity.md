@@ -466,7 +466,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 #### Task 3.2.2: Count methods for the seven resources
 
-- [ ] Done
+- [x] Done
 
 **Context:** Seven endpoints, all verified live returning `204` with `X-Total-Count`: organizations (`/v1/organizations/metrics/count`), ledgers (`/v1/organizations/{org}/ledgers/metrics/count`), and accounts, assets, portfolios, segments and transactions under the ledger. `GET` on any of them is **`405`** with `Allow: HEAD` — there is no GET sibling, and midaz pins that as a contract invariant in its own test suite. **Six of the seven accept no filters** and silently ignore unknown query params (`accounts/metrics/count?type=deposit` returned the unfiltered count). Transactions accepts four: `status` (uppercase — `CREATED|APPROVED|PENDING|CANCELED|NOTED`; a bogus value is `400`), `start_date`/`end_date` (**RFC 3339 only** — `2020-01-01` is `400`), and `route`.
 
