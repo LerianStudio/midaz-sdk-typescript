@@ -6,6 +6,8 @@ import { MidazConfigError } from '../util/error/error-types';
 import { getLogger } from '../util/observability/logger';
 import { getEnv } from '../util/runtime/environment';
 
+import { assertPathSegment } from './path-segment';
+
 const LEDGER_KEY = 'ledger';
 
 const LEGACY_ONBOARDING_KEY = 'onboarding';
@@ -263,11 +265,14 @@ export class UrlBuilder {
    *
    * The ledger never percent-decodes path parameters, so the alias travels raw:
    * `%5F` would reach the handler as a literal `%5F` and 404. `@` and `:` are legal
-   * raw; an alias containing `/` is unreachable through this route by construction.
+   * raw; an alias carrying a path, query, fragment or traversal is refused outright,
+   * because escaping it is not an option and interpolating it would re-target the URL.
    *
    * @returns The constructed URL
    */
   public buildAccountByAliasUrl(orgId: string, ledgerId: string, alias: string): string {
+    assertPathSegment('alias', alias);
+
     return `${this.buildAccountUrl(orgId, ledgerId)}/alias/${alias}`;
   }
 
@@ -277,6 +282,8 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildAccountAliasBalancesUrl(orgId: string, ledgerId: string, alias: string): string {
+    assertPathSegment('alias', alias);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/alias/${alias}/balances`;
@@ -287,11 +294,14 @@ export class UrlBuilder {
    *
    * The segment is the bare asset code and the ledger matches it case-sensitively;
    * it prefixes `@external/` internally, which is why this route exists apart from
-   * the alias one — `/` cannot be expressed in a path parameter at all.
+   * the alias one — `/` cannot be expressed in a path parameter at all, and a code
+   * carrying one is refused rather than escaped.
    *
    * @returns The constructed URL
    */
   public buildExternalAccountUrl(orgId: string, ledgerId: string, assetCode: string): string {
+    assertPathSegment('assetCode', assetCode);
+
     return `${this.buildAccountUrl(orgId, ledgerId)}/external/${assetCode}`;
   }
 
@@ -305,6 +315,8 @@ export class UrlBuilder {
     ledgerId: string,
     assetCode: string
   ): string {
+    assertPathSegment('assetCode', assetCode);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/${assetCode}/balances`;

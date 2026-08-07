@@ -389,6 +389,20 @@ describe('UrlBuilder alias and external account lookups', () => {
       `${prefix}/accounts/external/brl`
     );
   });
+
+  const traversals = ['acct/../../organizations', '..', 'acct?limit=1', 'acct#f', 'acct\\admin'];
+
+  it.each(traversals)('refuses the alias %p instead of interpolating it', (hostile) => {
+    expect(() => builder.buildAccountByAliasUrl(orgId, ledgerId, hostile)).toThrow(/alias/);
+    expect(() => builder.buildAccountAliasBalancesUrl(orgId, ledgerId, hostile)).toThrow(/alias/);
+  });
+
+  it.each(traversals)('refuses the asset code %p instead of interpolating it', (hostile) => {
+    expect(() => builder.buildExternalAccountUrl(orgId, ledgerId, hostile)).toThrow(/assetCode/);
+    expect(() => builder.buildExternalAccountBalancesUrl(orgId, ledgerId, hostile)).toThrow(
+      /assetCode/
+    );
+  });
 });
 
 describe('UrlBuilder resource count paths', () => {

@@ -20,6 +20,7 @@ import { HttpClient } from '../../util/network/http-client';
 import { Observability, Span } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
 import { BalanceApiClient } from '../interfaces/balance-api-client';
+import { assertPathSegment } from '../path-segment';
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 /**
@@ -315,6 +316,7 @@ export class HttpBalanceApiClient implements BalanceApiClient {
 
     try {
       this.validateRequiredParams(span, { orgId, ledgerId, alias });
+      assertPathSegment('alias', alias);
 
       const url = this.urlBuilder.buildAccountAliasBalancesUrl(orgId, ledgerId, alias);
 
@@ -358,6 +360,7 @@ export class HttpBalanceApiClient implements BalanceApiClient {
 
     try {
       this.validateRequiredParams(span, { orgId, ledgerId, assetCode });
+      assertPathSegment('assetCode', assetCode);
 
       const url = this.urlBuilder.buildExternalAccountBalancesUrl(orgId, ledgerId, assetCode);
 

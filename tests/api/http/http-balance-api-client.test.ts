@@ -965,6 +965,16 @@ describe('HttpBalanceApiClient', () => {
     it('should throw error when missing ledgerId', async () => {
       await expect(client.listAccountBalancesByAlias(orgId, '', alias)).rejects.toThrow();
     });
+
+    it.each(['acct/../../organizations', '..', 'acct?limit=1', 'acct#f', 'acct\\admin'])(
+      'refuses the alias %p before anything reaches the wire',
+      async (hostile) => {
+        await expect(client.listAccountBalancesByAlias(orgId, ledgerId, hostile)).rejects.toThrow(
+          /alias/
+        );
+        expect(mockHttpClient.get).not.toHaveBeenCalled();
+      }
+    );
   });
 
   describe('listExternalAccountBalances', () => {
@@ -1004,5 +1014,15 @@ describe('HttpBalanceApiClient', () => {
     it('should throw error when missing orgId', async () => {
       await expect(client.listExternalAccountBalances('', ledgerId, 'BRL')).rejects.toThrow();
     });
+
+    it.each(['BRL/../../organizations', '..', 'BRL?limit=1', 'BRL#f', 'BRL\\admin'])(
+      'refuses the asset code %p before anything reaches the wire',
+      async (hostile) => {
+        await expect(client.listExternalAccountBalances(orgId, ledgerId, hostile)).rejects.toThrow(
+          /assetCode/
+        );
+        expect(mockHttpClient.get).not.toHaveBeenCalled();
+      }
+    );
   });
 });

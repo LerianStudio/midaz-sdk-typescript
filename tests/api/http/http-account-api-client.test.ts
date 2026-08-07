@@ -458,6 +458,14 @@ describe('HttpAccountApiClient', () => {
       await expect(client.getAccountByAlias(orgId, ledgerId, '')).rejects.toThrow();
     });
 
+    it.each(['acct/../../organizations', '..', 'acct?limit=1', 'acct#f', 'acct\\admin'])(
+      'refuses the alias %p before anything reaches the wire',
+      async (hostile) => {
+        await expect(client.getAccountByAlias(orgId, ledgerId, hostile)).rejects.toThrow(/alias/);
+        expect(mockHttpClient.get).not.toHaveBeenCalled();
+      }
+    );
+
     it('should handle API errors', async () => {
       // Arrange
       const error = new MidazError({
@@ -512,5 +520,15 @@ describe('HttpAccountApiClient', () => {
     it('should throw error when missing ledgerId', async () => {
       await expect(client.getExternalAccount(orgId, '', 'BRL')).rejects.toThrow();
     });
+
+    it.each(['BRL/../../organizations', '..', 'BRL?limit=1', 'BRL#f', 'BRL\\admin'])(
+      'refuses the asset code %p before anything reaches the wire',
+      async (hostile) => {
+        await expect(client.getExternalAccount(orgId, ledgerId, hostile)).rejects.toThrow(
+          /assetCode/
+        );
+        expect(mockHttpClient.get).not.toHaveBeenCalled();
+      }
+    );
   });
 });

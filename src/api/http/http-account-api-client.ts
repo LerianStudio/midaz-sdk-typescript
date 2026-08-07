@@ -11,6 +11,7 @@ import { HttpClient } from '../../util/network/http-client';
 import { Observability } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
 import { AccountApiClient } from '../interfaces/account-api-client';
+import { assertPathSegment } from '../path-segment';
 import { UrlBuilder } from '../url-builder';
 
 import { HttpBaseApiClient } from './http-base-api-client';
@@ -86,6 +87,7 @@ export class HttpAccountApiClient
       ledgerId,
       alias,
     });
+    assertPathSegment('alias', alias);
 
     const url = this.urlBuilder.buildAccountByAliasUrl(orgId, ledgerId, alias);
 
@@ -109,6 +111,7 @@ export class HttpAccountApiClient
       ledgerId,
       assetCode,
     });
+    assertPathSegment('assetCode', assetCode);
 
     const url = this.urlBuilder.buildExternalAccountUrl(orgId, ledgerId, assetCode);
 
