@@ -407,6 +407,36 @@ export class UrlBuilder {
   }
 
   /**
+   * Builds the URL for the balances of one account, which the collection serves and the
+   * additional-balance create posts to
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountBalanceUrl(orgId: string, ledgerId: string, accountId: string): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances`;
+  }
+
+  /**
+   * Builds the URL carrying every balance of an account as it stood at a point in time
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountBalanceHistoryUrl(orgId: string, ledgerId: string, accountId: string): string {
+    return `${this.buildAccountBalanceUrl(orgId, ledgerId, accountId)}/history`;
+  }
+
+  /**
+   * Builds the URL carrying one balance as it stood at a point in time
+   *
+   * @returns The constructed URL
+   */
+  public buildBalanceHistoryUrl(orgId: string, ledgerId: string, balanceId: string): string {
+    return `${this.buildBalanceUrl(orgId, ledgerId, balanceId)}/history`;
+  }
+
+  /**
    * Builds the URL for account-scoped operation endpoints
    *
    * @returns The constructed URL

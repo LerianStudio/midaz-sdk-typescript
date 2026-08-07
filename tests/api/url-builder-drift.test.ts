@@ -167,6 +167,21 @@ const builderCases: BuilderCase[] = [
   },
   { method: 'buildBalanceUrl', verbs: ['get'], build: (b) => b.buildBalanceUrl(ORG, LEDGER) },
   {
+    method: 'buildAccountBalanceUrl',
+    verbs: COLLECTION_VERBS,
+    build: (b) => b.buildAccountBalanceUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildAccountBalanceHistoryUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountBalanceHistoryUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildBalanceHistoryUrl',
+    verbs: ['get'],
+    build: (b) => b.buildBalanceHistoryUrl(ORG, LEDGER, BALANCE),
+  },
+  {
     method: 'buildBalanceUrl',
     verbs: ITEM_VERBS,
     build: (b) => b.buildBalanceUrl(ORG, LEDGER, BALANCE),
@@ -292,6 +307,8 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}/balances',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/metrics/count',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/balances',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/balances/history',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations/{operation_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{id}',
@@ -303,6 +320,7 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/assets/{id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/balances',
   '/organizations/{organization_id}/ledgers/{ledger_id}/balances/{balance_id}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/balances/{balance_id}/history',
   '/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes',
   '/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes/{operation_route_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/portfolios',

@@ -2,7 +2,12 @@
  * Tests for HttpBalanceApiClient
  */
 
-import { Balance, UpdateBalanceInput } from '../../../src/models/balance';
+import {
+  Balance,
+  BalanceHistory,
+  CreateBalanceInput,
+  UpdateBalanceInput,
+} from '../../../src/models/balance';
 import { ListOptions, ListResponse, StatusCode } from '../../../src/models/common';
 import { HttpClient } from '../../../src/util/network/http-client';
 import { Observability, Span } from '../../../src/util/observability/observability';
@@ -11,7 +16,7 @@ import { UrlBuilder } from '../../../src/api/url-builder';
 import { ErrorCategory, ErrorCode, MidazError } from '../../../src/util/error';
 
 // Mock dependencies
-jest.mock('../../../src/models/validators/balance-validator');
+// The date validator stays real: the client's client-side refusals are what these tests measure.
 // Validation mock
 const validateMock = jest.fn();
 jest.mock('../../../src/util/validation', () => ({
@@ -106,6 +111,24 @@ describe('HttpBalanceApiClient', () => {
         .mockImplementation(
           (orgId, ledgerId, code) =>
             `/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/${code}/balances`
+        ),
+      buildAccountBalanceUrl: jest
+        .fn()
+        .mockImplementation(
+          (orgId, ledgerId, accountId) =>
+            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances`
+        ),
+      buildAccountBalanceHistoryUrl: jest
+        .fn()
+        .mockImplementation(
+          (orgId, ledgerId, accountId) =>
+            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances/history`
+        ),
+      buildBalanceHistoryUrl: jest
+        .fn()
+        .mockImplementation(
+          (orgId, ledgerId, balanceId) =>
+            `/organizations/${orgId}/ledgers/${ledgerId}/balances/${balanceId}/history`
         ),
       getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
@@ -219,47 +242,96 @@ describe('HttpBalanceApiClient', () => {
   });
 
   describe('listAccountBalances', () => {
-    it('should successfully list account balances', async () => {
-      // Arrange
-      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+    const wirePage = {
+      items: [mockBalance],
+      limit: 10,
+      next_cursor: 'cursor-2',
+      prev_cursor: 'cursor-0',
+    };
 
-      // Act
+    it('returns the ledger cursor envelope with the cursors named in camelCase', async () => {
+      mockHttpClient.get.mockResolvedValueOnce(wirePage);
+
       const result = await client.listAccountBalances(orgId, ledgerId, accountId);
 
-      // Assert
-      expect(result).toEqual(mockBalanceListResponse);
-      expect(mockUrlBuilder.getBaseUrl).toHaveBeenCalledWith('transaction');
-      expect(mockHttpClient.get).toHaveBeenCalled();
+      expect(result).toEqual({
+        items: [mockBalance],
+        limit: 10,
+        nextCursor: 'cursor-2',
+        prevCursor: 'cursor-0',
+      });
+      expect(mockUrlBuilder.buildAccountBalanceUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        accountId
+      );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances`,
+        { params: {} }
+      );
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'balances.account.count',
         1,
         expect.objectContaining({ orgId, ledgerId, accountId })
       );
-      expect(mockObservability.recordMetric).toHaveBeenCalledWith(
-        'balances.account.available',
-        10000,
-        expect.objectContaining({ orgId, ledgerId, accountId })
-      );
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
-    it('should apply list options when provided', async () => {
-      // Arrange
-      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
-      const options: ListOptions = { limit: 10, offset: 20, filter: { status: StatusCode.ACTIVE } };
+    it('sends only the query parameters the ledger honours, under their wire names', async () => {
+      mockHttpClient.get.mockResolvedValueOnce(wirePage);
 
-      // Act
-      await client.listAccountBalances(orgId, ledgerId, accountId, options);
+      await client.listAccountBalances(orgId, ledgerId, accountId, {
+        limit: 2,
+        cursor: 'cursor-1',
+        sortOrder: 'desc',
+        startDate: '2026-08-01',
+        endDate: '2026-08-08',
+      });
 
-      // Assert
-      expect(mockHttpClient.get).toHaveBeenCalled();
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('limit', 10);
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('offset', 20);
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('hasFilters', true);
+      expect(mockHttpClient.get).toHaveBeenCalledWith(expect.any(String), {
+        params: {
+          limit: 2,
+          cursor: 'cursor-1',
+          sort_order: 'desc',
+          start_date: '2026-08-01',
+          end_date: '2026-08-08',
+        },
+      });
+    });
+
+    it('walks to the next page with the cursor the previous page returned', async () => {
+      mockHttpClient.get
+        .mockResolvedValueOnce(wirePage)
+        .mockResolvedValueOnce({ items: [], limit: 2, prev_cursor: 'cursor-1' });
+
+      const first = await client.listAccountBalances(orgId, ledgerId, accountId, { limit: 2 });
+      const second = await client.listAccountBalances(orgId, ledgerId, accountId, {
+        limit: 2,
+        cursor: first.nextCursor,
+      });
+
+      expect(mockHttpClient.get).toHaveBeenLastCalledWith(expect.any(String), {
+        params: { limit: 2, cursor: 'cursor-2' },
+      });
+      expect(second.nextCursor).toBeUndefined();
+      expect(second.prevCursor).toBe('cursor-1');
+    });
+
+    it('refuses a half-open date range before the wire', async () => {
+      await expect(
+        client.listAccountBalances(orgId, ledgerId, accountId, { startDate: '2026-08-01' })
+      ).rejects.toThrow(/startDate and endDate/);
+      expect(mockHttpClient.get).not.toHaveBeenCalled();
+    });
+
+    it('refuses a limit above the ledger maximum before the wire', async () => {
+      await expect(
+        client.listAccountBalances(orgId, ledgerId, accountId, { limit: 101 })
+      ).rejects.toThrow(/100/);
+      expect(mockHttpClient.get).not.toHaveBeenCalled();
     });
 
     it('should throw error when missing orgId', async () => {
-      // Act & Assert
       await expect(client.listAccountBalances('', ledgerId, accountId)).rejects.toThrow(
         'orgId is required'
       );
@@ -267,7 +339,6 @@ describe('HttpBalanceApiClient', () => {
     });
 
     it('should throw error when missing ledgerId', async () => {
-      // Act & Assert
       await expect(client.listAccountBalances(orgId, '', accountId)).rejects.toThrow(
         'ledgerId is required'
       );
@@ -275,7 +346,6 @@ describe('HttpBalanceApiClient', () => {
     });
 
     it('should throw error when missing accountId', async () => {
-      // Act & Assert
       await expect(client.listAccountBalances(orgId, ledgerId, '')).rejects.toThrow(
         'accountId is required'
       );
@@ -283,11 +353,9 @@ describe('HttpBalanceApiClient', () => {
     });
 
     it('should handle API errors', async () => {
-      // Arrange
       const error = new Error('API Error');
       mockHttpClient.get.mockRejectedValueOnce(error);
 
-      // Act & Assert
       await expect(client.listAccountBalances(orgId, ledgerId, accountId)).rejects.toThrow(
         'API Error'
       );
@@ -296,29 +364,178 @@ describe('HttpBalanceApiClient', () => {
     });
 
     it('should handle empty balance list', async () => {
-      // Arrange
-      const emptyResponse: ListResponse<Balance> = {
-        items: [],
-        meta: { total: 0, count: 0 },
-      };
-      mockHttpClient.get.mockResolvedValueOnce(emptyResponse);
+      mockHttpClient.get.mockResolvedValueOnce({ items: [], limit: 10 });
 
-      // Act
       const result = await client.listAccountBalances(orgId, ledgerId, accountId);
 
-      // Assert
-      expect(result).toEqual(emptyResponse);
+      expect(result).toEqual({ items: [], limit: 10 });
       expect(mockObservability.recordMetric).toHaveBeenCalledWith(
         'balances.account.count',
         0,
         expect.any(Object)
       );
-      // No account.available metric should be recorded for empty list
       expect(mockObservability.recordMetric).not.toHaveBeenCalledWith(
         'balances.account.available',
         expect.any(Number),
         expect.any(Object)
       );
+    });
+  });
+
+  describe('createAccountBalance', () => {
+    const input: CreateBalanceInput = { key: 'asset-freeze', direction: 'debit' };
+
+    it('posts the payload to the per-account balance collection', async () => {
+      mockHttpClient.post.mockResolvedValueOnce(mockBalance);
+
+      const result = await client.createAccountBalance(orgId, ledgerId, accountId, input);
+
+      expect(result).toEqual(mockBalance);
+      expect(mockUrlBuilder.buildAccountBalanceUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        accountId
+      );
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances`,
+        input
+      );
+      expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
+    });
+
+    it('runs the create validator over the input', async () => {
+      mockHttpClient.post.mockResolvedValueOnce(mockBalance);
+
+      await client.createAccountBalance(orgId, ledgerId, accountId, input);
+
+      expect(validateMock).toHaveBeenCalledWith(input, expect.any(Function));
+    });
+
+    it('refuses an invalid input before the wire', async () => {
+      validateMock.mockImplementationOnce(() => {
+        throw new Error('key is required');
+      });
+
+      await expect(
+        client.createAccountBalance(orgId, ledgerId, accountId, { key: '' })
+      ).rejects.toThrow('key is required');
+      expect(mockHttpClient.post).not.toHaveBeenCalled();
+    });
+
+    it('should throw error when missing accountId', async () => {
+      await expect(client.createAccountBalance(orgId, ledgerId, '', input)).rejects.toThrow(
+        'accountId is required'
+      );
+    });
+  });
+
+  describe('listAccountBalanceHistory', () => {
+    const snapshot: BalanceHistory = {
+      id: balanceId,
+      organizationId: orgId,
+      ledgerId: ledgerId,
+      accountId: accountId,
+      alias: 'acct_a',
+      key: 'default',
+      assetCode: 'BRL',
+      available: '749.5',
+      onHold: '0',
+      version: 1,
+      accountType: 'deposit',
+      overdraftUsed: '0',
+      createdAt: '2026-08-07T02:42:18Z',
+      updatedAt: '2026-08-07T02:45:00Z',
+    };
+
+    it('returns the bare array the route answers with, not an envelope', async () => {
+      mockHttpClient.get.mockResolvedValueOnce([snapshot]);
+
+      const result = await client.listAccountBalanceHistory(
+        orgId,
+        ledgerId,
+        accountId,
+        '2026-08-07T02:45:14Z'
+      );
+
+      expect(result).toEqual([snapshot]);
+      expect(mockUrlBuilder.buildAccountBalanceHistoryUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        accountId
+      );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances/history`,
+        { params: { date: '2026-08-07T02:45:14Z' } }
+      );
+    });
+
+    it('refuses a date-only timestamp before the wire', async () => {
+      await expect(
+        client.listAccountBalanceHistory(orgId, ledgerId, accountId, '2026-08-07')
+      ).rejects.toThrow(/yyyy-mm-dd hh:mm:ss/);
+      expect(mockHttpClient.get).not.toHaveBeenCalled();
+    });
+
+    it('refuses an omitted date before the wire', async () => {
+      await expect(
+        client.listAccountBalanceHistory(orgId, ledgerId, accountId, undefined as unknown as string)
+      ).rejects.toThrow('date is required');
+      expect(mockHttpClient.get).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getBalanceHistory', () => {
+    const snapshot: BalanceHistory = {
+      id: balanceId,
+      organizationId: orgId,
+      ledgerId: ledgerId,
+      accountId: accountId,
+      alias: 'acct_a',
+      key: 'default',
+      assetCode: 'BRL',
+      available: '0',
+      onHold: '0',
+      version: 0,
+      accountType: 'deposit',
+      overdraftUsed: '0',
+      createdAt: '2026-08-07T02:42:18Z',
+      updatedAt: '2026-08-07T02:42:18Z',
+    };
+
+    it('returns the single snapshot object the route answers with', async () => {
+      mockHttpClient.get.mockResolvedValueOnce(snapshot);
+
+      const result = await client.getBalanceHistory(
+        orgId,
+        ledgerId,
+        balanceId,
+        '2026-08-07 02:45:14'
+      );
+
+      expect(result).toEqual(snapshot);
+      expect(Array.isArray(result)).toBe(false);
+      expect(mockUrlBuilder.buildBalanceHistoryUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        balanceId
+      );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `/organizations/${orgId}/ledgers/${ledgerId}/balances/${balanceId}/history`,
+        { params: { date: '2026-08-07 02:45:14' } }
+      );
+    });
+
+    it('refuses a date-only timestamp before the wire', async () => {
+      await expect(
+        client.getBalanceHistory(orgId, ledgerId, balanceId, '2026-08-07')
+      ).rejects.toThrow(/yyyy-mm-dd hh:mm:ss/);
+      expect(mockHttpClient.get).not.toHaveBeenCalled();
+    });
+
+    it('should throw error when missing balanceId', async () => {
+      await expect(
+        client.getBalanceHistory(orgId, ledgerId, '', '2026-08-07T02:45:14Z')
+      ).rejects.toThrow('balanceId is required');
     });
   });
 

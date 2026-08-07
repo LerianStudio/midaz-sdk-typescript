@@ -482,7 +482,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 #### Task 3.2.3: Balance history and per-account balance list/create
 
-- [ ] Done
+- [x] Done
 
 **Context:** Two history routes, both verified. `GET .../accounts/{account_id}/balances/history` returns a **bare array** (no envelope, no pagination); `GET .../balances/{balance_id}/history` returns a **single object**. Both take one query param, `date`, which the spec marks optional but which is **required at runtime** (`400/0142` when omitted) and **must carry a time component** — `date=2026-08-07` is `400/0131`, while `2026-08-07 00:20:00`, RFC 3339 `2026-08-07T00:20:00Z` and an offset form all work. A timestamp preceding the balance's creation is `404/0141`. The payload is `Balance` minus `allowSending`, `allowReceiving`, `deletedAt` and `metadata`, and it is a genuine point-in-time snapshot (the same balance read at two timestamps returned `available: "0", version: 0` and `"749.5", version: 2`). Separately, `GET .../accounts/{account_id}/balances` is the **only** balance listing that really paginates — cursor-based via `next_cursor`/`prev_cursor`, with `limit` (default 10, max 100), `sort_order`, and `start_date`/`end_date` that are all-or-nothing; **`page` is parsed but ignored**, and `metadata.*` filters are accepted and deliberately discarded. `POST` to that same path creates an additional balance from `CreateAdditionalBalance` (`pkg/mmodel/balance.go:297-324`): `key` (required, no whitespace, ≤100), optional `allowSending`/`allowReceiving` (default true), `direction` (`credit`|`debit`, default `credit`), and `settings` (`balanceScope`, `allowOverdraft`, `overdraftLimitEnabled`, `overdraftLimit`).
 

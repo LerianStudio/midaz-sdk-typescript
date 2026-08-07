@@ -445,3 +445,50 @@ describe('UrlBuilder resource count paths', () => {
     );
   });
 });
+
+describe('UrlBuilder per-account balance and history paths', () => {
+  const orgId = 'ORG';
+  const ledgerId = 'LEDGER';
+  const accountId = 'ACCOUNT';
+  const balanceId = 'BALANCE';
+  const root = 'https://ledger.example.com/v1';
+  const ledgerPrefix = `${root}/organizations/${orgId}/ledgers/${ledgerId}`;
+  const savedEnv: Record<string, string | undefined> = {};
+  let builder: UrlBuilder;
+
+  beforeEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+    builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
+  });
+
+  afterEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
+  });
+
+  it('builds the per-account balance collection path', () => {
+    expect(builder.buildAccountBalanceUrl(orgId, ledgerId, accountId)).toBe(
+      `${ledgerPrefix}/accounts/${accountId}/balances`
+    );
+  });
+
+  it('builds the per-account balance history path', () => {
+    expect(builder.buildAccountBalanceHistoryUrl(orgId, ledgerId, accountId)).toBe(
+      `${ledgerPrefix}/accounts/${accountId}/balances/history`
+    );
+  });
+
+  it('builds the single-balance history path', () => {
+    expect(builder.buildBalanceHistoryUrl(orgId, ledgerId, balanceId)).toBe(
+      `${ledgerPrefix}/balances/${balanceId}/history`
+    );
+  });
+});
