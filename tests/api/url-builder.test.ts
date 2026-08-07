@@ -328,3 +328,65 @@ describe('UrlBuilder transaction create variants', () => {
     expect(builder.buildTransactionUrl(orgId, ledgerId)).toBe(`${prefix}/transactions`);
   });
 });
+
+describe('UrlBuilder alias and external account lookups', () => {
+  const orgId = 'ORG';
+  const ledgerId = 'LEDGER';
+  const prefix = `https://ledger.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}`;
+  const alias = 'probe@lerian:acct_a';
+  const savedEnv: Record<string, string | undefined> = {};
+  let builder: UrlBuilder;
+
+  beforeEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+    builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
+  });
+
+  afterEach(() => {
+    for (const key of LEGACY_ENV_KEYS) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
+  });
+
+  it('places the alias on the wire verbatim, never percent-encoded', () => {
+    const url = builder.buildAccountByAliasUrl(orgId, ledgerId, alias);
+
+    expect(url).toBe(`${prefix}/accounts/alias/probe@lerian:acct_a`);
+    expect(url.endsWith(`/accounts/alias/${alias}`)).toBe(true);
+    expect(url).not.toContain(encodeURIComponent(alias));
+    expect(url).not.toContain('%');
+  });
+
+  it('places the alias verbatim on the balances variant too', () => {
+    const url = builder.buildAccountAliasBalancesUrl(orgId, ledgerId, alias);
+
+    expect(url).toBe(`${prefix}/accounts/alias/probe@lerian:acct_a/balances`);
+    expect(url).not.toContain(encodeURIComponent(alias));
+    expect(url).not.toContain('%');
+  });
+
+  it('builds the external account path from the bare asset code', () => {
+    expect(builder.buildExternalAccountUrl(orgId, ledgerId, 'BRL')).toBe(
+      `${prefix}/accounts/external/BRL`
+    );
+  });
+
+  it('builds the external account balances path from the bare asset code', () => {
+    expect(builder.buildExternalAccountBalancesUrl(orgId, ledgerId, 'BRL')).toBe(
+      `${prefix}/accounts/external/BRL/balances`
+    );
+  });
+
+  it('preserves the asset code case the caller passed', () => {
+    expect(builder.buildExternalAccountUrl(orgId, ledgerId, 'brl')).toBe(
+      `${prefix}/accounts/external/brl`
+    );
+  });
+});

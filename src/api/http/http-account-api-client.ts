@@ -80,6 +80,48 @@ export class HttpAccountApiClient
   /**
    * @inheritdoc
    */
+  public async getAccountByAlias(orgId: string, ledgerId: string, alias: string): Promise<Account> {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId, alias }), {
+      orgId,
+      ledgerId,
+      alias,
+    });
+
+    const url = this.urlBuilder.buildAccountByAliasUrl(orgId, ledgerId, alias);
+
+    return this.getRequest<Account>('getAccountByAlias', url, undefined, {
+      orgId,
+      ledgerId,
+      alias,
+    });
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async getExternalAccount(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): Promise<Account> {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId, assetCode }), {
+      orgId,
+      ledgerId,
+      assetCode,
+    });
+
+    const url = this.urlBuilder.buildExternalAccountUrl(orgId, ledgerId, assetCode);
+
+    return this.getRequest<Account>('getExternalAccount', url, undefined, {
+      orgId,
+      ledgerId,
+      assetCode,
+    });
+  }
+
+  /**
+   * @inheritdoc
+   */
   public async createAccount(
     orgId: string,
     ledgerId: string,

@@ -37,6 +37,35 @@ export interface BalanceApiClient extends ApiClient<Balance, never, UpdateBalanc
   ): Promise<ListResponse<Balance>>;
 
   /**
+   * Lists the balances of the account addressed by its alias
+   *
+   * The alias reaches the ledger exactly as given: path parameters are never
+   * percent-decoded there. The route takes no query parameters — the page is capped
+   * at 10 server-side — and an unknown alias yields an empty page rather than a 404.
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  listAccountBalancesByAlias(
+    orgId: string,
+    ledgerId: string,
+    alias: string
+  ): Promise<ListResponse<Balance>>;
+
+  /**
+   * Lists the balances of an asset's external account, addressed by the bare asset code
+   *
+   * The ledger matches the code case-sensitively. The route takes no query parameters —
+   * the page is capped at 10 server-side — and an unknown code yields an empty page.
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  listExternalAccountBalances(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): Promise<ListResponse<Balance>>;
+
+  /**
    * Gets a balance by ID
    *
    * @returns Promise resolving to the balance

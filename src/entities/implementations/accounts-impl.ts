@@ -83,6 +83,56 @@ export class AccountsServiceImpl implements AccountsService {
   }
 
   /** @inheritdoc */
+  public async getAccountByAlias(orgId: string, ledgerId: string, alias: string): Promise<Account> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('getAccountByAlias');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('alias', alias);
+
+    try {
+      // Delegate to the API client
+      const result = await this.accountApiClient.getAccountByAlias(orgId, ledgerId, alias);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /** @inheritdoc */
+  public async getExternalAccount(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): Promise<Account> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('getExternalAccount');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('assetCode', assetCode);
+
+    try {
+      // Delegate to the API client
+      const result = await this.accountApiClient.getExternalAccount(orgId, ledgerId, assetCode);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /** @inheritdoc */
   public async createAccount(
     orgId: string,
     ledgerId: string,

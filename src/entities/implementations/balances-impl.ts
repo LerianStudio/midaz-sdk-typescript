@@ -198,6 +198,79 @@ export class BalancesServiceImpl implements BalancesService {
   }
 
   /**
+   * Lists the balances of the account addressed by its alias
+   *
+   * The alias travels to the ledger raw: path parameters are never percent-decoded
+   * there. The route takes no query parameters — the page is capped at 10 server-side —
+   * and an unknown alias yields an empty page rather than a 404.
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  public async listAccountBalancesByAlias(
+    orgId: string,
+    ledgerId: string,
+    alias: string
+  ): Promise<ListResponse<Balance>> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('listAccountBalancesByAlias');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('alias', alias);
+
+    try {
+      // Delegate to the API client
+      const result = await this.balanceApiClient.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Lists the balances of an asset's external account, addressed by the bare asset code
+   *
+   * The ledger matches the code case-sensitively. The route takes no query parameters —
+   * the page is capped at 10 server-side — and an unknown code yields an empty page.
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  public async listExternalAccountBalances(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): Promise<ListResponse<Balance>> {
+    // Create a span for tracing this operation
+    const span = this.observability.startSpan('listExternalAccountBalances');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('assetCode', assetCode);
+
+    try {
+      // Delegate to the API client
+      const result = await this.balanceApiClient.listExternalAccountBalances(
+        orgId,
+        ledgerId,
+        assetCode
+      );
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
    * Gets a balance by ID
    *
    * Retrieves a single balance by its unique identifier within the specified

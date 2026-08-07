@@ -426,7 +426,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 #### Task 3.1.1: getAccountByAlias, getExternalAccount and their balance variants
 
-- [ ] Done
+- [x] Done
 
 **Context:** Four GET routes, all verified live. `GET .../accounts/alias/{alias}` and `GET .../accounts/external/{code}` return a single `Account` (200) or `404/0085` "Account Alias Not Found". `{code}` is the bare asset code (`BRL`) and is **case-sensitive** — `brl` is `404`; the handler prefixes it internally (`account_handler_huma.go:243`). The two `/balances` variants return a `Pagination` envelope and behave differently in two ways worth encoding in the SDK's types: they **accept no query parameters at all** (the core hardcodes `Pagination{Limit: 10, Items: balances}` at `balance.go:200-218,222-242`, and a `?limit=1` against a two-balance account still returns both), and they **do not 404** on an unknown alias — they return `200 {"items":[],"limit":10}`.
 

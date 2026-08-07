@@ -177,6 +177,86 @@ export class HttpBalanceApiClient implements BalanceApiClient {
   }
 
   /**
+   * Lists the balances of the account addressed by its alias
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  public async listAccountBalancesByAlias(
+    orgId: string,
+    ledgerId: string,
+    alias: string
+  ): Promise<ListResponse<Balance>> {
+    const span = this.observability.startSpan('listAccountBalancesByAlias');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('alias', alias);
+
+    try {
+      this.validateRequiredParams(span, { orgId, ledgerId, alias });
+
+      const url = this.urlBuilder.buildAccountAliasBalancesUrl(orgId, ledgerId, alias);
+
+      // The route accepts no query parameters: the core hardcodes a page of 10.
+      const result = await this.httpClient.get<ListResponse<Balance>>(url);
+
+      this.recordMetrics('balances.alias.count', result.items.length, {
+        orgId,
+        ledgerId,
+        alias,
+      });
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Lists the balances of an asset's external account
+   *
+   * @returns Promise resolving to a paginated list of balances
+   */
+  public async listExternalAccountBalances(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): Promise<ListResponse<Balance>> {
+    const span = this.observability.startSpan('listExternalAccountBalances');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+    span.setAttribute('assetCode', assetCode);
+
+    try {
+      this.validateRequiredParams(span, { orgId, ledgerId, assetCode });
+
+      const url = this.urlBuilder.buildExternalAccountBalancesUrl(orgId, ledgerId, assetCode);
+
+      // The route accepts no query parameters: the core hardcodes a page of 10.
+      const result = await this.httpClient.get<ListResponse<Balance>>(url);
+
+      this.recordMetrics('balances.external.count', result.items.length, {
+        orgId,
+        ledgerId,
+        assetCode,
+      });
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
    * Gets a balance by ID
    *
    * @returns Promise resolving to the balance

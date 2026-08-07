@@ -95,6 +95,18 @@ describe('HttpBalanceApiClient', () => {
       getBaseUrl: jest.fn().mockImplementation((type) => {
         return `/api/${type}`;
       }),
+      buildAccountAliasBalancesUrl: jest
+        .fn()
+        .mockImplementation(
+          (orgId, ledgerId, alias) =>
+            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/alias/${alias}/balances`
+        ),
+      buildExternalAccountBalancesUrl: jest
+        .fn()
+        .mockImplementation(
+          (orgId, ledgerId, code) =>
+            `/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/${code}/balances`
+        ),
       getApiVersion: jest.fn().mockReturnValue(apiVersion),
     } as unknown as jest.Mocked<UrlBuilder>;
 
@@ -625,6 +637,109 @@ describe('HttpBalanceApiClient', () => {
           accountId,
         })
       );
+    });
+  });
+  describe('listAccountBalancesByAlias', () => {
+    const alias = 'probe@lerian:acct_a';
+
+    it('should list the balances of the account addressed by its alias', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+
+      // Act
+      const result = await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      // Assert
+      expect(result).toEqual(mockBalanceListResponse);
+      expect(mockUrlBuilder.buildAccountAliasBalancesUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        alias
+      );
+      expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
+    });
+
+    it('should send the alias verbatim rather than percent-encoded', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+
+      // Act
+      await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      // Assert
+      const [requestedUrl] = mockHttpClient.get.mock.calls[0];
+      expect(requestedUrl).toContain(alias);
+      expect(requestedUrl).not.toContain(encodeURIComponent(alias));
+    });
+
+    it('should send no query parameters, because the route ignores them', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+
+      // Act
+      await client.listAccountBalancesByAlias(orgId, ledgerId, alias);
+
+      // Assert
+      const [, requestOptions] = mockHttpClient.get.mock.calls[0];
+      expect((requestOptions as Record<string, unknown> | undefined)?.params).toBeUndefined();
+    });
+
+    it('should return the empty page an unknown alias yields instead of throwing', async () => {
+      // Arrange
+      const emptyPage: ListResponse<Balance> = { items: [], meta: { total: 0, count: 0 } };
+      mockHttpClient.get.mockResolvedValueOnce(emptyPage);
+
+      // Act
+      const result = await client.listAccountBalancesByAlias(orgId, ledgerId, 'nope');
+
+      // Assert
+      expect(result.items).toEqual([]);
+    });
+
+    it('should throw error when missing alias', async () => {
+      await expect(client.listAccountBalancesByAlias(orgId, ledgerId, '')).rejects.toThrow();
+    });
+
+    it('should throw error when missing ledgerId', async () => {
+      await expect(client.listAccountBalancesByAlias(orgId, '', alias)).rejects.toThrow();
+    });
+  });
+
+  describe('listExternalAccountBalances', () => {
+    it('should list the balances of the external account for an asset code', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+
+      // Act
+      const result = await client.listExternalAccountBalances(orgId, ledgerId, 'BRL');
+
+      // Assert
+      expect(result).toEqual(mockBalanceListResponse);
+      expect(mockUrlBuilder.buildExternalAccountBalancesUrl).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        'BRL'
+      );
+    });
+
+    it('should send no query parameters, because the route ignores them', async () => {
+      // Arrange
+      mockHttpClient.get.mockResolvedValueOnce(mockBalanceListResponse);
+
+      // Act
+      await client.listExternalAccountBalances(orgId, ledgerId, 'BRL');
+
+      // Assert
+      const [, requestOptions] = mockHttpClient.get.mock.calls[0];
+      expect((requestOptions as Record<string, unknown> | undefined)?.params).toBeUndefined();
+    });
+
+    it('should throw error when missing assetCode', async () => {
+      await expect(client.listExternalAccountBalances(orgId, ledgerId, '')).rejects.toThrow();
+    });
+
+    it('should throw error when missing orgId', async () => {
+      await expect(client.listExternalAccountBalances('', ledgerId, 'BRL')).rejects.toThrow();
     });
   });
 });

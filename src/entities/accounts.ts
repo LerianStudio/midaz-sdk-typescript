@@ -39,6 +39,24 @@ export interface AccountsService {
   getAccount(orgId: string, ledgerId: string, id: string): Promise<Account>;
 
   /**
+   * Gets an account by its alias
+   *
+   * The alias travels to the ledger raw: path parameters are never percent-decoded
+   * there, so an encoded alias is looked up literally and 404s. `@` and `:` are legal;
+   * an alias containing `/` is unreachable through this route.
+   *
+   */
+  getAccountByAlias(orgId: string, ledgerId: string, alias: string): Promise<Account>;
+
+  /**
+   * Gets the external account of an asset, addressed by the bare asset code
+   *
+   * The ledger matches the code case-sensitively and prefixes `@external/` itself.
+   *
+   */
+  getExternalAccount(orgId: string, ledgerId: string, assetCode: string): Promise<Account>;
+
+  /**
    * Creates a new account
    *
    */

@@ -18,6 +18,7 @@ const TRANSACTION = 'SENTINEL_TRANSACTION';
 const OPERATION = 'SENTINEL_OPERATION';
 const ASSET = 'SENTINEL_ASSET';
 const ASSET_CODE = 'SENTINEL_ASSET_CODE';
+const ALIAS = 'SENTINEL_ALIAS';
 const EXTERNAL_ID = 'SENTINEL_EXTERNAL_ID';
 const BALANCE = 'SENTINEL_BALANCE';
 const PORTFOLIO = 'SENTINEL_PORTFOLIO';
@@ -68,6 +69,26 @@ const builderCases: BuilderCase[] = [
     method: 'buildAccountUrl',
     verbs: ITEM_VERBS,
     build: (b) => b.buildAccountUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildAccountByAliasUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountByAliasUrl(ORG, LEDGER, ALIAS),
+  },
+  {
+    method: 'buildAccountAliasBalancesUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountAliasBalancesUrl(ORG, LEDGER, ALIAS),
+  },
+  {
+    method: 'buildExternalAccountUrl',
+    verbs: ['get'],
+    build: (b) => b.buildExternalAccountUrl(ORG, LEDGER, ASSET_CODE),
+  },
+  {
+    method: 'buildExternalAccountBalancesUrl',
+    verbs: ['get'],
+    build: (b) => b.buildExternalAccountBalancesUrl(ORG, LEDGER, ASSET_CODE),
   },
   { method: 'buildAssetUrl', verbs: COLLECTION_VERBS, build: (b) => b.buildAssetUrl(ORG, LEDGER) },
   {
@@ -226,6 +247,10 @@ const COVERED_SPEC_PATHS = [
   '/organizations/{organization_id}/ledgers/{ledger_id}/account-types',
   '/organizations/{organization_id}/ledgers/{ledger_id}/account-types/{id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/alias/{alias}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/alias/{alias}/balances',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}',
+  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}/balances',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations/{operation_id}',
   '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{id}',

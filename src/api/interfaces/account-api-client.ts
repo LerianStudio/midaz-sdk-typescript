@@ -33,6 +33,26 @@ export interface AccountApiClient
   getAccount(orgId: string, ledgerId: string, id: string): Promise<Account>;
 
   /**
+   * Gets an account by its alias
+   *
+   * The alias reaches the ledger exactly as given: path parameters are never
+   * percent-decoded there, so an encoded alias is looked up literally and 404s.
+   * An alias containing `/` is therefore unreachable through this route.
+   *
+   * @returns Promise resolving to the account
+   */
+  getAccountByAlias(orgId: string, ledgerId: string, alias: string): Promise<Account>;
+
+  /**
+   * Gets the external account of an asset, addressed by the bare asset code
+   *
+   * The ledger matches the code case-sensitively and prefixes `@external/` itself.
+   *
+   * @returns Promise resolving to the account
+   */
+  getExternalAccount(orgId: string, ledgerId: string, assetCode: string): Promise<Account>;
+
+  /**
    * Creates a new account
    *
    * @returns Promise resolving to the created account

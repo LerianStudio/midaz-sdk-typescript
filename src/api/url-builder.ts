@@ -254,6 +254,58 @@ export class UrlBuilder {
   }
 
   /**
+   * Builds the URL addressing an account by its alias
+   *
+   * The ledger never percent-decodes path parameters, so the alias travels raw:
+   * `%5F` would reach the handler as a literal `%5F` and 404. `@` and `:` are legal
+   * raw; an alias containing `/` is unreachable through this route by construction.
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountByAliasUrl(orgId: string, ledgerId: string, alias: string): string {
+    return `${this.buildAccountUrl(orgId, ledgerId)}/alias/${alias}`;
+  }
+
+  /**
+   * Builds the URL listing the balances of the account addressed by its alias
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountAliasBalancesUrl(orgId: string, ledgerId: string, alias: string): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/alias/${alias}/balances`;
+  }
+
+  /**
+   * Builds the URL addressing the external account of an asset
+   *
+   * The segment is the bare asset code and the ledger matches it case-sensitively;
+   * it prefixes `@external/` internally, which is why this route exists apart from
+   * the alias one — `/` cannot be expressed in a path parameter at all.
+   *
+   * @returns The constructed URL
+   */
+  public buildExternalAccountUrl(orgId: string, ledgerId: string, assetCode: string): string {
+    return `${this.buildAccountUrl(orgId, ledgerId)}/external/${assetCode}`;
+  }
+
+  /**
+   * Builds the URL listing the balances of an asset's external account
+   *
+   * @returns The constructed URL
+   */
+  public buildExternalAccountBalancesUrl(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): string {
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/${assetCode}/balances`;
+  }
+
+  /**
    * Builds the URL for transaction endpoints
    *
    * @returns The constructed URL
