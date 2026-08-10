@@ -69,7 +69,10 @@ describe('requestTotalCount', () => {
   });
 
   it('asks over HEAD, because the count routes answer nothing else', async () => {
-    httpClient.head.mockResolvedValueOnce({ headers: { 'X-Total-Count': '7' }, data: undefined });
+    httpClient.head.mockResolvedValueOnce({
+      headers: new Headers({ 'X-Total-Count': '7' }),
+      data: undefined,
+    });
 
     const count = await requestTotalCount(httpClient, 'countSegments', '/segments/metrics/count');
 
@@ -78,7 +81,7 @@ describe('requestTotalCount', () => {
   });
 
   it('reports the operation that was answered without a readable count', async () => {
-    httpClient.head.mockResolvedValueOnce({ headers: {}, data: undefined });
+    httpClient.head.mockResolvedValueOnce({ headers: new Headers(), data: undefined });
 
     await expect(
       requestTotalCount(httpClient, 'countPortfolios', '/portfolios/metrics/count')

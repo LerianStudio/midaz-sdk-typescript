@@ -41,15 +41,18 @@ describe('HttpBalanceApiClient', () => {
     ledgerId: ledgerId,
     accountId: accountId,
     alias: 'main-balance',
+    key: 'default',
     assetCode: 'USD',
     available: '10000',
     onHold: '500',
+    overdraftUsed: '0',
     version: 1,
     accountType: 'ASSET',
     allowSending: true,
     allowReceiving: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    deletedAt: null,
   };
 
   // Mock balance list response

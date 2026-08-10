@@ -100,15 +100,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       accountId: 'acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       alias: 'operating-cash',
+      key: 'default',
       assetCode: 'USD',
       available: '100.50',
       onHold: '5.00',
+      overdraftUsed: '0',
       version: 42,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
       metadata: {
         lastReconciled: now,
       },
@@ -140,15 +143,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       accountId: 'acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       alias: 'minimal-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '0',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
     };
 
     expect(minimalBalance.metadata).toBeUndefined();
@@ -162,15 +168,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       accountId: 'acc_01H9ZQCK3VP6WS2EZ5JQKD5E1S',
       alias: 'decimal-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '100.50',
       onHold: '5.00',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     const availableAmount = Number(balance.available);
@@ -194,15 +203,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'whole-numbers',
+      key: 'default',
       assetCode: 'WHOLE',
       available: '100',
       onHold: '50',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     // Two decimal places
@@ -212,15 +224,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'two-decimals',
+      key: 'default',
       assetCode: 'USD',
       available: '123.45',
       onHold: '67.89',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     // Six decimal places
@@ -230,15 +245,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'six-decimals',
+      key: 'default',
       assetCode: 'BTC',
       available: '123.456789',
       onHold: '987.654321',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(Number(wholeNumberBalance.available)).toBe(100);
@@ -254,15 +272,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'zero-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '0',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(zeroBalance.available).toBe('0');
@@ -280,15 +301,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'negative-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '-50.00',
       onHold: '10.00',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'LIABILITY',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(Number(negativeBalance.available)).toBe(-50);
@@ -304,15 +328,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'large-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '9007199254740993', // one past MAX_SAFE_INTEGER
       onHold: '10000000000.00',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(largeBalance.available).toBe('9007199254740993');
@@ -366,15 +393,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'asset-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '1000',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     const liabilityBalance: Balance = {
@@ -383,15 +413,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'liability-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '-2000',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'LIABILITY',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     const equityBalance: Balance = {
@@ -400,15 +433,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'equity-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '5000',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'EQUITY',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(assetBalance.accountType).toBe('ASSET');
@@ -424,15 +460,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'metadata-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '1000',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
       metadata: {
         lastReconciled: new Date().toISOString(),
         tags: ['primary', 'operating', 'cash'],
@@ -464,15 +503,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'version-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '10.00',
       onHold: '0.00',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     // Simulate a balance update (e.g., after a transaction)
@@ -481,6 +523,7 @@ describe('Balance Model and Helper Functions', () => {
       available: '15.00',
       version: initialBalance.version + 1,
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     // Simulate another balance update
@@ -488,8 +531,10 @@ describe('Balance Model and Helper Functions', () => {
       ...updatedBalance,
       available: '12.00',
       onHold: '3.00',
+      overdraftUsed: '0',
       version: updatedBalance.version + 1,
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(initialBalance.version).toBe(1);
@@ -522,15 +567,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'locked-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '1000',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: false,
       allowReceiving: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(lockedBalance.allowSending).toBe(false);
@@ -545,15 +593,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'deposit-only-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '1000',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: false,
       allowReceiving: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     const withdrawOnlyBalance: Balance = {
@@ -562,15 +613,18 @@ describe('Balance Model and Helper Functions', () => {
       ledgerId: 'ldg_id',
       accountId: 'acc_id',
       alias: 'withdraw-only-balance',
+      key: 'default',
       assetCode: 'USD',
       available: '1000',
       onHold: '0',
+      overdraftUsed: '0',
       version: 1,
       accountType: 'ASSET',
       allowSending: true,
       allowReceiving: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      deletedAt: null,
     };
 
     expect(depositOnlyBalance.allowSending).toBe(false);
