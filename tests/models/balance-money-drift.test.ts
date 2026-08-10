@@ -7,11 +7,20 @@ const SPEC_PATH = join(__dirname, '..', '..', 'spec', 'ledger-v1.openapi.yaml');
 const MODEL_PATH = join(__dirname, '..', '..', 'src', 'models', 'balance.ts');
 
 interface SpecDocument {
-  components?: { schemas?: Record<string, { properties?: Record<string, unknown> }> };
+  components?: {
+    schemas?: Record<string, { properties?: Record<string, unknown>; required?: string[] }>;
+  };
+}
+
+interface DeclaredMember {
+  type: string;
+  optional: boolean;
 }
 
 const spec = parse(readFileSync(SPEC_PATH, 'utf8')) as SpecDocument;
-const specProperties = spec.components?.schemas?.Balance?.properties ?? {};
+const specSchema = spec.components?.schemas?.Balance ?? {};
+const specProperties = specSchema.properties ?? {};
+const specRequired = specSchema.required ?? [];
 
 const source = readFileSync(MODEL_PATH, 'utf8');
 
@@ -22,11 +31,11 @@ function interfaceBody(name: string): string {
   return source.slice(start, end);
 }
 
-function declaredMembers(body: string): Map<string, string> {
-  const members = new Map<string, string>();
+function declaredMembers(body: string): Map<string, DeclaredMember> {
+  const members = new Map<string, DeclaredMember>();
 
-  for (const match of body.matchAll(/^ {2}(\w+)\??:\s*([^;]+);/gm)) {
-    members.set(match[1], match[2].trim());
+  for (const match of body.matchAll(/^ {2}(\w+)(\??):\s*([^;]+);/gm)) {
+    members.set(match[1], { type: match[3].trim(), optional: match[2] === '?' });
   }
 
   return members;
@@ -44,18 +53,39 @@ describe('Balance money fields against the ledger spec', () => {
 
   it('declares available as the string the ledger sends', () => {
     expect(specProperties.available).toMatchObject({ type: 'string' });
-    expect(members.get('available')).toBe('string');
+    expect(members.get('available')?.type).toBe('string');
   });
 
   it('declares onHold as the string the ledger sends', () => {
     expect(specProperties.onHold).toMatchObject({ type: 'string' });
-    expect(members.get('onHold')).toBe('string');
+    expect(members.get('onHold')?.type).toBe('string');
   });
 
   it('declares no member the ledger does not send', () => {
     const invented = [...members.keys()].filter((name) => !(name in specProperties));
 
     expect(invented).toEqual([]);
+  });
+
+  it('declares every member the ledger does send', () => {
+    const missing = Object.keys(specProperties).filter((name) => !members.has(name));
+
+    expect(missing).toEqual([]);
+  });
+
+  it('leaves no member the ledger marks required optional', () => {
+    const wronglyOptional = specRequired.filter((name) => members.get(name)?.optional !== false);
+
+    expect(wronglyOptional).toEqual([]);
+  });
+
+  it('marks every member the ledger may omit optional', () => {
+    const optionalInSpec = Object.keys(specProperties).filter(
+      (name) => !specRequired.includes(name)
+    );
+    const wronglyRequired = optionalInSpec.filter((name) => members.get(name)?.optional !== true);
+
+    expect(wronglyRequired).toEqual([]);
   });
 
   it('shows the money as strings in the documented example', () => {

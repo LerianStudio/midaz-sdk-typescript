@@ -208,6 +208,7 @@ export {
   BalanceDirection,
   BalanceHistory,
   BalanceScope,
+  BalanceSettings,
   BalanceSettingsInput,
   CreateBalanceInput,
   newUpdateBalanceInput,

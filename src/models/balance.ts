@@ -34,15 +34,19 @@ import type { components } from '../generated/ledger-v1';
  *   ledgerId: "019fda19-9796-739b-9b2a-8b6b762b60b3",
  *   accountId: "019fda19-97cd-7b29-b90a-c962df8bbdc7",
  *   alias: "operating-cash",
+ *   key: "default",
  *   assetCode: "USD",
  *   available: "100.50",
  *   onHold: "5.00",
+ *   overdraftUsed: "0",
+ *   direction: "credit",
  *   version: 42,
  *   accountType: "ASSET",
  *   allowSending: true,
  *   allowReceiving: true,
  *   createdAt: "2023-09-15T14:30:00Z",
  *   updatedAt: "2023-09-16T09:45:00Z",
+ *   deletedAt: null,
  *   metadata: {
  *     lastReconciled: "2023-09-16T09:00:00Z"
  *   }
@@ -88,6 +92,13 @@ export interface Balance {
   alias: string;
 
   /**
+   * Key names this balance within its account
+   * An account starts with a single balance keyed `default`; further balances are
+   * created under keys of their own.
+   */
+  key: string;
+
+  /**
    * AssetCode identifies the type of asset for this balance
    * Examples include currency codes like "USD", "EUR", or custom asset
    * codes for other types of assets.
@@ -107,6 +118,25 @@ export interface Balance {
    * It is an already-scaled decimal string, such as "5.00".
    */
   onHold: string;
+
+  /**
+   * OverdraftUsed is how much of the permitted overdraft the balance is currently using
+   * It is an already-scaled decimal string, such as "0", on the same terms as the other
+   * monetary fields.
+   */
+  overdraftUsed: string;
+
+  /**
+   * Direction is the accounting direction the balance was created with
+   * It is fixed at creation and cannot be changed afterwards.
+   */
+  direction?: BalanceDirection;
+
+  /**
+   * Settings carries the overdraft and scope configuration in force for this balance
+   * The ledger omits it when the balance runs on the platform defaults.
+   */
+  settings?: BalanceSettings;
 
   /**
    * Version is the optimistic concurrency control version number
@@ -148,8 +178,10 @@ export interface Balance {
   /**
    * DeletedAt is the timestamp when the balance was deleted, if applicable
    * This is set when a balance is soft-deleted, allowing for potential recovery.
+   * The ledger always sends the field and writes `null` while the balance is live, so a
+   * liveness check has to compare against null rather than undefined.
    */
-  deletedAt?: string;
+  deletedAt: string | null;
 
   /**
    * Metadata contains additional custom data associated with the balance
@@ -200,6 +232,14 @@ export type BalanceScope = 'transactional' | 'internal';
  * The accounting direction of a balance, fixed at creation
  */
 export type BalanceDirection = 'credit' | 'debit';
+
+/**
+ * Overdraft and scope configuration as the ledger reports it on a balance.
+ *
+ * This is the read shape, taken straight from the generated schema so it cannot drift from
+ * the ledger; {@link BalanceSettingsInput} is the narrower shape accepted at creation.
+ */
+export type BalanceSettings = components['schemas']['BalanceSettings'];
 
 /**
  * Per-balance overdraft and scope configuration accepted at creation.

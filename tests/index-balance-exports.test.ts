@@ -19,6 +19,7 @@ const BALANCE_TYPES = [
   'BalanceDirection',
   'BalanceHistory',
   'BalanceScope',
+  'BalanceSettings',
   'BalanceSettingsInput',
   'CreateBalanceInput',
 ];
