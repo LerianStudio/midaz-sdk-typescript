@@ -54,6 +54,11 @@ describe('parseTotalCount without the count header', () => {
       "was answered with X-Total-Count: 'abc', which is not a count"
     );
   });
+
+  it('reads a plain-record header whatever its casing', () => {
+    expect(parseTotalCount('countAccounts', { 'x-total-count': '7' })).toBe(7);
+    expect(parseTotalCount('countAccounts', { 'X-TOTAL-COUNT': '7' })).toBe(7);
+  });
 });
 
 describe('requestTotalCount', () => {

@@ -306,6 +306,17 @@ describe('HttpBalanceApiClient', () => {
       expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
     });
 
+    it('stands in the page it was sent when the ledger omits the limit', async () => {
+      mockHttpClient.get.mockResolvedValueOnce({ items: [mockBalance] });
+
+      const result = await client.listAccountBalances(orgId, ledgerId, accountId);
+
+      expect(result.limit).toBe(1);
+      expect(typeof result.limit).toBe('number');
+      expect(result.items).toEqual([mockBalance]);
+      expect(result.nextCursor).toBeUndefined();
+    });
+
     it('records the available total as a number, adding the decimal amounts up', async () => {
       mockHttpClient.get.mockResolvedValueOnce({
         items: [balanceWorth('bal-1', '100.50'), balanceWorth('bal-2', '200.25')],
