@@ -4,24 +4,33 @@ import { getLogger } from '../../src/util/observability/logger';
 
 const LEGACY_ENV_KEYS = ['MIDAZ_LEDGER_URL', 'MIDAZ_ONBOARDING_URL', 'MIDAZ_TRANSACTION_URL'];
 
-describe('UrlBuilder base URL resolution', () => {
-  const savedEnv: Record<string, string | undefined> = {};
+function withCleanLegacyEnv(): void {
+  const savedEnv = new Map<string, string | undefined>();
 
   beforeEach(() => {
     for (const key of LEGACY_ENV_KEYS) {
-      savedEnv[key] = process.env[key];
+      savedEnv.set(key, process.env[key]);
       delete process.env[key];
     }
   });
 
   afterEach(() => {
     for (const key of LEGACY_ENV_KEYS) {
-      if (savedEnv[key] === undefined) {
+      const saved = savedEnv.get(key);
+
+      if (saved === undefined) {
         delete process.env[key];
       } else {
-        process.env[key] = savedEnv[key];
+        process.env[key] = saved;
       }
     }
+  });
+}
+
+describe('UrlBuilder base URL resolution', () => {
+  withCleanLegacyEnv();
+
+  afterEach(() => {
     jest.restoreAllMocks();
   });
 
@@ -225,25 +234,11 @@ describe('UrlBuilder asset-rate paths', () => {
   const orgId = 'ORG';
   const ledgerId = 'LEDGER';
   const prefix = `https://ledger.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}`;
-  const savedEnv: Record<string, string | undefined> = {};
+  withCleanLegacyEnv();
   let builder: UrlBuilder;
 
   beforeEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-      delete process.env[key];
-    }
     builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
-  });
-
-  afterEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      if (savedEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = savedEnv[key];
-      }
-    }
   });
 
   it('builds the versioned asset-rates collection path', () => {
@@ -267,25 +262,11 @@ describe('UrlBuilder transaction create variants', () => {
   const orgId = 'ORG';
   const ledgerId = 'LEDGER';
   const prefix = `https://ledger.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}`;
-  const savedEnv: Record<string, string | undefined> = {};
+  withCleanLegacyEnv();
   let builder: UrlBuilder;
 
   beforeEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-      delete process.env[key];
-    }
     builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
-  });
-
-  afterEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      if (savedEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = savedEnv[key];
-      }
-    }
   });
 
   it('keeps the json path for the legacy boolean create flag', () => {
@@ -334,25 +315,11 @@ describe('UrlBuilder alias and external account lookups', () => {
   const ledgerId = 'LEDGER';
   const prefix = `https://ledger.example.com/v1/organizations/${orgId}/ledgers/${ledgerId}`;
   const alias = 'probe@lerian:acct_a';
-  const savedEnv: Record<string, string | undefined> = {};
+  withCleanLegacyEnv();
   let builder: UrlBuilder;
 
   beforeEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-      delete process.env[key];
-    }
     builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
-  });
-
-  afterEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      if (savedEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = savedEnv[key];
-      }
-    }
   });
 
   it('places the alias on the wire verbatim, never percent-encoded', () => {
@@ -410,25 +377,11 @@ describe('UrlBuilder resource count paths', () => {
   const ledgerId = 'LEDGER';
   const root = 'https://ledger.example.com/v1';
   const ledgerPrefix = `${root}/organizations/${orgId}/ledgers/${ledgerId}`;
-  const savedEnv: Record<string, string | undefined> = {};
+  withCleanLegacyEnv();
   let builder: UrlBuilder;
 
   beforeEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-      delete process.env[key];
-    }
     builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
-  });
-
-  afterEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      if (savedEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = savedEnv[key];
-      }
-    }
   });
 
   it('builds the organization count path', () => {
@@ -471,25 +424,11 @@ describe('UrlBuilder per-account balance and history paths', () => {
   const balanceId = 'BALANCE';
   const root = 'https://ledger.example.com/v1';
   const ledgerPrefix = `${root}/organizations/${orgId}/ledgers/${ledgerId}`;
-  const savedEnv: Record<string, string | undefined> = {};
+  withCleanLegacyEnv();
   let builder: UrlBuilder;
 
   beforeEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-      delete process.env[key];
-    }
     builder = new UrlBuilder({ baseUrls: { ledger: 'https://ledger.example.com' } });
-  });
-
-  afterEach(() => {
-    for (const key of LEGACY_ENV_KEYS) {
-      if (savedEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = savedEnv[key];
-      }
-    }
   });
 
   it('builds the per-account balance collection path', () => {
