@@ -182,30 +182,144 @@ export function formatBalanceSafely(
   }
 }
 
+/** Matches a plain decimal amount, with an optional sign and no exponent */
+const DECIMAL_AMOUNT = /^[+-]?\d+(?:\.\d+)?$/;
+
+/** Stands in for an amount that could not be read as a number */
+const UNREADABLE_AMOUNT = 'Unknown';
+
+/**
+ * The balance shape {@link formatAccountBalance} reads.
+ *
+ * The ledger sends `available` and `onHold` as already-scaled decimal strings and sends
+ * no `scale`, so a balance read from the API carries no `scale` at all. Callers holding a
+ * scaled-integer shape instead — an operation amount, for example — supply `scale` and the
+ * amounts are divided by it.
+ */
+export interface FormattableAccountBalance {
+  /** Identifier of the account, optionally as `<id>/<assetCode>` */
+  accountId?: string;
+
+  /** Asset code of the balance; derived from `accountId` when absent */
+  assetCode?: string;
+
+  /** Amount free to use, decimal unless `scale` is supplied */
+  available?: string | number;
+
+  /** Amount reserved but unsettled, decimal unless `scale` is supplied */
+  onHold?: string | number;
+
+  /** Divisor that turns the amounts into decimals; absent for a ledger balance */
+  scale?: string | number;
+}
+
+/**
+ * Renders a decimal amount without ever changing its value
+ *
+ * @returns The amount grouped for the locale, or unchanged when a double cannot hold it
+ */
+function formatDecimalAmount(amount: string, locale?: string): string {
+  if (!DECIMAL_AMOUNT.test(amount)) {
+    return Number(amount).toLocaleString(locale);
+  }
+
+  const point = amount.indexOf('.');
+  const fractionDigits = point === -1 ? 0 : amount.length - point - 1;
+
+  if (fractionDigits > 20) {
+    return amount;
+  }
+
+  const asNumber = Number(amount);
+  const significant = (value: string): string =>
+    value
+      .replace('.', '')
+      .replace(/^[+-]/, '')
+      .replace(/^0+(?=\d)/, '');
+
+  if (significant(asNumber.toFixed(fractionDigits)) !== significant(amount)) {
+    return amount;
+  }
+
+  return asNumber.toLocaleString(locale, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+}
+
+/**
+ * Formats one monetary field of a balance
+ *
+ * @returns The formatted amount, or `Unknown` when the input is not a number
+ */
+function formatAccountAmount(
+  amount: string | number | undefined,
+  scale: string | number | undefined,
+  locale?: string
+): string {
+  const scaled = scale !== undefined && scale !== null;
+
+  if (amount === undefined || amount === null) {
+    return scaled ? formatBalanceSafely(0, scale, { locale }) : '0';
+  }
+
+  if (typeof amount === 'number') {
+    if (!Number.isFinite(amount)) {
+      return UNREADABLE_AMOUNT;
+    }
+
+    return scaled
+      ? formatBalanceSafely(amount, scale, { locale })
+      : formatDecimalAmount(String(amount), locale);
+  }
+
+  const trimmed = amount.trim().replace(/^\+/, '');
+
+  if (!DECIMAL_AMOUNT.test(trimmed)) {
+    return UNREADABLE_AMOUNT;
+  }
+
+  return scaled
+    ? formatBalanceSafely(trimmed, scale, { locale })
+    : formatDecimalAmount(trimmed, locale);
+}
+
 /**
  * Formats an account balance for display with asset code, available and on-hold amounts
+ *
+ * A balance read from the ledger carries no `scale`, and its amounts are already decimal;
+ * they are shown as sent. Supplying `scale` switches to the scaled-integer reading and the
+ * amounts are divided by it. An amount that is not a number is reported as `Unknown` rather
+ * than rendered as some other number.
  *
  * @returns Formatted balance object with display properties
  *
  * @example
  * ```typescript
- * // Format an account balance for display
- * const formattedBalance = formatAccountBalance(
+ * // A balance as the ledger sends it: decimal amounts, no scale
+ * const fromLedger = formatAccountBalance(
  *   {
- *     accountId: "acc_123",
- *     available: 10050,
- *     onHold: 500,
- *     assetCode: "USD",
- *     scale: 100
+ *     accountId: "019fda19-97cd-7b29-b90a-c962df8bbdc7",
+ *     available: "110.50",
+ *     onHold: "0.00",
+ *     assetCode: "BRL"
  *   },
  *   { accountType: "Savings" }
  * );
- * console.log(formattedBalance.displayString);
+ * console.log(fromLedger.displayString);
+ * // "BRL (Savings 019fda19-97cd-7b29-b90a-c962df8bbdc7): Available 110.50, On Hold 0.00"
+ *
+ * // A scaled-integer shape, which is divided by the scale it carries
+ * const scaled = formatAccountBalance(
+ *   { accountId: "acc_123", available: 10050, onHold: 500, assetCode: "USD", scale: 100 },
+ *   { accountType: "Savings" }
+ * );
+ * console.log(scaled.displayString);
  * // "USD (Savings acc_123): Available 100.50, On Hold 5.00"
  * ```
  */
 export function formatAccountBalance(
-  balance: any,
+  balance: FormattableAccountBalance | null | undefined,
   options?: {
     accountType?: string;
     locale?: string;
@@ -238,16 +352,18 @@ export function formatAccountBalance(
     const hasScale = Object.prototype.hasOwnProperty.call(balance, 'scale');
     const hasOnHold = Object.prototype.hasOwnProperty.call(balance, 'onHold');
 
-    const availableFormatted = formatBalanceSafely(
-      hasAvailable ? balance.available : 0,
-      hasScale ? balance.scale : 100,
-      { locale: options?.locale }
+    const scale = hasScale ? balance.scale : undefined;
+
+    const availableFormatted = formatAccountAmount(
+      hasAvailable ? balance.available : undefined,
+      scale,
+      options?.locale
     );
 
-    const onHoldFormatted = formatBalanceSafely(
-      hasOnHold ? balance.onHold : 0,
-      hasScale ? balance.scale : 100,
-      { locale: options?.locale }
+    const onHoldFormatted = formatAccountAmount(
+      hasOnHold ? balance.onHold : undefined,
+      scale,
+      options?.locale
     );
 
     // Extract asset code from accountId if not present
