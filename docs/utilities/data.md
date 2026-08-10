@@ -67,8 +67,28 @@ console.log(formattedWithSymbol); // "USD 10.50"
 ```typescript
 import { formatAccountBalance } from 'midaz-sdk/util/data/formatting';
 
-// Format an account balance for display
-const formattedBalance = formatAccountBalance(
+// A balance as the ledger sends it: decimal strings, and no scale to divide by
+const fromLedger = formatAccountBalance(
+  {
+    accountId: 'acc_123',
+    available: '100.50',
+    onHold: '5.00',
+    assetCode: 'USD',
+  },
+  {
+    accountType: 'Savings',
+  }
+);
+
+console.log(fromLedger.displayString);
+// "USD (Savings acc_123): Available 100.50, On Hold 5.00"
+
+// Access individual formatted values
+console.log(fromLedger.available); // "100.50"
+console.log(fromLedger.onHold); // "5.00"
+
+// A scaled-integer shape instead: supply the scale and the amounts are divided by it
+const scaled = formatAccountBalance(
   {
     accountId: 'acc_123',
     available: 10050,
@@ -81,12 +101,8 @@ const formattedBalance = formatAccountBalance(
   }
 );
 
-console.log(formattedBalance.displayString);
+console.log(scaled.displayString);
 // "USD (Savings acc_123): Available 100.50, On Hold 5.00"
-
-// Access individual formatted values
-console.log(formattedBalance.available); // "100.50"
-console.log(formattedBalance.onHold); // "5.00"
 ```
 
 ### Calculating Decimal Places from Scale
@@ -240,9 +256,10 @@ async function analyzeAccountBalances(client, orgId, ledgerId) {
         const formatted = formatAccountBalance(balance);
         console.log(`Account ${account.id}: ${formatted.displayString}`);
 
-        // Add to total (assuming USD for simplicity)
+        // Add to total (assuming USD for simplicity). The amount is a decimal
+        // string, so coerce it: `+=` on the raw field would concatenate.
         if (balance.assetCode === 'USD') {
-          totalBalance += balance.available;
+          totalBalance += Number(balance.available);
         }
       }
     }
