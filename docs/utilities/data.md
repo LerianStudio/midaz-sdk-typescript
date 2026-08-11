@@ -229,7 +229,7 @@ import { formatAccountBalance } from 'midaz-sdk/util/data/formatting';
 async function analyzeAccountBalances(client, orgId, ledgerId) {
   // Set up counters
   let totalAccounts = 0;
-  let totalBalance = 0;
+  let totalMinorUnits = 0;
 
   // Create paginator for processing accounts in batches
   const accountPages = paginateItems<Account>({
@@ -256,20 +256,21 @@ async function analyzeAccountBalances(client, orgId, ledgerId) {
         const formatted = formatAccountBalance(balance);
         console.log(`Account ${account.id}: ${formatted.displayString}`);
 
-        // Add to total (assuming USD for simplicity). The amount is a decimal
-        // string, so coerce it: `+=` on the raw field would concatenate.
+        // Add to total (assuming USD for simplicity). `formatBalance` divides by
+        // the scale it is given, so the total has to accumulate in minor units or
+        // it is scaled twice. `Number` also stops `+=` concatenating the string.
         if (balance.assetCode === 'USD') {
-          totalBalance += Number(balance.available);
+          totalMinorUnits += Math.round(Number(balance.available) * 100);
         }
       }
     }
   }
 
   // Format the final total
-  const formattedTotal = formatBalance(totalBalance, 100);
+  const formattedTotal = formatBalance(totalMinorUnits, 100);
   console.log(`Analyzed ${totalAccounts} accounts with total balance: $${formattedTotal}`);
 
-  return { totalAccounts, totalBalance };
+  return { totalAccounts, totalMinorUnits };
 }
 ```
 
