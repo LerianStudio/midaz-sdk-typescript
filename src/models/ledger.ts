@@ -207,8 +207,13 @@ export interface LedgerAccountingSettings {
   /** Requires transactions to name route IDs that exist in the ledger */
   validateRoutes: boolean;
 
-  /** Requires an account's resolved holder to exist at create time */
-  requireHolder: boolean;
+  /**
+   * Requires an account's resolved holder to exist at create time.
+   *
+   * Requires midaz v4 or later. A v3.8.0 ledger does not carry this field and
+   * refuses a patch naming it with `400` and code `0147`.
+   */
+  requireHolder?: boolean;
 }
 
 /**
@@ -245,14 +250,20 @@ export interface LedgerOverrideSettings {
 /**
  * Full settings document of a ledger.
  *
- * Every field is always present: the ledger supplies the defaults in code rather
- * than storing them, so a ledger that was never patched still answers the whole
- * document.
+ * Which groups the document carries depends on the ledger version. A ledger supplies
+ * the defaults of the groups it knows in code rather than storing them, so a ledger
+ * that was never patched still answers every group it has — but a group the release
+ * does not have is absent, not defaulted. Measured against v3.8.0, the document is
+ * `accounting` alone, so `tracer` and `overrides` have to be read as optional.
  */
 export interface LedgerSettings {
   accounting: LedgerAccountingSettings;
-  tracer: LedgerTracerSettings;
-  overrides: LedgerOverrideSettings;
+
+  /** Requires midaz v4 or later; absent on a v3.8.0 ledger */
+  tracer?: LedgerTracerSettings;
+
+  /** Requires midaz v4 or later; absent on a v3.8.0 ledger */
+  overrides?: LedgerOverrideSettings;
 }
 
 /**
@@ -273,6 +284,10 @@ export const LEDGER_OVERRIDE_PATHS = {
  * The ledger merges this into the stored document one leaf at a time, so a group
  * carrying a single field leaves its siblings — and the other two groups — alone.
  * An empty object is a valid patch and returns the document unchanged.
+ *
+ * Every group is accepted here, including the ones that require midaz v4. A v3.8.0
+ * ledger refuses `tracer`, `overrides` and `accounting.requireHolder` with `400` and
+ * code `0147`, naming the field it did not recognise.
  */
 export interface UpdateLedgerSettingsInput {
   accounting?: Partial<LedgerAccountingSettings>;

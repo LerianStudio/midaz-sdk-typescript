@@ -6,6 +6,7 @@ import {
   CreateLedgerInput,
   LEDGER_OVERRIDE_PATHS,
   Ledger,
+  LedgerOverrideSettings,
   LedgerSettings,
   UpdateLedgerInput,
 } from '../../../src/models/ledger';
@@ -370,10 +371,21 @@ describe('HttpLedgerApiClient', () => {
   });
 
   describe('ledger settings', () => {
+    const defaultOverrides: LedgerOverrideSettings = {
+      allowFeeSkip: false,
+      allowTracerSkip: false,
+      allowHolderSkip: false,
+    };
+
     const defaultSettings: LedgerSettings = {
       accounting: { validateAccountType: false, validateRoutes: false, requireHolder: false },
       tracer: { mode: 'off', failPosture: 'open', timeoutMs: 250 },
-      overrides: { allowFeeSkip: false, allowTracerSkip: false, allowHolderSkip: false },
+      overrides: defaultOverrides,
+    };
+
+    /** What midaz v3.8.0 answers: the accounting group alone, without requireHolder. */
+    const releasedSettings: LedgerSettings = {
+      accounting: { validateAccountType: false, validateRoutes: false },
     };
 
     describe('getLedgerSettings', () => {
@@ -393,6 +405,17 @@ describe('HttpLedgerApiClient', () => {
           expect.objectContaining({ orgId, ledgerId })
         );
         expect(mockSpan.setStatus).toHaveBeenCalledWith('ok');
+      });
+
+      it('should hand back a released ledger document without inventing the v4 groups', async () => {
+        mockHttpClient.get.mockResolvedValueOnce(releasedSettings);
+
+        const result = await client.getLedgerSettings(orgId, ledgerId);
+
+        expect(result).toEqual(releasedSettings);
+        expect(result.tracer).toBeUndefined();
+        expect(result.overrides).toBeUndefined();
+        expect(result.accounting.requireHolder).toBeUndefined();
       });
 
       it('should throw error when missing orgId', async () => {
@@ -419,7 +442,7 @@ describe('HttpLedgerApiClient', () => {
       it('should PATCH the patch verbatim without filling in sibling fields', async () => {
         const merged: LedgerSettings = {
           ...defaultSettings,
-          overrides: { ...defaultSettings.overrides, allowFeeSkip: true },
+          overrides: { ...defaultOverrides, allowFeeSkip: true },
         };
         mockHttpClient.patch.mockResolvedValueOnce(merged);
 
