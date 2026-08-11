@@ -2,15 +2,7 @@ import { assertPathSegment } from '../../src/api/path-segment';
 import { ErrorCategory, MidazError } from '../../src/util/error';
 
 describe('assertPathSegment', () => {
-  const legitimate = [
-    'probe@lerian:acct_a',
-    '@external/BRL'.replace('/', ''),
-    'acct_a',
-    'team-ops',
-    'BRL',
-    'brl',
-    'a'.repeat(200),
-  ];
+  const legitimate = ['probe@lerian:acct_a', 'acct_a', 'team-ops', 'BRL', 'brl', 'a'.repeat(200)];
 
   it.each(legitimate)('accepts the legitimate segment %p', (value) => {
     expect(() => assertPathSegment('alias', value)).not.toThrow();
@@ -22,6 +14,7 @@ describe('assertPathSegment', () => {
     ['a backslash', 'acct\\admin'],
     ['a query separator', 'acct?limit=1'],
     ['a fragment separator', 'acct#frag'],
+    ['an external alias carrying its own route separator', '@external/BRL'],
   ];
 
   it.each(rejected)('refuses %s: %p', (_reason, value) => {

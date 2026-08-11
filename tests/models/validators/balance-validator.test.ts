@@ -407,7 +407,7 @@ describe('Balance Validator', () => {
     });
 
     it.each([
-      ['29 February in a leap year', '2029-02-28T23:59:59Z'],
+      ['the last second of February in a common year', '2029-02-28T23:59:59Z'],
       ['29 February 2028', '2028-02-29T00:00:00Z'],
       ['the last second of a 31-day month', '2026-08-31T23:59:59Z'],
       ['midnight', '2026-08-07T00:00:00Z'],
