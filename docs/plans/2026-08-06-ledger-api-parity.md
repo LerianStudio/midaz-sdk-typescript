@@ -9,13 +9,36 @@
 > This document is the living source of truth — task elaboration for later
 > phases is written back into it during execution.
 
-**Goal:** Bring `@lerianstudio/midaz-sdk` (TypeScript) back to parity with the Midaz ledger API on `develop`, starting with a contract-drift gate so the SDK can never silently fall behind again.
+**Goal:** Bring `@lerianstudio/midaz-sdk` (TypeScript) back to parity with the Midaz ledger API on the **released** ledger, starting with a contract-drift gate so the SDK can never silently fall behind again.
 
 **Architecture:** The ledger is now a single service exposing 72 v1 paths (+23 v2); the SDK still models two services (`onboarding`/`transaction`) and hand-writes every URL, which is how two clients ended up targeting removed or unversioned paths. The fix is layered: (1) vendor the ledger's OpenAPI spec and gate CI on path drift, (2) route ALL URL construction through `UrlBuilder` against a unified `ledger` base URL, (3) close the endpoint gaps in priority order — broken clients first, then transaction lifecycle, then lookups, then whole new domains. The hand-written ergonomic layer (builders, retry, idempotency) stays; only types and path inventory become spec-derived.
 
 **Tech Stack:** TypeScript 5 (strict, dual CJS/ESM via three `tsc` passes), Jest 30 + ts-jest (DI-seam mocks, no fetch mocking), `openapi-typescript` (types-only codegen, new dev dependency), semantic-release (conventional commits; `develop` = beta channel), GitHub Actions CI.
 
-**Ground truth:** Midaz `develop` @ `33cb93f` (2026-08-05), spec at `components/ledger/api/openapi.huma.yaml` (v1) and `openapi.v2.huma.yaml` (v2) in the midaz repo. Gap audit verified live against a local stack on 2026-08-06: old asset-rate path → 404, ledger-level operations → 404, `X-Idempotency` contract confirmed working (SDK v2.3.0).
+**Ground truth:** two refs, because they answer different questions.
+
+- **Support floor — midaz `v3.8.0`** (`1d89a05`, 2026-07-17), spec at `components/ledger/api/openapi.yaml` (swaggo; the Huma documents do not exist on that tag). This is the release the SDK must work against, and the **path drift gate is enforced against it**: a builder aiming at a route only `develop` serves fails CI. Vendored as `spec/ledger-v1-released.openapi.yaml`.
+- **Type source — midaz `develop` @ `33cb93f`** (2026-08-05), `openapi.huma.yaml` (v1) and `openapi.v2.huma.yaml` (v2). Response **types** are still generated from these. Both refs declare the same Go types, but swaggo renders `decimal.Decimal` as `number` while the Huma document renders it as `string` — and `string` is what the ledger sends. Generating money types from the released document would reintroduce the float the Phase 2 balance fix removed.
+
+So: the released document is the authority on **which routes exist**, the Huma document on **what a response contains**. `spec/VERSION` records both refs; `npm run spec:update` takes one ref for each.
+
+Gap audit verified live against a local stack on 2026-08-06: old asset-rate path → 404, ledger-level operations → 404, `X-Idempotency` contract confirmed working (SDK v2.3.0).
+
+### Version decision (2026-08-11)
+
+The SDK targets the **released** ledger, not `develop`: v4 has not shipped. Measured live against `lerianstudio/midaz-ledger:3.8.0`, the incompatibility surface of everything built in Phases 1–3 is exactly three fields, all one root cause — features that only exist on `develop`:
+
+| Surface | v3.8.0 behaviour (measured) | Resolution |
+|---|---|---|
+| `skip` on a transaction | absent from `CreateTransactionInput`; `400` code `0053`, `fields: {"skip":{"fees":true}}` | documented as requiring v4; already optional, so omitting it works on both |
+| `LedgerSettings.tracer` | absent from the response; `PATCH` → `400` code `0147` "Unknown Settings Field" | made optional on the response type; still accepted on the patch input |
+| `LedgerSettings.overrides` | same | same |
+
+`accounting.requireHolder` is the same story inside a group that does exist: `v3.8.0`'s `AccountingValidation` (`pkg/mmodel/settings.go:27`) carries `validateAccountType` and `validateRoutes` alone. `GET .../settings` answers `{"accounting":{"validateAccountType":false,"validateRoutes":false}}`.
+
+The response type previously declared `tracer`, `overrides` and `requireHolder` as **required**, so against v3.8.0 TypeScript promised a value and the runtime handed back `undefined` — the same "the type lies about the wire" defect as the balance money bug earlier in this branch. All three are now optional; the patch input still accepts them so a v4 deployment keeps working.
+
+**Everything else passes.** All 52 released paths the builders reach exist in `v3.8.0` under the verbs the SDK issues — the repointed gate went green without loosening anything.
 
 ## Phase Overview
 
@@ -24,7 +47,7 @@
 | 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz develop | 1.1, 1.2, 1.3, 1.4 | Complete |
 | 2 | Full transaction lifecycle: pending commit/cancel, revert, inflow/outflow, block/unblock, annotation, updates; model field parity; money-safety guards | 2.0, 2.1, 2.2, 2.3, 2.4 | Complete |
 | 3 | Account lookups (alias/external), balance history, HEAD counts, ledger settings | 3.0, 3.1, 3.2, 3.3 | Detailed |
-| 4 | New domains: holders/CRM, billing, encryption/protection, v2 API | 4.1, 4.2, 4.3, 4.4 | Epic-level |
+| 4 | New domains: holders/CRM, billing, encryption/protection, v2 API | 4.1, 4.2, 4.3, 4.4 | **Dropped** (see below) |
 
 **Decisions already made (apply to all phases):**
 
@@ -530,9 +553,15 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 ---
 
-## Phase 4: New domains
+## Phase 4: New domains — DROPPED from the current scope (2026-08-11)
 
-### 🔴 Version gate — read before scoping this phase
+**All four families are `develop`-only.** The minimum ledger is `v4.0.0-beta.24` (= commit `33cb93f`), and the SDK's support floor is the released `v3.8.0`. Measured: `v3.8.0`'s ledger spec has 56 paths and **zero** matches for holder, instrument, billing, package, encryption, protection, estimate, or `/v2`. Nothing in this phase works against the release the SDK supports, so none of it can ship.
+
+Two of the four are worse than absent. **Holders and encryption existed in `v3.8.0` — as a different service with an incompatible contract:** `components/crm` ran on **port 4003** with org-less paths and called the resource **`aliases`**, not `instruments` (`/v1/holders/{holder_id}/aliases/{alias_id}`). On `develop`, CRM folded into the ledger binary, holders became org-scoped and `alias` became `instrument`. The two contracts are incompatible rather than merely different in coverage, so building either one is a bet on which ships.
+
+**Reopen when a v4 ledger is released**, then re-scope against that tag rather than against `develop`. The measurements below are kept because they remain the record of what was verified.
+
+### 🔴 Version gate — the measurements this decision rests on
 
 **Everything in Phase 4 is `develop`-only. The minimum ledger version is `v4.0.0-beta.24`, which *is* commit `33cb93f` — the exact commit the vendored specs came from.** Measured against the released tag: `v3.8.0`'s ledger spec has 56 paths and **zero** matches for holder, instrument, billing, package, encryption, protection, estimate, or `/v2`. Nothing in this phase works against the released ledger.
 
@@ -555,7 +584,7 @@ Two of the four families are worse than merely absent, and this is what makes th
 **Scope:** new client + entity + models (`src/api/http/http-holder-api-client.ts` etc.), factory wiring (`src/api/api-factory.ts`), entity aggregator (`src/entities/entity.ts:52-88`), tests
 **Dependencies:** Phase 1
 **Done when:** holder → instrument → account journey round-trips live.
-**Status:** Pending
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
 
 ### Epic 4.2: Billing and packages
 
@@ -563,7 +592,7 @@ Two of the four families are worse than merely absent, and this is what makes th
 **Scope:** new clients/entities/models, factory + aggregator wiring, tests
 **Dependencies:** Phase 1
 **Done when:** package create + calculate round-trip live.
-**Status:** Pending
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
 
 ### Epic 4.3: Encryption and protection audit
 
@@ -571,7 +600,7 @@ Two of the four families are worse than merely absent, and this is what makes th
 **Scope:** new client/entity, tests
 **Dependencies:** Phase 1
 **Done when:** status/audit GETs round-trip live (provision may require env support — verify against local stack, else contract-test only and note it).
-**Status:** Pending
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
 
 ### Epic 4.4: v2 API surface
 
@@ -579,7 +608,7 @@ Two of the four families are worse than merely absent, and this is what makes th
 **Scope:** `src/api/url-builder.ts` (per-route version), a v2 transaction client, models built on `src/generated/ledger-v2.d.ts`, `spec/ledger-v2.openapi.yaml` drift coverage, tests
 **Dependencies:** Phases 1–2 (v2 reuses the replay guards; see finding 2 above)
 **Done when:** `direct` and `hold` round-trip live under v2 with balance assertions, the lifecycle transitions work, and the drift suite covers v2 paths with their verbs.
-**Status:** Pending
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
 
 **Verified contract (2026-08-07, live).** Unlike v1, this is a genuinely different transaction model, not a re-skin — and the generated types are real, so **do not hand-write the input**: `components['schemas']['CreateTransactionV2Input']` (`ledger-v2.d.ts:488`), `['V2LegInput']` (:1192), `['V2ShareInput']` (:1212), `['TransactionV2']` (:1106), plus the seven `operations[...]` entries for direct/hold/block/unblock/commit/cancel/revert.
 
