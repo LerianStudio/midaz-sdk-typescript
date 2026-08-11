@@ -18,6 +18,8 @@ import {
 import { UrlBuilder } from '../url-builder';
 import { getEnv } from '../../util/runtime/environment';
 
+import { requestTotalCount } from './count-request';
+
 /**
  * HTTP implementation of the SegmentApiClient interface
  *
@@ -91,6 +93,35 @@ export class HttpSegmentApiClient implements SegmentApiClient {
 
       span.setStatus('ok');
       return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  /**
+   * Counts the segments of a ledger
+   *
+   * @returns Promise resolving to the number of segments
+   */
+  public async countSegments(orgId: string, ledgerId: string): Promise<number> {
+    const span = this.observability.startSpan('countSegments');
+    span.setAttribute('orgId', orgId);
+    span.setAttribute('ledgerId', ledgerId);
+
+    try {
+      this.validateRequiredParams(span, { orgId, ledgerId });
+
+      const url = this.urlBuilder.buildSegmentCountUrl(orgId, ledgerId);
+      const count = await requestTotalCount(this.httpClient, 'countSegments', url);
+
+      this.recordMetrics('segments.count', count, { orgId, ledgerId });
+
+      span.setStatus('ok');
+      return count;
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus('error', (error as Error).message);

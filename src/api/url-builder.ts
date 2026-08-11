@@ -6,6 +6,8 @@ import { MidazConfigError } from '../util/error/error-types';
 import { getLogger } from '../util/observability/logger';
 import { getEnv } from '../util/runtime/environment';
 
+import { assertPathSegment } from './path-segment';
+
 const LEDGER_KEY = 'ledger';
 
 const LEGACY_ONBOARDING_KEY = 'onboarding';
@@ -38,6 +40,11 @@ const LEGACY_SERVICE_FAMILY: Record<string, string> = {
   balances: LEGACY_TRANSACTION_KEY,
   'asset-rates': LEGACY_TRANSACTION_KEY,
 };
+
+/**
+ * Sub-path every counted resource serves its total on, under HEAD alone
+ */
+const COUNT_PATH = 'metrics/count';
 
 /**
  * Sub-paths of a transaction that carry its lifecycle state transitions
@@ -213,6 +220,7 @@ export class UrlBuilder {
     let url = `${versionedUrl}/organizations`;
 
     if (orgId) {
+      assertPathSegment('orgId', orgId);
       url += `/${orgId}`;
     }
 
@@ -225,11 +233,14 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildLedgerUrl(orgId: string, ledgerId?: string): string {
+    assertPathSegment('orgId', orgId);
+
     const baseUrl = this.getBaseUrl('onboarding');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers`;
 
     if (ledgerId) {
+      assertPathSegment('ledgerId', ledgerId);
       url += `/${ledgerId}`;
     }
 
@@ -242,15 +253,85 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildAccountUrl(orgId: string, ledgerId: string, accountId?: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('onboarding');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts`;
 
     if (accountId) {
+      assertPathSegment('accountId', accountId);
       url += `/${accountId}`;
     }
 
     return url;
+  }
+
+  /**
+   * Builds the URL addressing an account by its alias
+   *
+   * The ledger never percent-decodes path parameters, so the alias travels raw:
+   * `%5F` would reach the handler as a literal `%5F` and 404. `@` and `:` are legal
+   * raw; an alias carrying a path, query, fragment or traversal is refused outright,
+   * because escaping it is not an option and interpolating it would re-target the URL.
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountByAliasUrl(orgId: string, ledgerId: string, alias: string): string {
+    assertPathSegment('alias', alias);
+
+    return `${this.buildAccountUrl(orgId, ledgerId)}/alias/${alias}`;
+  }
+
+  /**
+   * Builds the URL listing the balances of the account addressed by its alias
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountAliasBalancesUrl(orgId: string, ledgerId: string, alias: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+    assertPathSegment('alias', alias);
+
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/alias/${alias}/balances`;
+  }
+
+  /**
+   * Builds the URL addressing the external account of an asset
+   *
+   * The segment is the bare asset code and the ledger matches it case-sensitively;
+   * it prefixes `@external/` internally, which is why this route exists apart from
+   * the alias one — `/` cannot be expressed in a path parameter at all, and a code
+   * carrying one is refused rather than escaped.
+   *
+   * @returns The constructed URL
+   */
+  public buildExternalAccountUrl(orgId: string, ledgerId: string, assetCode: string): string {
+    assertPathSegment('assetCode', assetCode);
+
+    return `${this.buildAccountUrl(orgId, ledgerId)}/external/${assetCode}`;
+  }
+
+  /**
+   * Builds the URL listing the balances of an asset's external account
+   *
+   * @returns The constructed URL
+   */
+  public buildExternalAccountBalancesUrl(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+    assertPathSegment('assetCode', assetCode);
+
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/external/${assetCode}/balances`;
   }
 
   /**
@@ -265,11 +346,15 @@ export class UrlBuilder {
     isCreate: boolean | TransactionCreateVariant = false,
     stateTransition?: TransactionStateTransition
   ): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/transactions`;
 
     if (transactionId) {
+      assertPathSegment('transactionId', transactionId);
       url += `/${transactionId}`;
 
       if (stateTransition) {
@@ -288,11 +373,15 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildAssetUrl(orgId: string, ledgerId: string, assetId?: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('onboarding');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/assets`;
 
     if (assetId) {
+      assertPathSegment('assetId', assetId);
       url += `/${assetId}`;
     }
 
@@ -305,6 +394,9 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildAssetRateUrl(orgId: string, ledgerId: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('asset-rates');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/asset-rates`;
@@ -316,6 +408,8 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildAssetRateFromUrl(orgId: string, ledgerId: string, assetCode: string): string {
+    assertPathSegment('assetCode', assetCode);
+
     return `${this.buildAssetRateUrl(orgId, ledgerId)}/from/${assetCode}`;
   }
 
@@ -329,6 +423,8 @@ export class UrlBuilder {
     ledgerId: string,
     externalId: string
   ): string {
+    assertPathSegment('externalId', externalId);
+
     return `${this.buildAssetRateUrl(orgId, ledgerId)}/${externalId}`;
   }
 
@@ -338,15 +434,55 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildBalanceUrl(orgId: string, ledgerId: string, accountId?: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/balances`;
 
     if (accountId) {
+      assertPathSegment('accountId', accountId);
       url += `/${accountId}`;
     }
 
     return url;
+  }
+
+  /**
+   * Builds the URL for the balances of one account, which the collection serves and the
+   * additional-balance create posts to
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountBalanceUrl(orgId: string, ledgerId: string, accountId: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+    assertPathSegment('accountId', accountId);
+
+    const baseUrl = this.getBaseUrl('transaction');
+    const versionedUrl = this.getVersionedUrl(baseUrl);
+    return `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/balances`;
+  }
+
+  /**
+   * Builds the URL carrying every balance of an account as it stood at a point in time
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountBalanceHistoryUrl(orgId: string, ledgerId: string, accountId: string): string {
+    return `${this.buildAccountBalanceUrl(orgId, ledgerId, accountId)}/history`;
+  }
+
+  /**
+   * Builds the URL carrying one balance as it stood at a point in time
+   *
+   * @returns The constructed URL
+   */
+  public buildBalanceHistoryUrl(orgId: string, ledgerId: string, balanceId: string): string {
+    assertPathSegment('balanceId', balanceId);
+
+    return `${this.buildBalanceUrl(orgId, ledgerId, balanceId)}/history`;
   }
 
   /**
@@ -360,11 +496,16 @@ export class UrlBuilder {
     accountId: string,
     operationId?: string
   ): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+    assertPathSegment('accountId', accountId);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/accounts/${accountId}/operations`;
 
     if (operationId) {
+      assertPathSegment('operationId', operationId);
       url += `/${operationId}`;
     }
 
@@ -382,6 +523,11 @@ export class UrlBuilder {
     transactionId: string,
     operationId: string
   ): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+    assertPathSegment('transactionId', transactionId);
+    assertPathSegment('operationId', operationId);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
 
@@ -394,11 +540,15 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildPortfolioUrl(orgId: string, ledgerId: string, portfolioId?: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('onboarding');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/portfolios`;
 
     if (portfolioId) {
+      assertPathSegment('portfolioId', portfolioId);
       url += `/${portfolioId}`;
     }
 
@@ -411,11 +561,15 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildSegmentUrl(orgId: string, ledgerId: string, segmentId?: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('onboarding');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/segments`;
 
     if (segmentId) {
+      assertPathSegment('segmentId', segmentId);
       url += `/${segmentId}`;
     }
 
@@ -428,11 +582,15 @@ export class UrlBuilder {
    * @returns The constructed URL
    */
   public buildAccountTypeUrl(orgId: string, ledgerId: string, accountTypeId?: string): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('onboarding');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/account-types`;
 
     if (accountTypeId) {
+      assertPathSegment('accountTypeId', accountTypeId);
       url += `/${accountTypeId}`;
     }
 
@@ -449,11 +607,15 @@ export class UrlBuilder {
     ledgerId: string,
     operationRouteId?: string
   ): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/operation-routes`;
 
     if (operationRouteId) {
+      assertPathSegment('operationRouteId', operationRouteId);
       url += `/${operationRouteId}`;
     }
 
@@ -470,15 +632,91 @@ export class UrlBuilder {
     ledgerId: string,
     transactionRouteId?: string
   ): string {
+    assertPathSegment('orgId', orgId);
+    assertPathSegment('ledgerId', ledgerId);
+
     const baseUrl = this.getBaseUrl('transaction');
     const versionedUrl = this.getVersionedUrl(baseUrl);
     let url = `${versionedUrl}/organizations/${orgId}/ledgers/${ledgerId}/transaction-routes`;
 
     if (transactionRouteId) {
+      assertPathSegment('transactionRouteId', transactionRouteId);
       url += `/${transactionRouteId}`;
     }
 
     return url;
+  }
+
+  /**
+   * Builds the URL carrying the total number of organizations
+   *
+   * @returns The constructed URL
+   */
+  public buildOrganizationCountUrl(): string {
+    return `${this.buildOrganizationUrl()}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL for the settings document of a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildLedgerSettingsUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildLedgerUrl(orgId, ledgerId)}/settings`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of ledgers in an organization
+   *
+   * @returns The constructed URL
+   */
+  public buildLedgerCountUrl(orgId: string): string {
+    return `${this.buildLedgerUrl(orgId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of accounts in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildAccountCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildAccountUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of assets in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildAssetCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildAssetUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of portfolios in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildPortfolioCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildPortfolioUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the total number of segments in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildSegmentCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildSegmentUrl(orgId, ledgerId)}/${COUNT_PATH}`;
+  }
+
+  /**
+   * Builds the URL carrying the number of transactions in a ledger
+   *
+   * @returns The constructed URL
+   */
+  public buildTransactionCountUrl(orgId: string, ledgerId: string): string {
+    return `${this.buildTransactionUrl(orgId, ledgerId)}/${COUNT_PATH}`;
   }
 }
 

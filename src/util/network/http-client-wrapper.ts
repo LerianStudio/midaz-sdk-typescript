@@ -5,6 +5,7 @@
 import {
   UniversalHttpClient,
   RequestOptions as UniversalRequestOptions,
+  HttpResponse as UniversalHttpResponse,
 } from '../http/universal-http-client';
 import { Cache } from '../cache/cache';
 import { Observability, Span } from '../observability/observability';
@@ -15,6 +16,15 @@ import { CircuitBreakerManager, CircuitBreakerOptions } from '../circuit-breaker
 
 // Re-export the response interface but redefine to match old behavior
 export type HttpResponse<T = any> = T;
+
+/**
+ * Body plus response headers, for the routes whose answer lives in a header
+ * rather than in the body.
+ */
+export interface ResponseWithHeaders<T = any> {
+  data: T;
+  headers: Headers;
+}
 
 /**
  * Options for HTTP requests (backward compatible)
@@ -171,6 +181,21 @@ export class HttpClient {
   }
 
   /**
+   * Make an HTTP HEAD request, returning the response headers alongside the
+   * body. The ledger's count routes answer HEAD only, with the count in
+   * `X-Total-Count` and an empty body, so the body alone says nothing.
+   */
+  async head<T = any>(url: string, options: RequestOptions = {}): Promise<ResponseWithHeaders<T>> {
+    const circuitKey = `HEAD:${url}`;
+
+    return this.circuitBreakerManager.execute(circuitKey, async () => {
+      const response = await this.send<T>('HEAD', url, undefined, options);
+
+      return { data: response.data, headers: response.headers };
+    });
+  }
+
+  /**
    * Make an HTTP request
    */
   private async request<T>(
@@ -197,56 +222,71 @@ export class HttpClient {
         }
       }
 
-      // Create span for observability
-      let span: Span | undefined;
-      if (this.observability) {
-        span = this.observability.startSpan(`HTTP ${method} ${url}`);
+      const response = await this.send<T>(method, url, data, options);
+
+      // Cache successful GET responses
+      if (this.cache && cacheKey && method === 'GET') {
+        await this.cache.set(cacheKey, response.data);
       }
 
-      try {
-        // Prepare request options
-        const requestOptions: UniversalRequestOptions = {
-          method: method as any,
-          params: options.params,
-          headers: options.headers,
-          timeout: options.timeout,
-          retries: options.maxRetries,
-          idempotencyKey: options.idempotencyKey,
-          idempotencyTtlSeconds: options.idempotencyTtlSeconds,
-          signal: options.signal,
-          body: data,
-        };
-
-        // Disable idempotency key if requested
-        if (options.disableIdempotencyKey) {
-          requestOptions.idempotencyKey = '';
-        }
-
-        // Make the request
-        const response = await this.client.request<T>(url, requestOptions);
-
-        // Cache successful GET responses
-        if (this.cache && cacheKey && method === 'GET') {
-          await this.cache.set(cacheKey, response.data);
-        }
-
-        // End span
-        if (span) {
-          span.setAttribute('http.status_code', response.status);
-          span.end();
-        }
-
-        return response.data;
-      } catch (error) {
-        // End span with error
-        if (span) {
-          span.recordException(error as Error);
-          span.end();
-        }
-
-        throw error;
-      }
+      return response.data;
     }); // End of circuit breaker execute
+  }
+
+  /**
+   * Dispatch a request through the transport, tracing it and surfacing the
+   * whole response.
+   */
+  private async send<T>(
+    method: string,
+    url: string,
+    data?: any,
+    options: RequestOptions = {}
+  ): Promise<UniversalHttpResponse<T>> {
+    // Create span for observability
+    let span: Span | undefined;
+    if (this.observability) {
+      span = this.observability.startSpan(`HTTP ${method} ${url}`);
+    }
+
+    try {
+      // Prepare request options
+      const requestOptions: UniversalRequestOptions = {
+        method: method as any,
+        params: options.params,
+        headers: options.headers,
+        timeout: options.timeout,
+        retries: options.maxRetries,
+        idempotencyKey: options.idempotencyKey,
+        idempotencyTtlSeconds: options.idempotencyTtlSeconds,
+        signal: options.signal,
+        body: data,
+      };
+
+      // Disable idempotency key if requested
+      if (options.disableIdempotencyKey) {
+        requestOptions.idempotencyKey = '';
+      }
+
+      // Make the request
+      const response = await this.client.request<T>(url, requestOptions);
+
+      // End span
+      if (span) {
+        span.setAttribute('http.status_code', response.status);
+        span.end();
+      }
+
+      return response;
+    } catch (error) {
+      // End span with error
+      if (span) {
+        span.recordException(error as Error);
+        span.end();
+      }
+
+      throw error;
+    }
   }
 
   /**

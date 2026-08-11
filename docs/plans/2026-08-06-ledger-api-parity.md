@@ -9,13 +9,36 @@
 > This document is the living source of truth — task elaboration for later
 > phases is written back into it during execution.
 
-**Goal:** Bring `@lerianstudio/midaz-sdk` (TypeScript) back to parity with the Midaz ledger API on `develop`, starting with a contract-drift gate so the SDK can never silently fall behind again.
+**Goal:** Bring `@lerianstudio/midaz-sdk` (TypeScript) back to parity with the Midaz ledger API on the **released** ledger, starting with a contract-drift gate so the SDK can never silently fall behind again.
 
 **Architecture:** The ledger is now a single service exposing 72 v1 paths (+23 v2); the SDK still models two services (`onboarding`/`transaction`) and hand-writes every URL, which is how two clients ended up targeting removed or unversioned paths. The fix is layered: (1) vendor the ledger's OpenAPI spec and gate CI on path drift, (2) route ALL URL construction through `UrlBuilder` against a unified `ledger` base URL, (3) close the endpoint gaps in priority order — broken clients first, then transaction lifecycle, then lookups, then whole new domains. The hand-written ergonomic layer (builders, retry, idempotency) stays; only types and path inventory become spec-derived.
 
 **Tech Stack:** TypeScript 5 (strict, dual CJS/ESM via three `tsc` passes), Jest 30 + ts-jest (DI-seam mocks, no fetch mocking), `openapi-typescript` (types-only codegen, new dev dependency), semantic-release (conventional commits; `develop` = beta channel), GitHub Actions CI.
 
-**Ground truth:** Midaz `develop` @ `33cb93f` (2026-08-05), spec at `components/ledger/api/openapi.huma.yaml` (v1) and `openapi.v2.huma.yaml` (v2) in the midaz repo. Gap audit verified live against a local stack on 2026-08-06: old asset-rate path → 404, ledger-level operations → 404, `X-Idempotency` contract confirmed working (SDK v2.3.0).
+**Ground truth:** two refs, because they answer different questions.
+
+- **Support floor — midaz `v3.8.0`** (`1d89a05`, 2026-07-17), spec at `components/ledger/api/openapi.yaml` (swaggo; the Huma documents do not exist on that tag). This is the release the SDK must work against, and the **path drift gate is enforced against it**: a builder aiming at a route only `develop` serves fails CI. Vendored as `spec/ledger-v1-released.openapi.yaml`.
+- **Type source — midaz `develop` @ `33cb93f`** (2026-08-05), `openapi.huma.yaml` (v1) and `openapi.v2.huma.yaml` (v2). Response **types** are still generated from these. Both refs declare the same Go types, but swaggo renders `decimal.Decimal` as `number` while the Huma document renders it as `string` — and `string` is what the ledger sends. Generating money types from the released document would reintroduce the float the Phase 2 balance fix removed.
+
+So: the released document is the authority on **which routes exist**, the Huma document on **what a response contains**. `spec/VERSION` records both refs; `npm run spec:update` takes one ref for each.
+
+Gap audit verified live against a local stack on 2026-08-06: old asset-rate path → 404, ledger-level operations → 404, `X-Idempotency` contract confirmed working (SDK v2.3.0).
+
+### Version decision (2026-08-11)
+
+The SDK targets the **released** ledger, not `develop`: v4 has not shipped. Measured live against `lerianstudio/midaz-ledger:3.8.0`, the incompatibility surface of everything built in Phases 1–3 is exactly three fields, all one root cause — features that only exist on `develop`:
+
+| Surface | v3.8.0 behaviour (measured) | Resolution |
+|---|---|---|
+| `skip` on a transaction | absent from `CreateTransactionInput`; `400` code `0053`, `fields: {"skip":{"fees":true}}` | documented as requiring v4; already optional, so omitting it works on both |
+| `LedgerSettings.tracer` | absent from the response; `PATCH` → `400` code `0147` "Unknown Settings Field" | made optional on the response type; still accepted on the patch input |
+| `LedgerSettings.overrides` | same | same |
+
+`accounting.requireHolder` is the same story inside a group that does exist: `v3.8.0`'s `AccountingValidation` (`pkg/mmodel/settings.go:27`) carries `validateAccountType` and `validateRoutes` alone. `GET .../settings` answers `{"accounting":{"validateAccountType":false,"validateRoutes":false}}`.
+
+The response type previously declared `tracer`, `overrides` and `requireHolder` as **required**, so against v3.8.0 TypeScript promised a value and the runtime handed back `undefined` — the same "the type lies about the wire" defect as the balance money bug earlier in this branch. All three are now optional; the patch input still accepts them so a v4 deployment keeps working.
+
+**Everything else passes.** All 52 released paths the builders reach exist in `v3.8.0` under the verbs the SDK issues — the repointed gate went green without loosening anything.
 
 ## Phase Overview
 
@@ -23,8 +46,8 @@
 |-------|-----------|-------|--------|
 | 1 | Spec vendored + drift gate in CI; unified `ledger` base URL; asset-rate and operation clients work against midaz develop | 1.1, 1.2, 1.3, 1.4 | Complete |
 | 2 | Full transaction lifecycle: pending commit/cancel, revert, inflow/outflow, block/unblock, annotation, updates; model field parity; money-safety guards | 2.0, 2.1, 2.2, 2.3, 2.4 | Complete |
-| 3 | Account lookups (alias/external), balance history, metrics counts, ledger settings | 3.1, 3.2, 3.3 | Epic-level |
-| 4 | New domains: holders/CRM, billing, encryption/protection, v2 API | 4.1, 4.2, 4.3, 4.4 | Epic-level |
+| 3 | Account lookups (alias/external), balance history, HEAD counts, ledger settings | 3.0, 3.1, 3.2, 3.3 | Detailed |
+| 4 | New domains: holders/CRM, billing, encryption/protection, v2 API | 4.1, 4.2, 4.3, 4.4 | **Dropped** (see below) |
 
 **Decisions already made (apply to all phases):**
 
@@ -382,33 +405,178 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 
 ## Phase 3: Lookups, history, settings
 
+**Contract source.** Phase 3 is almost all GETs, and the vendored spec describes responses correctly, so it is usable here — unlike Phase 2. The two exceptions carry request bodies the spec types as `binary` (`POST .../accounts/{id}/balances` and `PATCH .../settings`); both shapes below came from the Go source and were confirmed live on 2026-08-07 against midaz `develop` @`33cb93f`.
+
+**Three server behaviours that shape the work — measured, not assumed:**
+
+1. 🔴 **Path params are never percent-decoded, so aliases must go on the wire raw.** The Fiber app is built without `UnescapePath` and matches against `PathOriginal()`. Proven by mutation: `GET /accounts/alias/acct_a` → 200, while `GET /accounts/alias/acct%5Fa` (`%5F` is `_`) → **404/0085**. `@` and `:` are legal raw; `/` cannot be expressed at all, which is exactly why `/accounts/external/{code}` exists as a separate route — `@external/BRL` is unreachable through the alias route. The SDK does not encode path segments today (`buildUrl` in `src/api/url-builder.ts` only trims slashes), so this works by accident. **It must be pinned by a test**, because adding `encodeURIComponent` would look like a hardening improvement and would silently 404 every alias lookup.
+2. **`HEAD .../metrics/count` answers `204` with the count in an `X-Total-Count` header** (exact casing; `pkg/constant/http.go:29`), empty body, and **`GET` on the same path is `405`**. The SDK cannot read this today: the wrapper discards response headers entirely.
+3. ⚠️ **The transactions count silently defaults to today only.** With `start_date`/`end_date` omitted it counts `today 00:00:00Z–23:59:59Z` (`count_transactions_by_filters.go:115,127`), while the other six count everything. A caller asking "how many transactions does this ledger have" gets today's number and no indication of it.
+
+### Epic 3.0: Carried-over skip translation gap
+
+**Goal:** A `422/0490` from inflow/outflow surfaces as the same translated error the other create routes produce.
+**Scope:** `src/api/http/http-transaction-api-client.ts`, tests
+**Dependencies:** none
+**Done when:** `createInflow` and `createOutflow` throw a `MidazError` carrying `midazCode: '0490'` and naming the ledger override to enable.
+**Status:** Pending
+
+#### Task 3.0.1: Translate the skip refusal on the flow routes
+
+- [x] Done
+
+**Context:** Recorded as a deliberate gap at the end of Phase 2 and confirmed still open on `develop`. `asSkipNotPermittedError` is defined at `http-transaction-api-client.ts:333`; `createTransaction` applies it at `:466-468` and `postNonPendingTransaction` (block/unblock/annotation) at `:692-694`. **`postFlow` (`:555-588`) has no `.catch` at all**, so inflow and outflow surface the raw transport error while their siblings surface a translated one. The ledger genuinely emits `422/0490` there — both were reproduced live — because `CreateTransactionInflowInput`/`CreateTransactionOutflowInput` (`pkg/mtransaction/input.go:95,177`) both carry `Skip *TransactionSkip`.
+
+**Implementation vision:** Insert a `.catch` before the existing `.then` at `:587`, mirroring `postNonPendingTransaction:691-695`. Order matters — the `.catch` must precede the `.then` so `assertLabelled` is never reached on the error path. `operation` is already in scope at `:576` as `createInflow`/`createOutflow`, so no new plumbing is needed. `SKIP_OVERRIDES` (`:58-61`) already covers `fees` and `tracer`, the only two skips reachable from a transaction body — leave it alone.
+
+**The reason this gap survived Phase 2 is a test gap, and that is the real fix:** `tests/api/http/http-transaction-api-client-skip.test.ts` exercises only `createTransaction` (`:99-149`, `:177`) and `blockFunds` (`:161`). Add cases for both flow routes.
+
+**Files:**
+- Modify: `src/api/http/http-transaction-api-client.ts:578-588`
+- Test: `tests/api/http/http-transaction-api-client-skip.test.ts`
+
+**Verification:** `npx jest tests/api/http/http-transaction-api-client-skip.test.ts`. Both new cases must assert `midazCode === '0490'` and that the message names `overrides.allowFeeSkip` / `overrides.allowTracerSkip`. Mutation-proof them by removing the `.catch` again and confirming they fail. Live: with all ledger overrides `false`, `createInflow` with `skip: { fees: true }` throws the translated error.
+
+**Done when:** all six create routes translate `0490` identically, proven by a test that fails when the `.catch` is removed.
+
 ### Epic 3.1: Account alias and external lookups
 
-**Goal:** `getAccountByAlias`, `getAccountBalancesByAlias`, `getExternalAccount(code)`, `getExternalAccountBalances(code)` per the four `accounts/alias|external` GET paths.
-**Scope:** account + balance clients/entities, tests
-**Dependencies:** Phase 1
-**Done when:** all four lookups round-trip live (external `@external/BRL` seeded by asset creation).
+**Goal:** Accounts and their balances are reachable by alias and by external asset code, with the raw-path contract pinned.
+**Scope:** account + balance clients/interfaces/entities, `url-builder.ts`, tests
+**Dependencies:** none
+**Done when:** all four lookups round-trip live, including `@external/BRL` through the external route; a test proves percent-encoding an alias would break it.
 **Status:** Pending
 
-### Epic 3.2: Balance history and metrics counts
+#### Task 3.1.1: getAccountByAlias, getExternalAccount and their balance variants
 
-**Goal:** `getBalanceHistory` (account-scoped and balance-scoped variants) and `count*` methods backed by the `HEAD .../metrics/count` endpoints (organizations, ledgers, accounts, assets, portfolios, segments, transactions) reading the count response header.
-**Scope:** balance client, base client (HEAD support — `HttpBaseApiClient` has no `headRequest` today), affected entities, tests
-**Dependencies:** Phase 1
-**Done when:** history returns seeded movements; counts match seeded fixtures live.
+- [x] Done
+
+**Context:** Four GET routes, all verified live. `GET .../accounts/alias/{alias}` and `GET .../accounts/external/{code}` return a single `Account` (200) or `404/0085` "Account Alias Not Found". `{code}` is the bare asset code (`BRL`) and is **case-sensitive** — `brl` is `404`; the handler prefixes it internally (`account_handler_huma.go:243`). The two `/balances` variants return a `Pagination` envelope and behave differently in two ways worth encoding in the SDK's types: they **accept no query parameters at all** (the core hardcodes `Pagination{Limit: 10, Items: balances}` at `balance.go:200-218,222-242`, and a `?limit=1` against a two-balance account still returns both), and they **do not 404** on an unknown alias — they return `200 {"items":[],"limit":10}`.
+
+**Implementation vision:** Add the four methods to the account and balance clients, their interfaces, the entity services and impls, with `UrlBuilder` methods so the drift suite covers them. Do **not** give the two balance variants a `ListOptions` parameter — the server ignores it, and accepting one would promise pagination the endpoint does not implement. Document on those two that the page is capped at 10 server-side and that an unknown alias yields an empty page rather than an error, since both look like SDK bugs otherwise. Type the alias parameter as a plain string and pass it through untouched.
+
+**Files:**
+- Modify: `src/api/http/http-account-api-client.ts`, `src/api/http/http-balance-api-client.ts`, their interfaces, `src/entities/accounts.ts`, `src/entities/balances.ts` and impls, `src/api/url-builder.ts`
+- Test: `tests/api/http/http-account-api-client.test.ts`, `tests/api/http/http-balance-api-client.test.ts`, `tests/api/url-builder.test.ts`
+
+**Verification:** `npx jest tests/api/http tests/api/url-builder.test.ts`. One test must assert the built URL contains the alias **verbatim** — including `@` and `:` — and explicitly not its percent-encoded form; prove it bites by wrapping the segment in `encodeURIComponent` and watching it fail. Live: look up a seeded alias containing `@` and `:`, look up `@external/BRL` through the external route, and confirm an unknown alias returns an empty balance page rather than throwing.
+
+**Done when:** all four round-trip live and the raw-alias contract is protected by a mutation-proven test.
+
+### Epic 3.2: HEAD support and resource counts
+
+**Goal:** The SDK can issue `HEAD` requests and read response headers, and exposes a count method for each of the seven counted resources.
+**Scope:** `src/util/http/universal-http-client.ts`, `src/util/network/http-client-wrapper.ts`, `src/api/http/http-base-api-client.ts`, the seven resource clients, tests
+**Dependencies:** none
+**Done when:** counts match seeded fixtures live for all seven resources, and the transactions window default is surfaced rather than hidden.
 **Status:** Pending
+
+#### Task 3.2.1: HEAD verb and response-header plumbing
+
+- [x] Done
+
+**Context:** Nothing in the SDK can perform this request today. Four specific holes, all read from the code: `RequestOptions.method` is a union of `'GET'|'POST'|'PUT'|'DELETE'|'PATCH'` (`universal-http-client.ts:45`); `http-client-wrapper.ts:141-171` has no `head()`; `request()` at `:239` returns `response.data` and **throws the headers away**, even though the universal layer already carries them (`universal-http-client.ts:245` returns `headers: response.headers`); and `HttpBaseApiClient` has no `headRequest`. There is also a decoding hazard: `parseResponse` (`universal-http-client.ts:378-388`) branches on `Content-Type` and falls through to `response.blob()`, so a `204` with no `Content-Type` needs a no-body short-circuit.
+
+**Implementation vision:** Add `'HEAD'` to the method union; add `head()` to the wrapper; add a path that surfaces headers to the caller without changing the existing `request()` signature — a separate method returning `{ data, headers }` is preferable to widening the common return type, since every existing caller wants the body alone. Add `headRequest` to the base client. Short-circuit `parseResponse` on `204`/empty body before the `Content-Type` branch. Header lookup must be **case-insensitive** at the read site even though the server sends `X-Total-Count` exactly, because `fetch` normalizes header casing and a `Headers` object and a plain record behave differently.
+
+**Files:**
+- Modify: `src/util/http/universal-http-client.ts`, `src/util/network/http-client-wrapper.ts`, `src/api/http/http-base-api-client.ts`
+- Test: `tests/util/http/`, `tests/util/network/`, `tests/api/http/`
+
+**Verification:** `npx jest tests/util tests/api/http`. Cases: a `204` with no `Content-Type` resolves rather than attempting to parse a body; headers reach the caller; a `HEAD` request is issued with the right method. Live: `HEAD .../accounts/metrics/count` through the SDK returns the header value.
+
+**Done when:** the SDK can issue a HEAD and read a response header, both covered by tests that fail if the plumbing is reverted.
+
+#### Task 3.2.2: Count methods for the seven resources
+
+- [x] Done
+
+**Context:** Seven endpoints, all verified live returning `204` with `X-Total-Count`: organizations (`/v1/organizations/metrics/count`), ledgers (`/v1/organizations/{org}/ledgers/metrics/count`), and accounts, assets, portfolios, segments and transactions under the ledger. `GET` on any of them is **`405`** with `Allow: HEAD` — there is no GET sibling, and midaz pins that as a contract invariant in its own test suite. **Six of the seven accept no filters** and silently ignore unknown query params (`accounts/metrics/count?type=deposit` returned the unfiltered count). Transactions accepts four: `status` (uppercase — `CREATED|APPROVED|PENDING|CANCELED|NOTED`; a bogus value is `400`), `start_date`/`end_date` (**RFC 3339 only** — `2020-01-01` is `400`), and `route`.
+
+**Implementation vision:** Add a `count*` method to each of the seven clients, returning a number parsed from the header. The six unfiltered ones take no options — do not accept a filter argument the server ignores. `countTransactions` takes the four real filters, validates `status` against the enum client-side, and requires RFC 3339 for the dates. **The date-window default is the important part:** when both dates are omitted the server counts only today, which no caller will expect from a method named `countTransactions`. Do not silently paper over it by injecting a wide default window — that would change the server's meaning behind the caller's back. Make it explicit in the type and the JSDoc, and consider requiring the caller to pass a window or opt into the default deliberately; whichever the implementer picks, the choice must be stated and tested.
+
+**Files:**
+- Modify: the seven resource clients and their interfaces/entities, `src/api/url-builder.ts`
+- Test: per-client tests plus `tests/api/url-builder-drift.test.ts` (the drift suite now compares verbs, so `HEAD` paths must be registered correctly)
+
+**Verification:** `npx jest tests/api`. Live: seed a known number of accounts and transactions and assert each count matches; assert `countTransactions` with an explicit RFC 3339 window spanning the fixtures differs from the today-only default when fixtures are older than today.
+
+**Done when:** all seven counts match seeded fixtures live and the transactions window behaviour is explicit in the API rather than a surprise.
+
+#### Task 3.2.3: Balance history and per-account balance list/create
+
+- [x] Done
+
+**Context:** Two history routes, both verified. `GET .../accounts/{account_id}/balances/history` returns a **bare array** (no envelope, no pagination); `GET .../balances/{balance_id}/history` returns a **single object**. Both take one query param, `date`, which the spec marks optional but which is **required at runtime** (`400/0142` when omitted) and **must carry a time component** — `date=2026-08-07` is `400/0131`, while `2026-08-07 00:20:00`, RFC 3339 `2026-08-07T00:20:00Z` and an offset form all work. A timestamp preceding the balance's creation is `404/0141`. The payload is `Balance` minus `allowSending`, `allowReceiving`, `deletedAt` and `metadata`, and it is a genuine point-in-time snapshot (the same balance read at two timestamps returned `available: "0", version: 0` and `"749.5", version: 2`). Separately, `GET .../accounts/{account_id}/balances` is the **only** balance listing that really paginates — cursor-based via `next_cursor`/`prev_cursor`, with `limit` (default 10, max 100), `sort_order`, and `start_date`/`end_date` that are all-or-nothing; **`page` is parsed but ignored**, and `metadata.*` filters are accepted and deliberately discarded. `POST` to that same path creates an additional balance from `CreateAdditionalBalance` (`pkg/mmodel/balance.go:297-324`): `key` (required, no whitespace, ≤100), optional `allowSending`/`allowReceiving` (default true), `direction` (`credit`|`debit`, default `credit`), and `settings` (`balanceScope`, `allowOverdraft`, `overdraftLimitEnabled`, `overdraftLimit`).
+
+**Implementation vision:** Model the two history routes with their real return shapes rather than forcing a common envelope — one returns an array, the other an object, and pretending otherwise would misrepresent the API. Make `date` a **required** parameter in the SDK signature since it is required at runtime, and validate client-side that it carries a time component, with an error naming the accepted forms; the server's own message says `'yyyy-mm-dd hh:mm:ss'` while RFC 3339 also works, so the SDK's message should be the accurate one. For the paginated listing, expose `limit`, `cursor` and `sort_order`, and do **not** expose `page` or `metadata` filters — the server ignores both, and offering them would be a lie. `createAccountBalance` validates `key` client-side (non-empty, no whitespace, ≤100) and enforces that `overdraftLimitEnabled: true` requires a positive `overdraftLimit`, which the server answers `400/0172` for.
+
+**Files:**
+- Modify: `src/api/http/http-balance-api-client.ts`, its interface, `src/entities/balances.ts` and impl, `src/models/balance.ts`, `src/api/url-builder.ts`
+- Test: `tests/api/http/http-balance-api-client.test.ts`, balance model/validator tests
+
+**Verification:** `npx jest tests/api/http/http-balance-api-client.test.ts tests/models`. Live: read a balance's history at a timestamp before and after a transaction and assert the two snapshots differ; omit `date` and confirm the SDK refuses before the wire; pass a date-only string and confirm the same; create an additional balance and read it back; walk two pages of the account balance listing by cursor.
+
+**Done when:** both history shapes round-trip live, `date` is enforced client-side, and the cursor walk is covered.
 
 ### Epic 3.3: Ledger settings
 
-**Goal:** `getLedgerSettings` / `updateLedgerSettings` (`GET|PATCH .../ledgers/{id}/settings`).
-**Scope:** ledger client/entity, models, tests
-**Dependencies:** Phase 1
-**Done when:** settings round-trip live, including the per-ledger toggles that gate `skip` (interacts with Epic 2.4 — document the 422 behavior).
+**Goal:** Ledger settings are readable and patchable, and the overrides that gate `skip` are navigable from the SDK.
+**Scope:** ledger client/interface/entity, models, validators, tests
+**Dependencies:** Epic 3.0 (shares the skip-error vocabulary)
+**Done when:** settings round-trip live, a single nested field can be patched without clobbering its siblings, and enabling an override makes a previously-refused `skip` succeed.
 **Status:** Pending
+
+#### Task 3.3.1: getLedgerSettings and updateLedgerSettings
+
+- [x] Done
+
+**Context:** `GET .../ledgers/{ledger_id}/settings` returns the full document, with defaults supplied in Go rather than stored, so a never-patched ledger still answers `200`:
+
+```json
+{"accounting":{"validateAccountType":false,"validateRoutes":false,"requireHolder":false},
+ "tracer":{"mode":"off","failPosture":"open","timeoutMs":250},
+ "overrides":{"allowFeeSkip":false,"allowTracerSkip":false,"allowHolderSkip":false}}
+```
+
+`PATCH` has no request struct on the server — the body is decoded into a map and checked against an imperative allowlist (`settings.go:308-324`), which is why the spec types it `binary`. It is a **deep merge-patch**: `{"overrides":{"allowFeeSkip":true}}` leaves the other two overrides and both sibling groups untouched, and `{}` is valid and returns the document unchanged. Verified errors: `400/0147` unknown field, `400/0176` invalid enum (`tracer.mode` is `off|advisory|enforce`, `failPosture` is `open|closed`), `400/0148` wrong primitive type, `400/0149` nested field at root, `400/0143` body over 64 KiB. The override→skip mapping, verified live in all four directions: `skip.fees` ↔ `overrides.allowFeeSkip`, `skip.tracer` ↔ `overrides.allowTracerSkip`, `skip.holder` ↔ `overrides.allowHolderSkip` (that last one is on **account** create, not transactions).
+
+**Implementation vision:** Type the settings document fully, with the enums as unions so an invalid `tracer.mode` fails at compile time for TypeScript callers and in a validator for JavaScript ones. Type the patch input as a deep-partial of that document and **document the merge semantics on the method**, because "patch one nested field, siblings survive" is the opposite of what the transaction PATCH does with `metadata` and callers will assume consistency. Do not read-then-write to emulate replace semantics. Wire the override names into the error the `0490` translation produces, so a caller refused a skip is told exactly which setting to flip and can flip it with this same client — that is the pairing that makes both features usable.
+
+**Files:**
+- Modify: `src/api/http/http-ledger-api-client.ts`, its interface, `src/entities/ledgers.ts` and impl, `src/models/ledger.ts`, `src/models/validators/ledger-validator.ts`, `src/api/url-builder.ts`
+- Test: `tests/api/http/http-ledger-api-client.test.ts`, ledger model/validator tests
+
+**Verification:** `npx jest tests/api/http/http-ledger-api-client.test.ts tests/models`. Live, as one sequence because the pairing is the point: read the defaults; patch only `overrides.allowFeeSkip` and assert the other eight fields are unchanged; issue a transaction with `skip: { fees: true }` and confirm it now returns `feesSkipped: true` where it previously returned `422/0490`; then patch an invalid `tracer.mode` and confirm `400/0176`.
+
+**Done when:** settings round-trip with merge semantics proven field-by-field, and the override→skip pairing is demonstrated end-to-end live.
 
 ---
 
-## Phase 4: New domains
+## Phase 4: New domains — DROPPED from the current scope (2026-08-11)
+
+**All four families are `develop`-only.** The minimum ledger is `v4.0.0-beta.24` (= commit `33cb93f`), and the SDK's support floor is the released `v3.8.0`. Measured: `v3.8.0`'s ledger spec has 56 paths and **zero** matches for holder, instrument, billing, package, encryption, protection, estimate, or `/v2`. Nothing in this phase works against the release the SDK supports, so none of it can ship.
+
+Two of the four are worse than absent. **Holders and encryption existed in `v3.8.0` — as a different service with an incompatible contract:** `components/crm` ran on **port 4003** with org-less paths and called the resource **`aliases`**, not `instruments` (`/v1/holders/{holder_id}/aliases/{alias_id}`). On `develop`, CRM folded into the ledger binary, holders became org-scoped and `alias` became `instrument`. The two contracts are incompatible rather than merely different in coverage, so building either one is a bet on which ships.
+
+**Reopen when a v4 ledger is released**, then re-scope against that tag rather than against `develop`. The measurements below are kept because they remain the record of what was verified.
+
+### 🔴 Version gate — the measurements this decision rests on
+
+**Everything in Phase 4 is `develop`-only. The minimum ledger version is `v4.0.0-beta.24`, which *is* commit `33cb93f` — the exact commit the vendored specs came from.** Measured against the released tag: `v3.8.0`'s ledger spec has 56 paths and **zero** matches for holder, instrument, billing, package, encryption, protection, estimate, or `/v2`. Nothing in this phase works against the released ledger.
+
+Two of the four families are worse than merely absent, and this is what makes the scoping decision real:
+
+- **Holders and encryption existed in `v3.8.0` — as a *different service with a different contract*.** `components/crm` ran on **port 4003** with org-less paths, and the resource was called **`aliases`**, not `instruments`: `/v1/holders/{holder_id}/aliases/{alias_id}`. On `develop`, CRM folded into the ledger binary, holders became org-scoped, and `alias` became `instrument`. So an SDK built for `develop` does not serve a `v3.8.0` deployment and vice versa — the two contracts are incompatible, not merely different in coverage. Building against `develop` is a bet on which one ships.
+- **Encryption and protection are not even mounted** on a default deployment. All three routes answer `404` with code **`0484` "Route Not Found"** — the routing fallback, not a business 404 — because they are envelope-mode-only, gated on `KMS_VENDOR`. A contrasting probe confirms the discriminator: a mounted-but-empty route answers `0007` "Entity Not Found". The SDK must model `0484` as a first-class *"encryption not configured on this deployment"* state.
+
+**Recommended split, pending a product decision:** ship **4.2 (billing)** and **4.4 (v2)** first — both are purely additive, unambiguous, and have no competing released contract. **Defer 4.1 (holders) and 4.3 (encryption)** until the v4 contract is released, because choosing the wrong one of two incompatible shapes costs the whole epic in rework.
+
+**Three findings that apply regardless of scope, all measured:**
+
+1. **The `X-API-Version` header the SDK stamps on every request is decorative.** `GET /v1/organizations` with `X-API-Version: v2` returns v1 data with `200`. The ledger versions purely by path. The header should still reflect the version actually used per call, or it lies in traces.
+2. **v2 deduplicates by request-body hash even when no idempotency key is supplied**, within a 300s TTL. Proven: the same body posted twice to `/v2/transactions/direct` with **no key** returned the same transaction id, the second carrying `X-Idempotency-Replayed: true`. The action discriminator v2 adds (`v2IdempotencyHashSource`, `transaction_v2_handler.go:125-132`, separator `"\x00"`) only prevents *cross-action* collision — the same body to `/hold` did **not** replay the direct. **The Phase 2 replay guards are therefore still required on v2**, since v2 delegates to the same `createTransactionShell`.
+3. **`apiVersion` is instance-wide and must become per-route.** `url-builder.ts` fixes it in the constructor and every `build*Url` runs through `getVersionedUrl`; `ApiFactory` shares one `UrlBuilder` across all 15 clients. Flipping it to `'v2'` globally would break everything else, because v2 has 23 paths to v1's 72 and contains no organizations, ledgers, accounts, assets, portfolios, segments or account-types. The fix is an optional version override on `getVersionedUrl` with v2 builders passing `'v2'` explicitly — not a second base URL, since v2 is the same host and port under a `/v2` prefix.
 
 ### Epic 4.1: Holders and instruments (embedded CRM)
 
@@ -416,7 +584,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 **Scope:** new client + entity + models (`src/api/http/http-holder-api-client.ts` etc.), factory wiring (`src/api/api-factory.ts`), entity aggregator (`src/entities/entity.ts:52-88`), tests
 **Dependencies:** Phase 1
 **Done when:** holder → instrument → account journey round-trips live.
-**Status:** Pending
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
 
 ### Epic 4.2: Billing and packages
 
@@ -424,7 +592,7 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 **Scope:** new clients/entities/models, factory + aggregator wiring, tests
 **Dependencies:** Phase 1
 **Done when:** package create + calculate round-trip live.
-**Status:** Pending
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
 
 ### Epic 4.3: Encryption and protection audit
 
@@ -432,15 +600,34 @@ Keep `share` percentages as integers and reject fractional ones, since the serve
 **Scope:** new client/entity, tests
 **Dependencies:** Phase 1
 **Done when:** status/audit GETs round-trip live (provision may require env support — verify against local stack, else contract-test only and note it).
-**Status:** Pending
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
 
 ### Epic 4.4: v2 API surface
 
-**Goal:** v2 endpoints: `POST /transactions/direct`, `/hold`, `/block`, `/unblock` (org-less, header-scoped), plus v2 transaction lifecycle variants; SDK version-negotiation strategy (`X-API-Version` header already exists at `http-base-api-client.ts:68-74`; `apiVersion` config at `url-builder.ts:28`).
-**Scope:** url-builder (v2 path style), transaction client or new v2 client, `spec/ledger-v2.openapi.yaml` drift coverage, tests
-**Dependencies:** Phases 1–2 (v2 semantics build on lifecycle)
-**Done when:** direct + hold round-trip live under v2; drift suite covers v2 paths.
-**Status:** Pending
+**Goal:** The four v2 create routes and the v2 lifecycle, served from the same host under a `/v2` prefix, consuming the generated request types rather than hand-written ones.
+**Scope:** `src/api/url-builder.ts` (per-route version), a v2 transaction client, models built on `src/generated/ledger-v2.d.ts`, `spec/ledger-v2.openapi.yaml` drift coverage, tests
+**Dependencies:** Phases 1–2 (v2 reuses the replay guards; see finding 2 above)
+**Done when:** `direct` and `hold` round-trip live under v2 with balance assertions, the lifecycle transitions work, and the drift suite covers v2 paths with their verbs.
+**Status:** Dropped — `develop`-only; reopen when a v4 ledger is released
+
+**Verified contract (2026-08-07, live).** Unlike v1, this is a genuinely different transaction model, not a re-skin — and the generated types are real, so **do not hand-write the input**: `components['schemas']['CreateTransactionV2Input']` (`ledger-v2.d.ts:488`), `['V2LegInput']` (:1192), `['V2ShareInput']` (:1212), `['TransactionV2']` (:1106), plus the seven `operations[...]` entries for direct/hold/block/unblock/commit/cancel/revert.
+
+| | v1 | v2 |
+|---|---|---|
+| nesting | `send.source.from[]` / `send.distribute.to[]` | flat `debits[]` / `credits[]` |
+| leg account key | `account` | `alias` |
+| leg amount | object `{asset, value}` | bare decimal string |
+| asset & value | on `send` | top level |
+| scope | from the **path** | from **every leg** (`organizationId`+`ledgerId`, all must agree) |
+| `chartOfAccountsGroupName` | required | absent |
+| leg cap | undeclared | **1–500 per side** |
+| create variants | json, inflow, outflow, block, unblock, annotation | **direct, hold**, block, unblock |
+
+A leg carries `amount` **or** `share` — never both, never neither; `share.percentage` is an integer 1–100. The response is asymmetric to the request: `TransactionV2` uses **singular** `debit`/`credit`, and they are arrays of alias **strings**, with the double-entry detail in `operations[]`.
+
+Measured semantics: `direct` → `CREATED`, settles immediately. `hold` → **`PENDING`** with op type `ON_HOLD`, moving available→onHold (observed `available 32→29, onHold 0→3`); a `hold` whose debit leg is `@external/` is `422`. `block` → `CREATED` with op type `BLOCK`. Lifecycle: commit on a pending hold → `APPROVED`; a second commit → `409`; cancel on a committed transaction → `409/0486` with `entityType: "ValidateTransactionNotPending"`.
+
+---
 
 ---
 

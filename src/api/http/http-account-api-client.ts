@@ -11,6 +11,7 @@ import { HttpClient } from '../../util/network/http-client';
 import { Observability } from '../../util/observability/observability';
 import { validate } from '../../util/validation';
 import { AccountApiClient } from '../interfaces/account-api-client';
+import { assertPathSegment } from '../path-segment';
 import { UrlBuilder } from '../url-builder';
 
 import { HttpBaseApiClient } from './http-base-api-client';
@@ -75,6 +76,63 @@ export class HttpAccountApiClient
       ledgerId,
       accountId: id,
     });
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async getAccountByAlias(orgId: string, ledgerId: string, alias: string): Promise<Account> {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId }), {
+      orgId,
+      ledgerId,
+      alias,
+    });
+    assertPathSegment('alias', alias);
+
+    const url = this.urlBuilder.buildAccountByAliasUrl(orgId, ledgerId, alias);
+
+    return this.getRequest<Account>('getAccountByAlias', url, undefined, {
+      orgId,
+      ledgerId,
+    });
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async getExternalAccount(
+    orgId: string,
+    ledgerId: string,
+    assetCode: string
+  ): Promise<Account> {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId, assetCode }), {
+      orgId,
+      ledgerId,
+      assetCode,
+    });
+    assertPathSegment('assetCode', assetCode);
+
+    const url = this.urlBuilder.buildExternalAccountUrl(orgId, ledgerId, assetCode);
+
+    return this.getRequest<Account>('getExternalAccount', url, undefined, {
+      orgId,
+      ledgerId,
+      assetCode,
+    });
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async countAccounts(orgId: string, ledgerId: string): Promise<number> {
+    this.validateRequiredParams(this.startSpan('validateParams', { orgId, ledgerId }), {
+      orgId,
+      ledgerId,
+    });
+
+    const url = this.urlBuilder.buildAccountCountUrl(orgId, ledgerId);
+
+    return this.countRequest('countAccounts', url, undefined, { orgId, ledgerId });
   }
 
   /**

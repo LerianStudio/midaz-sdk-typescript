@@ -6,10 +6,13 @@ import { parse } from 'yaml';
 import { UrlBuilder } from '../../src/api/url-builder';
 import { buildSpecPathIndex, normalizePath } from '../support/spec-templates';
 
-const SPEC_PATH = join(__dirname, '..', '..', 'spec', 'ledger-v1.openapi.yaml');
+const SPEC_PATH = join(__dirname, '..', '..', 'spec', 'ledger-v1-released.openapi.yaml');
 const BASE_URL = 'http://ledger.test';
 const ENV_KEYS = ['MIDAZ_LEDGER_URL', 'MIDAZ_ONBOARDING_URL', 'MIDAZ_TRANSACTION_URL'];
-const SERVED = 'served by the ledger v1 spec';
+const SERVED = 'served by the released ledger spec';
+
+/** Every route of the released spec lives under this prefix, path key included. */
+const VERSION_PREFIX = '/v1';
 
 const ORG = 'SENTINEL_ORG';
 const LEDGER = 'SENTINEL_LEDGER';
@@ -18,6 +21,7 @@ const TRANSACTION = 'SENTINEL_TRANSACTION';
 const OPERATION = 'SENTINEL_OPERATION';
 const ASSET = 'SENTINEL_ASSET';
 const ASSET_CODE = 'SENTINEL_ASSET_CODE';
+const ALIAS = 'SENTINEL_ALIAS';
 const EXTERNAL_ID = 'SENTINEL_EXTERNAL_ID';
 const BALANCE = 'SENTINEL_BALANCE';
 const PORTFOLIO = 'SENTINEL_PORTFOLIO';
@@ -27,12 +31,10 @@ const OPERATION_ROUTE = 'SENTINEL_OPERATION_ROUTE';
 const TRANSACTION_ROUTE = 'SENTINEL_TRANSACTION_ROUTE';
 
 interface SpecDocument {
-  servers?: { url?: string }[];
   paths?: Record<string, Record<string, unknown>>;
 }
 
 const spec = parse(readFileSync(SPEC_PATH, 'utf8')) as SpecDocument;
-const specPrefix = spec.servers?.[0]?.url ?? '';
 const specPaths = Object.keys(spec.paths ?? {});
 
 const normalize = normalizePath;
@@ -49,6 +51,9 @@ interface BuilderCase {
 
 const COLLECTION_VERBS = ['get', 'post'];
 const ITEM_VERBS = ['get', 'patch', 'delete'];
+
+/** The count routes are served under HEAD alone; GET on them is 405. */
+const COUNT_VERBS = ['head'];
 
 const builderCases: BuilderCase[] = [
   {
@@ -68,6 +73,26 @@ const builderCases: BuilderCase[] = [
     method: 'buildAccountUrl',
     verbs: ITEM_VERBS,
     build: (b) => b.buildAccountUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildAccountByAliasUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountByAliasUrl(ORG, LEDGER, ALIAS),
+  },
+  {
+    method: 'buildAccountAliasBalancesUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountAliasBalancesUrl(ORG, LEDGER, ALIAS),
+  },
+  {
+    method: 'buildExternalAccountUrl',
+    verbs: ['get'],
+    build: (b) => b.buildExternalAccountUrl(ORG, LEDGER, ASSET_CODE),
+  },
+  {
+    method: 'buildExternalAccountBalancesUrl',
+    verbs: ['get'],
+    build: (b) => b.buildExternalAccountBalancesUrl(ORG, LEDGER, ASSET_CODE),
   },
   { method: 'buildAssetUrl', verbs: COLLECTION_VERBS, build: (b) => b.buildAssetUrl(ORG, LEDGER) },
   {
@@ -143,6 +168,21 @@ const builderCases: BuilderCase[] = [
   },
   { method: 'buildBalanceUrl', verbs: ['get'], build: (b) => b.buildBalanceUrl(ORG, LEDGER) },
   {
+    method: 'buildAccountBalanceUrl',
+    verbs: COLLECTION_VERBS,
+    build: (b) => b.buildAccountBalanceUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildAccountBalanceHistoryUrl',
+    verbs: ['get'],
+    build: (b) => b.buildAccountBalanceHistoryUrl(ORG, LEDGER, ACCOUNT),
+  },
+  {
+    method: 'buildBalanceHistoryUrl',
+    verbs: ['get'],
+    build: (b) => b.buildBalanceHistoryUrl(ORG, LEDGER, BALANCE),
+  },
+  {
     method: 'buildBalanceUrl',
     verbs: ITEM_VERBS,
     build: (b) => b.buildBalanceUrl(ORG, LEDGER, BALANCE),
@@ -212,53 +252,109 @@ const builderCases: BuilderCase[] = [
     verbs: ITEM_VERBS,
     build: (b) => b.buildTransactionRouteUrl(ORG, LEDGER, TRANSACTION_ROUTE),
   },
+  {
+    method: 'buildLedgerSettingsUrl',
+    verbs: ['get', 'patch'],
+    build: (b) => b.buildLedgerSettingsUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildOrganizationCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildOrganizationCountUrl(),
+  },
+  {
+    method: 'buildLedgerCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildLedgerCountUrl(ORG),
+  },
+  {
+    method: 'buildAccountCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildAccountCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildAssetCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildAssetCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildPortfolioCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildPortfolioCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildSegmentCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildSegmentCountUrl(ORG, LEDGER),
+  },
+  {
+    method: 'buildTransactionCountUrl',
+    verbs: COUNT_VERBS,
+    build: (b) => b.buildTransactionCountUrl(ORG, LEDGER),
+  },
 ];
 
 /**
- * Spec paths at least one builder reaches today. Phases 2-4 widen this list;
- * a shrinking list means a builder drifted off the contract.
+ * Paths of the released spec at least one builder reaches today. A shrinking list
+ * means a builder drifted off the contract; a builder aiming at a route only
+ * `develop` serves fails the two checks above before it reaches this one.
  */
 const COVERED_SPEC_PATHS = [
-  '/organizations',
-  '/organizations/{id}',
-  '/organizations/{organization_id}/ledgers',
-  '/organizations/{organization_id}/ledgers/{ledger_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/account-types',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/account-types/{id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations/{operation_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates/from/{asset_code}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates/{external_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/assets',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/assets/{id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/balances',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/balances/{balance_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes/{operation_route_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/portfolios',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/portfolios/{id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/segments',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/segments/{id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes/{transaction_route_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/annotation',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/block',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/inflow',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/json',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/outflow',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/unblock',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/cancel',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/commit',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/operations/{operation_id}',
-  '/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/revert',
+  '/v1/organizations',
+  '/v1/organizations/metrics/count',
+  '/v1/organizations/{organization_id}',
+  '/v1/organizations/{organization_id}/ledgers',
+  '/v1/organizations/{organization_id}/ledgers/metrics/count',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/account-types',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/account-types/{account_type_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/alias/{alias}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/alias/{alias}/balances',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/external/{code}/balances',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/metrics/count',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/balances',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/balances/history',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/accounts/{account_id}/operations/{operation_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates/from/{asset_code}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/asset-rates/{external_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/assets',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/assets/metrics/count',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/assets/{asset_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/balances',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/balances/{balance_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/balances/{balance_id}/history',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/operation-routes/{operation_route_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/portfolios',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/portfolios/metrics/count',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/portfolios/{portfolio_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/segments',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/segments/metrics/count',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/segments/{segment_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/settings',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transaction-routes/{transaction_route_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/annotation',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/block',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/inflow',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/json',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/metrics/count',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/outflow',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/unblock',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/cancel',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/commit',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/operations/{operation_id}',
+  '/v1/organizations/{organization_id}/ledgers/{ledger_id}/transactions/{transaction_id}/revert',
 ];
 
-describe('UrlBuilder path drift against the vendored ledger spec', () => {
+describe('UrlBuilder path drift against the released ledger spec', () => {
   const savedEnv: Record<string, string | undefined> = {};
   let builder: UrlBuilder;
 
@@ -280,9 +376,9 @@ describe('UrlBuilder path drift against the vendored ledger spec', () => {
     }
   });
 
-  it('reads a spec with paths and a versioned server prefix', () => {
+  it('reads a released spec whose every route lives under the version prefix', () => {
     expect(specPaths.length).toBeGreaterThan(0);
-    expect(specPrefix).toBe('/v1');
+    expect(specPaths.filter((path) => !path.startsWith(`${VERSION_PREFIX}/`))).toEqual([]);
   });
 
   it('reduces every spec path to a template of its own', () => {
@@ -299,9 +395,9 @@ describe('UrlBuilder path drift against the vendored ledger spec', () => {
     (_method, testCase) => {
       const url = testCase.build(builder);
 
-      expect(url.startsWith(`${BASE_URL}${specPrefix}/`)).toBe(true);
+      expect(url.startsWith(`${BASE_URL}${VERSION_PREFIX}/`)).toBe(true);
 
-      const template = normalize(url.slice(BASE_URL.length + specPrefix.length));
+      const template = normalize(url.slice(BASE_URL.length));
       const verdict = specTemplates.has(template)
         ? SERVED
         : `${template} is not a path of the ledger v1 spec`;
@@ -313,9 +409,7 @@ describe('UrlBuilder path drift against the vendored ledger spec', () => {
   it.each(builderCases.map((testCase) => [testCase.method, testCase] as const))(
     '%s builds a path the ledger spec serves under every verb the SDK issues',
     (_method, testCase) => {
-      const template = normalize(
-        testCase.build(builder).slice(BASE_URL.length + specPrefix.length)
-      );
+      const template = normalize(testCase.build(builder).slice(BASE_URL.length));
       const served = specVerbs.get(template) ?? new Set<string>();
       const unserved = testCase.verbs.filter((verb) => !served.has(verb));
       const verdict = unserved.length
@@ -337,9 +431,7 @@ describe('UrlBuilder path drift against the vendored ledger spec', () => {
 
   it('reaches exactly the pinned set of spec paths', () => {
     const builtTemplates = new Set(
-      builderCases.map((testCase) =>
-        normalize(testCase.build(builder).slice(BASE_URL.length + specPrefix.length))
-      )
+      builderCases.map((testCase) => normalize(testCase.build(builder).slice(BASE_URL.length)))
     );
     const covered = specPaths.filter((path) => builtTemplates.has(normalize(path))).sort();
 

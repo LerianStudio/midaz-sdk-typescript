@@ -3,6 +3,28 @@
   "compilerOptions": {
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "examples/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "examples/**/*", "tests/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+
+    // Type-checking debt inherited from before tests entered this project. Each file below
+    // still fails `tsc`; the count in parentheses is what it contributed when tests were
+    // first included. Every file NOT listed here is type-checked, so a new test file, or a
+    // fixture that drifts from a model, fails CI. Shrink this list; do not grow it.
+    "tests/models/validators/transaction-validator.test.ts", // 43
+    "tests/models/transaction.test.ts", // 41
+    "tests/entities/implementations/transactions-impl.test.ts", // 12
+    "tests/models/asset.test.ts", // 10
+    "tests/util/http-client.test.ts", // 6
+    "tests/api/http/http-transaction-api-client.test.ts", // 6
+    "tests/integration/client.integration.test.ts", // 4
+    "tests/setup.ts", // 3
+    "tests/api/http/http-transaction-api-client-idempotency.test.ts", // 3
+    "tests/util/cache.test.ts", // 1, and it is what makes src/util/cache/cache.ts report TS2428
+    "tests/models/account.test.ts", // 1
+    "tests/entities/implementations/operations-impl.test.ts", // 1
+    "tests/client-config-builder.test.ts", // 1
+    "tests/api/http/http-operation-api-client.test.ts" // 1
+  ]
 }

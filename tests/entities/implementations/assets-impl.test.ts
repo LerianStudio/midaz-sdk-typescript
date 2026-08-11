@@ -70,6 +70,7 @@ describe('AssetsServiceImpl', () => {
       createAsset: jest.fn(),
       updateAsset: jest.fn(),
       deleteAsset: jest.fn(),
+      countAssets: jest.fn(),
     } as unknown as jest.Mocked<AssetApiClient>;
 
     // Create a mock Observability instance
@@ -316,6 +317,24 @@ describe('AssetsServiceImpl', () => {
       await expect(assetsService.deleteAsset(orgId, ledgerId, assetId)).rejects.toThrow(
         'API Error'
       );
+    });
+  });
+  // The count answers HEAD only, with the total in a response header and no body, so a
+  // service that dropped the header read would still resolve — with undefined.
+  describe('countAssets', () => {
+    it('hands back the total the ledger reported', async () => {
+      mockAssetApiClient.countAssets.mockResolvedValueOnce(46);
+
+      const result = await assetsService.countAssets(orgId, ledgerId);
+
+      expect(mockAssetApiClient.countAssets).toHaveBeenCalledWith(orgId, ledgerId);
+      expect(result).toBe(46);
+    });
+
+    it('lets a failure through untouched', async () => {
+      mockAssetApiClient.countAssets.mockRejectedValueOnce(new Error('API Error'));
+
+      await expect(assetsService.countAssets(orgId, ledgerId)).rejects.toThrow('API Error');
     });
   });
 });

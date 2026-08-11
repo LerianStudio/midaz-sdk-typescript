@@ -13,17 +13,20 @@ interface Balance {
   ledgerId: string;
   accountId: string;
   alias: string;
+  key: string;
   assetCode: string;
-  available: number;
-  onHold: number;
-  scale: number;
+  available: string;
+  onHold: string;
+  overdraftUsed: string;
+  direction?: BalanceDirection;
+  settings?: BalanceSettings;
   version: number;
   accountType: string;
   allowSending: boolean;
   allowReceiving: boolean;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
+  deletedAt: string | null;
   metadata?: Record<string, any>;
 }
 ```
@@ -33,8 +36,17 @@ Key components of a Balance:
 - **Available**: The amount that can be freely used in transactions
 - **OnHold**: The amount that is reserved but not yet settled (e.g., pending transactions)
 - **Total**: The sum of Available and OnHold amounts
-- **Scale**: The precision factor for currency values (e.g., 100 for dollars and cents)
+- **Key**: Names the balance within its account; an account starts with one keyed `default`
 - **Permissions**: `allowSending` and `allowReceiving` control transaction capabilities
+
+The monetary fields are **already-scaled decimal strings**, exactly as the ledger sends
+them — `"110.50"` means one hundred and ten point five, not eleven thousand and fifty. There
+is no `scale` field to divide by. Adding two of them with `+` concatenates the strings, so
+coerce before any arithmetic, and reach for a decimal library rather than `Number` when a
+value can exceed 2^53 or carry more precision than a double holds.
+
+`deletedAt` is always present and is `null` while the balance is live, so test it against
+`null` rather than `undefined`.
 
 ## Retrieving Balances
 
@@ -44,15 +56,14 @@ Key components of a Balance:
 // List all balances in a ledger
 const balances = await client.entities.balances.listBalances(organizationId, ledgerId, {
   limit: 50,
-  offset: 0,
 });
 
-console.log(`Total balances: ${balances.total}`);
-for (const balance of balances.data) {
-  // Calculate actual monetary values by dividing by scale
-  const availableAmount = balance.available / balance.scale;
-  const onHoldAmount = balance.onHold / balance.scale;
-  const totalAmount = (balance.available + balance.onHold) / balance.scale;
+console.log(`Balances on this page: ${balances.items.length}`);
+for (const balance of balances.items) {
+  // The amounts are decimal strings; coerce before doing arithmetic on them
+  const availableAmount = Number(balance.available);
+  const onHoldAmount = Number(balance.onHold);
+  const totalAmount = availableAmount + onHoldAmount;
 
   console.log(`Account: ${balance.accountId}`);
   console.log(`Asset: ${balance.assetCode}`);
@@ -74,10 +85,33 @@ const accountBalances = await client.entities.balances.listAccountBalances(
   { limit: 20 }
 );
 
-console.log(`Account ${accountId} has ${accountBalances.data.length} balance(s)`);
-for (const balance of accountBalances.data) {
-  const availableAmount = balance.available / balance.scale;
-  console.log(`${balance.assetCode}: ${availableAmount} available`);
+console.log(`This page carries ${accountBalances.items.length} balance(s)`);
+for (const balance of accountBalances.items) {
+  console.log(`${balance.assetCode} (${balance.key}): ${balance.available} available`);
+}
+```
+
+This listing paginates by cursor, and one request returns one page however large `limit`
+is. To walk every balance of an account, follow `nextCursor` until it is absent:
+
+```typescript
+async function everyAccountBalance(client, organizationId, ledgerId, accountId) {
+  const all = [];
+  let cursor = undefined;
+
+  do {
+    const page = await client.entities.balances.listAccountBalances(
+      organizationId,
+      ledgerId,
+      accountId,
+      { limit: 100, cursor }
+    );
+
+    all.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+
+  return all;
 }
 ```
 
@@ -87,10 +121,10 @@ for (const balance of accountBalances.data) {
 // Get a specific balance by ID
 const balance = await client.entities.balances.getBalance(organizationId, ledgerId, balanceId);
 
-// Calculate actual monetary values
-const availableAmount = balance.available / balance.scale;
-const onHoldAmount = balance.onHold / balance.scale;
-const totalAmount = (balance.available + balance.onHold) / balance.scale;
+// The amounts arrive as decimal strings; coerce before adding them up
+const availableAmount = Number(balance.available);
+const onHoldAmount = Number(balance.onHold);
+const totalAmount = availableAmount + onHoldAmount;
 
 console.log(`Balance for account ${balance.accountId}, asset ${balance.assetCode}:`);
 console.log(`Available: ${availableAmount}`);
@@ -178,16 +212,14 @@ async function manageBalances(client, organizationId, ledgerId, accountId) {
       { limit: 10 }
     );
 
-    console.log(`Account ${accountId} has ${accountBalances.data.length} balance(s)`);
+    console.log(`Account ${accountId} has ${accountBalances.items.length} balance(s)`);
 
-    if (accountBalances.data.length > 0) {
+    if (accountBalances.items.length > 0) {
       // Get the first balance
-      const firstBalance = accountBalances.data[0];
+      const firstBalance = accountBalances.items[0];
       const balanceId = firstBalance.id;
 
-      // Calculate actual monetary values
-      const availableAmount = firstBalance.available / firstBalance.scale;
-      console.log(`Initial balance for ${firstBalance.assetCode}: ${availableAmount}`);
+      console.log(`Initial balance for ${firstBalance.assetCode}: ${firstBalance.available}`);
       console.log(`Sending allowed: ${firstBalance.allowSending}`);
       console.log(`Receiving allowed: ${firstBalance.allowReceiving}`);
 
@@ -247,27 +279,32 @@ Temporarily prevent withdrawals while still allowing deposits:
 ```typescript
 // Freeze withdrawals from an account
 async function freezeWithdrawals(client, organizationId, ledgerId, accountId) {
-  // Get all balances for the account
-  const accountBalances = await client.entities.balances.listAccountBalances(
-    organizationId,
-    ledgerId,
-    accountId,
-    { limit: 100 }
-  );
-
-  // Disable sending for all balances
+  // One request returns one page, so follow the cursor to reach every balance
   const results = [];
-  for (const balance of accountBalances.data) {
-    const updatedBalance = await client.entities.balances.updateBalance(
+  let cursor = undefined;
+
+  do {
+    const page = await client.entities.balances.listAccountBalances(
       organizationId,
       ledgerId,
-      balance.id,
-      {
-        allowSending: false,
-      }
+      accountId,
+      { limit: 100, cursor }
     );
-    results.push(updatedBalance);
-  }
+
+    for (const balance of page.items) {
+      const updatedBalance = await client.entities.balances.updateBalance(
+        organizationId,
+        ledgerId,
+        balance.id,
+        {
+          allowSending: false,
+        }
+      );
+      results.push(updatedBalance);
+    }
+
+    cursor = page.nextCursor;
+  } while (cursor);
 
   console.log(`Frozen withdrawals for ${results.length} balance(s) in account ${accountId}`);
   return results;
@@ -289,9 +326,9 @@ async function calculateTotalLedgerValue(client, organizationId, ledgerId) {
   // Group by asset code
   const assetTotals = {};
 
-  for (const balance of balances.data) {
+  for (const balance of balances.items) {
     const assetCode = balance.assetCode;
-    const amount = (balance.available + balance.onHold) / balance.scale;
+    const amount = Number(balance.available) + Number(balance.onHold);
 
     if (!assetTotals[assetCode]) {
       assetTotals[assetCode] = 0;

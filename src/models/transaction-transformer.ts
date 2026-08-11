@@ -158,6 +158,12 @@ function toApiFlowEnvelope(input: CreateInflowInput | CreateOutflowInput): any {
     result.routeId = input.routeId;
   }
 
+  // Emitted on presence, not truthiness: `{fees: false}` is a meaningful instruction and
+  // the ledger distinguishes it from an absent skip.
+  if (input.skip) {
+    result.skip = input.skip;
+  }
+
   if (input.metadata) {
     result.metadata = input.metadata;
   }

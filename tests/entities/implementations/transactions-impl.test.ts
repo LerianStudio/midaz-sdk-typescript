@@ -105,6 +105,7 @@ describe('TransactionsServiceImpl', () => {
       blockFunds: jest.fn(),
       unblockFunds: jest.fn(),
       createAnnotation: jest.fn(),
+      countTransactions: jest.fn(),
     } as unknown as jest.Mocked<TransactionApiClient>;
 
     // Create a mock Observability instance
@@ -609,6 +610,53 @@ describe('TransactionsServiceImpl', () => {
       await expect(transactionsService.createAnnotation(orgId, ledgerId, fullInput)).rejects.toBe(
         rejected
       );
+    });
+  });
+
+  // Unlike the other six counts, this one is windowed: with no dates the ledger answers
+  // today's number, so the window the caller named has to reach the client verbatim.
+  describe('countTransactions', () => {
+    it('forwards the window and the filters the caller named', async () => {
+      mockTransactionApiClient.countTransactions.mockResolvedValueOnce(46);
+      const options = {
+        startDate: '2026-08-01T00:00:00Z',
+        endDate: '2026-08-07T23:59:59Z',
+        status: 'APPROVED',
+      } as const;
+
+      const result = await transactionsService.countTransactions(orgId, ledgerId, options);
+
+      expect(mockTransactionApiClient.countTransactions).toHaveBeenCalledWith(
+        orgId,
+        ledgerId,
+        options
+      );
+      expect(result).toBe(46);
+    });
+
+    it('forwards the deliberate opt-in to the ledger default window', async () => {
+      mockTransactionApiClient.countTransactions.mockResolvedValueOnce(3);
+
+      const result = await transactionsService.countTransactions(orgId, ledgerId, {
+        window: 'today',
+      });
+
+      expect(mockTransactionApiClient.countTransactions).toHaveBeenCalledWith(orgId, ledgerId, {
+        window: 'today',
+      });
+      expect(result).toBe(3);
+    });
+
+    it('lets the client-side refusal of a half-open window through', async () => {
+      mockTransactionApiClient.countTransactions.mockRejectedValueOnce(
+        new Error('startDate and endDate must be given together')
+      );
+
+      await expect(
+        transactionsService.countTransactions(orgId, ledgerId, {
+          startDate: '2026-08-01T00:00:00Z',
+        } as never)
+      ).rejects.toThrow('startDate and endDate must be given together');
     });
   });
 });

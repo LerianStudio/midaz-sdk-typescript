@@ -43,7 +43,7 @@ export interface HttpClientOptions {
 }
 
 export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD';
   headers?: Record<string, string>;
   body?: any;
   params?: Record<string, string | number | boolean>;
@@ -222,7 +222,7 @@ export class UniversalHttpClient {
         this.metrics.recordHttpRequest(method, path, response.status, duration);
 
         if (!response.ok) {
-          const errorBody = await this.parseErrorResponse(response);
+          const errorBody = await this.parseErrorResponse(response, method);
           throw new HttpError(
             `HTTP ${response.status}: ${response.statusText}`,
             response.status,
@@ -231,7 +231,7 @@ export class UniversalHttpClient {
           );
         }
 
-        const data = await this.parseResponse<T>(response);
+        const data = await this.parseResponse<T>(response, method);
 
         this.logger.debug(`HTTP ${method} ${fullUrl} - Success`, {
           status: response.status,
@@ -324,6 +324,13 @@ export class UniversalHttpClient {
     return this.request<T>(url, { ...options, method: 'DELETE' });
   }
 
+  async head<T = any>(
+    url: string,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<HttpResponse<T>> {
+    return this.request<T>(url, { ...options, method: 'HEAD' });
+  }
+
   /**
    * Build full URL with query parameters
    */
@@ -376,7 +383,14 @@ export class UniversalHttpClient {
   /**
    * Parse response based on content type
    */
-  private async parseResponse<T>(response: Response): Promise<T> {
+  private async parseResponse<T>(response: Response, method: string): Promise<T> {
+    // A HEAD reply never carries a body and the ledger answers
+    // `HEAD .../metrics/count` with 204 and no Content-Type, so the branches
+    // below would blob() an empty stream.
+    if (method === 'HEAD' || response.status === 204 || response.status === 205) {
+      return undefined as T;
+    }
+
     const contentType = response.headers.get('Content-Type') || '';
 
     if (contentType.includes('application/json')) {
@@ -391,13 +405,20 @@ export class UniversalHttpClient {
   /**
    * Parse error response
    */
-  private async parseErrorResponse(response: Response): Promise<any> {
+  private async parseErrorResponse(response: Response, method: string): Promise<any> {
+    // The ledger answers a failing HEAD with the error's Content-Type and
+    // Content-Length but no body, so parsing one would reject and destroy the
+    // status the caller needs.
+    if (method === 'HEAD' || response.status === 204 || response.status === 205) {
+      return null;
+    }
+
     try {
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.includes('application/json')) {
-        return response.json();
+        return await response.json();
       } else {
-        return response.text();
+        return await response.text();
       }
     } catch {
       return null;

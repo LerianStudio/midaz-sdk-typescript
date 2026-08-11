@@ -4,7 +4,49 @@ All notable changes to the Midaz SDK for TypeScript will be documented in this f
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-=======
+
+## [Unreleased]
+
+### ⚠️ Breaking Changes — balances
+
+These are type-level corrections. The values on the wire never changed; the SDK simply
+described them wrongly, so code that compiled before could not have been reading them
+correctly.
+
+- **`Balance.available` and `Balance.onHold` are now `string`, not `number`.** The ledger
+  has always serialised them as already-scaled decimal strings such as `"110.50"`. Runtime
+  behaviour is unchanged — the values were strings all along — but the old declaration
+  invited arithmetic that could not work: `balance.available / balance.scale` evaluated to
+  `NaN` on every real response, and `balance.available + balance.onHold` concatenates.
+  Coerce explicitly (`Number(balance.available)`), or use a decimal library when a value can
+  exceed 2^53.
+- **`Balance.scale` has been removed.** The ledger sends no such field, so it was `undefined`
+  at runtime and was the other half of the `NaN` above. There is nothing to divide by: the
+  amounts are already decimal.
+- **`Balance.deletedAt` is now `string | null` and required.** The ledger always sends it and
+  writes `null` on a live balance, so `deletedAt !== undefined` used to answer `true` for
+  every balance that had never been deleted. Compare against `null`.
+- **`Balance` gained `key`, `overdraftUsed`, `direction` and `settings`**, all of which the
+  ledger sends and the model did not declare. `key` and `overdraftUsed` are required.
+- **`formatAccountBalance` no longer divides a balance that carries no scale.** It used to
+  default the missing scale to `100`, so a real `available: "110.50"` was displayed as
+  `1.11`. A balance read from the ledger is now shown as sent; passing an explicit `scale`
+  still divides, so scaled-integer callers are unaffected. An amount that is not a number is
+  reported as `Unknown` instead of being rendered as some other number. The parameter is
+  typed `FormattableAccountBalance` rather than `any`.
+
+### Changed — per-account balance listing
+
+- **`listAccountBalances` returns an `AccountBalancePage`, not a `ListResponse<Balance>`.**
+  Read the balances from `page.items`; `page.data`, `page.meta` and `page.total` no longer
+  exist.
+- **`AccountBalanceListOptions` replaces `ListOptions` for this call, and it has no
+  `offset`.** The route paginates by cursor: pass `cursor`, and follow `page.nextCursor`
+  until it is absent. One request returns one page however large `limit` is, so a single
+  `{ limit: 100 }` call is not "all balances".
+- The page reports the size the ledger applied as `page.limit`, and carries `nextCursor` and
+  `prevCursor` where the ledger sent them.
+
 ## [v2.2.1] - 2025-08-31
 
 [Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.2.0...v2.2.1)

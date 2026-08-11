@@ -98,6 +98,7 @@ describe('PortfoliosServiceImpl', () => {
       createPortfolio: jest.fn(),
       updatePortfolio: jest.fn(),
       deletePortfolio: jest.fn(),
+      countPortfolios: jest.fn(),
     } as unknown as jest.Mocked<PortfolioApiClient>;
 
     // Create a mock Observability instance
@@ -595,6 +596,24 @@ describe('PortfoliosServiceImpl', () => {
       await expect(
         portfoliosService.deletePortfolio(orgId, ledgerId, portfolioId)
       ).rejects.toThrow();
+    });
+  });
+  // The count answers HEAD only, with the total in a response header and no body, so a
+  // service that dropped the header read would still resolve — with undefined.
+  describe('countPortfolios', () => {
+    it('hands back the total the ledger reported', async () => {
+      mockPortfolioApiClient.countPortfolios.mockResolvedValueOnce(46);
+
+      const result = await portfoliosService.countPortfolios(orgId, ledgerId);
+
+      expect(mockPortfolioApiClient.countPortfolios).toHaveBeenCalledWith(orgId, ledgerId);
+      expect(result).toBe(46);
+    });
+
+    it('lets a failure through untouched', async () => {
+      mockPortfolioApiClient.countPortfolios.mockRejectedValueOnce(new Error('API Error'));
+
+      await expect(portfoliosService.countPortfolios(orgId, ledgerId)).rejects.toThrow('API Error');
     });
   });
 });

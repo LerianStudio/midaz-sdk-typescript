@@ -67,6 +67,16 @@ export interface SegmentApiClient
   getSegment(orgId: string, ledgerId: string, id: string): Promise<Segment>;
 
   /**
+   * Counts the segments of a ledger
+   *
+   * The ledger serves this over HEAD alone, with the total in `X-Total-Count`,
+   * and ignores every query parameter, so the count is never filtered.
+   *
+   * @returns Promise resolving to the number of segments
+   */
+  countSegments(orgId: string, ledgerId: string): Promise<number>;
+
+  /**
    * Creates a new segment
    *
    * @returns Promise resolving to the created segment

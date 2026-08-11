@@ -41,6 +41,15 @@ export interface AssetsService {
   getAsset(orgId: string, ledgerId: string, id: string): Promise<Asset>;
 
   /**
+   * Counts the assets of a ledger
+   *
+   * The ledger answers this over HEAD with the total in `X-Total-Count` and ignores
+   * every query parameter, so the count cannot be filtered.
+   *
+   */
+  countAssets(orgId: string, ledgerId: string): Promise<number>;
+
+  /**
    * Creates a new asset
    *
    * @returns Promise resolving to the created asset

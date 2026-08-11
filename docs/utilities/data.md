@@ -67,8 +67,28 @@ console.log(formattedWithSymbol); // "USD 10.50"
 ```typescript
 import { formatAccountBalance } from 'midaz-sdk/util/data/formatting';
 
-// Format an account balance for display
-const formattedBalance = formatAccountBalance(
+// A balance as the ledger sends it: decimal strings, and no scale to divide by
+const fromLedger = formatAccountBalance(
+  {
+    accountId: 'acc_123',
+    available: '100.50',
+    onHold: '5.00',
+    assetCode: 'USD',
+  },
+  {
+    accountType: 'Savings',
+  }
+);
+
+console.log(fromLedger.displayString);
+// "USD (Savings acc_123): Available 100.50, On Hold 5.00"
+
+// Access individual formatted values
+console.log(fromLedger.available); // "100.50"
+console.log(fromLedger.onHold); // "5.00"
+
+// A scaled-integer shape instead: supply the scale and the amounts are divided by it
+const scaled = formatAccountBalance(
   {
     accountId: 'acc_123',
     available: 10050,
@@ -81,12 +101,8 @@ const formattedBalance = formatAccountBalance(
   }
 );
 
-console.log(formattedBalance.displayString);
+console.log(scaled.displayString);
 // "USD (Savings acc_123): Available 100.50, On Hold 5.00"
-
-// Access individual formatted values
-console.log(formattedBalance.available); // "100.50"
-console.log(formattedBalance.onHold); // "5.00"
 ```
 
 ### Calculating Decimal Places from Scale
@@ -213,7 +229,7 @@ import { formatAccountBalance } from 'midaz-sdk/util/data/formatting';
 async function analyzeAccountBalances(client, orgId, ledgerId) {
   // Set up counters
   let totalAccounts = 0;
-  let totalBalance = 0;
+  let totalMinorUnits = 0;
 
   // Create paginator for processing accounts in batches
   const accountPages = paginateItems<Account>({
@@ -240,19 +256,21 @@ async function analyzeAccountBalances(client, orgId, ledgerId) {
         const formatted = formatAccountBalance(balance);
         console.log(`Account ${account.id}: ${formatted.displayString}`);
 
-        // Add to total (assuming USD for simplicity)
+        // Add to total (assuming USD for simplicity). `formatBalance` divides by
+        // the scale it is given, so the total has to accumulate in minor units or
+        // it is scaled twice. `Number` also stops `+=` concatenating the string.
         if (balance.assetCode === 'USD') {
-          totalBalance += balance.available;
+          totalMinorUnits += Math.round(Number(balance.available) * 100);
         }
       }
     }
   }
 
   // Format the final total
-  const formattedTotal = formatBalance(totalBalance, 100);
+  const formattedTotal = formatBalance(totalMinorUnits, 100);
   console.log(`Analyzed ${totalAccounts} accounts with total balance: $${formattedTotal}`);
 
-  return { totalAccounts, totalBalance };
+  return { totalAccounts, totalMinorUnits };
 }
 ```
 

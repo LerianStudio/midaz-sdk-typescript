@@ -188,6 +188,114 @@ export interface UpdateLedgerInput extends BuildableModel {
 }
 
 /**
+ * Tracer participation modes a ledger accepts
+ */
+export type TracerMode = 'off' | 'advisory' | 'enforce';
+
+/**
+ * Behaviours a ledger accepts when the tracer is unreachable
+ */
+export type TracerFailPosture = 'open' | 'closed';
+
+/**
+ * Accounting validations a ledger applies while processing transactions
+ */
+export interface LedgerAccountingSettings {
+  /** Requires account types to match the operation route rules */
+  validateAccountType: boolean;
+
+  /** Requires transactions to name route IDs that exist in the ledger */
+  validateRoutes: boolean;
+
+  /**
+   * Requires an account's resolved holder to exist at create time.
+   *
+   * Requires midaz v4 or later. A v3.8.0 ledger does not carry this field and
+   * refuses a patch naming it with `400` and code `0147`.
+   */
+  requireHolder?: boolean;
+}
+
+/**
+ * Tracer integration settings of a ledger
+ */
+export interface LedgerTracerSettings {
+  /** Whether the tracer is called, and whether it can block a transaction */
+  mode: TracerMode;
+
+  /** What happens when the tracer times out or its breaker is open */
+  failPosture: TracerFailPosture;
+
+  /** Per-call tracer reserve timeout, in milliseconds */
+  timeoutMs: number;
+}
+
+/**
+ * Operator opt-ins that let a caller skip a control on a single request.
+ *
+ * A skip is honoured only when the opt-in here and the caller's request flag are
+ * both set; without the opt-in the whole request is refused with `0490`.
+ */
+export interface LedgerOverrideSettings {
+  /** Permits `skip.fees` on a transaction */
+  allowFeeSkip: boolean;
+
+  /** Permits `skip.tracer` on a transaction */
+  allowTracerSkip: boolean;
+
+  /** Permits skipping the holder existence check on account creation */
+  allowHolderSkip: boolean;
+}
+
+/**
+ * Full settings document of a ledger.
+ *
+ * Which groups the document carries depends on the ledger version. A ledger supplies
+ * the defaults of the groups it knows in code rather than storing them, so a ledger
+ * that was never patched still answers every group it has — but a group the release
+ * does not have is absent, not defaulted. Measured against v3.8.0, the document is
+ * `accounting` alone, so `tracer` and `overrides` have to be read as optional.
+ */
+export interface LedgerSettings {
+  accounting: LedgerAccountingSettings;
+
+  /** Requires midaz v4 or later; absent on a v3.8.0 ledger */
+  tracer?: LedgerTracerSettings;
+
+  /** Requires midaz v4 or later; absent on a v3.8.0 ledger */
+  overrides?: LedgerOverrideSettings;
+}
+
+/**
+ * Settings path each skip flag is gated by.
+ *
+ * This is the single source of both halves of the pairing: the override a `0490`
+ * refusal names, and the field a caller patches to lift it.
+ */
+export const LEDGER_OVERRIDE_PATHS = {
+  fees: 'overrides.allowFeeSkip',
+  tracer: 'overrides.allowTracerSkip',
+  holder: 'overrides.allowHolderSkip',
+} as const satisfies Record<string, `overrides.${keyof LedgerOverrideSettings}`>;
+
+/**
+ * Input for patching a ledger's settings.
+ *
+ * The ledger merges this into the stored document one leaf at a time, so a group
+ * carrying a single field leaves its siblings — and the other two groups — alone.
+ * An empty object is a valid patch and returns the document unchanged.
+ *
+ * Every group is accepted here, including the ones that require midaz v4. A v3.8.0
+ * ledger refuses `tracer`, `overrides` and `accounting.requireHolder` with `400` and
+ * code `0147`, naming the field it did not recognise.
+ */
+export interface UpdateLedgerSettingsInput {
+  accounting?: Partial<LedgerAccountingSettings>;
+  tracer?: Partial<LedgerTracerSettings>;
+  overrides?: Partial<LedgerOverrideSettings>;
+}
+
+/**
  * Ledger Builder interface
  * Defines the specific methods available for building ledger objects
  */

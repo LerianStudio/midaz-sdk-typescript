@@ -66,6 +66,24 @@ export class OrganizationsServiceImpl implements OrganizationsService {
     }
   }
 
+  /** @inheritdoc */
+  public async countOrganizations(): Promise<number> {
+    const span = this.observability.startSpan('countOrganizations');
+
+    try {
+      const result = await this.apiClient.countOrganizations();
+
+      span.setStatus('ok');
+      return result;
+    } catch (error) {
+      span.recordException(error as Error);
+      span.setStatus('error', (error as Error).message);
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
   /**
    * Gets an organization by ID
    *

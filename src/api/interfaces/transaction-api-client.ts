@@ -4,6 +4,7 @@
 import { ListOptions, ListResponse } from '../../models/common';
 import {
   BlockFundsInput,
+  CountTransactionsOptions,
   CreateAnnotationInput,
   CreateInflowInput,
   CreateOutflowInput,
@@ -35,6 +36,22 @@ export interface TransactionApiClient
     ledgerId: string,
     options?: ListOptions
   ): Promise<ListResponse<Transaction>>;
+
+  /**
+   * Counts the transactions of a ledger inside a date window
+   *
+   * The ledger serves this over HEAD alone, with the total in `X-Total-Count`.
+   * Unlike the other counts it is windowed, and it fills a missing bound with
+   * today's, so the window must be named explicitly — either a `startDate` and
+   * `endDate` pair or `window: 'today'` to take the server default deliberately.
+   *
+   * @returns Promise resolving to the number of transactions in the window
+   */
+  countTransactions(
+    orgId: string,
+    ledgerId: string,
+    options: CountTransactionsOptions
+  ): Promise<number>;
 
   /**
    * Gets a transaction by ID

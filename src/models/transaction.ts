@@ -175,6 +175,11 @@ export type RevertTransactionOptions = TransactionStateTransitionOptions;
 /**
  * Per-call control opt-outs.
  *
+ * Requires midaz v4 or later. A v3.8.0 ledger has no `skip` on any transaction input
+ * and refuses a request carrying one with `400` and code `0053`, naming `skip` among
+ * the unexpected fields. The field is optional throughout, so a caller that omits it
+ * works against either release.
+ *
  * Each flag is honoured only when the matching per-ledger override is enabled
  * (`overrides.allowFeeSkip`, `overrides.allowTracerSkip`); otherwise the whole request
  * is rejected with `422/0490`. The SDK cannot read those settings, so it forwards the
@@ -243,7 +248,10 @@ export interface CreateTransactionInput {
    */
   transactionDate?: string;
 
-  /** Skip carries the per-call control opt-outs, each gated by a per-ledger override */
+  /**
+   * Skip carries the per-call control opt-outs, each gated by a per-ledger override.
+   * Requires midaz v4 or later; a v3.8.0 ledger refuses it with `400/0053`.
+   */
   skip?: TransactionSkipInput;
 
   /** Metadata contains additional custom data for the transaction */
@@ -343,6 +351,12 @@ interface FlowInputBase {
    * as a UUID and reject any other form.
    */
   routeId?: string;
+
+  /**
+   * Skip carries the per-call control opt-outs, each gated by a per-ledger override.
+   * Requires midaz v4 or later; a v3.8.0 ledger refuses it with `400/0053`.
+   */
+  skip?: TransactionSkipInput;
 
   /** Metadata contains additional custom data for the transaction */
   metadata?: Record<string, any>;
@@ -773,6 +787,53 @@ export interface UpdateTransactionInput {
    */
   metadata?: Record<string, any>;
 }
+
+/**
+ * Statuses the transaction count accepts, uppercase as the ledger spells them
+ *
+ * Anything else is refused with `400`.
+ */
+export type TransactionCountStatus = 'CREATED' | 'APPROVED' | 'PENDING' | 'CANCELED' | 'NOTED';
+
+/**
+ * Filters the transaction count applies on top of its date window
+ */
+export interface TransactionCountFilters {
+  /** Counts only transactions in this status */
+  status?: TransactionCountStatus;
+
+  /** Counts only transactions issued through this transaction route */
+  route?: string;
+}
+
+/**
+ * The date window a transaction count runs over.
+ *
+ * Unlike the other six counts, which count everything, this one is windowed and the
+ * ledger fills each missing bound with today's — `start_date` becomes today
+ * `00:00:00Z` and `end_date` today `23:59:59Z`, independently. A count issued with no
+ * dates therefore answers "how many today", which is not what `countTransactions`
+ * reads like. The SDK refuses to guess: name the window with an RFC 3339
+ * `startDate` and `endDate`, or ask for `window: 'today'` to take the ledger's
+ * default deliberately.
+ */
+export type CountTransactionsOptions =
+  | (TransactionCountFilters & {
+      /** Inclusive lower bound, RFC 3339 with a time component */
+      startDate: string;
+
+      /** Inclusive upper bound, RFC 3339 with a time component */
+      endDate: string;
+
+      window?: never;
+    })
+  | (TransactionCountFilters & {
+      /** Opts into the ledger's default window of today 00:00:00Z to 23:59:59Z */
+      window: 'today';
+
+      startDate?: never;
+      endDate?: never;
+    });
 
 /**
  * Creates a new transaction input with default values
