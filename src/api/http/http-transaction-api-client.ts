@@ -60,7 +60,7 @@ const TRANSACTION_LOCKED_STATUS = 409;
  * every member, so a status added to the union would compile here and be refused at
  * runtime. Keying the record by the union makes that omission a build error.
  */
-const COUNT_STATUS_SET: Record<TransactionCountStatus, true> = {
+export const COUNT_STATUS_SET: Record<TransactionCountStatus, true> = {
   CREATED: true,
   APPROVED: true,
   PENDING: true,
