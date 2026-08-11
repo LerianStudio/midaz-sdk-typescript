@@ -175,6 +175,11 @@ export type RevertTransactionOptions = TransactionStateTransitionOptions;
 /**
  * Per-call control opt-outs.
  *
+ * Requires midaz v4 or later. A v3.8.0 ledger has no `skip` on any transaction input
+ * and refuses a request carrying one with `400` and code `0053`, naming `skip` among
+ * the unexpected fields. The field is optional throughout, so a caller that omits it
+ * works against either release.
+ *
  * Each flag is honoured only when the matching per-ledger override is enabled
  * (`overrides.allowFeeSkip`, `overrides.allowTracerSkip`); otherwise the whole request
  * is rejected with `422/0490`. The SDK cannot read those settings, so it forwards the
@@ -243,7 +248,10 @@ export interface CreateTransactionInput {
    */
   transactionDate?: string;
 
-  /** Skip carries the per-call control opt-outs, each gated by a per-ledger override */
+  /**
+   * Skip carries the per-call control opt-outs, each gated by a per-ledger override.
+   * Requires midaz v4 or later; a v3.8.0 ledger refuses it with `400/0053`.
+   */
   skip?: TransactionSkipInput;
 
   /** Metadata contains additional custom data for the transaction */
@@ -344,7 +352,10 @@ interface FlowInputBase {
    */
   routeId?: string;
 
-  /** Skip carries the per-call control opt-outs, each gated by a per-ledger override */
+  /**
+   * Skip carries the per-call control opt-outs, each gated by a per-ledger override.
+   * Requires midaz v4 or later; a v3.8.0 ledger refuses it with `400/0053`.
+   */
   skip?: TransactionSkipInput;
 
   /** Metadata contains additional custom data for the transaction */
