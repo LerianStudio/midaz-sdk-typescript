@@ -224,7 +224,7 @@ When working with large datasets, it's important to process data efficiently to 
 
 ```typescript
 import { paginateItems } from 'midaz-sdk/util/data/pagination';
-import { formatAccountBalance } from 'midaz-sdk/util/data/formatting';
+import { formatAccountBalance, formatBalance, Account } from '@lerianstudio/midaz-sdk';
 
 async function analyzeAccountBalances(client, orgId, ledgerId) {
   // Set up counters
