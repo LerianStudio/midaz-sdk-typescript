@@ -1,7 +1,18 @@
 # Vendored midaz ledger OpenAPI specs.
 #
-# Regenerate with: npm run spec:update -- <midaz-repo-path> [git-ref]
+# Regenerate with: npm run spec:update -- <midaz-repo-path> [type-ref] [released-ref]
 # Never hand-edit spec/*.yaml or src/generated/*.d.ts; CI fails on drift.
+#
+# TWO REFS, TWO QUESTIONS. The SDK supports the released ledger, so the path
+# gate is enforced against the released ref: a builder aiming at a route only
+# `develop` serves fails the drift suite. Response TYPES are still generated
+# from the Huma documents on the type ref, because the two refs declare the
+# same Go types but render one of them differently - swaggo emits
+# decimal.Decimal as `number`, the Huma document emits it as `string`, and
+# `string` is what the ledger actually sends. Generating money types from the
+# released document would reintroduce the float that the balance fix removed.
+# So: the released document is the authority on WHICH ROUTES EXIST, the Huma
+# document is the authority on WHAT A RESPONSE CONTAINS.
 #
 # LIMITATION - ledger-v1 request bodies are unusable. The ledger serves its v1
 # Huma routes with RawBody handlers, so every request body in ledger-v1 is
@@ -16,12 +27,21 @@
 # their generated request types are usable and must not be hand-written. Every
 # other v2 request body is {type: string, format: binary} as in v1.
 #
+# ledger-v1-released is read by the drift suite alone. It is never fed to
+# openapi-typescript, so its `number` money fields never reach the SDK.
+#
 # format: binary request bodies: ledger-v1=43, ledger-v2=11
+# released paths: 56
 
 source_repo=https://github.com/LerianStudio/midaz
 source_ref=develop
 source_commit=33cb93f7485b0b4b55303be224fbf1a627756469
-source_commit_short=33cb93f
+source_commit_short=33cb93f7
 source_commit_date=2026-08-05T11:32:03-03:00
+released_ref=v3.8.0
+released_commit=1d89a05d428f3cb88d854ee33e1345f1b3f40059
+released_commit_short=1d89a05d
+released_commit_date=2026-07-17T18:42:53-03:00
 ledger-v1.openapi.yaml=components/ledger/api/openapi.huma.yaml
 ledger-v2.openapi.yaml=components/ledger/api/openapi.v2.huma.yaml
+ledger-v1-released.openapi.yaml=components/ledger/api/openapi.yaml
