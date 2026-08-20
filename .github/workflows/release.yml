@@ -101,23 +101,6 @@ jobs:
 
   generate-changelog:
     name: 📝 Generate AI-powered Changelog
-    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: publish_release
-    steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
-
-      - uses: LerianStudio/github-actions-gptchangelog@main
-        with:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
-          LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
-          LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
-          LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
-          LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/gptchangelog.yml@v1.56.0
+    secrets: inherit
