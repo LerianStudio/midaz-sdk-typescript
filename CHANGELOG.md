@@ -1,9 +1,24 @@
-# Changelog
+# Midaz-sdk-typescript Changelog
 
-All notable changes to the Midaz SDK for TypeScript will be documented in this file.
+## [2.3.0](https://github.com/LerianStudio/midaz-sdk-typescript/releases/tag/v2.3.0)
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Features:
+- Refactored the process to build correlation IDs without using deprecated helpers.
+
+Fixes:
+- Resolved an issue with web crypto compatibility on Node 18.
+- Updated the sending of idempotency keys to use the `X-Idempotency` header.
+
+Improvements:
+- Pinned GitHub Actions to specific commit SHAs for consistency.
+- Bumped development dependencies and updated Jest to version 30.
+- Formatted idempotency tests using Prettier for improved code readability.
+
+Contributors: @jeffersonrodrigues92
+
+[Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.2.2...v2.3.0)
+
+---
 
 ## [Unreleased]
 
@@ -473,3 +488,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extensive test coverage
 - Documentation with JSDoc and TypeDoc
 - Example workflows for common use cases
+
