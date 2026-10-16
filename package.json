@@ -75,7 +75,7 @@
     "email": "developers@lerianstudio.com",
     "url": "https://lerianstudio.com"
   },
-  "license": "Apache-2.0",
+  "license": "Elastic-2.0",
   "engines": {
     "node": ">=18.18.0 <25",
     "npm": ">=8.0.0"

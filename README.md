@@ -387,4 +387,4 @@ For more detailed development information, see our [Developer Guide](./DEVELOPER
 
 ## License
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the Elastic License 2.0 (ELv2) - see the [LICENSE](./LICENSE) file for details.
