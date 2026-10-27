@@ -102,5 +102,5 @@ jobs:
   generate-changelog:
     name: 📝 Generate AI-powered Changelog
     needs: publish_release
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/gptchangelog.yml@v1.56.0
+    uses: LerianStudio/shared-workflows-public/.github/workflows/gptchangelog.yml@tier-1
     secrets: inherit
