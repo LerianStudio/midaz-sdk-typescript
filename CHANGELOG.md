@@ -3,6 +3,27 @@
 ## [2.3.0](https://github.com/LerianStudio/midaz-sdk-typescript/releases/tag/v2.3.0)
 
 Features:
+- Build correlation ID without using a deprecated helper. (@jeffersonrodrigues92)
+
+Fixes:
+- Send idempotency key as `X-Idempotency` header. (@jeffersonrodrigues92)
+- Resolve web crypto issues on Node `18`. (@jeffersonrodrigues92)
+
+Improvements:
+- Pin GitHub Actions to specific commit SHAs for consistency. (@jeffersonrodrigues92)
+- Pin the clock in the correlation uniqueness test to ensure reliability. (@jeffersonrodrigues92)
+- Correct idempotency examples and header in documentation, and remove ghost APIs. (@jeffersonrodrigues92)
+- Format idempotency test using Prettier for consistent styling. (@jeffersonrodrigues92)
+- Bump GitHub Actions to current major versions. (@jeffersonrodrigues92)
+- Update development dependencies and bump Jest to `v30`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/midaz-sdk-typescript/compare/v2.2.2...v2.3.0)
+
+---
+
+## [2.3.0](https://github.com/LerianStudio/midaz-sdk-typescript/releases/tag/v2.3.0)
+
+Features:
 - Refactored the process to build correlation IDs without using deprecated helpers.
 
 Fixes:
